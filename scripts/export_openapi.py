@@ -1,4 +1,5 @@
 """Export versioned API schemas without creating a runtime database in the repository."""
+
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
