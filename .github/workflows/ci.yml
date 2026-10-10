@@ -1,0 +1,26 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  required:
+    name: CI / required
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check repository
+        run: |
+          if [ -f pyproject.toml ]; then
+            python -m pip install -e '.[dev]'
+            ruff check .
+            ruff format --check .
+            pytest -q
+          else
+            test -s README.md
+          fi
