@@ -17,7 +17,7 @@ jobs:
       - name: Check repository
         run: |
           if [ -f pyproject.toml ]; then
-            python -m pip install -e '.[dev]'
+            python -m pip install -e '.[dev]' -c constraints.txt
             ruff check .
             ruff format --check .
             pytest -q
