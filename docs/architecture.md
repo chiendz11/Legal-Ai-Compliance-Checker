@@ -99,7 +99,7 @@ Authorization (`AccessPolicy`) là interface cho phân quyền case/tenant/revie
 
 ## Tương thích và kiểm tra
 
-Các import cũ `app.contracts.models`, `app.services.*`, `app.knowledge`, `app.storage` vẫn hoạt động qua facade để consumer đang ghép bước 5–7 không bị vỡ. New code dùng canonical modules/contracts/infrastructure. URL API cũ, payload mẫu, SHA256 knowledge và SQLite schema không đổi; OpenAPI được export lại.
+Package services cũ đã được xóa hoàn toàn. Pipeline dùng `app.application.pipelines.steps_5_7`, engines dùng `app.modules.*`, validation dùng `app.core.validation`/`app.application.validation`. Các facade `app.contracts.models`, `app.knowledge`, `app.storage` vẫn còn cho phạm vi imports tương ứng. URL API, payload mẫu, SHA256 knowledge và SQLite schema được giữ nguyên. Xem [hướng dẫn import canonical](module_integration.md) và [infrastructure adapters](../app/infrastructure/README.md).
 
 Nhánh `feat/brd-system-skeleton-v2` bổ sung `contracts/workflow.py` và `DraftAssessmentWorkflow`. Workflow giữ C01 pin, kiểm tra profile/chunks/citations cùng hợp đồng, bảo toàn checklist và field scope khi Temporal tạo C05, rồi chuyển input đã ghép vào pipeline bước 5–7. `ObservationProvider` nối facts/gates đã xác minh với đề xuất rule/LLM. Workflow không tự tạo adapter mặc định và không trả báo cáo published. Upstream production quality chưa được chứng minh bằng test fixtures.
 

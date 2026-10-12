@@ -48,10 +48,34 @@ Luồng Applicable Law chỉ nhận profile/scope/knowledge. Citation Validator 
 
 - `core/validation.py` kiểm tra context snapshot, C05 và C09 độc lập. Request reasoning/pipeline tái sử dụng các helpers.
 - `application/validation.py` kiểm tra C07/C10 tại consumer boundaries. C07 legal basis/decision rule phải khớp knowledge snapshot. C10 rule/catalog/branch/criterion/version/severity/legal basis phải khớp; không cho downstream tự nâng severity hoặc đổi nguồn risk.
-- HTTP routes gọi validation/services; không chứa rule pháp lý. Các imports/payload/URL cũ vẫn có compatibility facade.
+- HTTP routes gọi validation/module services; không chứa rule pháp lý. Package services cũ đã được xóa; imports dùng module sở hữu. Payload/URL API vẫn giữ nguyên.
 - `contracts/workflow.py` là checkpoint draft nội bộ để ghép module, không tạo thêm bảng DB cho logical contract.
 
 ## Adapter và ownership
+
+Imports trực tiếp sau khi xóa package services cũ:
+
+| Chức năng | Module canonical |
+|---|---|
+| Pipeline `evaluate` | `app.application.pipelines.steps_5_7` |
+| Reasoning `reason` | `app.modules.compliance_reasoning.service` |
+| Numeric rules `numeric_finding` | `app.modules.compliance_reasoning.numeric_rules` |
+| Aggregation `aggregate` | `app.modules.rule_aggregation.service` |
+| Risk engines | `app.modules.risk.service` |
+| Recommendation `recommend` | `app.modules.recommendation.service` |
+| Downstream validation | `app.application.validation` |
+| Request/context validation | `app.core.validation` |
+| Stable IDs | `app.core.ids` |
+
+Các facade cũ cho aggregation/risk/recommendation từng lấy requirements/citations từ request tổng. Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline application chịu trách nhiệm ghép các inputs này.
+
+```python
+from app.application.pipelines.steps_5_7 import evaluate
+from app.modules.rule_aggregation.service import aggregate
+
+response = evaluate(pipeline_request, knowledge)
+results = aggregate(context, knowledge, criterion_results, applicable_requirements)
+```
 
 `CriterionProposalProvider` chỉ trả proposed finding/explanation/quotes. `ObservationProvider` ghép proposal với facts và gates do backend xác minh. Provider không sở hữu scope/source/absence/coverage gates. Không bật tất cả gates chỉ vì LLM trả confidence cao.
 

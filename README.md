@@ -47,7 +47,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/pipeline/steps-5-7 \
 
 Envelope có `ca_id`, `phien_ban_id`, `rule_version`, `legal_knowledge_version`, `knowledge_snapshot_sha256`, `run_id`, `trace_id`, `contract_version`. Output có thêm `contract_name`, `produced_at`, `payload`. Consumer module nhận trực tiếp output predecessor; không cần chạy lại retrieval/reasoning. API independent là phép tính thuần; endpoint pipeline mới ghi DB.
 
-Bước 5–7 nằm trong `app/modules/`, pipeline ở `app/application/pipelines/steps_5_7.py`, adapters JSON/SQLite ở `app/infrastructure/`. Các import cũ vẫn có compatibility facade.
+Bước 5–7 nằm trong `app/modules/`, pipeline ở `app/application/pipelines/steps_5_7.py`, adapters JSON/SQLite ở `app/infrastructure/`. Package services cũ đã được xóa; code và tests import trực tiếp từ module sở hữu. Xem [mục đích các infrastructure adapters](app/infrastructure/README.md).
 
 Schema input/output được khai báo trong [`app/contracts/`](app/contracts/); OpenAPI sinh tự động. Xem [hướng dẫn tích hợp](docs/implementation.md) về trường dữ liệu, ownership, evidence và persistence.
 
