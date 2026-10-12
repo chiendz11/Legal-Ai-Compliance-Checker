@@ -1,6 +1,6 @@
 import pytest
 
-from app.application.pipelines.steps_5_7 import evaluate
+from app.workflows.pipelines.steps_5_7 import evaluate
 
 
 def citation(**updates):

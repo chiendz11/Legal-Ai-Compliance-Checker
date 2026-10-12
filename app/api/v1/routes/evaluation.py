@@ -4,8 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.dependencies import get_services
-from app.application.validation import stage_context, validate_criteria, validate_risks
 from app.bootstrap import Services
+from app.business_modules.compliance_reasoning.service import reason
+from app.business_modules.recommendation.service import recommend
+from app.business_modules.risk.service import aggregate_risks
+from app.business_modules.rule_aggregation.service import aggregate
 from app.contracts.modules import (
     AggregationRequest,
     ModuleResponse,
@@ -13,10 +16,7 @@ from app.contracts.modules import (
     RiskRequest,
 )
 from app.contracts.reasoning import ReasoningRequest
-from app.modules.compliance_reasoning.service import reason
-from app.modules.recommendation.service import recommend
-from app.modules.risk.service import aggregate_risks
-from app.modules.rule_aggregation.service import aggregate
+from app.workflows.validation import stage_context, validate_criteria, validate_risks
 
 router = APIRouter(prefix="/api/v1")
 ServicesDependency = Annotated[Services, Depends(get_services)]

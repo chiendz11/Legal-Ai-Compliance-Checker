@@ -2,7 +2,7 @@
 
 ## Cấu trúc và điểm nối
 
-Giữ backend tại `app/`; `api/` xử lý HTTP, `contracts/` giữ Pydantic schemas, `modules/` giữ nghiệp vụ, `application/` điều phối, `infrastructure/` hiện thực storage/provider adapters. Frontend skeleton dùng feature folders, chưa chọn framework.
+Giữ backend tại `app/`; `api/` xử lý HTTP, `contracts/` giữ Pydantic schemas, `business_modules/` giữ nghiệp vụ, `workflows/` điều phối, `adapters/` hiện thực storage/provider adapters. Frontend skeleton dùng feature folders, chưa chọn framework.
 
 | BRD | Module | Consumer contract / implementation cần cung cấp |
 |---|---|---|
@@ -23,10 +23,10 @@ Các services bước 1–4, 8–9 và Knowledge Curation hiện là `Protocol`,
 
 ## Skeleton điều phối draft
 
-`app/application/pipelines/draft_assessment.py` cung cấp wiring executable khi tất cả upstream adapters được inject:
+`app/workflows/pipelines/draft_assessment.py` cung cấp wiring executable khi tất cả upstream adapters được inject:
 
 ```python
-from app.application.pipelines.draft_assessment import DraftAssessmentWorkflow, DraftModules
+from app.workflows.pipelines.draft_assessment import DraftAssessmentWorkflow, DraftModules
 
 modules = DraftModules(
     intake=intake_adapter,
@@ -46,8 +46,8 @@ Luồng Applicable Law chỉ nhận profile/scope/knowledge. Citation Validator 
 
 ## Refactor bước 5–7
 
-- `core/validation.py` kiểm tra context snapshot, C05 và C09 độc lập. Request reasoning/pipeline tái sử dụng các helpers.
-- `application/validation.py` kiểm tra C07/C10 tại consumer boundaries. C07 legal basis/decision rule phải khớp knowledge snapshot. C10 rule/catalog/branch/criterion/version/severity/legal basis phải khớp; không cho downstream tự nâng severity hoặc đổi nguồn risk.
+- `shared/validation.py` kiểm tra context snapshot, C05 và C09 độc lập. Request reasoning/pipeline tái sử dụng các helpers.
+- `workflows/validation.py` kiểm tra C07/C10 tại consumer boundaries. C07 legal basis/decision rule phải khớp knowledge snapshot. C10 rule/catalog/branch/criterion/version/severity/legal basis phải khớp; không cho downstream tự nâng severity hoặc đổi nguồn risk.
 - HTTP routes gọi validation/module services; không chứa rule pháp lý. Imports dùng module sở hữu. Reasoning nhận `CriterionReasoningInput`; pipeline nhận `Steps57Input` riêng.
 - `contracts/workflow.py` là checkpoint draft nội bộ để ghép module, không tạo thêm bảng DB cho logical contract.
 
@@ -57,21 +57,21 @@ Imports theo module sở hữu:
 
 | Chức năng | Module canonical |
 |---|---|
-| Pipeline `evaluate` | `app.application.pipelines.steps_5_7` |
-| Reasoning `reason` | `app.modules.compliance_reasoning.service` |
-| Numeric rules `numeric_finding` | `app.modules.compliance_reasoning.numeric_rules` |
-| Aggregation `aggregate` | `app.modules.rule_aggregation.service` |
-| Risk engines | `app.modules.risk.service` |
-| Recommendation `recommend` | `app.modules.recommendation.service` |
-| Downstream validation | `app.application.validation` |
-| Request/context validation | `app.core.validation` |
-| Stable IDs | `app.core.ids` |
+| Pipeline `evaluate` | `app.workflows.pipelines.steps_5_7` |
+| Reasoning `reason` | `app.business_modules.compliance_reasoning.service` |
+| Numeric rules `numeric_finding` | `app.business_modules.compliance_reasoning.numeric_rules` |
+| Aggregation `aggregate` | `app.business_modules.rule_aggregation.service` |
+| Risk engines | `app.business_modules.risk.service` |
+| Recommendation `recommend` | `app.business_modules.recommendation.service` |
+| Downstream validation | `app.workflows.validation` |
+| Request/context validation | `app.shared.validation` |
+| Stable IDs | `app.shared.ids` |
 
-Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline application chịu trách nhiệm ghép các inputs này. Contracts được import từ `contracts/reasoning.py`, `contracts/pipeline.py`, `contracts/risk.py` và các owning modules khác. Knowledge adapter ở `infrastructure/knowledge/snapshot.py`; run store ở `infrastructure/persistence/sqlite.py`.
+Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline trong workflows chịu trách nhiệm ghép các inputs này. Contracts được import từ `contracts/reasoning.py`, `contracts/pipeline.py`, `contracts/risk.py` và các owning modules khác. Knowledge adapter ở `adapters/knowledge_sources/snapshot.py`; run store ở `adapters/database/sqlite.py`.
 
 ```python
-from app.application.pipelines.steps_5_7 import evaluate
-from app.modules.rule_aggregation.service import aggregate
+from app.workflows.pipelines.steps_5_7 import evaluate
+from app.business_modules.rule_aggregation.service import aggregate
 
 response = evaluate(pipeline_request, knowledge)
 results = aggregate(context, knowledge, criterion_results, applicable_requirements)
@@ -82,7 +82,7 @@ Factory dùng một cấu hình `Settings` rõ ràng hoặc đọc environment k
 ```python
 from pathlib import Path
 
-from app.core.config import Settings
+from app.shared.config import Settings
 from app.main import create_app
 
 api = create_app(

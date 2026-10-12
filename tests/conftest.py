@@ -3,10 +3,10 @@ from dataclasses import replace
 
 import pytest
 
+from app.adapters.knowledge_sources.snapshot import Knowledge
 from app.contracts.pipeline import PipelineRequest
-from app.core.config import Settings
-from app.infrastructure.knowledge.snapshot import Knowledge
 from app.main import create_app
+from app.shared.config import Settings
 
 
 @pytest.fixture

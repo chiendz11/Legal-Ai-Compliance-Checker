@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.bootstrap import Services
-from app.core.config import Settings
+from app.shared.config import Settings
 
 
 def test_reasoning_uses_its_own_contract(app_factory, request_factory):

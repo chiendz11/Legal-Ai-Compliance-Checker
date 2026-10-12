@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 def test_business_modules_do_not_import_transport_or_concrete_adapters():
-    root = Path(__file__).resolve().parents[1] / "app" / "modules"
-    prohibited = ("fastapi", "httpx", "sqlite3", "app.infrastructure", "app.bootstrap", "app.api")
+    root = Path(__file__).resolve().parents[1] / "app" / "business_modules"
+    prohibited = ("fastapi", "httpx", "sqlite3", "app.adapters", "app.bootstrap", "app.api")
     violations = []
     for path in root.rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):

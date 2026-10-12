@@ -8,9 +8,11 @@ Backend Python/FastAPI triển khai **bước 5–7 của mục 6 (Quy trình ng
 
 Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton/refactor toàn hệ thống hiện tại: `feat/brd-system-skeleton-v2`, phát triển từ `feat/brd-system-skeleton`.
 
-Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend đã tách API/application/modules/infrastructure; `frontend/` mới là folder skeleton, chưa có UI runtime.
+Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend đã tách `api`, `workflows`, `business_modules` và `adapters`; `frontend/` mới là folder skeleton, chưa có UI runtime.
 
 Skeleton có module cho bước 1–9, contracts C01–C13/X01/X02, ports cho tài liệu/OCR, retrieval, LLM/audit, authorization, review và report. `DraftAssessmentWorkflow` nối adapters bước 1–4 với engines bước 5–7 khi được inject đầy đủ. Chỉ bước 5–7 có implementations mặc định; pipeline draft chưa được mở thành API full-assessment. Xem [hướng dẫn nối module](docs/module_integration.md).
+
+Ví dụ khởi tạo JSON/SQLite và giải thích từng dòng trong `bootstrap.py`: [hướng dẫn khởi tạo](docs/startup.md). Chạy demo bằng `python -m scripts.demo_bootstrap`.
 
 ## Chạy local
 
@@ -47,9 +49,9 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/pipeline/steps-5-7 \
 
 Envelope có `ca_id`, `phien_ban_id`, `rule_version`, `legal_knowledge_version`, `knowledge_snapshot_sha256`, `run_id`, `trace_id`, `contract_version`. Output có thêm `contract_name`, `produced_at`, `payload`. Consumer module nhận trực tiếp output predecessor; không cần chạy lại retrieval/reasoning. API independent là phép tính thuần; endpoint pipeline mới ghi DB.
 
-Bước 5–7 nằm trong `app/modules/`, pipeline ở `app/application/pipelines/steps_5_7.py`, adapters JSON/SQLite ở `app/infrastructure/`. Package services cũ đã được xóa; code và tests import trực tiếp từ module sở hữu. Xem [mục đích các infrastructure adapters](app/infrastructure/README.md).
+Bước 5–7 nằm trong `app/business_modules/`, pipeline ở `app/workflows/pipelines/steps_5_7.py`, adapters JSON/SQLite ở `app/adapters/`. Package services cũ đã được xóa; code và tests import trực tiếp từ module sở hữu. Xem [mục đích các adapters kết nối kỹ thuật](app/adapters/README.md).
 
-Mỗi endpoint nhận đúng contract của mình: `Steps57Input` dành cho pipeline, `CriterionReasoningInput` dành cho reasoning và không chứa citation results. Payload gọi riêng bước 5 có tại [examples/reasoning.json](examples/reasoning.json). Tests/scripts sử dụng imports từ modules/contracts/infrastructure và cấu hình factory bằng `Settings`; không còn lớp chuyển tiếp của cấu trúc trước.
+Mỗi endpoint nhận đúng contract của mình: `Steps57Input` dành cho pipeline, `CriterionReasoningInput` dành cho reasoning và không chứa citation results. Payload gọi riêng bước 5 có tại [examples/reasoning.json](examples/reasoning.json). Tests/scripts sử dụng imports từ business_modules/contracts/adapters và cấu hình factory bằng `Settings`; không còn lớp chuyển tiếp của cấu trúc trước.
 
 Schema input/output được khai báo trong [`app/contracts/`](app/contracts/); OpenAPI sinh tự động. Xem [hướng dẫn tích hợp](docs/implementation.md) về trường dữ liệu, ownership, evidence và persistence.
 

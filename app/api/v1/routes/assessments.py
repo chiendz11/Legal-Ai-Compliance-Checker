@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.dependencies import get_services
-from app.application.pipelines.steps_5_7 import evaluate
 from app.bootstrap import Services
 from app.contracts.pipeline import PipelineRequest, PipelineResponse
-from app.core.errors import ConflictError
+from app.shared.errors import ConflictError
+from app.workflows.pipelines.steps_5_7 import evaluate
 
 router = APIRouter(prefix="/api/v1")
 ServicesDependency = Annotated[Services, Depends(get_services)]

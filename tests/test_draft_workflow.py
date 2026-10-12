@@ -4,13 +4,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.application.pipelines.draft_assessment import DraftAssessmentWorkflow, DraftModules
+from app.business_modules.document_intelligence.service import DocumentIntelligenceResult
 from app.contracts.assessment import AssessmentCase
 from app.contracts.citation import CitationExtraction, CitationValidation
 from app.contracts.common import Context
 from app.contracts.document_intelligence import ContractProfile
 from app.contracts.scope import ScopeResolution
-from app.modules.document_intelligence.service import DocumentIntelligenceResult
+from app.workflows.pipelines.draft_assessment import DraftAssessmentWorkflow, DraftModules
 
 
 def assemble(request, knowledge, citation_status=None):

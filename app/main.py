@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.api.v1.router import router
 from app.bootstrap import Services, build_services
-from app.core.config import Settings
+from app.shared.config import Settings
 
 
 def create_app(

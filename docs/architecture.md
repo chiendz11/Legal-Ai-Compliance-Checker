@@ -6,54 +6,54 @@ Lựa chọn triển khai của nhánh này: **modular monolith Python/FastAPI**
 
 ```text
 app/
-├── main.py                    # Composition root / factory
-├── bootstrap.py               # Nối port với adapter thật
+├── main.py                      # Composition root / factory
+├── bootstrap.py                 # Nối port với adapter thật
 ├── api/
 │   ├── dependencies.py
 │   └── v1/
 │       ├── router.py
-│       └── routes/            # HTTP, validation input, status/error mapping
-├── contracts/                 # Pydantic theo ownership C01–C13, X01/X02
-├── core/                      # Settings, stable IDs, conflict errors, shared validation
-├── application/
-│   ├── ports/                 # Knowledge, run store, authorization, LLM audit
-│   ├── validation.py          # Kiểm tra contracts ở ranh giới downstream
+│       └── routes/              # HTTP, validation input, status/error mapping
+├── contracts/                   # Pydantic theo ownership C01–C13, X01/X02
+├── shared/                      # Settings, stable IDs, conflict errors, shared validation
+├── workflows/
+│   ├── interfaces/              # Knowledge, run store, authorization, LLM audit
+│   ├── validation.py            # Kiểm tra contracts ở ranh giới downstream
 │   └── pipelines/
-│       ├── assessment.py      # Interface full flow, chưa chạy bước 1–9
-│       ├── draft_assessment.py # Wiring bước 1–7 với upstream adapters được inject
-│       └── steps_5_7.py        # Pipeline đang hoạt động
-├── modules/
-│   ├── intake/                # Bước 1
-│   ├── document_intelligence/ # Bước 2: profile/chunks/citations
-│   ├── scope_resolver/        # Bước 3A: scope/checklist
-│   ├── temporal_resolver/     # Bước 3A: version/relevant date
-│   ├── citation_validation/   # Bước 3B: nhánh độc lập
-│   ├── retrieval/             # Bước 4
-│   ├── compliance_reasoning/  # Bước 5: evidence gates, finding, numeric rules
-│   ├── rule_aggregation/      # Bước 5: C07 → C08
-│   ├── risk/                  # Bước 6
-│   ├── recommendation/        # Bước 7
-│   ├── human_review/          # Bước 8
-│   ├── reporting/             # Bước 9
-│   └── knowledge_curation/    # Nguồn luật, approval, release snapshot
-└── infrastructure/
-    ├── authorization/         # Identity/case/reviewer/curator adapters tương lai
-    ├── observability/         # Trace/audit adapters tương lai, X02 cho LLM thật
-    ├── reporting/             # Report storage/export adapters tương lai
-    ├── knowledge/             # JSON snapshot adapter hiện có
-    ├── persistence/           # SQLite adapter hiện có
-    ├── llm/                   # Provider adapters tương lai
-    ├── documents/             # Storage/PDF/DOCX/OCR adapters tương lai
-    └── retrieval/             # FTS/vector/reranker adapters tương lai
-frontend/src/                  # Folder skeleton, chưa chọn framework/UI runtime
-├── features/                  # upload, assessments, review, reports, knowledge
-└── shared/                    # api, components
-scripts/                       # Import workbook, export OpenAPI, E2E HTTP
-tests/                         # Regression, contract boundaries, workflow integration
-data/                          # Knowledge public và data/private bị gitignore
-docs/                          # BRD, contracts, OpenAPI, architecture và hướng dẫn
-configs/                       # Configuration ownership, chưa có cấu hình provider mới
-evals/gold/                    # Skeleton đánh giá chất lượng theo BRD mục 13
+│       ├── assessment.py        # Interface full flow, chưa chạy bước 1–9
+│       ├── draft_assessment.py  # Wiring bước 1–7 với upstream adapters được inject
+│       └── steps_5_7.py         # Pipeline đang hoạt động
+├── business_modules/
+│   ├── intake/                  # Bước 1
+│   ├── document_intelligence/   # Bước 2: profile/chunks/citations
+│   ├── scope_resolver/          # Bước 3A: scope/checklist
+│   ├── temporal_resolver/       # Bước 3A: version/relevant date
+│   ├── citation_validation/     # Bước 3B: nhánh độc lập
+│   ├── retrieval/               # Bước 4
+│   ├── compliance_reasoning/    # Bước 5: evidence gates, finding, numeric rules
+│   ├── rule_aggregation/        # Bước 5: C07 → C08
+│   ├── risk/                    # Bước 6
+│   ├── recommendation/          # Bước 7
+│   ├── human_review/            # Bước 8
+│   ├── reporting/               # Bước 9
+│   └── knowledge_curation/      # Nguồn luật, approval, release snapshot
+└── adapters/
+    ├── access_control/          # Identity/case/reviewer/curator adapters tương lai
+    ├── logs_and_audit/          # Trace/audit adapters tương lai, X02 cho LLM thật
+    ├── report_output/           # Report storage/export adapters tương lai
+    ├── knowledge_sources/       # JSON snapshot adapter hiện có
+    ├── database/                # SQLite adapter hiện có
+    ├── llm_providers/           # Provider adapters tương lai
+    ├── document_readers/        # Storage/PDF/DOCX/OCR adapters tương lai
+    └── search_backends/         # FTS/vector/reranker adapters tương lai
+frontend/src/                    # Folder skeleton, chưa chọn framework/UI runtime
+├── features/                    # upload, assessments, review, reports, knowledge
+└── shared/                      # api, components
+scripts/                         # Import workbook, export OpenAPI, E2E HTTP
+tests/                           # Regression, contract boundaries, workflow integration
+data/                            # Knowledge public và data/private bị gitignore
+docs/                            # BRD, contracts, OpenAPI, architecture và hướng dẫn
+configs/                         # Configuration ownership, chưa có cấu hình provider mới
+evals/gold/                      # Skeleton đánh giá chất lượng theo BRD mục 13
 ```
 
 ## Mapping BRD → module → contracts → trạng thái
@@ -78,10 +78,10 @@ Skeleton C01–C04/C12/C13/X01/X02 là starter schemas/interface để team có 
 
 ## Ranh giới dependency
 
-- API đọc contracts, gọi application/module services và chuyển lỗi sang HTTP.
+- API đọc contracts, gọi workflows/business modules và chuyển lỗi sang HTTP.
 - Pipeline điều phối, truyền Context và input cần thiết cho mỗi module.
-- Business modules đọc contracts + core + port interfaces; không import FastAPI, SQLite hoặc provider cụ thể.
-- Infrastructure hiện thực ports; `bootstrap.py` nối implementations. `create_app(services=...)` cho phép thay adapter khi integration test.
+- Business modules đọc contracts + shared + interfaces; không import FastAPI, SQLite hoặc provider cụ thể.
+- Adapters hiện thực interfaces; `bootstrap.py` nối implementations. `create_app(services=...)` cho phép thay adapter khi integration test.
 - Contracts không chứa lời gọi HTTP/DB/LLM. Module không sửa field thuộc owner khác.
 - Full-assessment skeleton giữ Applicable Law và Citation Validation độc lập đến Risk/Report. Scope không nhận contract citations làm input.
 
@@ -91,7 +91,7 @@ C07 tổng hợp evidence cho một criterion; C08 nhóm findings C07 theo `yeu_
 
 ## Chỗ nối LLM và audit
 
-`modules/compliance_reasoning/ports.py` định nghĩa `CriterionProposalProvider`: nhận context/requirement/criterion/evidence/knowledge, trả finding/giải thích/quotes. Output proposal không có trusted gates. Provider implementation sẽ đặt trong `infrastructure/llm/`; orchestration/adapter phải ghép proposal với facts/gates đã xác minh rồi đưa vào engine.
+`business_modules/compliance_reasoning/interfaces.py` định nghĩa `CriterionProposalProvider`: nhận context/requirement/criterion/evidence/knowledge, trả finding/giải thích/quotes. Output proposal không có trusted gates. Provider implementation sẽ đặt trong `adapters/llm_providers/`; orchestration/adapter phải ghép proposal với facts/gates đã xác minh rồi đưa vào engine.
 
 Port này chưa được gọi trong runtime hiện tại. Không có API key/provider mặc định hoặc log LLM giả. Khi tích hợp thật phải dùng X02 (`contracts/audit.py`) và `LlmAuditSink`. Recommendation LLM tương lai phải bảo toàn evidence/legal basis/action/severity và template constraints.
 
@@ -99,7 +99,7 @@ Authorization (`AccessPolicy`) là interface cho phân quyền case/tenant/revie
 
 ## Tương thích và kiểm tra
 
-Pipeline dùng `app.application.pipelines.steps_5_7`, engines dùng `app.modules.*`, validation dùng `app.core.validation`/`app.application.validation`; contracts import theo owning module. Các file/package chuyển tiếp của cấu trúc trước đã được xóa. Factory nhận `Settings` hoặc adapters được inject qua `Services`; cấu hình mặc định đọc environment. Knowledge snapshot và SQLite schema giữ nguyên. Xem [hướng dẫn integration](module_integration.md) và [infrastructure adapters](../app/infrastructure/README.md).
+Pipeline dùng `app.workflows.pipelines.steps_5_7`, engines dùng `app.business_modules.*`, validation dùng `app.shared.validation`/`app.workflows.validation`; contracts import theo owning module. Các file/package chuyển tiếp của cấu trúc trước đã được xóa. Factory nhận `Settings` hoặc adapters được inject qua `Services`; cấu hình mặc định đọc environment. Knowledge snapshot và SQLite schema giữ nguyên. Xem [hướng dẫn integration](module_integration.md) và [adapters kết nối kỹ thuật](../app/adapters/README.md).
 
 Nhánh `feat/brd-system-skeleton-v2` bổ sung `contracts/workflow.py` và `DraftAssessmentWorkflow`. Workflow giữ C01 pin, kiểm tra profile/chunks/citations cùng hợp đồng, bảo toàn checklist và field scope khi Temporal tạo C05, rồi chuyển input đã ghép vào pipeline bước 5–7. `ObservationProvider` nối facts/gates đã xác minh với đề xuất rule/LLM. Workflow không tự tạo adapter mặc định và không trả báo cáo published. Upstream production quality chưa được chứng minh bằng test fixtures.
 
