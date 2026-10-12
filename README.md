@@ -6,9 +6,11 @@ Backend Python/FastAPI triển khai **bước 5–7 của mục 6 (Quy trình ng
 2. **Risk Aggregation:** C07 + C09 → C10; giữ nguồn `COMPLIANCE`, `CITATION`, `VERIFICATION` riêng.
 3. **Recommendation / Remediation:** C10 + knowledge + context → C11; mọi kết quả chờ human review.
 
-Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton/refactor toàn hệ thống: `feat/brd-system-skeleton`.
+Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton/refactor toàn hệ thống hiện tại: `feat/brd-system-skeleton-v2`, phát triển từ `feat/brd-system-skeleton`.
 
 Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend đã tách API/application/modules/infrastructure; `frontend/` mới là folder skeleton, chưa có UI runtime.
+
+Skeleton có module cho bước 1–9, contracts C01–C13/X01/X02, ports cho tài liệu/OCR, retrieval, LLM/audit, authorization, review và report. `DraftAssessmentWorkflow` nối adapters bước 1–4 với engines bước 5–7 khi được inject đầy đủ. Chỉ bước 5–7 có implementations mặc định; pipeline draft chưa được mở thành API full-assessment. Xem [hướng dẫn nối module](docs/module_integration.md).
 
 ## Chạy local
 

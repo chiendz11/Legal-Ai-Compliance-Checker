@@ -1,17 +1,28 @@
 from datetime import date
 
 from app.application.ports.knowledge import KnowledgeSnapshot
+from app.contracts.citation import CitationValidation
+from app.contracts.common import Context
 from app.contracts.pipeline import PipelineRequest
 from app.contracts.reasoning import ReasoningRequest
+from app.contracts.temporal import ApplicableRequirement
 
 
-def validate_request(request: PipelineRequest | ReasoningRequest, knowledge: KnowledgeSnapshot):
-    if request.knowledge_snapshot_sha256 != knowledge.sha256:
+def validate_context(context: Context, knowledge: KnowledgeSnapshot):
+    if context.knowledge_snapshot_sha256 != knowledge.sha256:
         raise ValueError("Knowledge snapshot checksum differs from the pinned case")
-    payload = request.payload
-    allowed = set()
-    for requirement in payload.requirements:
-        if requirement.ca_id != request.ca_id or requirement.phien_ban_id != request.phien_ban_id:
+
+
+def validate_requirements(
+    context: Context, requirements: list[ApplicableRequirement], knowledge: KnowledgeSnapshot
+):
+    case_ids = [r.yeu_cau_ca_id for r in requirements]
+    if len(case_ids) != len(set(case_ids)):
+        raise ValueError("Duplicate applicable requirement IDs")
+    if len({r.requirement_id for r in requirements}) != len(requirements):
+        raise ValueError("Only one resolved entry per requirement family is permitted")
+    for requirement in requirements:
+        if requirement.ca_id != context.ca_id or requirement.phien_ban_id != context.phien_ban_id:
             raise ValueError("Requirement belongs to a different case or deployment")
         if requirement.requirement_version_id:
             version = knowledge.versions.get(requirement.requirement_version_id)
@@ -25,11 +36,31 @@ def validate_request(request: PipelineRequest | ReasoningRequest, knowledge: Kno
                     end and relevant >= date.fromisoformat(str(end)[:10])
                 ):
                     raise ValueError("Resolved version is outside the [from, to) effective range")
-            allowed.update(
-                r["tieu_chi_id"] for r in knowledge.criteria_for(requirement.requirement_version_id)
-            )
-    if len({r.requirement_id for r in payload.requirements}) != len(payload.requirements):
-        raise ValueError("Only one resolved entry per requirement family is permitted")
+
+
+def validate_citations(context: Context, citations: list[CitationValidation]):
+    ids = [c.finding_id for c in citations]
+    if len(ids) != len(set(ids)):
+        raise ValueError("Duplicate citation finding IDs")
+    for citation in citations:
+        if (
+            citation.ca_id != context.ca_id
+            or citation.knowledge_version != context.legal_knowledge_version
+            or citation.lan_chay_id != context.run_id
+        ):
+            raise ValueError("Citation case, run or knowledge version mismatch")
+
+
+def validate_request(request: PipelineRequest | ReasoningRequest, knowledge: KnowledgeSnapshot):
+    validate_context(request, knowledge)
+    payload = request.payload
+    validate_requirements(request, payload.requirements, knowledge)
+    validate_citations(request, getattr(payload, "citations", []))
+    allowed = {
+        c["tieu_chi_id"]
+        for r in payload.requirements
+        for c in knowledge.criteria_for(r.requirement_version_id)
+    }
     if any(o.tieu_chi_id not in allowed for o in payload.observations):
         raise ValueError("Observation refers to a criterion outside the checklist")
     chunk_ids = {c.doan_id for c in payload.chunks}
@@ -49,10 +80,3 @@ def validate_request(request: PipelineRequest | ReasoningRequest, knowledge: Kno
             raise ValueError("Retrieval references a foreign criterion, requirement or chunk")
         if retrieval.lan_chay_id != request.run_id:
             raise ValueError("Retrieval run does not match envelope")
-    for citation in getattr(payload, "citations", []):
-        if (
-            citation.ca_id != request.ca_id
-            or citation.knowledge_version != request.legal_knowledge_version
-            or citation.lan_chay_id != request.run_id
-        ):
-            raise ValueError("Citation case, run or knowledge version mismatch")

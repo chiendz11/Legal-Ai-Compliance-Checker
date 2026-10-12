@@ -20,6 +20,7 @@ app/
 │   ├── validation.py          # Kiểm tra contracts ở ranh giới downstream
 │   └── pipelines/
 │       ├── assessment.py      # Interface full flow, chưa chạy bước 1–9
+│       ├── draft_assessment.py # Wiring bước 1–7 với upstream adapters được inject
 │       └── steps_5_7.py        # Pipeline đang hoạt động
 ├── modules/
 │   ├── intake/                # Bước 1
@@ -36,6 +37,9 @@ app/
 │   ├── reporting/             # Bước 9
 │   └── knowledge_curation/    # Nguồn luật, approval, release snapshot
 └── infrastructure/
+    ├── authorization/         # Identity/case/reviewer/curator adapters tương lai
+    ├── observability/         # Trace/audit adapters tương lai, X02 cho LLM thật
+    ├── reporting/             # Report storage/export adapters tương lai
     ├── knowledge/             # JSON snapshot adapter hiện có
     ├── persistence/           # SQLite adapter hiện có
     ├── llm/                   # Provider adapters tương lai
@@ -45,9 +49,11 @@ frontend/src/                  # Folder skeleton, chưa chọn framework/UI runt
 ├── features/                  # upload, assessments, review, reports, knowledge
 └── shared/                    # api, components
 scripts/                       # Import workbook, export OpenAPI, E2E HTTP
- tests/                        # Bộ regression và contract/API integration đang chạy
- data/                         # Knowledge public và data/private bị gitignore
- docs/                         # BRD, contracts, OpenAPI, architecture và hướng dẫn
+tests/                         # Regression, contract boundaries, workflow integration
+data/                          # Knowledge public và data/private bị gitignore
+docs/                          # BRD, contracts, OpenAPI, architecture và hướng dẫn
+configs/                       # Configuration ownership, chưa có cấu hình provider mới
+evals/gold/                    # Skeleton đánh giá chất lượng theo BRD mục 13
 ```
 
 ## Mapping BRD → module → contracts → trạng thái
@@ -94,6 +100,12 @@ Authorization (`AccessPolicy`) là interface cho phân quyền case/tenant/revie
 ## Tương thích và kiểm tra
 
 Các import cũ `app.contracts.models`, `app.services.*`, `app.knowledge`, `app.storage` vẫn hoạt động qua facade để consumer đang ghép bước 5–7 không bị vỡ. New code dùng canonical modules/contracts/infrastructure. URL API cũ, payload mẫu, SHA256 knowledge và SQLite schema không đổi; OpenAPI được export lại.
+
+Nhánh `feat/brd-system-skeleton-v2` bổ sung `contracts/workflow.py` và `DraftAssessmentWorkflow`. Workflow giữ C01 pin, kiểm tra profile/chunks/citations cùng hợp đồng, bảo toàn checklist và field scope khi Temporal tạo C05, rồi chuyển input đã ghép vào pipeline bước 5–7. `ObservationProvider` nối facts/gates đã xác minh với đề xuất rule/LLM. Workflow không tự tạo adapter mặc định và không trả báo cáo published. Upstream production quality chưa được chứng minh bằng test fixtures.
+
+Ports mới: `source_documents.py`, `evidence_search.py`, `review_store.py`, `report_store.py`. Infrastructure có chỗ đặt authorization, observability và reporting adapters. Frontend assessments được chia tiếp thành profile/checklist/evidence/compliance/citations/risks/recommendations. Xem [module integration](module_integration.md).
+
+Validation C05/C09 được tách thành helper riêng; API downstream không tạo một input pipeline giả để kiểm tra context. C07 consumer kiểm tra legal basis và decision-rule snapshot; C10 consumer kiểm tra risk rule, branch, criterion checklist, severity và legal basis trước khi chọn khuyến nghị. Duplicate requirement/citation/risk IDs bị từ chối.
 
 ```bash
 ruff check .

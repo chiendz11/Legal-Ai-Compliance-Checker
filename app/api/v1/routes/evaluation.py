@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.dependencies import get_services
-from app.application.validation import stage_context, validate_criteria
+from app.application.validation import stage_context, validate_criteria, validate_risks
 from app.bootstrap import Services
 from app.contracts.modules import (
     AggregationRequest,
@@ -87,13 +87,9 @@ def risks(request: RiskRequest, services: ServicesDependency):
 def recommendations(request: RecommendationRequest, services: ServicesDependency):
     try:
         context = stage_context(request, services.knowledge)
-        for risk in request.payload.risks:
-            if risk.ca_id != request.ca_id:
-                raise ValueError("Risk belongs to a different case")
-            if services.knowledge.risks.get(risk.rui_ro_id) != risk.risk_snapshot:
-                raise ValueError("Risk snapshot differs from pinned knowledge")
-            if risk.severity != risk.risk_snapshot["muc_do_co_so"]:
-                raise ValueError("Risk severity differs from pinned catalog")
+        validate_risks(
+            context, request.payload.risks, services.knowledge, request.payload.requirements
+        )
         return envelope(
             request,
             "Recommendation",
