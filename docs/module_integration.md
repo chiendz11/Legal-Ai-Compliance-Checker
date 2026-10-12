@@ -48,12 +48,12 @@ Luồng Applicable Law chỉ nhận profile/scope/knowledge. Citation Validator 
 
 - `core/validation.py` kiểm tra context snapshot, C05 và C09 độc lập. Request reasoning/pipeline tái sử dụng các helpers.
 - `application/validation.py` kiểm tra C07/C10 tại consumer boundaries. C07 legal basis/decision rule phải khớp knowledge snapshot. C10 rule/catalog/branch/criterion/version/severity/legal basis phải khớp; không cho downstream tự nâng severity hoặc đổi nguồn risk.
-- HTTP routes gọi validation/module services; không chứa rule pháp lý. Package services cũ đã được xóa; imports dùng module sở hữu. Payload/URL API vẫn giữ nguyên.
+- HTTP routes gọi validation/module services; không chứa rule pháp lý. Imports dùng module sở hữu. Reasoning nhận `CriterionReasoningInput`; pipeline nhận `Steps57Input` riêng.
 - `contracts/workflow.py` là checkpoint draft nội bộ để ghép module, không tạo thêm bảng DB cho logical contract.
 
 ## Adapter và ownership
 
-Imports trực tiếp sau khi xóa package services cũ:
+Imports theo module sở hữu:
 
 | Chức năng | Module canonical |
 |---|---|
@@ -67,7 +67,7 @@ Imports trực tiếp sau khi xóa package services cũ:
 | Request/context validation | `app.core.validation` |
 | Stable IDs | `app.core.ids` |
 
-Các facade cũ cho aggregation/risk/recommendation từng lấy requirements/citations từ request tổng. Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline application chịu trách nhiệm ghép các inputs này.
+Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline application chịu trách nhiệm ghép các inputs này. Contracts được import từ `contracts/reasoning.py`, `contracts/pipeline.py`, `contracts/risk.py` và các owning modules khác. Knowledge adapter ở `infrastructure/knowledge/snapshot.py`; run store ở `infrastructure/persistence/sqlite.py`.
 
 ```python
 from app.application.pipelines.steps_5_7 import evaluate
@@ -76,6 +76,26 @@ from app.modules.rule_aggregation.service import aggregate
 response = evaluate(pipeline_request, knowledge)
 results = aggregate(context, knowledge, criterion_results, applicable_requirements)
 ```
+
+Factory dùng một cấu hình `Settings` rõ ràng hoặc đọc environment khi không truyền settings:
+
+```python
+from pathlib import Path
+
+from app.core.config import Settings
+from app.main import create_app
+
+api = create_app(
+    settings=Settings(
+        knowledge_path=Path("data/knowledge.json"),
+        database_path=Path("data/private/runtime.sqlite3"),
+    )
+)
+```
+
+`bootstrap.py` là composition root tạo và nối adapters với ports, không phải import alias. `main.py` tạo FastAPI và router. Trong tests có thể inject `Services` bằng `create_app(settings=settings, services=services)` để thay storage mà không tạo DB mặc định.
+
+Các clients gọi riêng Reasoning gửi `contract_name=CriterionReasoningInput` và payload C05/C06/chunks/observations, theo `examples/reasoning.json`. C09/citations được gửi tới Risk hoặc pipeline; Reasoning từ chối payload pipeline với HTTP 422. Script E2E xây từng request đúng contract và đối chiếu output với pipeline.
 
 `CriterionProposalProvider` chỉ trả proposed finding/explanation/quotes. `ObservationProvider` ghép proposal với facts và gates do backend xác minh. Provider không sở hữu scope/source/absence/coverage gates. Không bật tất cả gates chỉ vì LLM trả confidence cao.
 

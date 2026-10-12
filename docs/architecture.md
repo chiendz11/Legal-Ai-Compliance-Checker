@@ -85,7 +85,7 @@ Skeleton C01–C04/C12/C13/X01/X02 là starter schemas/interface để team có 
 - Contracts không chứa lời gọi HTTP/DB/LLM. Module không sửa field thuộc owner khác.
 - Full-assessment skeleton giữ Applicable Law và Citation Validation độc lập đến Risk/Report. Scope không nhận contract citations làm input.
 
-C05 là context áp dụng cho case, được Temporal Resolver tạo và cả Retrieval/Reasoning sử dụng. C06 là evidence references; không thay thế checklist hoặc quyết định scope/version. Reasoning có input `CriterionReasoningInput` riêng chỉ chứa C05/C06/chunks/observations. Endpoint `/api/v1/reasoning` vẫn nhận payload `Steps57Input` cũ để tương thích.
+C05 là context áp dụng cho case, được Temporal Resolver tạo và cả Retrieval/Reasoning sử dụng. C06 là evidence references; không thay thế checklist hoặc quyết định scope/version. Endpoint `/api/v1/reasoning` nhận `CriterionReasoningInput` chỉ chứa C05/C06/chunks/observations. `Steps57Input` chỉ thuộc endpoint pipeline; citation branch hội tụ tại risk.
 
 C07 tổng hợp evidence cho một criterion; C08 nhóm findings C07 theo `yeu_cau_ca_id` và dùng aggregation rule. Risk đọc C07/C09; citation không sửa C08. Recommendation giữ severity và pending review.
 
@@ -99,7 +99,7 @@ Authorization (`AccessPolicy`) là interface cho phân quyền case/tenant/revie
 
 ## Tương thích và kiểm tra
 
-Package services cũ đã được xóa hoàn toàn. Pipeline dùng `app.application.pipelines.steps_5_7`, engines dùng `app.modules.*`, validation dùng `app.core.validation`/`app.application.validation`. Các facade `app.contracts.models`, `app.knowledge`, `app.storage` vẫn còn cho phạm vi imports tương ứng. URL API, payload mẫu, SHA256 knowledge và SQLite schema được giữ nguyên. Xem [hướng dẫn import canonical](module_integration.md) và [infrastructure adapters](../app/infrastructure/README.md).
+Pipeline dùng `app.application.pipelines.steps_5_7`, engines dùng `app.modules.*`, validation dùng `app.core.validation`/`app.application.validation`; contracts import theo owning module. Các file/package chuyển tiếp của cấu trúc trước đã được xóa. Factory nhận `Settings` hoặc adapters được inject qua `Services`; cấu hình mặc định đọc environment. Knowledge snapshot và SQLite schema giữ nguyên. Xem [hướng dẫn integration](module_integration.md) và [infrastructure adapters](../app/infrastructure/README.md).
 
 Nhánh `feat/brd-system-skeleton-v2` bổ sung `contracts/workflow.py` và `DraftAssessmentWorkflow`. Workflow giữ C01 pin, kiểm tra profile/chunks/citations cùng hợp đồng, bảo toàn checklist và field scope khi Temporal tạo C05, rồi chuyển input đã ghép vào pipeline bước 5–7. `ObservationProvider` nối facts/gates đã xác minh với đề xuất rule/LLM. Workflow không tự tạo adapter mặc định và không trả báo cáo published. Upstream production quality chưa được chứng minh bằng test fixtures.
 

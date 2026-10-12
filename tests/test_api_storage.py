@@ -3,12 +3,10 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import create_app
-
 
 @pytest.fixture
-def client(tmp_path):
-    return TestClient(create_app(database_path=tmp_path / "runtime.sqlite3"))
+def client(app_factory):
+    return TestClient(app_factory())
 
 
 def test_pipeline_roundtrip_and_idempotency(client, request_factory):
@@ -48,9 +46,9 @@ def test_invalid_input_is_422(client, request_factory, mutation):
     assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 422
 
 
-def test_workbook_runtime_tables_are_persisted(tmp_path, request_factory):
+def test_workbook_runtime_tables_are_persisted(tmp_path, app_factory, request_factory):
     path = tmp_path / "runtime.sqlite3"
-    client = TestClient(create_app(database_path=path))
+    client = TestClient(app_factory())
     payload = request_factory(finding="MISSING").model_dump(mode="json")
     assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 200
     with sqlite3.connect(path) as db:

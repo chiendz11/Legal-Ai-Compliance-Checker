@@ -1,24 +1,35 @@
+from dataclasses import replace
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.bootstrap import Services
-from app.main import create_app
+from app.core.config import Settings
 
 
-def test_reasoning_specific_contract_matches_existing_pipeline_input(tmp_path, request_factory):
-    client = TestClient(create_app(database_path=tmp_path / "runtime.sqlite3"))
-    legacy = request_factory(finding="MISSING").model_dump(mode="json")
-    direct = {**legacy, "contract_name": "CriterionReasoningInput"}
-    direct["payload"] = {k: v for k, v in legacy["payload"].items() if k != "citations"}
-    old = client.post("/api/v1/reasoning", json=legacy)
-    new = client.post("/api/v1/reasoning", json=direct)
-    assert old.status_code == new.status_code == 200
-    assert old.json()["payload"] == new.json()["payload"]
+def test_reasoning_uses_its_own_contract(app_factory, request_factory):
+    client = TestClient(app_factory())
+    pipeline = request_factory(finding="MISSING").model_dump(mode="json")
+    direct = {**pipeline, "contract_name": "CriterionReasoningInput"}
+    direct["payload"] = {k: v for k, v in pipeline["payload"].items() if k != "citations"}
+    result = client.post("/api/v1/reasoning", json=direct)
+    assert result.status_code == 200, result.text
+    assert all(item["finding"] == "MISSING" for item in result.json()["payload"])
     direct["payload"]["observations"].append(direct["payload"]["observations"][0])
     assert client.post("/api/v1/reasoning", json=direct).status_code == 422
 
 
+@pytest.mark.parametrize("include_citations", [False, True])
+def test_reasoning_rejects_pipeline_contract(app_factory, request_factory, include_citations):
+    client = TestClient(app_factory())
+    request = request_factory().model_dump(mode="json")
+    if not include_citations:
+        request["payload"].pop("citations")
+    assert client.post("/api/v1/reasoning", json=request).status_code == 422
+
+
 def test_composition_can_replace_storage_without_creating_sqlite(
-    tmp_path, knowledge, request_factory
+    tmp_path, app_factory, knowledge, request_factory
 ):
     class MemoryStore:
         def __init__(self):
@@ -33,7 +44,8 @@ def test_composition_can_replace_storage_without_creating_sqlite(
 
     database = tmp_path / "must-not-be-created.sqlite3"
     memory = MemoryStore()
-    client = TestClient(create_app(database_path=database, services=Services(knowledge, memory)))
+    settings = replace(Settings.from_env(), database_path=database)
+    client = TestClient(app_factory(settings=settings, services=Services(knowledge, memory)))
     response = client.post(
         "/api/v1/pipeline/steps-5-7",
         json=request_factory(finding="MISSING").model_dump(mode="json"),
@@ -43,11 +55,11 @@ def test_composition_can_replace_storage_without_creating_sqlite(
     assert not database.exists()
 
 
-def test_environment_can_select_knowledge_snapshot(tmp_path, monkeypatch):
+def test_environment_can_select_knowledge_snapshot(tmp_path, monkeypatch, app_factory):
     missing = tmp_path / "missing-snapshot.json"
     monkeypatch.setenv("KNOWLEDGE_PATH", str(missing))
     try:
-        create_app(database_path=tmp_path / "runtime.sqlite3")
+        app_factory()
     except FileNotFoundError as exc:
         assert exc.filename == str(missing)
     else:

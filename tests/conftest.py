@@ -1,9 +1,22 @@
 from copy import deepcopy
+from dataclasses import replace
 
 import pytest
 
-from app.contracts.models import PipelineRequest
-from app.knowledge import Knowledge
+from app.contracts.pipeline import PipelineRequest
+from app.core.config import Settings
+from app.infrastructure.knowledge.snapshot import Knowledge
+from app.main import create_app
+
+
+@pytest.fixture
+def app_factory(tmp_path):
+    def build(*, settings=None, services=None):
+        if settings is None:
+            settings = replace(Settings.from_env(), database_path=tmp_path / "runtime.sqlite3")
+        return create_app(settings=settings, services=services)
+
+    return build
 
 
 @pytest.fixture(scope="session")

@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.application.pipelines.steps_5_7 import evaluate
-from app.contracts.models import CriterionResult, Gates
+from app.contracts.reasoning import CriterionResult, Gates
 
 
 def test_all_satisfied_no_remediation(knowledge, request_factory):

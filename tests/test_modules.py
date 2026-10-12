@@ -1,11 +1,15 @@
 from fastapi.testclient import TestClient
 
-from app.main import create_app
+from app.contracts.reasoning import ReasoningPayload, ReasoningRequest
 
 
-def test_modules_consume_predecessor_contracts_without_retrieval(tmp_path, request_factory):
-    client = TestClient(create_app(database_path=tmp_path / "runtime.sqlite3"))
-    request = request_factory(finding="MISSING").model_dump(mode="json")
+def test_modules_consume_predecessor_contracts_without_retrieval(app_factory, request_factory):
+    client = TestClient(app_factory())
+    pipeline = request_factory(finding="MISSING")
+    request = ReasoningRequest(
+        **pipeline.model_dump(exclude={"contract_name", "payload"}),
+        payload=ReasoningPayload(**pipeline.payload.model_dump(exclude={"citations"})),
+    ).model_dump(mode="json")
     context = {k: v for k, v in request.items() if k not in ("contract_name", "payload")}
     reasoning = client.post("/api/v1/reasoning", json=request)
     assert reasoning.status_code == 200, reasoning.text

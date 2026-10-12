@@ -29,7 +29,12 @@ def main():
             response.raise_for_status()
             return response.json()
 
-        criteria = post("/api/v1/reasoning", request)["payload"]
+        reasoning_request = {
+            **context,
+            "contract_name": "CriterionReasoningInput",
+            "payload": {k: v for k, v in request["payload"].items() if k != "citations"},
+        }
+        criteria = post("/api/v1/reasoning", reasoning_request)["payload"]
         intermediate = {
             **context,
             "payload": {

@@ -1,0 +1,157 @@
+{
+  "ca_id": "CA_TEST",
+  "phien_ban_id": "DEPLOY_TEST",
+  "rule_version": "RULE_TEST",
+  "legal_knowledge_version": "LEGAL_TEST",
+  "knowledge_snapshot_sha256": "c0446c44756d78eb448c16b21236de6e4585fa775becf042cbba574360ad86d7",
+  "run_id": "RUN_TEST",
+  "trace_id": "TRACE_TEST",
+  "payload": {
+    "hop_dong_id": "HD_TEST",
+    "requirements": [
+      {
+        "yeu_cau_ca_id": "YCCA_TEST",
+        "ca_id": "CA_TEST",
+        "requirement_id": "FAM_PARTY_IDENTITY",
+        "requirement_version_id": "PV_GYC005",
+        "scope_status": "MATCH",
+        "version_status": "RESOLVED",
+        "applicability_status": "CONFIRMED",
+        "moc_ap_dung": "2026-01-15",
+        "phien_ban_id": "DEPLOY_TEST",
+        "profile_snapshot_json": {
+          "fixture_only": true,
+          "notice": "SYNTHETIC_EXAMPLE_NOT_REAL"
+        }
+      }
+    ],
+    "chunks": [
+      {
+        "doan_id": "D_TEST",
+        "hop_dong_id": "HD_TEST",
+        "noi_dung": "Bằng chứng đã đối chiếu cho tiêu chí hiện tại.",
+        "page_start": 1,
+        "page_end": 1
+      }
+    ],
+    "retrieval": [
+      {
+        "truy_xuat_id": "RTX_0",
+        "yeu_cau_ca_id": "YCCA_TEST",
+        "tieu_chi_id": "TC_PV_GYC005_01",
+        "doan_id": "D_TEST",
+        "thu_hang": 1,
+        "duoc_chon": true,
+        "retrieval_version": "RET_TEST",
+        "index_version": "IDX_TEST",
+        "lan_chay_id": "RUN_TEST"
+      },
+      {
+        "truy_xuat_id": "RTX_1",
+        "yeu_cau_ca_id": "YCCA_TEST",
+        "tieu_chi_id": "TC_PV_GYC005_02",
+        "doan_id": "D_TEST",
+        "thu_hang": 1,
+        "duoc_chon": true,
+        "retrieval_version": "RET_TEST",
+        "index_version": "IDX_TEST",
+        "lan_chay_id": "RUN_TEST"
+      },
+      {
+        "truy_xuat_id": "RTX_2",
+        "yeu_cau_ca_id": "YCCA_TEST",
+        "tieu_chi_id": "TC_PV_GYC005_03",
+        "doan_id": "D_TEST",
+        "thu_hang": 1,
+        "duoc_chon": true,
+        "retrieval_version": "RET_TEST",
+        "index_version": "IDX_TEST",
+        "lan_chay_id": "RUN_TEST"
+      }
+    ],
+    "observations": [
+      {
+        "tieu_chi_id": "TC_PV_GYC005_01",
+        "proposed_finding": "MISSING",
+        "giai_thich": "Fixture observation",
+        "gates": {
+          "coverage_complete": true,
+          "absence_verified": true,
+          "evidence_validated": true,
+          "source_verified": true,
+          "scope_confirmed": true,
+          "version_resolved": true,
+          "evidence_conflict": false,
+          "exceptions_resolved": true
+        },
+        "evidence": [
+          {
+            "doan_id": "D_TEST",
+            "trich_dan": "Bằng chứng đã đối chiếu cho tiêu chí hiện tại.",
+            "ky_tu_bat_dau": 0,
+            "ky_tu_ket_thuc": 46
+          }
+        ],
+        "local_applicability": "MATCH",
+        "mandatory_confirmed": true,
+        "all_pages_readable": true,
+        "all_related_documents_received": true
+      },
+      {
+        "tieu_chi_id": "TC_PV_GYC005_02",
+        "proposed_finding": "MISSING",
+        "giai_thich": "Fixture observation",
+        "gates": {
+          "coverage_complete": true,
+          "absence_verified": true,
+          "evidence_validated": true,
+          "source_verified": true,
+          "scope_confirmed": true,
+          "version_resolved": true,
+          "evidence_conflict": false,
+          "exceptions_resolved": true
+        },
+        "evidence": [
+          {
+            "doan_id": "D_TEST",
+            "trich_dan": "Bằng chứng đã đối chiếu cho tiêu chí hiện tại.",
+            "ky_tu_bat_dau": 0,
+            "ky_tu_ket_thuc": 46
+          }
+        ],
+        "local_applicability": "MATCH",
+        "mandatory_confirmed": true,
+        "all_pages_readable": true,
+        "all_related_documents_received": true
+      },
+      {
+        "tieu_chi_id": "TC_PV_GYC005_03",
+        "proposed_finding": "MISSING",
+        "giai_thich": "Fixture observation",
+        "gates": {
+          "coverage_complete": true,
+          "absence_verified": true,
+          "evidence_validated": true,
+          "source_verified": true,
+          "scope_confirmed": true,
+          "version_resolved": true,
+          "evidence_conflict": false,
+          "exceptions_resolved": true
+        },
+        "evidence": [
+          {
+            "doan_id": "D_TEST",
+            "trich_dan": "Bằng chứng đã đối chiếu cho tiêu chí hiện tại.",
+            "ky_tu_bat_dau": 0,
+            "ky_tu_ket_thuc": 46
+          }
+        ],
+        "local_applicability": "MATCH",
+        "mandatory_confirmed": true,
+        "all_pages_readable": true,
+        "all_related_documents_received": true
+      }
+    ]
+  },
+  "contract_name": "CriterionReasoningInput"
+}

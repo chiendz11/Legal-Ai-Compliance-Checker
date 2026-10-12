@@ -146,15 +146,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/PipelineRequest"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ReasoningRequest"
-                  }
-                ],
-                "title": "Request"
+                "$ref": "#/components/schemas/ReasoningRequest"
               }
             }
           },

@@ -12,8 +12,7 @@ from app.contracts.modules import (
     RecommendationRequest,
     RiskRequest,
 )
-from app.contracts.pipeline import PipelineRequest
-from app.contracts.reasoning import ReasoningPayload, ReasoningRequest
+from app.contracts.reasoning import ReasoningRequest
 from app.modules.compliance_reasoning.service import reason
 from app.modules.recommendation.service import recommend
 from app.modules.risk.service import aggregate_risks
@@ -33,13 +32,8 @@ def envelope(request, name, payload):
 
 
 @router.post("/reasoning", response_model=ModuleResponse)
-def reasoning(request: PipelineRequest | ReasoningRequest, services: ServicesDependency):
+def reasoning(request: ReasoningRequest, services: ServicesDependency):
     try:
-        if isinstance(request, PipelineRequest):
-            request = ReasoningRequest(
-                **request.model_dump(exclude={"contract_name", "payload"}),
-                payload=ReasoningPayload(**request.payload.model_dump(exclude={"citations"})),
-            )
         return envelope(request, "CriterionReasoning", reason(request, services.knowledge))
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

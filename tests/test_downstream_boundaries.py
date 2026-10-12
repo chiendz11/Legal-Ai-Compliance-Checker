@@ -3,12 +3,10 @@ from copy import deepcopy
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import create_app
-
 
 @pytest.fixture
-def prepared(tmp_path, request_factory):
-    client = TestClient(create_app(database_path=tmp_path / "runtime.sqlite3"))
+def prepared(app_factory, request_factory):
+    client = TestClient(app_factory())
     request = request_factory(finding="MISSING").model_dump(mode="json")
     response = client.post("/api/v1/pipeline/steps-5-7", json=request)
     assert response.status_code == 200, response.text
