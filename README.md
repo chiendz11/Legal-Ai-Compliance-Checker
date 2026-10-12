@@ -6,7 +6,9 @@ Backend Python/FastAPI triển khai **bước 5–7 của mục 6 (Quy trình ng
 2. **Risk Aggregation:** C07 + C09 → C10; giữ nguồn `COMPLIANCE`, `CITATION`, `VERIFICATION` riêng.
 3. **Recommendation / Remediation:** C10 + knowledge + context → C11; mọi kết quả chờ human review.
 
-Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh phát triển: `feat/brd-steps-5-7`.
+Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton/refactor toàn hệ thống: `feat/brd-system-skeleton`.
+
+Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend đã tách API/application/modules/infrastructure; `frontend/` mới là folder skeleton, chưa có UI runtime.
 
 ## Chạy local
 
@@ -33,7 +35,7 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/pipeline/steps-5-7 \
 
 | Endpoint | Input | Output |
 |---|---|---|
-| `POST /api/v1/reasoning` | `Steps57Input`: C05, C06, chunks, observations | `CriterionReasoning` / C07 |
+| `POST /api/v1/reasoning` | `CriterionReasoningInput` (hoặc `Steps57Input` cũ): C05, C06, chunks, observations | `CriterionReasoning` / C07 |
 | `POST /api/v1/aggregation` | `RequirementAggregationInput`: C05 + C07 | `RequirementAggregation` / C08 |
 | `POST /api/v1/risks` | `RiskInput`: C05 + C07 + C09 | `RiskResult` / C10 |
 | `POST /api/v1/recommendations` | `RecommendationInput`: C05 + C10 | `Recommendation` / C11 |
@@ -42,6 +44,8 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/pipeline/steps-5-7 \
 | `GET /api/v1/knowledge` | — | Checksum, version, số record |
 
 Envelope có `ca_id`, `phien_ban_id`, `rule_version`, `legal_knowledge_version`, `knowledge_snapshot_sha256`, `run_id`, `trace_id`, `contract_version`. Output có thêm `contract_name`, `produced_at`, `payload`. Consumer module nhận trực tiếp output predecessor; không cần chạy lại retrieval/reasoning. API independent là phép tính thuần; endpoint pipeline mới ghi DB.
+
+Bước 5–7 nằm trong `app/modules/`, pipeline ở `app/application/pipelines/steps_5_7.py`, adapters JSON/SQLite ở `app/infrastructure/`. Các import cũ vẫn có compatibility facade.
 
 Schema input/output được khai báo trong [`app/contracts/`](app/contracts/); OpenAPI sinh tự động. Xem [hướng dẫn tích hợp](docs/implementation.md) về trường dữ liệu, ownership, evidence và persistence.
 
@@ -70,6 +74,12 @@ Engine bước 5 nhận **structured observations từ adapter rule/LLM hoặc r
 SQLite là adapter MVP lưu JSON snapshots trong các bảng runtime, không phải migration hoàn chỉnh cho mọi cột của workbook. Case pin bất biến, run idempotent, ghi output/evidence/audit trong một transaction; đổi input cùng run hoặc đổi deployment của case trả `409`.
 
 ## Kiểm tra
+
+Chạy E2E qua HTTP sau khi bật server:
+
+```bash
+python scripts/e2e_steps_5_7.py
+```
 
 ```bash
 ruff check .

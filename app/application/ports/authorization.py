@@ -1,0 +1,9 @@
+"""BRD role/tenant authorization seam. No permissive default implementation is supplied."""
+
+from typing import Protocol
+
+
+class AccessPolicy(Protocol):
+    def require_case_access(self, actor_id: str, tenant_id: str, ca_id: str) -> None: ...
+    def require_review_permission(self, actor_id: str, tenant_id: str, ca_id: str) -> None: ...
+    def require_knowledge_curator(self, actor_id: str) -> None: ...

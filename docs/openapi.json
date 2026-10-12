@@ -7,6 +7,9 @@
   "paths": {
     "/health": {
       "get": {
+        "tags": [
+          "system"
+        ],
         "summary": "Health",
         "operationId": "health_health_get",
         "responses": {
@@ -23,6 +26,9 @@
     },
     "/api/v1/knowledge": {
       "get": {
+        "tags": [
+          "system"
+        ],
         "summary": "Snapshot",
         "operationId": "snapshot_api_v1_knowledge_get",
         "responses": {
@@ -39,6 +45,9 @@
     },
     "/api/v1/pipeline/steps-5-7": {
       "post": {
+        "tags": [
+          "assessments"
+        ],
         "summary": "Pipeline",
         "operationId": "pipeline_api_v1_pipeline_steps_5_7_post",
         "requestBody": {
@@ -77,6 +86,9 @@
     },
     "/api/v1/cases/{ca_id}/runs/{run_id}": {
       "get": {
+        "tags": [
+          "assessments"
+        ],
         "summary": "Get Run",
         "operationId": "get_run_api_v1_cases__ca_id__runs__run_id__get",
         "parameters": [
@@ -125,13 +137,24 @@
     },
     "/api/v1/reasoning": {
       "post": {
+        "tags": [
+          "evaluation"
+        ],
         "summary": "Reasoning",
         "operationId": "reasoning_api_v1_reasoning_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PipelineRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/PipelineRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ReasoningRequest"
+                  }
+                ],
+                "title": "Request"
               }
             }
           },
@@ -163,6 +186,9 @@
     },
     "/api/v1/aggregation": {
       "post": {
+        "tags": [
+          "evaluation"
+        ],
         "summary": "Aggregation",
         "operationId": "aggregation_api_v1_aggregation_post",
         "requestBody": {
@@ -201,6 +227,9 @@
     },
     "/api/v1/risks": {
       "post": {
+        "tags": [
+          "evaluation"
+        ],
         "summary": "Risks",
         "operationId": "risks_api_v1_risks_post",
         "requestBody": {
@@ -239,6 +268,9 @@
     },
     "/api/v1/recommendations": {
       "post": {
+        "tags": [
+          "evaluation"
+        ],
         "summary": "Recommendations",
         "operationId": "recommendations_api_v1_recommendations_post",
         "requestBody": {
@@ -1402,6 +1434,118 @@
           "excluded_requirements"
         ],
         "title": "PipelineResult"
+      },
+      "ReasoningPayload": {
+        "properties": {
+          "hop_dong_id": {
+            "type": "string",
+            "title": "Hop Dong Id"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicableRequirement"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Requirements"
+          },
+          "chunks": {
+            "items": {
+              "$ref": "#/components/schemas/Chunk"
+            },
+            "type": "array",
+            "title": "Chunks"
+          },
+          "retrieval": {
+            "items": {
+              "$ref": "#/components/schemas/RetrievalEvidence"
+            },
+            "type": "array",
+            "title": "Retrieval"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array",
+            "title": "Observations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hop_dong_id",
+          "requirements"
+        ],
+        "title": "ReasoningPayload",
+        "description": "C05 + C06 + evidence/observations. Citation validation is a separate branch."
+      },
+      "ReasoningRequest": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Contract Version",
+            "default": "1.0"
+          },
+          "ca_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Ca Id"
+          },
+          "phien_ban_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Phien Ban Id"
+          },
+          "rule_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Rule Version"
+          },
+          "legal_knowledge_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Legal Knowledge Version"
+          },
+          "knowledge_snapshot_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Knowledge Snapshot Sha256"
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Run Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Trace Id"
+          },
+          "contract_name": {
+            "type": "string",
+            "const": "CriterionReasoningInput",
+            "title": "Contract Name",
+            "default": "CriterionReasoningInput"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReasoningPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ca_id",
+          "phien_ban_id",
+          "rule_version",
+          "legal_knowledge_version",
+          "knowledge_snapshot_sha256",
+          "run_id",
+          "trace_id",
+          "payload"
+        ],
+        "title": "ReasoningRequest"
       },
       "Recommendation": {
         "properties": {

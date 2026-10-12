@@ -3,16 +3,13 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.contracts.models import (
-    ApplicableRequirement,
-    CitationValidation,
-    Context,
-    CriterionResult,
-    Model,
-    Recommendation,
-    RequirementResult,
-    RiskResult,
-)
+from app.contracts.aggregation import RequirementResult
+from app.contracts.citation import CitationValidation
+from app.contracts.common import Context, Model
+from app.contracts.reasoning import CriterionResult
+from app.contracts.recommendation import Recommendation
+from app.contracts.risk import RiskResult
+from app.contracts.temporal import ApplicableRequirement
 
 
 class AggregationPayload(Model):
