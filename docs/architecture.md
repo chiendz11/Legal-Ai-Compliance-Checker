@@ -71,10 +71,10 @@ evals/gold/                      # Skeleton đánh giá chất lượng theo BRD
 | Risk | BR-11, BR-25 | C07 + C09 + risk rules/catalog → C10 | Đã chạy |
 | Recommendation | BR-12 | C10 + requirement/context + template/link → C11 | Đã chạy bằng template |
 | Human Review | BR-14, BR-18, AC-06 | AI output + reviewer → C12 | Interface + schema |
-| Report | BR-15, AC-11 | C02/C05/C07–C12 + snapshot → C13 | Interface + schema |
+| Report | BR-15, AC-11 | C02/C05/C07–C12 + snapshot → C13 | Typed schema + DRAFT helper; export/publish chưa có |
 | Knowledge Curation | BQ-08, BO-02 | Curator-approved knowledge → X01 | Interface; JSON import/checksum đã có |
 
-Skeleton C01–C04/C12/C13/X01/X02 là starter schemas/interface để team có thể mở rộng; chúng chưa chứng minh acceptance criteria tương ứng đã hoàn thành. Profile/report có các JSON object cần hoàn thiện theo bảng runtime khi xây module. Các interface `Protocol` không có giả lập kết quả hoặc route trả thành công cho chức năng chưa có.
+Skeleton C01–C04/C12/C13/X01/X02 là starter schemas/interface để team có thể mở rộng; chúng chưa chứng minh acceptance criteria tương ứng đã hoàn thành. Profile C02 đã có fields/subjects/time markers typed và evidence provenance. Report có các sections typed; summary/audit vẫn là JSON objects cần mở rộng khi tích hợp publishing. Các interface `Protocol` không có giả lập kết quả hoặc route trả thành công cho chức năng chưa có.
 
 ## Ranh giới dependency
 
@@ -121,3 +121,7 @@ python scripts/e2e_steps_5_7.py
 ```
 
 Script gọi reasoning → aggregation → risk → recommendation; so sánh với pipeline, GET snapshot và kiểm tra idempotency. Mỗi lần có run ID mới; output mặc định ở `data/private/e2e_result.json`.
+
+## Phát triển song song cho 5 người
+
+Xem [hướng dẫn bàn giao](parallel_development.md): schemas tại `contracts/handoffs.py`, generated JSON Schema, bảy scenario JSON/DOCX có checksum và tests theo từng người. `devtools/` chỉ chứa development helpers, không được import bởi runtime modules. Pipeline bước 5–7 gọi entry point Người 4 `evaluate_compliance`, rồi hợp nhất nhánh citation; draft workflow giữ C09 để tạo input report.

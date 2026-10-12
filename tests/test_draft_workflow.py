@@ -4,11 +4,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.business_modules.document_intelligence.service import DocumentIntelligenceResult
 from app.contracts.assessment import AssessmentCase
 from app.contracts.citation import CitationExtraction, CitationValidation
 from app.contracts.common import Context
-from app.contracts.document_intelligence import ContractProfile
+from app.contracts.document_intelligence import ContractProfile, DocumentIntelligenceResult
 from app.contracts.scope import ScopeResolution
 from app.workflows.pipelines.draft_assessment import DraftAssessmentWorkflow, DraftModules
 
@@ -67,9 +66,7 @@ def assemble(request, knowledge, citation_status=None):
             )
         ]
     document = DocumentIntelligenceResult(
-        contract_profile=ContractProfile(
-            hop_dong_id=case.hop_dong_id, profile={"fixture_only": True}
-        ),
+        contract_profile=ContractProfile(hop_dong_id=case.hop_dong_id, profile={}),
         chunks=request.payload.chunks,
         citations=extracted,
     )

@@ -1,0 +1,551 @@
+{
+  "context": {
+    "contract_version": "1.0",
+    "ca_id": "CA_FIXTURE_STALE_CITATION",
+    "phien_ban_id": "DEPLOY_PARALLEL_V1",
+    "rule_version": "RULE_PARALLEL_V1",
+    "legal_knowledge_version": "LEGAL_PARALLEL_V1",
+    "knowledge_snapshot_sha256": "c0446c44756d78eb448c16b21236de6e4585fa775becf042cbba574360ad86d7",
+    "run_id": "RUN_FIXTURE_STALE_CITATION",
+    "trace_id": "TRACE_FIXTURE_STALE_CITATION"
+  },
+  "hop_dong_id": "HD_FIXTURE_STALE_CITATION",
+  "criterion_results": [
+    {
+      "ket_qua_id": "KQ_fc3d0ebf-7831-5cbf-98aa-a1b968df8a8a",
+      "ca_id": "CA_FIXTURE_STALE_CITATION",
+      "yeu_cau_ca_id": "YCCA_FIXTURE",
+      "tieu_chi_id": "TC_PV_GYC005_01",
+      "finding": "SATISFIED",
+      "giai_thich": "Synthetic observation; verification gates are fixture inputs",
+      "gates": {
+        "coverage_complete": true,
+        "absence_verified": true,
+        "evidence_validated": true,
+        "source_verified": true,
+        "scope_confirmed": true,
+        "version_resolved": true,
+        "evidence_conflict": false,
+        "exceptions_resolved": true
+      },
+      "uncertainty_reason": null,
+      "pham_vi_ket_luan": "CURRENT_CRITERION",
+      "evidence": [
+        {
+          "doan_id": "D_FIXTURE_STALE_CITATION",
+          "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+          "ky_tu_bat_dau": 0,
+          "ky_tu_ket_thuc": 375
+        }
+      ],
+      "external_evidence": [],
+      "legal_basis_ids": [
+        "PV_GYC005",
+        "DKPL0001",
+        "VBPL001"
+      ],
+      "tieu_chi_snapshot_json": {
+        "criterion": {
+          "tieu_chi_id": "TC_PV_GYC005_01",
+          "requirement_version_id": "PV_GYC005",
+          "thu_tu": 1,
+          "noi_dung": "Tên bên bán và bên mua xác định được.",
+          "loai_kiem_tra": "NOI_DUNG_BAT_BUOC",
+          "dieu_kien": "{\"case_facts_required\":true,\"criterion_target_only\":true,\"exception_ids\":[],\"local_applicability_only\":true,\"not_selected_policy\":null,\"optional_choice\":false,\"requirement_version_id\":\"PV_GYC005\",\"scope_missing_policy\":\"UNKNOWN\"}",
+          "bang_chung_can_thiet": "Chỉ kiểm tra Tên bên bán và bên mua xác định được. Hồ sơ liên quan: tên đầy đủ bên bán, tên đầy đủ bên mua, tư cách người đại diện nếu có. Phụ lục dẫn chiếu chưa nhận hoặc text OCR không đủ thì chưa xác nhận vắng nội dung.",
+          "missing_policy": "MISSING_CHI_KHI_NOI_DUNG_BAT_BUOC_VA_DA_KIEM_TRA_TOAN_BO",
+          "trang_thai": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "human_verified": 0,
+          "bat_buoc": 1,
+          "loai_du_lieu": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "source_dieu_khoan_id": "DKPL0001",
+          "can_cu_cu_the": "19/2023/QH15; Điều 23 khoản 3 điểm a",
+          "url_can_cu": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2023/7/luat19_2023.pdf",
+          "pham_vi_ap_dung_chi_tiet": "Quan hệ doanh nghiệp/chủ thể kinh doanh với người tiêu dùng theo Điều 3 Luật 19/2023; mục đích tiêu dùng, sinh hoạt, không thương mại phải có căn cứ. Nội dung Điều 23 khoản 3 chỉ bắt buộc trong hợp đồng theo mẫu thực tế. Xác nhận phiên bản và chuyển tiếp tại mốc nghĩa vụ.",
+          "ngoai_le_can_xet": "Chỉ kiểm tra nội dung bắt buộc của hợp đồng theo mẫu; quan hệ doanh nghiệp phục vụ thương mại không tự thuộc phạm vi. Thành phần liên hệ khác chỉ khi có; cấu thành giá khi luật yêu cầu. Luật cho phép thỏa thuận/mặc định và điều kiện phát sinh của đúng tiêu chí phải được xét; dữ kiện chưa rõ là UNKNOWN.",
+          "ngay_ra_soat": "2026-10-07",
+          "trang_thai_nguon": "AI_DOI_CHIEU_NGUON_CHINH_THUC_CHUA_DUYET",
+          "noi_dung_bat_buoc_trong_hd": 1,
+          "pham_vi_kiem_tra": "NOI_DUNG_HOP_DONG_THEO_MAU",
+          "can_khac_phuc_json": "{\"MISSING\":\"ADD_MANDATORY_CONTENT\",\"SATISFIED\":null,\"UNKNOWN\":\"REQUEST_EVIDENCE\",\"VIOLATED\":\"AMEND_OR_CORRECT_PROVEN_BREACH\",\"scope_and_version_required\":true,\"source_required\":true}"
+        },
+        "decision_rule": {
+          "quy_tac_id": "QD_TC_PV_GYC005_01_SATISFIED",
+          "tieu_chi_id": "TC_PV_GYC005_01",
+          "finding": "SATISFIED",
+          "dieu_kien_json": "{\"criterion_target_only\":true,\"enabled\":true,\"gate\":{\"evidence_validated\":true,\"exceptions_resolved\":true,\"no_unresolved_conflict\":true,\"scope_confirmed\":true,\"source_available\":true,\"version_resolved\":true},\"human_approval_required_for_final\":true,\"numeric_rule\":null,\"predicate\":\"Chỉ kết luận SATISFIED cho mệnh đề: Tên bên bán và bên mua xác định được. Tên hai bên và người ký xác định được; tổ chức/cá nhân được phân biệt đúng. Tên trong văn bản chưa chứng minh tư cách hoặc thẩm quyền ngoài đời. Không yêu cầu toàn bộ yếu tố của nhóm nếu chúng nằm ngoài mệnh đề này.\",\"scope_of_facts\":\"CURRENT_CRITERION\",\"template_output\":\"DRAFT\"}",
+          "ly_do_chuan": "Chỉ kết luận SATISFIED cho mệnh đề: Tên bên bán và bên mua xác định được. Tên hai bên và người ký xác định được; tổ chức/cá nhân được phân biệt đúng. Tên trong văn bản chưa chứng minh tư cách hoặc thẩm quyền ngoài đời. Không yêu cầu toàn bộ yếu tố của nhóm nếu chúng nằm ngoài mệnh đề này.",
+          "uu_tien": 60,
+          "trang_thai": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "human_verified": 0,
+          "rule_version": "CAN_HO_SEED_RULES_20261007"
+        },
+        "mandatory_contract_content": true,
+        "observation": {
+          "tieu_chi_id": "TC_PV_GYC005_01",
+          "proposed_finding": "SATISFIED",
+          "giai_thich": "Synthetic observation; verification gates are fixture inputs",
+          "gates": {
+            "coverage_complete": true,
+            "absence_verified": true,
+            "evidence_validated": true,
+            "source_verified": true,
+            "scope_confirmed": true,
+            "version_resolved": true,
+            "evidence_conflict": false,
+            "exceptions_resolved": true
+          },
+          "evidence": [
+            {
+              "doan_id": "D_FIXTURE_STALE_CITATION",
+              "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+              "ky_tu_bat_dau": 0,
+              "ky_tu_ket_thuc": 375
+            }
+          ],
+          "external_evidence": [],
+          "local_applicability": "MATCH",
+          "exclusion_reason": null,
+          "mandatory_confirmed": true,
+          "all_pages_readable": true,
+          "all_related_documents_received": true,
+          "template_field_unfilled": false,
+          "facts": {},
+          "facts_verified": false,
+          "model_version": "FIXTURE_STRUCTURED_NO_LLM",
+          "prompt_version": "NOT_USED"
+        }
+      },
+      "model_version": "FIXTURE_STRUCTURED_NO_LLM",
+      "prompt_version": "NOT_USED",
+      "lan_chay_id": "RUN_FIXTURE_STALE_CITATION",
+      "review_status": "PENDING",
+      "mandatory": true,
+      "excluded": false,
+      "exclusion_reason": null
+    },
+    {
+      "ket_qua_id": "KQ_ef176f3d-5dfe-56fc-b6bf-85cd42a47b0f",
+      "ca_id": "CA_FIXTURE_STALE_CITATION",
+      "yeu_cau_ca_id": "YCCA_FIXTURE",
+      "tieu_chi_id": "TC_PV_GYC005_02",
+      "finding": "SATISFIED",
+      "giai_thich": "Synthetic observation; verification gates are fixture inputs",
+      "gates": {
+        "coverage_complete": true,
+        "absence_verified": true,
+        "evidence_validated": true,
+        "source_verified": true,
+        "scope_confirmed": true,
+        "version_resolved": true,
+        "evidence_conflict": false,
+        "exceptions_resolved": true
+      },
+      "uncertainty_reason": null,
+      "pham_vi_ket_luan": "CURRENT_CRITERION",
+      "evidence": [
+        {
+          "doan_id": "D_FIXTURE_STALE_CITATION",
+          "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+          "ky_tu_bat_dau": 0,
+          "ky_tu_ket_thuc": 375
+        }
+      ],
+      "external_evidence": [],
+      "legal_basis_ids": [
+        "PV_GYC005",
+        "DKPL0001",
+        "VBPL001"
+      ],
+      "tieu_chi_snapshot_json": {
+        "criterion": {
+          "tieu_chi_id": "TC_PV_GYC005_02",
+          "requirement_version_id": "PV_GYC005",
+          "thu_tu": 2,
+          "noi_dung": "Địa chỉ của các bên xác định được.",
+          "loai_kiem_tra": "NOI_DUNG_BAT_BUOC",
+          "dieu_kien": "{\"case_facts_required\":true,\"criterion_target_only\":true,\"exception_ids\":[],\"local_applicability_only\":true,\"not_selected_policy\":null,\"optional_choice\":false,\"requirement_version_id\":\"PV_GYC005\",\"scope_missing_policy\":\"UNKNOWN\"}",
+          "bang_chung_can_thiet": "Chỉ kiểm tra Địa chỉ của các bên xác định được. Hồ sơ liên quan: địa chỉ bên bán, địa chỉ bên mua, địa chỉ nhận thông báo khi khác. Phụ lục dẫn chiếu chưa nhận hoặc text OCR không đủ thì chưa xác nhận vắng nội dung.",
+          "missing_policy": "MISSING_CHI_KHI_NOI_DUNG_BAT_BUOC_VA_DA_KIEM_TRA_TOAN_BO",
+          "trang_thai": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "human_verified": 0,
+          "bat_buoc": 1,
+          "loai_du_lieu": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "source_dieu_khoan_id": "DKPL0001",
+          "can_cu_cu_the": "19/2023/QH15; Điều 23 khoản 3 điểm a",
+          "url_can_cu": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2023/7/luat19_2023.pdf",
+          "pham_vi_ap_dung_chi_tiet": "Quan hệ doanh nghiệp/chủ thể kinh doanh với người tiêu dùng theo Điều 3 Luật 19/2023; mục đích tiêu dùng, sinh hoạt, không thương mại phải có căn cứ. Nội dung Điều 23 khoản 3 chỉ bắt buộc trong hợp đồng theo mẫu thực tế. Xác nhận phiên bản và chuyển tiếp tại mốc nghĩa vụ.",
+          "ngoai_le_can_xet": "Chỉ kiểm tra nội dung bắt buộc của hợp đồng theo mẫu; quan hệ doanh nghiệp phục vụ thương mại không tự thuộc phạm vi. Thành phần liên hệ khác chỉ khi có; cấu thành giá khi luật yêu cầu. Luật cho phép thỏa thuận/mặc định và điều kiện phát sinh của đúng tiêu chí phải được xét; dữ kiện chưa rõ là UNKNOWN.",
+          "ngay_ra_soat": "2026-10-07",
+          "trang_thai_nguon": "AI_DOI_CHIEU_NGUON_CHINH_THUC_CHUA_DUYET",
+          "noi_dung_bat_buoc_trong_hd": 1,
+          "pham_vi_kiem_tra": "NOI_DUNG_HOP_DONG_THEO_MAU",
+          "can_khac_phuc_json": "{\"MISSING\":\"ADD_MANDATORY_CONTENT\",\"SATISFIED\":null,\"UNKNOWN\":\"REQUEST_EVIDENCE\",\"VIOLATED\":\"AMEND_OR_CORRECT_PROVEN_BREACH\",\"scope_and_version_required\":true,\"source_required\":true}"
+        },
+        "decision_rule": {
+          "quy_tac_id": "QD_TC_PV_GYC005_02_SATISFIED",
+          "tieu_chi_id": "TC_PV_GYC005_02",
+          "finding": "SATISFIED",
+          "dieu_kien_json": "{\"criterion_target_only\":true,\"enabled\":true,\"gate\":{\"evidence_validated\":true,\"exceptions_resolved\":true,\"no_unresolved_conflict\":true,\"scope_confirmed\":true,\"source_available\":true,\"version_resolved\":true},\"human_approval_required_for_final\":true,\"numeric_rule\":null,\"predicate\":\"Chỉ kết luận SATISFIED cho mệnh đề: Địa chỉ của các bên xác định được. Địa chỉ của cả hai bên đủ xác định, có thể dẫn chiếu phụ lục hợp lệ; địa chỉ pháp lý và nhận thông báo được phân biệt khi khác nhau. Không yêu cầu toàn bộ yếu tố của nhóm nếu chúng nằm ngoài mệnh đề này.\",\"scope_of_facts\":\"CURRENT_CRITERION\",\"template_output\":\"DRAFT\"}",
+          "ly_do_chuan": "Chỉ kết luận SATISFIED cho mệnh đề: Địa chỉ của các bên xác định được. Địa chỉ của cả hai bên đủ xác định, có thể dẫn chiếu phụ lục hợp lệ; địa chỉ pháp lý và nhận thông báo được phân biệt khi khác nhau. Không yêu cầu toàn bộ yếu tố của nhóm nếu chúng nằm ngoài mệnh đề này.",
+          "uu_tien": 60,
+          "trang_thai": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "human_verified": 0,
+          "rule_version": "CAN_HO_SEED_RULES_20261007"
+        },
+        "mandatory_contract_content": true,
+        "observation": {
+          "tieu_chi_id": "TC_PV_GYC005_02",
+          "proposed_finding": "SATISFIED",
+          "giai_thich": "Synthetic observation; verification gates are fixture inputs",
+          "gates": {
+            "coverage_complete": true,
+            "absence_verified": true,
+            "evidence_validated": true,
+            "source_verified": true,
+            "scope_confirmed": true,
+            "version_resolved": true,
+            "evidence_conflict": false,
+            "exceptions_resolved": true
+          },
+          "evidence": [
+            {
+              "doan_id": "D_FIXTURE_STALE_CITATION",
+              "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+              "ky_tu_bat_dau": 0,
+              "ky_tu_ket_thuc": 375
+            }
+          ],
+          "external_evidence": [],
+          "local_applicability": "MATCH",
+          "exclusion_reason": null,
+          "mandatory_confirmed": true,
+          "all_pages_readable": true,
+          "all_related_documents_received": true,
+          "template_field_unfilled": false,
+          "facts": {},
+          "facts_verified": false,
+          "model_version": "FIXTURE_STRUCTURED_NO_LLM",
+          "prompt_version": "NOT_USED"
+        }
+      },
+      "model_version": "FIXTURE_STRUCTURED_NO_LLM",
+      "prompt_version": "NOT_USED",
+      "lan_chay_id": "RUN_FIXTURE_STALE_CITATION",
+      "review_status": "PENDING",
+      "mandatory": true,
+      "excluded": false,
+      "exclusion_reason": null
+    },
+    {
+      "ket_qua_id": "KQ_5ac89b37-3e66-5cd7-9daa-13142506fdcb",
+      "ca_id": "CA_FIXTURE_STALE_CITATION",
+      "yeu_cau_ca_id": "YCCA_FIXTURE",
+      "tieu_chi_id": "TC_PV_GYC005_03",
+      "finding": "SATISFIED",
+      "giai_thich": "Synthetic observation; verification gates are fixture inputs",
+      "gates": {
+        "coverage_complete": true,
+        "absence_verified": true,
+        "evidence_validated": true,
+        "source_verified": true,
+        "scope_confirmed": true,
+        "version_resolved": true,
+        "evidence_conflict": false,
+        "exceptions_resolved": true
+      },
+      "uncertainty_reason": null,
+      "pham_vi_ket_luan": "CURRENT_CRITERION",
+      "evidence": [
+        {
+          "doan_id": "D_FIXTURE_STALE_CITATION",
+          "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+          "ky_tu_bat_dau": 0,
+          "ky_tu_ket_thuc": 375
+        }
+      ],
+      "external_evidence": [],
+      "legal_basis_ids": [
+        "PV_GYC005",
+        "DKPL0001",
+        "VBPL001"
+      ],
+      "tieu_chi_snapshot_json": {
+        "criterion": {
+          "tieu_chi_id": "TC_PV_GYC005_03",
+          "requirement_version_id": "PV_GYC005",
+          "thu_tu": 3,
+          "noi_dung": "Có số điện thoại và phương thức liên hệ khác nếu có.",
+          "loai_kiem_tra": "NOI_DUNG_BAT_BUOC",
+          "dieu_kien": "{\"case_facts_required\":true,\"criterion_target_only\":true,\"exception_ids\":[],\"local_applicability_only\":true,\"not_selected_policy\":null,\"optional_choice\":false,\"requirement_version_id\":\"PV_GYC005\",\"scope_missing_policy\":\"UNKNOWN\"}",
+          "bang_chung_can_thiet": "Chỉ kiểm tra Có số điện thoại và phương thức liên hệ khác nếu có. Hồ sơ liên quan: số điện thoại các bên khi thuộc nội dung bắt buộc, phương thức liên hệ khác nếu có. Phụ lục dẫn chiếu chưa nhận hoặc text OCR không đủ thì chưa xác nhận vắng nội dung.",
+          "missing_policy": "MISSING_CHI_KHI_NOI_DUNG_BAT_BUOC_VA_DA_KIEM_TRA_TOAN_BO",
+          "trang_thai": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "human_verified": 0,
+          "bat_buoc": 1,
+          "loai_du_lieu": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "source_dieu_khoan_id": "DKPL0001",
+          "can_cu_cu_the": "19/2023/QH15; Điều 23 khoản 3 điểm a",
+          "url_can_cu": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2023/7/luat19_2023.pdf",
+          "pham_vi_ap_dung_chi_tiet": "Quan hệ doanh nghiệp/chủ thể kinh doanh với người tiêu dùng theo Điều 3 Luật 19/2023; mục đích tiêu dùng, sinh hoạt, không thương mại phải có căn cứ. Nội dung Điều 23 khoản 3 chỉ bắt buộc trong hợp đồng theo mẫu thực tế. Xác nhận phiên bản và chuyển tiếp tại mốc nghĩa vụ.",
+          "ngoai_le_can_xet": "Chỉ kiểm tra nội dung bắt buộc của hợp đồng theo mẫu; quan hệ doanh nghiệp phục vụ thương mại không tự thuộc phạm vi. Thành phần liên hệ khác chỉ khi có; cấu thành giá khi luật yêu cầu. Luật cho phép thỏa thuận/mặc định và điều kiện phát sinh của đúng tiêu chí phải được xét; dữ kiện chưa rõ là UNKNOWN.",
+          "ngay_ra_soat": "2026-10-07",
+          "trang_thai_nguon": "AI_DOI_CHIEU_NGUON_CHINH_THUC_CHUA_DUYET",
+          "noi_dung_bat_buoc_trong_hd": 1,
+          "pham_vi_kiem_tra": "NOI_DUNG_HOP_DONG_THEO_MAU",
+          "can_khac_phuc_json": "{\"MISSING\":\"ADD_MANDATORY_CONTENT\",\"SATISFIED\":null,\"UNKNOWN\":\"REQUEST_EVIDENCE\",\"VIOLATED\":\"AMEND_OR_CORRECT_PROVEN_BREACH\",\"scope_and_version_required\":true,\"source_required\":true}"
+        },
+        "decision_rule": {
+          "quy_tac_id": "QD_TC_PV_GYC005_03_SATISFIED",
+          "tieu_chi_id": "TC_PV_GYC005_03",
+          "finding": "SATISFIED",
+          "dieu_kien_json": "{\"criterion_target_only\":true,\"enabled\":true,\"gate\":{\"evidence_validated\":true,\"exceptions_resolved\":true,\"no_unresolved_conflict\":true,\"scope_confirmed\":true,\"source_available\":true,\"version_resolved\":true},\"human_approval_required_for_final\":true,\"numeric_rule\":null,\"predicate\":\"Chỉ kết luận SATISFIED cho mệnh đề: Có số điện thoại và phương thức liên hệ khác nếu có. Có số điện thoại phù hợp và phương thức liên hệ khác nếu các bên sử dụng; không bắt buộc tạo email chưa có. Không yêu cầu toàn bộ yếu tố của nhóm nếu chúng nằm ngoài mệnh đề này.\",\"scope_of_facts\":\"CURRENT_CRITERION\",\"template_output\":\"DRAFT\"}",
+          "ly_do_chuan": "Chỉ kết luận SATISFIED cho mệnh đề: Có số điện thoại và phương thức liên hệ khác nếu có. Có số điện thoại phù hợp và phương thức liên hệ khác nếu các bên sử dụng; không bắt buộc tạo email chưa có. Không yêu cầu toàn bộ yếu tố của nhóm nếu chúng nằm ngoài mệnh đề này.",
+          "uu_tien": 60,
+          "trang_thai": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "human_verified": 0,
+          "rule_version": "CAN_HO_SEED_RULES_20261007"
+        },
+        "mandatory_contract_content": true,
+        "observation": {
+          "tieu_chi_id": "TC_PV_GYC005_03",
+          "proposed_finding": "SATISFIED",
+          "giai_thich": "Synthetic observation; verification gates are fixture inputs",
+          "gates": {
+            "coverage_complete": true,
+            "absence_verified": true,
+            "evidence_validated": true,
+            "source_verified": true,
+            "scope_confirmed": true,
+            "version_resolved": true,
+            "evidence_conflict": false,
+            "exceptions_resolved": true
+          },
+          "evidence": [
+            {
+              "doan_id": "D_FIXTURE_STALE_CITATION",
+              "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+              "ky_tu_bat_dau": 0,
+              "ky_tu_ket_thuc": 375
+            }
+          ],
+          "external_evidence": [],
+          "local_applicability": "MATCH",
+          "exclusion_reason": null,
+          "mandatory_confirmed": true,
+          "all_pages_readable": true,
+          "all_related_documents_received": true,
+          "template_field_unfilled": false,
+          "facts": {},
+          "facts_verified": false,
+          "model_version": "FIXTURE_STRUCTURED_NO_LLM",
+          "prompt_version": "NOT_USED"
+        }
+      },
+      "model_version": "FIXTURE_STRUCTURED_NO_LLM",
+      "prompt_version": "NOT_USED",
+      "lan_chay_id": "RUN_FIXTURE_STALE_CITATION",
+      "review_status": "PENDING",
+      "mandatory": true,
+      "excluded": false,
+      "exclusion_reason": null
+    }
+  ],
+  "requirement_results": [
+    {
+      "tuan_thu_id": "TT_0000b022-a4f8-5e60-8aee-0b01fc46ee62",
+      "yeu_cau_ca_id": "YCCA_FIXTURE",
+      "status": "COMPLIANT",
+      "so_tieu_chi_ap_dung": 3,
+      "so_tieu_chi_da_danh_gia": 3,
+      "so_unknown": 0,
+      "rule_version": "RULE_PARALLEL_V1",
+      "giai_thich": "COMPLIANT: mandatory criterion findings=['SATISFIED', 'SATISFIED', 'SATISFIED']; scope/version confirmed=True",
+      "requirement_snapshot_json": {
+        "applicable_requirement": {
+          "yeu_cau_ca_id": "YCCA_FIXTURE",
+          "ca_id": "CA_FIXTURE_STALE_CITATION",
+          "requirement_id": "FAM_PARTY_IDENTITY",
+          "requirement_version_id": "PV_GYC005",
+          "nhom_phien_ban": "BVNTD",
+          "scope_status": "MATCH",
+          "version_status": "RESOLVED",
+          "applicability_status": "CONFIRMED",
+          "moc_id": "M_GIAO_KET",
+          "loai_moc": "NGAY_GIAO_KET",
+          "moc_ap_dung": "2026-01-15",
+          "resolution_method": null,
+          "profile_snapshot_json": {
+            "hop_dong_id": "HD_FIXTURE_STALE_CITATION",
+            "profile": {
+              "loai_hop_dong_id": "MB_CAN_HO_CHUNG_CU",
+              "doi_tuong": null,
+              "linh_vuc": "NHA_O",
+              "he_phap_luat": "VIET_NAM",
+              "muc_dich_giao_dich": "TIEU_DUNG_KHONG_THUONG_MAI",
+              "ngay_giao_ket": "2026-01-15",
+              "ngay_giao_ket_raw": null,
+              "do_chinh_xac_ngay": null,
+              "trang_thai_ngay": null,
+              "loai_moc_ap_dung": null,
+              "ngay_hieu_luc_hop_dong": null,
+              "ngay_ban_giao_du_kien": null,
+              "quan_he_chu_the": null,
+              "ben_ban_co_von_nuoc_ngoai": null,
+              "ben_ban_la_chu_dau_tu": null,
+              "ben_ban_la_ca_nhan": null,
+              "ben_mua_la_ca_nhan": null,
+              "gia_tri_hop_dong": null,
+              "don_vi_tien": null,
+              "tinh_trang_tai_san": null,
+              "la_nha_o_xa_hoi": null,
+              "la_hop_dong_theo_mau": true,
+              "la_nha_xay_moi": null,
+              "che_do_giao_dich": null,
+              "muc_dich_su_dung_can_ho": null
+            },
+            "subjects": [],
+            "time_markers": [
+              {
+                "moc_id": "M_GIAO_KET",
+                "loai_moc": "NGAY_GIAO_KET",
+                "gia_tri_raw": "2026-01-15",
+                "ngay": "2026-01-15",
+                "do_chinh_xac": "NGAY",
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "duoc_dung_phan_giai": true,
+                "trich_xuat_id": "TX_ngay_giao_ket"
+              }
+            ],
+            "facts": [
+              {
+                "trich_xuat_id": "TX_loai_hop_dong_id",
+                "ten_truong": "profile.loai_hop_dong_id",
+                "gia_tri_raw": "MB_CAN_HO_CHUNG_CU",
+                "gia_tri_chuan_json": "MB_CAN_HO_CHUNG_CU",
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "phuong_phap": "FIXTURE",
+                "human_verified": false,
+                "evidence_ids": [
+                  "BC_PROFILE"
+                ]
+              },
+              {
+                "trich_xuat_id": "TX_linh_vuc",
+                "ten_truong": "profile.linh_vuc",
+                "gia_tri_raw": "NHA_O",
+                "gia_tri_chuan_json": "NHA_O",
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "phuong_phap": "FIXTURE",
+                "human_verified": false,
+                "evidence_ids": [
+                  "BC_PROFILE"
+                ]
+              },
+              {
+                "trich_xuat_id": "TX_he_phap_luat",
+                "ten_truong": "profile.he_phap_luat",
+                "gia_tri_raw": "VIET_NAM",
+                "gia_tri_chuan_json": "VIET_NAM",
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "phuong_phap": "FIXTURE",
+                "human_verified": false,
+                "evidence_ids": [
+                  "BC_PROFILE"
+                ]
+              },
+              {
+                "trich_xuat_id": "TX_muc_dich_giao_dich",
+                "ten_truong": "profile.muc_dich_giao_dich",
+                "gia_tri_raw": "TIEU_DUNG_KHONG_THUONG_MAI",
+                "gia_tri_chuan_json": "TIEU_DUNG_KHONG_THUONG_MAI",
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "phuong_phap": "FIXTURE",
+                "human_verified": false,
+                "evidence_ids": [
+                  "BC_PROFILE"
+                ]
+              },
+              {
+                "trich_xuat_id": "TX_la_hop_dong_theo_mau",
+                "ten_truong": "profile.la_hop_dong_theo_mau",
+                "gia_tri_raw": "True",
+                "gia_tri_chuan_json": true,
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "phuong_phap": "FIXTURE",
+                "human_verified": false,
+                "evidence_ids": [
+                  "BC_PROFILE"
+                ]
+              },
+              {
+                "trich_xuat_id": "TX_ngay_giao_ket",
+                "ten_truong": "profile.ngay_giao_ket",
+                "gia_tri_raw": "2026-01-15",
+                "gia_tri_chuan_json": "2026-01-15",
+                "trang_thai": "SYNTHETIC_UNVERIFIED",
+                "phuong_phap": "FIXTURE",
+                "human_verified": false,
+                "evidence_ids": [
+                  "BC_PROFILE"
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "doan_id": "D_FIXTURE_STALE_CITATION",
+                "trich_dan": "DỮ LIỆU TỔNG HỢP ĐỂ KIỂM TRA WIRING, KHÔNG PHẢI HỢP ĐỒNG THẬT.\n{\"loai_hop_dong_id\": \"MB_CAN_HO_CHUNG_CU\", \"linh_vuc\": \"NHA_O\", \"he_phap_luat\": \"VIET_NAM\", \"muc_dich_giao_dich\": \"TIEU_DUNG_KHONG_THUONG_MAI\", \"la_hop_dong_theo_mau\": true, \"ngay_giao_ket\": \"2026-01-15\"}\nNội dung minh họa; proposed findings và gates là fixture, chưa kiểm chứng.\nViện dẫn minh họa: 59/2010/QH12.",
+                "ky_tu_bat_dau": 0,
+                "ky_tu_ket_thuc": 375,
+                "bang_chung_id": "BC_PROFILE"
+              }
+            ]
+          },
+          "dieu_kien_snapshot_json": {},
+          "nguon_snapshot_json": {},
+          "phien_ban_id": "DEPLOY_PARALLEL_V1",
+          "reason": {
+            "fixture": "Synthetic pinned version"
+          }
+        },
+        "version": {
+          "requirement_version_id": "PV_GYC005",
+          "requirement_id": "FAM_PARTY_IDENTITY",
+          "nhom_phien_ban": "BVNTD",
+          "noi_dung": "Phải có tên, địa chỉ, số điện thoại và phương thức liên hệ khác của các bên nếu có.",
+          "source_van_ban_id": "VBPL001",
+          "dieu_khoan_id": "DKPL0001",
+          "hieu_luc_tu": "2024-07-01",
+          "hieu_luc_den": null,
+          "tinh_chat": "NOI_DUNG_BAT_BUOC_CO_DIEU_KIEN",
+          "dieu_kien_ap_dung": "Quan hệ doanh nghiệp/chủ thể kinh doanh với người tiêu dùng theo Điều 3 Luật 19/2023; mục đích tiêu dùng, sinh hoạt, không thương mại phải có căn cứ. Nội dung Điều 23 khoản 3 chỉ bắt buộc trong hợp đồng theo mẫu thực tế. Xác nhận phiên bản và chuyển tiếp tại mốc nghĩa vụ.",
+          "chu_the_nghia_vu": "Doanh nghiệp",
+          "pham_vi_bang_chung": "HOP_DONG_PHU_LUC_VA_NGUON_LUAT",
+          "tieu_chi_dap_ung": "Đánh giá các tiêu chí TC_PV_GYC005_01, TC_PV_GYC005_02, TC_PV_GYC005_03. Điều kiện bốn finding nằm tại quy_tac_quyet_dinh; chỉ tổng hợp tiêu chí áp dụng và bắt buộc theo AGG_CAN_HO_V1.",
+          "quy_tac_mau_thuan": "Giữ mọi đoạn mâu thuẫn; xét phụ lục/sửa đổi và quy định bắt buộc. Chưa xác định được nội dung có hiệu lực => UNKNOWN cho tiêu chí bị ảnh hưởng, không chọn riêng đoạn thuận lợi.",
+          "quy_tac_du_bang_chung": "Evidence phải đúng hợp đồng/phiên bản và khớp trích dẫn. MISSING cần vắng nội dung bắt buộc đã kiểm tra đủ; chứng cứ thực hiện không thể thay bằng cam kết. UNKNOWN được tổng hợp theo rule, không tự coi là PARTIAL.",
+          "quy_tac_chuyen_tiep": "Xét Điều 80 Luật 19/2023; danh mục QĐ07 đến trước 01/07/2025, TT42 từ 01/07/2025; cần xác minh nghĩa vụ tại thời điểm sử dụng mẫu/nhận tiền.",
+          "trang_thai_ra_soat": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "loai_moc_ap_dung": "NGAY_XAC_LAP_HOAC_SU_DUNG_MAU",
+          "trang_thai_moc": "MOC_DA_BIEN_SOAN_CAN_DU_KIEN_CA",
+          "loai_du_lieu": "AI_LEGAL_ANNOTATED_PENDING_HUMAN",
+          "quy_tac_tong_hop_id": "AGG_CAN_HO_V1",
+          "trang_thai_runtime": "AI_REVIEWED_HUMAN_REVIEW_REQUIRED",
+          "kiem_tra_sua_doi_den": "2026-10-07",
+          "can_xac_minh_scope": 1,
+          "can_xac_minh_chuyen_tiep": 1
+        },
+        "aggregation_rule": {
+          "quy_tac_tong_hop_id": "AGG_CAN_HO_V1",
+          "rule_version": "CAN_HO_SEED_RULES_20261007",
+          "dieu_kien_json": "{\"COMPLIANT\": \"all applicable mandatory criteria SATISFIED and no unresolved scope/version/evidence\", \"INSUFFICIENT\": \"scope/version unresolved OR no applicable evaluated criterion OR any remaining UNKNOWN without already-proven violation\", \"NON_COMPLIANT\": \"any applicable mandatory criterion VIOLATED; or all applicable mandatory criteria MISSING with verified absence\", \"PARTIAL\": \"at least one SATISFIED and at least one verified MISSING; no VIOLATED/UNKNOWN\", \"excluded\": \"NOT_APPLICABLE excluded with reason; REVIEW_REQUIRED is not a criterion finding\"}",
+          "thu_tu_uu_tien_json": "[\"SCOPE_OR_VERSION_UNRESOLVED=INSUFFICIENT\", \"PROVEN_VIOLATION=NON_COMPLIANT_WITH_COVERAGE_FLAG\", \"UNKNOWN=INSUFFICIENT\", \"ALL_MISSING=NON_COMPLIANT\", \"MIXED_SATISFIED_MISSING=PARTIAL\", \"ALL_SATISFIED=COMPLIANT\"]",
+          "trang_thai": "ENGINE_POLICY"
+        }
+      },
+      "coverage_complete": true
+    }
+  ],
+  "risks": [],
+  "recommendations": []
+}

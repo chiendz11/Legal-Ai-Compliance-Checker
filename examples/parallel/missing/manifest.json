@@ -1,0 +1,35 @@
+{
+  "schema_version": "v7.3.2",
+  "fixture_version": "parallel-v1",
+  "fixture_only": true,
+  "scenario": "missing",
+  "notice": "SYNTHETIC_NOT_GOLD_NOT_HUMAN_VERIFIED",
+  "knowledge_snapshot_sha256": "c0446c44756d78eb448c16b21236de6e4585fa775becf042cbba574360ad86d7",
+  "files": {
+    "citation_input.json": "e37f7ec354308178773bd34457ef0082a1d45ddfc1c79105048d5d3d0e5b897f",
+    "compliance_input.json": "1c79c132e88bd90dce71b437efc04ec2b598dfd3d746ebd36bb292d4db44e935",
+    "compliance_output.json": "8adb3b4a30aa36a8d806ff6038110a8332ae91571306d0ccf7ca4b45157d2237",
+    "document_input.json": "2e081fa9bf8acefffc4d8e471ab43cb87c3c2879c98a17f8ea9ce4f762044c9d",
+    "document_output.json": "42460227429dd86f9c46d03b4844563a7087aed197967cd206e5aff496ad5fff",
+    "integration_input.json": "6f270e8be5b1e37caae6664f5d02fcef060087ac0e80b3ffd18c26e9acaa4145",
+    "legal_output.json": "807bddb35e5c6832ac82fe802c81845980fdbdf9383f4dc3f6682159822b012c",
+    "pipeline_output.json": "20032cfa9409027d6665650b58e3a059b33d40c701b7bef331c4ddd4dc59ab52",
+    "report_output.json": "50ab3a3ef37159aef90f3741ebe4e7093d360567a99b5bf325e9e1c165c61f77",
+    "retrieval_input.json": "2144864aaf0cf0dcc46649ab76321154be788a8164d891af78c5f92618a1680e",
+    "retrieval_output.json": "2e11c33659004b9ac92a56c7781b49f782ec4a0b5db0bec725f3d17684327801",
+    "scope_input.json": "a137c6a3b674853e175d55807a98d6e9eafebe2e134d1f6dd23a18ee64695783",
+    "source.docx": "9978d98b10dc70c3124927a2b622c3066dbd49fd02c02be2162c8254e72b3b2e",
+    "temporal_input.json": "cec2c3fa1c7ceb31245aa45b400f2cb2bf963de0851f0c5c9bd81f8859d7ab1f"
+  },
+  "expected": {
+    "requirement_status": "NON_COMPLIANT",
+    "criterion_findings": [
+      "MISSING",
+      "MISSING",
+      "MISSING"
+    ],
+    "compliance_risks": 3,
+    "citation_risks": 0,
+    "verification_risks": 0
+  }
+}

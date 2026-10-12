@@ -19,7 +19,7 @@ Giữ backend tại `app/`; `api/` xử lý HTTP, `contracts/` giữ Pydantic sc
 | 8 | `human_review` | `HumanReviewService` + `ReviewStore`: append-only C12 events |
 | 9 | `reporting` | `ReportService` + `ReportStore`/`ReportExporter`: C13 versions/export |
 
-Các services bước 1–4, 8–9 và Knowledge Curation hiện là `Protocol`, chưa có concrete implementation. Ports mô tả input/output để team lập trình độc lập; chúng không gọi LLM/OCR hay tạo dữ liệu giả.
+Các services bước 1–4, 8–9 và Knowledge Curation có interfaces `Protocol`. Bước 9 có helper `reporting/draft.py` dựng C13 draft; export/persist/publish vẫn chưa triển khai. Ports mô tả input/output để team lập trình độc lập; chúng không gọi LLM/OCR hay tạo dữ liệu giả. [Gói phát triển song song](parallel_development.md) cung cấp JSON/DOCX fixtures, reference runners và validator cho từng người.
 
 ## Skeleton điều phối draft
 
@@ -40,7 +40,7 @@ modules = DraftModules(
 draft = DraftAssessmentWorkflow(modules, knowledge_snapshot).evaluate(case_c01, context)
 ```
 
-Các tên adapters trong ví dụ là implementations team phải cung cấp; chưa có factory full-system mặc định. `draft` là `AssessmentDraft`, gồm C01, profile/chunks/citations, C04/C05/C06 và `evaluation` C07–C11. Workflow giữ case/deployment pin và checksum knowledge; không ghi DB hoặc tự duyệt/publish report. Caller chọn persistence qua ports sau khi kiểm tra authorization.
+Các tên adapters trong ví dụ là implementations team phải cung cấp; chưa có factory full-system mặc định. `draft` là `AssessmentDraft`, gồm C01, profile/chunks/citations, C04/C05/C06, `citation_findings` C09 và `evaluation` C07–C11. Workflow giữ case/deployment pin và checksum knowledge; không ghi DB hoặc tự duyệt/publish report. Caller chọn persistence qua ports sau khi kiểm tra authorization.
 
 Luồng Applicable Law chỉ nhận profile/scope/knowledge. Citation Validator nhận citations/profile/knowledge riêng, kết quả hội tụ tại Risk. Thay citation status không được làm thay checklist hoặc compliance results. Checklist rỗng bị từ chối vì chưa biểu diễn rõ scope/coverage; chưa hỗ trợ full-assessment không có requirement.
 

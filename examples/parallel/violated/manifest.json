@@ -1,0 +1,35 @@
+{
+  "schema_version": "v7.3.2",
+  "fixture_version": "parallel-v1",
+  "fixture_only": true,
+  "scenario": "violated",
+  "notice": "SYNTHETIC_NOT_GOLD_NOT_HUMAN_VERIFIED",
+  "knowledge_snapshot_sha256": "c0446c44756d78eb448c16b21236de6e4585fa775becf042cbba574360ad86d7",
+  "files": {
+    "citation_input.json": "bde66a38db68e55500455a1cef97bece217b96c87f05d81a7b3ef7bd68cd0fb1",
+    "compliance_input.json": "40c640fb325398f072de1351ed951fddca28623fbd13720e8dbad25674224ada",
+    "compliance_output.json": "80bee64d36ad8399d7f5e700cdb7c89cb1969e212f7e8153619435d391fd918d",
+    "document_input.json": "7ba7d53f32e2edb2bccaad8da9170e3af8f8fe6acfe4cf0d32940564bc177094",
+    "document_output.json": "079cb648bb721562c8b0fe7892a3fde81fa9bdd6d60588e8cd43f55ef8a0b8c2",
+    "integration_input.json": "d6432dbb081ed5fef45d383c10aebcc11039d2b4a59deedb34e903c738639c45",
+    "legal_output.json": "d4a2869844d5eac03a2520593a011ec9b95bd2fc9ba5dbf804b19bcd707bdede",
+    "pipeline_output.json": "6c50acad1dd22bb07930d5e89ece11fdf5fe43d6102caa73025b29ad86e87368",
+    "report_output.json": "a5639378babcba58a5ffc6bbcc72a26e4911a012ad2adbf09f8542aeca8562fc",
+    "retrieval_input.json": "c87535f1798b0381fc2db47b4dcc72be107016605dcce30527350ae67659e3a5",
+    "retrieval_output.json": "eac43b44e0d67a8153870e9a191a2770487da91b02b8165dac16335d3ffdbe22",
+    "scope_input.json": "f5aa7cf6b4d895ac91c3613b2b4f8c44e011b60373ece33352e8c373a87c12a8",
+    "source.docx": "9978d98b10dc70c3124927a2b622c3066dbd49fd02c02be2162c8254e72b3b2e",
+    "temporal_input.json": "1cc04e997941afb07c5d415cc85025a5c055338de29bbc89170dd095269c794b"
+  },
+  "expected": {
+    "requirement_status": "NON_COMPLIANT",
+    "criterion_findings": [
+      "VIOLATED",
+      "SATISFIED",
+      "SATISFIED"
+    ],
+    "compliance_risks": 1,
+    "citation_risks": 0,
+    "verification_risks": 0
+  }
+}

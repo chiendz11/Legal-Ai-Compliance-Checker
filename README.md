@@ -14,6 +14,8 @@ Skeleton có module cho bước 1–9, contracts C01–C13/X01/X02, ports cho t�
 
 Ví dụ khởi tạo JSON/SQLite và giải thích từng dòng trong `bootstrap.py`: [hướng dẫn khởi tạo](docs/startup.md). Chạy demo bằng `python -m scripts.demo_bootstrap`.
 
+Gói bắt đầu song song cho 5 người nằm trên nhánh `feat/parallel-module-starter`: [hướng dẫn theo từng vai trò](docs/parallel_development.md), [fixtures](examples/parallel/) và [schema bàn giao](docs/parallel_contracts.schema.json). Chạy `python -m scripts.parallel_dev --all-scenarios`, hoặc dùng `--person 1` đến `--person 5` để lấy input/output mẫu và kiểm tra phần riêng.
+
 ## Chạy local
 
 Python 3.11+; CI dùng Python 3.12. Chạy từ thư mục repo:
@@ -75,7 +77,7 @@ python scripts/import_workbook.py '/path/to/runtime.xlsx' --output data/knowledg
 
 Workbook gốc, hồ sơ/chunks hợp đồng và runtime demo không được nhập vào snapshot public. Chúng là input của các module trước hoặc fixture riêng. Snapshot có checksum workbook nguồn và API yêu cầu checksum knowledge khớp chính xác.
 
-Engine bước 5 nhận **structured observations từ adapter rule/LLM hoặc reviewer**. Code tự tính các numeric rule được hỗ trợ; với các tiêu chí ngữ nghĩa khác, adapter cung cấp proposed finding và evidence, engine kiểm tra gates rồi mới phát hành C07. Chưa tích hợp nhà cung cấp LLM, OCR, scope/temporal/retrieval bước 1–4, human review bước 8 hay report bước 9. Không giả tạo log gọi LLM. Knowledge chưa human-approved vẫn giữ kết quả dạng `PENDING`; bộ khung này chưa cung cấp authentication, tenant authorization hay publish report.
+Engine bước 5 nhận **structured observations từ adapter rule/LLM hoặc reviewer**. Code tự tính các numeric rule được hỗ trợ; với các tiêu chí ngữ nghĩa khác, adapter cung cấp proposed finding và evidence, engine kiểm tra gates rồi mới phát hành C07. Có builder C13 draft từ outputs đã ghép; chưa tích hợp nhà cung cấp LLM, OCR, scope/temporal/retrieval bước 1–4, human review bước 8 hay export/publish report. Không giả tạo log gọi LLM. Knowledge chưa human-approved vẫn giữ kết quả dạng `PENDING`; bộ khung này chưa cung cấp production authentication/tenant authorization.
 
 SQLite là adapter MVP lưu JSON snapshots trong các bảng runtime, không phải migration hoàn chỉnh cho mọi cột của workbook. Case pin bất biến, run idempotent, ghi output/evidence/audit trong một transaction; đổi input cùng run hoặc đổi deployment của case trả `409`.
 

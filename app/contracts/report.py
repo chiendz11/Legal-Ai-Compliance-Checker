@@ -1,15 +1,19 @@
-"""C13 starter: report sections preserve compliance/citation branches separately."""
+"""C13 typed report sections preserve compliance/citation branches separately."""
 
 from typing import Any, Literal
 
 from pydantic import Field
 
 from app.contracts.aggregation import RequirementResult
-from app.contracts.citation import CitationValidation
+from app.contracts.assessment import AssessmentCase
+from app.contracts.citation import CitationExtraction, CitationValidation
 from app.contracts.common import Model
+from app.contracts.document_intelligence import ContractProfile
 from app.contracts.reasoning import CriterionResult
 from app.contracts.recommendation import Recommendation
 from app.contracts.risk import RiskResult
+from app.contracts.scope import ScopeResolution
+from app.contracts.temporal import ApplicableRequirement
 
 
 class ReportCompliance(Model):
@@ -20,7 +24,7 @@ class ReportCompliance(Model):
 
 
 class ReportCitations(Model):
-    citations: list[dict[str, Any]]
+    citations: list[CitationExtraction]
     findings: list[CitationValidation]
 
 
@@ -31,10 +35,10 @@ class ReportRisks(Model):
 
 
 class ReportContent(Model):
-    case: dict[str, Any]
-    contract_profile: dict[str, Any]
-    applicable_legal_scope: list[dict[str, Any]]
-    checklist: list[dict[str, Any]]
+    case: AssessmentCase
+    contract_profile: ContractProfile
+    applicable_legal_scope: list[ApplicableRequirement]
+    checklist: list[ScopeResolution]
     compliance: ReportCompliance
     citation_validation: ReportCitations
     risks: ReportRisks

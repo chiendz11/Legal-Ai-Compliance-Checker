@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Any, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.contracts.common import Model
 
@@ -43,6 +43,12 @@ class CitationPosition(Model):
     doan_id: str
     page_start: int = Field(ge=1)
     page_end: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def page_range(self):
+        if self.page_end < self.page_start:
+            raise ValueError("Invalid citation page range")
+        return self
 
 
 class CitationExtraction(Model):

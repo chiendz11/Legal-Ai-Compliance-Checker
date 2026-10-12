@@ -1,7 +1,7 @@
 """Draft checkpoint for stages 1–7; review and report publishing remain separate."""
 
 from app.contracts.assessment import AssessmentCase
-from app.contracts.citation import CitationExtraction
+from app.contracts.citation import CitationExtraction, CitationValidation
 from app.contracts.common import Context, Model
 from app.contracts.document_intelligence import Chunk, ContractProfile
 from app.contracts.pipeline import PipelineResponse
@@ -16,6 +16,7 @@ class AssessmentDraft(Model):
     contract_profile: ContractProfile
     chunks: list[Chunk]
     extracted_citations: list[CitationExtraction]
+    citation_findings: list[CitationValidation]
     scope: list[ScopeResolution]
     requirements: list[ApplicableRequirement]
     retrieval: list[RetrievalEvidence]

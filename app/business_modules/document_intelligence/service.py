@@ -3,15 +3,7 @@
 from typing import Protocol
 
 from app.contracts.assessment import AssessmentCase
-from app.contracts.citation import CitationExtraction
-from app.contracts.common import Model
-from app.contracts.document_intelligence import Chunk, ContractProfile
-
-
-class DocumentIntelligenceResult(Model):
-    contract_profile: ContractProfile
-    chunks: list[Chunk]
-    citations: list[CitationExtraction]
+from app.contracts.document_intelligence import DocumentIntelligenceResult
 
 
 class DocumentIntelligenceService(Protocol):

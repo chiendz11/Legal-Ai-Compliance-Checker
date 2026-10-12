@@ -1,4 +1,4 @@
-"""Application composition root; business logic lives in app/modules."""
+"""Application composition root; business logic lives in app/business_modules."""
 
 from fastapi import FastAPI
 

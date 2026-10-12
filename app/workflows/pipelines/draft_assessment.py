@@ -15,9 +15,11 @@ from app.business_modules.scope_resolver.service import ScopeResolver
 from app.business_modules.temporal_resolver.service import TemporalResolver
 from app.contracts.assessment import AssessmentCase
 from app.contracts.common import Context
+from app.contracts.handoffs import LegalOutput
 from app.contracts.pipeline import PipelinePayload, PipelineRequest
 from app.contracts.workflow import AssessmentDraft
 from app.shared.validation import validate_context, validate_requirements
+from app.workflows.handoffs import validate_document, validate_legal
 from app.workflows.interfaces.knowledge import KnowledgeSnapshot
 from app.workflows.pipelines.steps_5_7 import evaluate
 
@@ -50,12 +52,7 @@ class DraftAssessmentWorkflow:
         if registered != case:
             raise ValueError("Intake changed the pinned assessment case")
         document = self.modules.documents.extract(registered.model_copy(deep=True))
-        if document.contract_profile.hop_dong_id != case.hop_dong_id:
-            raise ValueError("Extracted profile belongs to a different contract")
-        if any(c.hop_dong_id != case.hop_dong_id for c in document.chunks):
-            raise ValueError("Extracted chunk belongs to a different contract")
-        if any(c.hop_dong_id != case.hop_dong_id for c in document.citations):
-            raise ValueError("Extracted citation belongs to a different contract")
+        validate_document(registered, document)
 
         # Branch A receives profile/knowledge, never contract-authored citations.
         scope = self.modules.scope.resolve(context, document.contract_profile, self.knowledge)
@@ -96,9 +93,12 @@ class DraftAssessmentWorkflow:
         citations = self.modules.citations.validate(
             context, document.contract_profile, document.citations, self.knowledge
         )
-        extracted_ids = {item.vien_dan_id for item in document.citations}
-        if any(item.vien_dan_id not in extracted_ids for item in citations):
-            raise ValueError("Citation finding references an unextracted citation")
+        validate_legal(
+            context,
+            document,
+            LegalOutput(scope=scope, requirements=requirements, citations=citations),
+            self.knowledge,
+        )
         evaluation = evaluate(
             PipelineRequest(
                 **context.model_dump(),
@@ -119,6 +119,7 @@ class DraftAssessmentWorkflow:
             contract_profile=document.contract_profile,
             chunks=document.chunks,
             extracted_citations=document.citations,
+            citation_findings=citations,
             scope=scope,
             requirements=requirements,
             retrieval=retrieval,
