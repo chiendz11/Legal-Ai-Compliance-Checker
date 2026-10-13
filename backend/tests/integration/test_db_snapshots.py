@@ -80,3 +80,24 @@ def test_foreign_output_failure_rolls_back_case_and_run(database_url, request_fa
         assert (
             connection.execute("SELECT count(*) AS n FROM runtime.ca_danh_gia").fetchone()["n"] == 0
         )
+
+
+def test_requirement_reason_order_does_not_conflict_across_runs(database_url, request_factory):
+    from devtools.qa_runs import new_run
+    from legal_checker.modules.legal_knowledge.repository import canonical
+
+    knowledge = Knowledge(database_url)
+    original = request_factory()
+    original.payload.requirements[0].reason = {"summary": "same reason", "source": "test"}
+    store = Store(database_url)
+    store.save(original, evaluate(original, knowledge))
+    second = new_run(original.model_dump(mode="json"), "SECOND_RUN")
+    second.payload.requirements[0].reason = {"source": "test", "summary": "same reason"}
+    store.save(second, evaluate(second, knowledge))
+    with connect_postgres(database_url) as connection:
+        row = connection.execute("SELECT ly_do FROM runtime.yeu_cau_ap_dung").fetchone()
+        assert row["ly_do"] == canonical(original.payload.requirements[0].reason)
+        assert (
+            connection.execute("SELECT count(*) AS n FROM runtime.assessment_runs").fetchone()["n"]
+            == 2
+        )

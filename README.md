@@ -24,7 +24,7 @@ pip install -e './backend[dev]' -c constraints.txt
 cp .env.example .env
 ```
 
-Nhận workbook `bang_du_lieu_runtime_v7_4_9_RISK.xlsx`, đặt vào `data/private/`
+Nhận gói DEV_VALIDATION của bộ v7.5.0 dev/eval r1, giải nén workbook và sources vào `data/private/`
 hoặc chỉnh `SEED_WORKBOOK_PATH` trong `.env`. Mỗi dev dùng DB riêng và cùng workbook.
 
 ```bash
@@ -35,17 +35,19 @@ uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/local_database.md).
-DB mặc định ở `127.0.0.1:5433/legal_checker_dev`; Swagger: http://127.0.0.1:8000/docs.
+Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_v750_r1`;
+Swagger: http://127.0.0.1:8000/docs.
 
 ```bash
 python -m scripts.local_db check
-python -m scripts.db_module_input --case SEED_CA_001 --run SEED_RUN_SEED_CA_001
+python -m scripts.db_module_input --case CA90_001 --run CA90_001_V750_R1_REFERENCE
 curl -s http://127.0.0.1:8000/api/v1/knowledge
 ```
 
-`db_module_input` in rows SQL thực để lập trình mapper/query độc lập; chưa tự tạo C06
-per-criterion. Các retrieval rows trong workbook thiếu criterion ID vẫn giữ nguyên;
-module Retrieval cần chọn evidence cho từng criterion trước khi phát hành C06.
+`db_module_input` in rows SQL thực để lập trình mapper/query độc lập.
+Bản DEV_VALIDATION v7.5.0 có criterion IDs và C06 typed references trong schema QA;
+Retrieval vẫn cần tìm/rank evidence thật và đánh giá relevance độc lập.
+CLI cũng hỗ trợ workbook v7.4.9 và v7.5.0 SILVER gốc; các bản đó giữ nguyên hạn chế đã ghi nhận.
 
 ## API hiện có
 
@@ -103,6 +105,7 @@ python -m scripts.export_contracts
 
 - [Triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md)
 - [DB local, migration và seed](docs/local_database.md)
+- [Bộ v7.5.0 dev/eval, gói dữ liệu và cách chạy](docs/v750_dev_eval.md)
 - [Khởi tạo dependencies](docs/startup.md)
 - [Ghép module](docs/module_integration.md)
 - [Contracts nghiệp vụ](docs/data_contracts_v7_3_2.md), [schemas module](docs/module_contracts.schema.json)

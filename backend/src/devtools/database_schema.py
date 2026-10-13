@@ -1015,5 +1015,7 @@ GUIDE_SHEETS = frozenset(
         "MODULE_READ_WRITE",
         "BANG_VA_SO_DONG",
         "doi_chieu_brd",
+        "DANH_GIA_90_TONG_QUAN",
+        "HUONG_DAN_SEED_90",
     }
 )

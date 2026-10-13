@@ -53,7 +53,14 @@ def main() -> None:
         seed = read_workbook(args.workbook)
         if args.command == "preview":
             print(
-                json.dumps({"source_sha256": seed.source_sha256, "tables": seed.counts}, indent=2)
+                json.dumps(
+                    {
+                        "source_sha256": seed.source_sha256,
+                        "tables": seed.counts,
+                        "qa_tables": seed.qa_counts,
+                    },
+                    indent=2,
+                )
             )
         else:
             print(json.dumps(seed_database(args.database_url, seed), indent=2))

@@ -193,7 +193,7 @@ class Store:
                 "yeu_cau_ca_id",
                 {
                     **data,
-                    "ly_do": str(requirement.reason),
+                    "ly_do": canonical(requirement.reason),
                 },
                 ("profile_snapshot_json", "dieu_kien_snapshot_json", "nguon_snapshot_json"),
             )

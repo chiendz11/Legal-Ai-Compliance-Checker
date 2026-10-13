@@ -3,7 +3,7 @@
 import hashlib
 import json
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
@@ -18,6 +18,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from devtools.database_schema import BY_NAME, FOREIGN_KEYS, GUIDE_SHEETS, TABLES, Table
+from devtools.qa_schema import QA_GUIDES, QA_SHEETS, QA_TABLES
 
 
 class SeedError(ValueError):
@@ -28,10 +29,15 @@ class SeedError(ValueError):
 class WorkbookSeed:
     source_sha256: str
     tables: dict[str, list[dict[str, Any]]]
+    qa_tables: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
 
     @property
     def counts(self) -> dict[str, int]:
         return {name: len(rows) for name, rows in self.tables.items()}
+
+    @property
+    def qa_counts(self) -> dict[str, int]:
+        return {name: len(rows) for name, rows in self.qa_tables.items()}
 
 
 def convert_cell(value: Any, kind: str, epoch: datetime) -> Any:
@@ -116,15 +122,20 @@ def read_workbook(path: Path) -> WorkbookSeed:
     content_sha = hashlib.sha256(content).hexdigest()
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=False)
     try:
-        unexpected = set(workbook.sheetnames) - set(BY_NAME) - GUIDE_SHEETS
+        unexpected = (
+            set(workbook.sheetnames) - set(BY_NAME) - GUIDE_SHEETS - set(QA_SHEETS) - QA_GUIDES
+        )
         missing = set(BY_NAME) - set(workbook.sheetnames)
         if missing or unexpected:
             raise SeedError(
                 f"Workbook sheets differ: missing={sorted(missing)}, extra={sorted(unexpected)}"
             )
-        data = {}
-        for table in TABLES:
-            sheet = workbook[table.name]
+        data, qa_data = {}, {}
+        sheet_tables = [(table.name, table) for table in TABLES] + list(QA_SHEETS.items())
+        for sheet_name, table in sheet_tables:
+            if sheet_name not in workbook.sheetnames:
+                continue
+            sheet = workbook[sheet_name]
             rows = sheet.iter_rows()
             headers = tuple(cell.value for cell in next(rows))
             if headers != tuple(name for name, _ in table.columns):
@@ -133,18 +144,28 @@ def read_workbook(path: Path) -> WorkbookSeed:
             for number, cells in enumerate(rows, 2):
                 if all(cell.value is None for cell in cells):
                     continue
+                if len(cells) > len(table.columns):
+                    raise SeedError(f"Unexpected cells after header in {table.name} row {number}")
                 record = {}
-                for cell, (name, kind) in zip(cells, table.columns, strict=True):
-                    if cell.data_type in ("f", "e"):
+                # Write-only Excel sheets omit trailing blank cells in the XML.
+                for index, (name, kind) in enumerate(table.columns):
+                    cell = cells[index] if index < len(cells) else None
+                    if cell is not None and cell.data_type in ("f", "e"):
                         raise SeedError(f"Formula/error in {table.name}!{cell.coordinate}")
                     try:
-                        record[name] = convert_cell(cell.value, kind, workbook.epoch)
+                        record[name] = convert_cell(
+                            cell.value if cell is not None else None, kind, workbook.epoch
+                        )
                     except (ValueError, TypeError, OverflowError) as error:
                         raise SeedError(f"{table.name} row {number}, {name}: {error}") from error
                 records.append(record)
-            data[table.name] = records
-        seed = WorkbookSeed(content_sha, data)
+            (data if table.schema != "qa" else qa_data)[table.name] = records
+        seed = WorkbookSeed(content_sha, data, qa_data)
         validate_references(seed)
+        if qa_data:
+            from devtools.qa_validation import validate_qa
+
+            validate_qa(seed)
         # Inventory is optional for test workbooks; the original workbook includes it.
         if "BANG_VA_SO_DONG" in workbook.sheetnames:
             rows = workbook["BANG_VA_SO_DONG"].iter_rows(values_only=True)
@@ -179,6 +200,10 @@ def insert_table(connection, table: Table, rows: list[dict[str, Any]]) -> int:
 
 def seed_database(database_url: str, seed: WorkbookSeed) -> dict:
     validate_references(seed)
+    if seed.qa_tables:
+        from devtools.qa_validation import validate_qa
+
+        validate_qa(seed)
     with connect_postgres(database_url) as connection:
         # Serialize migration/seed across shells; all DDL and rows roll back together on error.
         connection.execute("SELECT pg_advisory_xact_lock(743249)")
@@ -193,16 +218,24 @@ def seed_database(database_url: str, seed: WorkbookSeed) -> dict:
                 "source_rows": sum(seed.counts.values()),
             }
         inserted = sum(insert_table(connection, table, seed.tables[table.name]) for table in TABLES)
+        qa_inserted = sum(
+            insert_table(connection, table, seed.qa_tables.get(table.name, []))
+            for table in QA_TABLES
+        )
         connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
         connection.execute(
             "INSERT INTO dev_meta.seed_imports VALUES (%s, %s, now())",
-            (seed.source_sha256, Jsonb(seed.counts)),
+            (
+                seed.source_sha256,
+                Jsonb({**seed.counts, **{"qa." + k: v for k, v in seed.qa_counts.items()}}),
+            ),
         )
         return {
             "status": "seeded",
             "inserted": inserted,
             "skipped_existing": sum(seed.counts.values()) - inserted,
             "source_rows": sum(seed.counts.values()),
+            "qa_inserted": qa_inserted,
         }
 
 
@@ -214,5 +247,10 @@ def database_counts(database_url: str) -> dict[str, int]:
                     sql.Identifier(table.schema, table.name)
                 )
             ).fetchone()["total"]
-            for table in TABLES
+            for table in (*TABLES, *QA_TABLES)
+            if table.schema != "qa"
+            or connection.execute(
+                "SELECT to_regclass(%s) AS name", ("qa." + table.name,)
+            ).fetchone()["name"]
+            is not None
         }
