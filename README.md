@@ -16,6 +16,8 @@ Ví dụ khởi tạo JSON/SQLite trong `api/dependencies.py` và `main.py`: [h�
 
 Gói bắt đầu song song cho 5 người nằm trên nhánh `feat/parallel-module-starter`: [hướng dẫn theo từng vai trò](docs/parallel_development.md), [fixtures](examples/parallel/) và [schema bàn giao](docs/parallel_contracts.schema.json). Chạy `python -m scripts.parallel_dev --all-scenarios`, hoặc dùng `--person 1` đến `--person 5` để lấy input/output mẫu và kiểm tra phần riêng.
 
+DB local cho từng dev đã có trên nhánh `feat/local-postgres-seed`: PostgreSQL 17, hai schema `knowledge` và `runtime`, 50 bảng theo workbook `v7_4_9_RISK`. Xem [hướng dẫn tạo DB và seed](docs/local_database.md). Mỗi máy dùng DB riêng và cùng workbook; migration, seed và SQL repositories được quản lý trong Git.
+
 ## Chạy local
 
 Python 3.11+; CI dùng Python 3.12. Chạy từ thư mục repo:
