@@ -18,6 +18,8 @@ Gói bắt đầu song song cho 5 người nằm trên nhánh `feat/parallel-mod
 
 DB local cho từng dev đã có trên nhánh `feat/local-postgres-seed`: PostgreSQL 17, hai schema `knowledge` và `runtime`, 50 bảng theo workbook `v7_4_9_RISK`. Xem [hướng dẫn tạo DB và seed](docs/local_database.md). Mỗi máy dùng DB riêng và cùng workbook; migration, seed và SQL repositories được quản lý trong Git.
 
+Sau khi seed, xem [hướng dẫn triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md): từng nhóm nhận/trả contract nào, đọc/ghi bảng nào, trình tự triển khai, mapping, tests và cách bàn giao.
+
 ## Chạy local
 
 Python 3.11+; CI dùng Python 3.12. Chạy từ thư mục repo:
