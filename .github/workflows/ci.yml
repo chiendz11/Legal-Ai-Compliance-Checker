@@ -16,11 +16,11 @@ jobs:
           python-version: '3.12'
       - name: Check repository
         run: |
-          if [ -f pyproject.toml ]; then
-            python -m pip install -e '.[dev]' -c constraints.txt
-            ruff check .
-            ruff format --check .
-            pytest -q
-          else
-            test -s README.md
-          fi
+          python -m pip install -e './backend[dev]' -c constraints.txt
+          ruff check --config backend/pyproject.toml .
+          ruff format --check --config backend/pyproject.toml .
+          pytest -q -c backend/pyproject.toml
+          python -m scripts.parallel_dev --all-scenarios
+      - name: Verify installed package outside the repository
+        working-directory: /tmp
+        run: python -c 'from legal_checker.main import create_app; from legal_checker.modules.legal_knowledge.repository import Knowledge; assert len(Knowledge().criteria) == 356'

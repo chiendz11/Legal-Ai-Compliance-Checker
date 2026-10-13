@@ -3,10 +3,10 @@
 import argparse
 from pathlib import Path
 
-from app.adapters.knowledge_sources.snapshot import Knowledge
-from app.shared.config import Settings
 from devtools.fixture_builder import write_fixtures
 from devtools.parallel import FIXTURE_ROOT, SCENARIOS, FixturePack
+from legal_checker.core.config import Settings
+from legal_checker.modules.legal_knowledge.repository import Knowledge
 
 
 def main():

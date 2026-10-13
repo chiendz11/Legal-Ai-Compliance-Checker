@@ -6,13 +6,13 @@ Backend Python/FastAPI triển khai **bước 5–7 của mục 6 (Quy trình ng
 2. **Risk Aggregation:** C07 + C09 → C10; giữ nguồn `COMPLIANCE`, `CITATION`, `VERIFICATION` riêng.
 3. **Recommendation / Remediation:** C10 + knowledge + context → C11; mọi kết quả chờ human review.
 
-Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton/refactor toàn hệ thống hiện tại: `feat/brd-system-skeleton-v2`, phát triển từ `feat/brd-system-skeleton`.
+Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton trước: `feat/brd-system-skeleton-v2`, phát triển từ `feat/brd-system-skeleton`.
 
-Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend đã tách `api`, `workflows`, `business_modules` và `adapters`; `frontend/` mới là folder skeleton, chưa có UI runtime.
+Nhánh chuyển backend theo module: `feat/backend-module-layout`. Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend nằm tại `backend/src/legal_checker/`, tổ chức theo `api`, `core`, `shared`, `modules`, `workflows`, `worker`; xem [trách nhiệm từng folder](backend/README.md). `frontend/` mới là folder skeleton, chưa có UI runtime.
 
 Skeleton có module cho bước 1–9, contracts C01–C13/X01/X02, ports cho tài liệu/OCR, retrieval, LLM/audit, authorization, review và report. `DraftAssessmentWorkflow` nối adapters bước 1–4 với engines bước 5–7 khi được inject đầy đủ. Chỉ bước 5–7 có implementations mặc định; pipeline draft chưa được mở thành API full-assessment. Xem [hướng dẫn nối module](docs/module_integration.md).
 
-Ví dụ khởi tạo JSON/SQLite và giải thích từng dòng trong `bootstrap.py`: [hướng dẫn khởi tạo](docs/startup.md). Chạy demo bằng `python -m scripts.demo_bootstrap`.
+Ví dụ khởi tạo JSON/SQLite trong `api/dependencies.py` và `main.py`: [hướng dẫn khởi tạo](docs/startup.md). Chạy demo bằng `python -m scripts.demo_startup`.
 
 Gói bắt đầu song song cho 5 người nằm trên nhánh `feat/parallel-module-starter`: [hướng dẫn theo từng vai trò](docs/parallel_development.md), [fixtures](examples/parallel/) và [schema bàn giao](docs/parallel_contracts.schema.json). Chạy `python -m scripts.parallel_dev --all-scenarios`, hoặc dùng `--person 1` đến `--person 5` để lấy input/output mẫu và kiểm tra phần riêng.
 
@@ -23,8 +23,8 @@ Python 3.11+; CI dùng Python 3.12. Chạy từ thư mục repo:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]' -c constraints.txt
-uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8000
+pip install -e './backend[dev]' -c constraints.txt
+uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 Swagger: http://127.0.0.1:8000/docs. SQLite mặc định: `data/private/runtime.sqlite3`; cấu hình bằng biến môi trường `DATABASE_PATH`.
@@ -51,11 +51,11 @@ curl -s -X POST http://127.0.0.1:8000/api/v1/pipeline/steps-5-7 \
 
 Envelope có `ca_id`, `phien_ban_id`, `rule_version`, `legal_knowledge_version`, `knowledge_snapshot_sha256`, `run_id`, `trace_id`, `contract_version`. Output có thêm `contract_name`, `produced_at`, `payload`. Consumer module nhận trực tiếp output predecessor; không cần chạy lại retrieval/reasoning. API independent là phép tính thuần; endpoint pipeline mới ghi DB.
 
-Bước 5–7 nằm trong `app/business_modules/`, pipeline ở `app/workflows/pipelines/steps_5_7.py`, adapters JSON/SQLite ở `app/adapters/`. Package services cũ đã được xóa; code và tests import trực tiếp từ module sở hữu. Xem [mục đích các adapters kết nối kỹ thuật](app/adapters/README.md).
+Bước 5–7 nằm trong `backend/src/legal_checker/modules/compliance`, `risks`, `recommendations`; pipeline ở `workflows/steps_5_7.py`. Knowledge JSON reader thuộc `modules/legal_knowledge/repository.py`; SQLite run store thuộc `modules/assessments/repository.py`. Các imports dùng package `legal_checker`; package `app` trước đây đã được xóa. Tests nằm tại `backend/tests/`.
 
-Mỗi endpoint nhận đúng contract của mình: `Steps57Input` dành cho pipeline, `CriterionReasoningInput` dành cho reasoning và không chứa citation results. Payload gọi riêng bước 5 có tại [examples/reasoning.json](examples/reasoning.json). Tests/scripts sử dụng imports từ business_modules/contracts/adapters và cấu hình factory bằng `Settings`; không còn lớp chuyển tiếp của cấu trúc trước.
+Mỗi endpoint nhận đúng contract của mình: `Steps57Input` dành cho pipeline, `CriterionReasoningInput` dành cho reasoning và không chứa citation results. Payload gọi riêng bước 5 có tại [examples/reasoning.json](examples/reasoning.json). Tests/scripts sử dụng imports từ legal_checker.modules/shared.contracts và cấu hình factory bằng `Settings`; không còn lớp chuyển tiếp của cấu trúc trước.
 
-Schema input/output được khai báo trong [`app/contracts/`](app/contracts/); OpenAPI sinh tự động. Xem [hướng dẫn tích hợp](docs/implementation.md) về trường dữ liệu, ownership, evidence và persistence.
+Schema input/output được khai báo trong [`backend/src/legal_checker/shared/contracts/`](backend/src/legal_checker/shared/contracts/); OpenAPI sinh tự động. Xem [hướng dẫn tích hợp](docs/implementation.md) về trường dữ liệu, ownership, evidence và persistence.
 
 ## Quy tắc đã triển khai
 
@@ -90,9 +90,9 @@ python scripts/e2e_steps_5_7.py
 ```
 
 ```bash
-ruff check .
-ruff format --check .
-pytest -q
+ruff check --config backend/pyproject.toml .
+ruff format --check --config backend/pyproject.toml .
+pytest -q -c backend/pyproject.toml
 ```
 
 CI chạy cùng lệnh trên PR và `main`, với check name **`CI / required`**. Ruleset active áp dụng `refs/heads/main`: PR bắt buộc, **0 approval**, CI thành công và up-to-date theo main, resolve review discussions, chỉ squash, cấm xóa/force push, không bypass actor.

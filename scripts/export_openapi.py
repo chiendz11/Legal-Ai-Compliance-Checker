@@ -5,8 +5,8 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from app.main import create_app
-from app.shared.config import Settings
+from legal_checker.core.config import Settings
+from legal_checker.main import create_app
 
 
 def main():

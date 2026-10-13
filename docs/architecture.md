@@ -1,127 +1,97 @@
-# Kiến trúc và skeleton theo BRD v1.1
+# Kiến trúc backend theo module
 
-Lựa chọn triển khai của nhánh này: **modular monolith Python/FastAPI**, giữ backend tại `app/` để không đổi lệnh chạy đã có. BRD mô tả yêu cầu nghiệp vụ, không bắt buộc dùng microservices hoặc chọn framework frontend.
-
-## Cấu trúc
+Backend là modular monolith Python/FastAPI. Package `legal_checker` dùng src layout tại `backend/src/legal_checker/`; nghiệp vụ và repository được đặt cùng module theo cấu trúc người dùng chọn.
 
 ```text
-app/
-├── main.py                      # Composition root / factory
-├── bootstrap.py                 # Nối port với adapter thật
-├── api/
-│   ├── dependencies.py
-│   └── v1/
-│       ├── router.py
-│       └── routes/              # HTTP, validation input, status/error mapping
-├── contracts/                   # Pydantic theo ownership C01–C13, X01/X02
-├── shared/                      # Settings, stable IDs, conflict errors, shared validation
-├── workflows/
-│   ├── interfaces/              # Knowledge, run store, authorization, LLM audit
-│   ├── validation.py            # Kiểm tra contracts ở ranh giới downstream
-│   └── pipelines/
-│       ├── assessment.py        # Interface full flow, chưa chạy bước 1–9
-│       ├── draft_assessment.py  # Wiring bước 1–7 với upstream adapters được inject
-│       └── steps_5_7.py         # Pipeline đang hoạt động
-├── business_modules/
-│   ├── intake/                  # Bước 1
-│   ├── document_intelligence/   # Bước 2: profile/chunks/citations
-│   ├── scope_resolver/          # Bước 3A: scope/checklist
-│   ├── temporal_resolver/       # Bước 3A: version/relevant date
-│   ├── citation_validation/     # Bước 3B: nhánh độc lập
-│   ├── retrieval/               # Bước 4
-│   ├── compliance_reasoning/    # Bước 5: evidence gates, finding, numeric rules
-│   ├── rule_aggregation/        # Bước 5: C07 → C08
-│   ├── risk/                    # Bước 6
-│   ├── recommendation/          # Bước 7
-│   ├── human_review/            # Bước 8
-│   ├── reporting/               # Bước 9
-│   └── knowledge_curation/      # Nguồn luật, approval, release snapshot
-└── adapters/
-    ├── access_control/          # Identity/case/reviewer/curator adapters tương lai
-    ├── logs_and_audit/          # Trace/audit adapters tương lai, X02 cho LLM thật
-    ├── report_output/           # Report storage/export adapters tương lai
-    ├── knowledge_sources/       # JSON snapshot adapter hiện có
-    ├── database/                # SQLite adapter hiện có
-    ├── llm_providers/           # Provider adapters tương lai
-    ├── document_readers/        # Storage/PDF/DOCX/OCR adapters tương lai
-    └── search_backends/         # FTS/vector/reranker adapters tương lai
-frontend/src/                    # Folder skeleton, chưa chọn framework/UI runtime
-├── features/                    # upload, assessments, review, reports, knowledge
-└── shared/                      # api, components
-scripts/                         # Import workbook, export OpenAPI, E2E HTTP
-tests/                           # Regression, contract boundaries, workflow integration
-data/                            # Knowledge public và data/private bị gitignore
-docs/                            # BRD, contracts, OpenAPI, architecture và hướng dẫn
-configs/                         # Configuration ownership, chưa có cấu hình provider mới
-evals/gold/                      # Skeleton đánh giá chất lượng theo BRD mục 13
+backend/
+├── src/
+│   ├── legal_checker/
+│   │   ├── main.py
+│   │   ├── api/v1/                 # contracts, assessments, reviews, reports, legal_knowledge
+│   │   ├── core/                   # config, database, security, logging, exceptions
+│   │   ├── shared/                 # contracts, llm, embeddings, storage, ids, validation
+│   │   ├── modules/
+│   │   │   ├── documents/
+│   │   │   ├── legal_knowledge/
+│   │   │   ├── applicable_law/
+│   │   │   ├── citation_validation/
+│   │   │   ├── retrieval/
+│   │   │   ├── compliance/
+│   │   │   ├── risks/
+│   │   │   ├── recommendations/
+│   │   │   ├── assessments/
+│   │   │   ├── reviews/
+│   │   │   └── reports/
+│   │   ├── workflows/              # assessment_workflow, steps_5_7, handoffs, states
+│   │   └── worker/                 # celery_app và tasks, chưa cấu hình queue
+│   └── devtools/                   # Fixtures/replay cho phát triển
+├── alembic/versions/               # Vị trí migrations, chưa cấu hình Alembic
+├── tests/{unit,integration,contract,e2e}/
+├── pyproject.toml
+└── Dockerfile
 ```
 
-## Mapping BRD → module → contracts → trạng thái
+[Backend README](../backend/README.md) mô tả trạng thái và trách nhiệm từng folder. `frontend`, `scripts`, `docs`, `data`, `examples`, `configs` và `evals` vẫn ở root repo. Tài liệu BRD/contracts người dùng cung cấp được giữ làm baseline, kể cả các ví dụ cấu trúc cũ trong tài liệu gốc.
 
-| Module | BRD | Input → Output | Trạng thái nhánh này |
-|---|---|---|---|
-| Intake | BR-01 | Source/context → C01 | Interface + schema |
-| Document Intelligence | BR-02, BR-19 | C01 → C02 + C03 + chunks | Interface + schema |
-| Scope Resolver | BR-03, BR-04, BR-06 | C02 + knowledge → C04 | Interface + schema |
-| Temporal Resolver | BR-05 | C04 + C02 + knowledge → C05 | Interface; C05 hiện dùng ở bước 5 |
-| Citation Validator | BR-20–24 | C03 + profile/legal sources → C09 | Interface; C09 hiện dùng ở risk |
-| Retrieval | BR-07, BR-08 | C05 + criterion/chunks → C06 | Interface; C06 hiện dùng ở reasoning |
-| Compliance Reasoning | BR-08, BR-09, BR-13, BR-16 | C05 + C06 + knowledge/chunks/observations → C07 | Đã chạy; numeric rule + gates; chưa nối LLM |
-| Rule Aggregator | BR-10 | C05 + C07 + aggregation rule → C08 | Đã chạy |
-| Risk | BR-11, BR-25 | C07 + C09 + risk rules/catalog → C10 | Đã chạy |
-| Recommendation | BR-12 | C10 + requirement/context + template/link → C11 | Đã chạy bằng template |
-| Human Review | BR-14, BR-18, AC-06 | AI output + reviewer → C12 | Interface + schema |
-| Report | BR-15, AC-11 | C02/C05/C07–C12 + snapshot → C13 | Typed schema + DRAFT helper; export/publish chưa có |
-| Knowledge Curation | BQ-08, BO-02 | Curator-approved knowledge → X01 | Interface; JSON import/checksum đã có |
+## Mapping BRD
 
-Skeleton C01–C04/C12/C13/X01/X02 là starter schemas/interface để team có thể mở rộng; chúng chưa chứng minh acceptance criteria tương ứng đã hoàn thành. Profile C02 đã có fields/subjects/time markers typed và evidence provenance. Report có các sections typed; summary/audit vẫn là JSON objects cần mở rộng khi tích hợp publishing. Các interface `Protocol` không có giả lập kết quả hoặc route trả thành công cho chức năng chưa có.
+| Bước / Chức năng | Module | Dữ liệu và trạng thái |
+|---|---|---|
+| 1–2 Document | `documents` | C01 → C02/C03/chunks; interfaces, chưa có parser/OCR thật |
+| Knowledge | `legal_knowledge` | Repository JSON có checksum; curation/versioning là interface |
+| 3A Scope/Temporal | `applicable_law` | C02 → C04 → C05; interfaces |
+| 3B Citation | `citation_validation` | C03 + profile/knowledge → C09; interface độc lập |
+| 4 Retrieval | `retrieval` | C05 + chunks → C06; interfaces |
+| 5 Compliance | `compliance` | C05/C06/observations/knowledge → C07 → C08; engines deterministic |
+| 6 Risk | `risks` | C07 + C09 → C10; hai mappers giữ riêng nguồn |
+| 7 Recommendation | `recommendations` | C10 + templates → C11; pending review |
+| Assessment | `assessments` | Service gọi workflow, repository lưu JSON run snapshots trong SQLite |
+| 8 Review | `reviews` | C12 service/repository interfaces, chưa triển khai |
+| 9 Report | `reports` | Builder C13 DRAFT/PENDING; chưa export/persist/publish |
 
-## Ranh giới dependency
+## Dependency
 
-- API đọc contracts, gọi workflows/business modules và chuyển lỗi sang HTTP.
-- Pipeline điều phối, truyền Context và input cần thiết cho mỗi module.
-- Business modules đọc contracts + shared + interfaces; không import FastAPI, SQLite hoặc provider cụ thể.
-- Adapters hiện thực interfaces; `bootstrap.py` nối implementations. `create_app(services=...)` cho phép thay adapter khi integration test.
-- Contracts không chứa lời gọi HTTP/DB/LLM. Module không sửa field thuộc owner khác.
-- Full-assessment skeleton giữ Applicable Law và Citation Validation độc lập đến Risk/Report. Scope không nhận contract citations làm input.
+- API dùng shared contracts và gọi module service/workflow; API không chứa rules pháp lý.
+- Workflows chọn thứ tự gọi, truyền context/knowledge và kiểm tra bàn giao.
+- Module sở hữu thuật toán, prompts, queries và repository của mình.
+- `core/database.py` tạo connection chung; repository sở hữu SQL và transaction. Hiện mới có assessment repository SQLite.
+- LLM/embedding/storage dùng client/capability chung trong `shared`; provider implementations chưa có.
+- Các hàm deterministic trong compliance/risk/recommendation không mở DB hoặc gọi provider. Khi thêm LLM, module service/observation provider ghép đề xuất với facts/gates đã xác minh.
+- Contracts chỉ mô tả dữ liệu. Runtime không import `devtools`.
+- `main.create_app` và `api.dependencies.build_services` chọn implementations; các Protocol được đặt cùng module sở hữu.
 
-C05 là context áp dụng cho case, được Temporal Resolver tạo và cả Retrieval/Reasoning sử dụng. C06 là evidence references; không thay thế checklist hoặc quyết định scope/version. Endpoint `/api/v1/reasoning` nhận `CriterionReasoningInput` chỉ chứa C05/C06/chunks/observations. `Steps57Input` chỉ thuộc endpoint pipeline; citation branch hội tụ tại risk.
-
-C07 tổng hợp evidence cho một criterion; C08 nhóm findings C07 theo `yeu_cau_ca_id` và dùng aggregation rule. Risk đọc C07/C09; citation không sửa C08. Recommendation giữ severity và pending review.
-
-## Chỗ nối LLM và audit
-
-`business_modules/compliance_reasoning/interfaces.py` định nghĩa `CriterionProposalProvider`: nhận context/requirement/criterion/evidence/knowledge, trả finding/giải thích/quotes. Output proposal không có trusted gates. Provider implementation sẽ đặt trong `adapters/llm_providers/`; orchestration/adapter phải ghép proposal với facts/gates đã xác minh rồi đưa vào engine.
-
-Port này chưa được gọi trong runtime hiện tại. Không có API key/provider mặc định hoặc log LLM giả. Khi tích hợp thật phải dùng X02 (`contracts/audit.py`) và `LlmAuditSink`. Recommendation LLM tương lai phải bảo toàn evidence/legal basis/action/severity và template constraints.
-
-Authorization (`AccessPolicy`) là interface cho phân quyền case/tenant/reviewer/curator. Nó chưa được cắm vào API hiện tại; chưa có production auth hoặc full reviewed-result/report publishing.
-
-## Tương thích và kiểm tra
-
-Pipeline dùng `app.workflows.pipelines.steps_5_7`, engines dùng `app.business_modules.*`, validation dùng `app.shared.validation`/`app.workflows.validation`; contracts import theo owning module. Các file/package chuyển tiếp của cấu trúc trước đã được xóa. Factory nhận `Settings` hoặc adapters được inject qua `Services`; cấu hình mặc định đọc environment. Knowledge snapshot và SQLite schema giữ nguyên. Xem [hướng dẫn integration](module_integration.md) và [adapters kết nối kỹ thuật](../app/adapters/README.md).
-
-Nhánh `feat/brd-system-skeleton-v2` bổ sung `contracts/workflow.py` và `DraftAssessmentWorkflow`. Workflow giữ C01 pin, kiểm tra profile/chunks/citations cùng hợp đồng, bảo toàn checklist và field scope khi Temporal tạo C05, rồi chuyển input đã ghép vào pipeline bước 5–7. `ObservationProvider` nối facts/gates đã xác minh với đề xuất rule/LLM. Workflow không tự tạo adapter mặc định và không trả báo cáo published. Upstream production quality chưa được chứng minh bằng test fixtures.
-
-Ports mới: `source_documents.py`, `evidence_search.py`, `review_store.py`, `report_store.py`. Infrastructure có chỗ đặt authorization, observability và reporting adapters. Frontend assessments được chia tiếp thành profile/checklist/evidence/compliance/citations/risks/recommendations. Xem [module integration](module_integration.md).
-
-Validation C05/C09 được tách thành helper riêng; API downstream không tạo một input pipeline giả để kiểm tra context. C07 consumer kiểm tra legal basis và decision-rule snapshot; C10 consumer kiểm tra risk rule, branch, criterion checklist, severity và legal basis trước khi chọn khuyến nghị. Duplicate requirement/citation/risk IDs bị từ chối.
-
-```bash
-ruff check .
-ruff format --check .
-pytest -q
-python scripts/export_openapi.py
+```mermaid
+flowchart TD
+    API[API] --> AS[Assessment service]
+    AS --> W[Workflow]
+    W --> C[Compliance: C07 và C08]
+    C --> R[Risk: C10]
+    CV[Citation: C09] --> R
+    R --> N[Recommendation: C11]
+    AS --> DB[Assessment repository]
+    DB --> CONN[Core database]
+    CONN --> SQL[SQLite]
+    K[Knowledge repository] --> W
 ```
 
-Để chạy E2E HTTP, bật server như README rồi chạy:
+Applicable Law chỉ nhận profile/scope/knowledge; Citation Validation nhận citations/profile/knowledge riêng. C09 hội tụ ở Risk/Report, không sửa C05 hoặc C08. C05 vẫn là context/checklist cho Retrieval và Compliance; C06 chỉ là evidence references.
 
-```bash
-python scripts/e2e_steps_5_7.py
-```
+`DraftAssessmentWorkflow` trong `workflows/assessment_workflow.py` chạy khi được inject đủ upstream services. Nó giữ C01 pin, C04/C05/C06, C03/C09 và C07–C11 trong `AssessmentDraft`; chưa phải workflow đã triển khai đầy đủ bước 1–9. Fixtures upstream dùng để kiểm tra bàn giao, không chứng minh OCR/LLM/retrieval quality.
 
-Script gọi reasoning → aggregation → risk → recommendation; so sánh với pipeline, GET snapshot và kiểm tra idempotency. Mỗi lần có run ID mới; output mặc định ở `data/private/e2e_result.json`.
+## Di chuyển code đang có
 
-## Phát triển song song cho 5 người
+| Chức năng trước | Nơi sở hữu hiện tại |
+|---|---|
+| Criterion reasoning + requirement aggregation | `modules/compliance/criterion_reasoner.py`, `requirement_aggregator.py` |
+| Entry point Compliance | `modules/compliance/service.py:evaluate_compliance` |
+| Risk branches | `modules/risks/compliance_mapper.py`, `citation_mapper.py`, `aggregator.py` |
+| Recommendation | `modules/recommendations/generator.py`, `validator.py` |
+| JSON knowledge reader | `modules/legal_knowledge/repository.py` |
+| SQLite run store | `modules/assessments/repository.py`, connection chung trong `core/database.py` |
+| C13 draft | `modules/reports/builder.py` |
+| Document/source/search interfaces | `modules/documents/parser.py`, `shared/storage/source.py`, `modules/retrieval/` |
+| Khởi tạo dependency | `api/dependencies.py`, được gọi từ `main.py` |
 
-Xem [hướng dẫn bàn giao](parallel_development.md): schemas tại `contracts/handoffs.py`, generated JSON Schema, bảy scenario JSON/DOCX có checksum và tests theo từng người. `devtools/` chỉ chứa development helpers, không được import bởi runtime modules. Pipeline bước 5–7 gọi entry point Người 4 `evaluate_compliance`, rồi hợp nhất nhánh citation; draft workflow giữ C09 để tạo input report.
+Không giữ package `app`, `business_modules`, `adapters`, `workflows/interfaces` hay import aliases cho đường dẫn trước. API payloads, knowledge snapshot và SQLite schema giữ nguyên. Các endpoint hiện có được giữ; routes reviews/reports/contracts mới chỉ có APIRouter rỗng.
+
+Xem [khởi tạo](startup.md), [nối module](module_integration.md) và [phát triển song song](parallel_development.md).

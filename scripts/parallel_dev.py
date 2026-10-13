@@ -4,11 +4,10 @@ import argparse
 import json
 from pathlib import Path
 
-from pydantic import ValidationError
-
-from app.adapters.knowledge_sources.snapshot import Knowledge
-from app.shared.config import Settings
 from devtools.parallel import FIXTURE_ROOT, SCENARIOS, FixturePack, json_text
+from legal_checker.core.config import Settings
+from legal_checker.modules.legal_knowledge.repository import Knowledge
+from pydantic import ValidationError
 
 
 def main():

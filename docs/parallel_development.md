@@ -1,6 +1,6 @@
 # Bắt đầu phát triển song song theo phân công 5 người
 
-Nhánh `feat/parallel-module-starter` cung cấp contracts, input/output mẫu và conformance tests để mỗi người bắt đầu trước khi modules phía trước hoàn thành. Knowledge dùng snapshot hiện tại; mọi input của cùng case giữ nguyên IDs, deployment, run, trace và checksum.
+Nhánh `feat/parallel-module-starter` cung cấp contracts, input/output mẫu và conformance tests để mỗi người bắt đầu trước khi modules phía trước hoàn thành. Code backend hiện nằm trên nhánh `feat/backend-module-layout`, tại `backend/src/legal_checker/`. Development helpers ở `backend/src/devtools/`. Knowledge dùng snapshot hiện tại; mọi input của cùng case giữ nguyên IDs, deployment, run, trace và checksum.
 
 ## Chạy lần đầu
 
@@ -8,9 +8,9 @@ Từ thư mục repo, với Python 3.11+:
 
 ```bash
 source .venv/bin/activate
-pip install -e '.[dev]' -c constraints.txt
+pip install -e './backend[dev]' -c constraints.txt
 python -m scripts.parallel_dev --all-scenarios
-pytest -q tests/parallel
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel
 ```
 
 Nếu chưa có `.venv`, tạo bằng `python -m venv .venv` trước khi activate. Lệnh install cập nhật editable package để import được `devtools` mới. Demo không cần DB, API key, queue hay services upstream đang chạy.
@@ -21,15 +21,15 @@ Nếu chưa có `.venv`, tạo bằng `python -m venv .venv` trước khi activa
 
 | Người | Code sở hữu hiện tại | Input files | Output model/file |
 |---|---|---|---|
-| 1: Data/Document | `business_modules/document_intelligence`, `knowledge_curation`; adapters tài liệu/knowledge | `document_input.json`, `source.docx` | `DocumentIntelligenceResult` / `document_output.json`: C02, chunks, C03 |
-| 2: Legal | `scope_resolver`, `temporal_resolver`, `citation_validation` | `scope_input.json`, `temporal_input.json`, `citation_input.json` | `LegalOutput` / `legal_output.json`: C04, C05, C09 |
-| 3: Retrieval | `business_modules/retrieval`, `adapters/search_backends` | `retrieval_input.json`: C05 + chunks | `list[RetrievalEvidence]` / `retrieval_output.json`: C06 |
-| 4: Compliance | `compliance_reasoning`, `rule_aggregation`, compliance risk/recommendation | `compliance_input.json`: C05 + C06 + chunks + observations | `ComplianceOutput` / `compliance_output.json`: C07, C08 và criterion-sourced risks/actions |
-| 5: Integration/UI | `api`, `workflows`, persistence, draft report, frontend | `integration_input.json`: document + legal + compliance | `FinalReport` / `report_output.json`: C13 draft; `pipeline_output.json` là checkpoint C07–C11 |
+| 1: Data/Document | `modules/documents`, `modules/legal_knowledge` | `document_input.json`, `source.docx` | `DocumentIntelligenceResult` / `document_output.json`: C02, chunks, C03 |
+| 2: Legal | `modules/applicable_law`, `modules/citation_validation` | `scope_input.json`, `temporal_input.json`, `citation_input.json` | `LegalOutput` / `legal_output.json`: C04, C05, C09 |
+| 3: Retrieval | `modules/retrieval` | `retrieval_input.json`: C05 + chunks | `list[RetrievalEvidence]` / `retrieval_output.json`: C06 |
+| 4: Compliance | `modules/compliance`, `modules/risks`, `modules/recommendations` | `compliance_input.json`: C05 + C06 + chunks + observations | `ComplianceOutput` / `compliance_output.json`: C07, C08 và criterion-sourced risks/actions |
+| 5: Integration/UI | `api`, `workflows`, `modules/assessments`, `modules/reports`, frontend | `integration_input.json`: document + legal + compliance | `FinalReport` / `report_output.json`: C13 draft; `pipeline_output.json` là checkpoint C07–C11 |
 
 Người 5 nối modules và hợp nhất nhánh citation. Người 4 không tạo citation warnings; `ComplianceOutput` từ chối risks có nguồn citation. Interface của từng module vẫn nằm tại owning service/ports hiện tại.
 
-Contracts nằm trong `app/contracts/handoffs.py` và tái sử dụng schemas C01–C11/C13. Schema JSON cho tooling/frontend: `docs/parallel_contracts.schema.json`. DTOs bàn giao này chưa được mở thành các HTTP endpoints mới.
+Contracts nằm trong `backend/src/legal_checker/shared/contracts/handoffs.py` và tái sử dụng schemas C01–C11/C13. Schema JSON cho tooling/frontend: `docs/parallel_contracts.schema.json`. DTOs bàn giao này chưa được mở thành các HTTP endpoints mới.
 
 ## Scenarios có sẵn
 
@@ -58,7 +58,7 @@ Ví dụ Người 3:
 ```bash
 python -m scripts.parallel_dev --person 3 --scenario satisfied \
   --output-dir data/private/parallel
-pytest -q tests/parallel/test_person_3_retrieval.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_3_retrieval.py
 ```
 
 Input được ghi tại `data/private/parallel/satisfied/person_3/input.json`; output tham chiếu ở cùng folder. Chạy tương tự bằng `--person 1`, `2`, `4`, `5`. Thư mục output nằm trong `data/private` đã gitignore.
@@ -66,11 +66,11 @@ Input được ghi tại `data/private/parallel/satisfied/person_3/input.json`; 
 Tests riêng:
 
 ```bash
-pytest -q tests/parallel/test_person_1_documents.py
-pytest -q tests/parallel/test_person_2_legal.py
-pytest -q tests/parallel/test_person_3_retrieval.py
-pytest -q tests/parallel/test_person_4_compliance.py
-pytest -q tests/parallel/test_person_5_integration.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_1_documents.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_2_legal.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_3_retrieval.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_4_compliance.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_5_integration.py
 ```
 
 Mỗi người load input bằng các Pydantic models trong `handoffs.py`, gọi code riêng rồi serialize output bằng `model_dump(mode="json")` hoặc `model_dump_json()`. Với output list, serialize từng phần tử. Người 2 trả object có ba keys `scope`, `requirements`, `citations`; branch scope nhận `ScopeInput` không có field citations.
@@ -88,17 +88,17 @@ Lệnh trả exit code 0 nếu output đáp ứng schema và các checks tại �
 
 Có thể thêm `--compare-reference` để yêu cầu output giống reference JSON tổng hợp. Conformance pass không chứng minh model dự đoán đúng về mặt pháp lý. Với Người 4, validator còn kiểm tra C08/risk/recommendation theo rules/templates hiện tại; những ràng buộc này là baseline của `parallel-v1`, cần cập nhật contracts/tests khi mở rộng recommendation bằng LLM.
 
-Các validator gọi trực tiếp được từ tests tại `app/workflows/handoffs.py`: `validate_document`, `validate_legal`, `validate_retrieval`, `validate_compliance`, `validate_report`.
+Các validator gọi trực tiếp được từ tests tại `backend/src/legal_checker/workflows/handoffs.py`: `validate_document`, `validate_legal`, `validate_retrieval`, `validate_compliance`, `validate_report`.
 
 ## Thay riêng một module mẫu trong workflow chung
 
-`devtools/replay.py` tạo upstream fixtures với đúng interfaces hiện có. `dataclasses.replace` thay một slot bằng implementation của bạn. Đây là integration test template cho một RetrievalService đã được bạn khởi tạo:
+`backend/src/devtools/replay.py` tạo upstream fixtures với đúng interfaces hiện có. `dataclasses.replace` thay một slot bằng implementation của bạn. Đây là integration test template cho một RetrievalService đã được bạn khởi tạo:
 
 ```python
 from dataclasses import replace
 
-from app.adapters.knowledge_sources.snapshot import Knowledge
-from app.workflows.pipelines.draft_assessment import DraftAssessmentWorkflow
+from legal_checker.modules.legal_knowledge.repository import Knowledge
+from legal_checker.workflows.assessment_workflow import DraftAssessmentWorkflow
 from devtools.parallel import FIXTURE_ROOT, FixturePack
 from devtools.replay import fixture_modules
 
@@ -121,7 +121,7 @@ Các slots khác: `documents`, `scope`, `temporal`, `citations`, `observations`,
 
 Người 1 dùng `pack.read_source(case.source)` để lấy bytes DOCX trong test; hàm kiểm tra source/hash và chỉ đọc nguồn fixture đã pin. Source URI `fixture://...` không phải URL object storage production.
 
-`AssessmentDraft` giữ cả `extracted_citations` và `citation_findings`. `report_input_from_draft()` chuyển draft thành input cho report, bảo toàn C09 và tách criterion-sourced risks của Người 4. `business_modules/reporting/draft.py` chỉ dựng C13 `DRAFT/PENDING`, chưa export/persist/publish report.
+`AssessmentDraft` giữ cả `extracted_citations` và `citation_findings`. `report_input_from_draft()` chuyển draft thành input cho report, bảo toàn C09 và tách criterion-sourced risks của Người 4. `modules/reports/builder.py` chỉ dựng C13 `DRAFT/PENDING`, chưa export/persist/publish report.
 
 ## Quy tắc sửa phần chung
 
@@ -139,7 +139,7 @@ python -m scripts.generate_parallel_fixtures
 python -m scripts.export_parallel_contracts
 python -m scripts.export_openapi
 python -m scripts.parallel_dev --all-scenarios
-pytest -q
+pytest -q -c backend/pyproject.toml
 ```
 
-Gói này không triển khai PostgreSQL, queue, OCR/LLM/search providers hay production authentication. Những phần đó có thể phát triển song song và thay vào các điểm bàn giao đã có. CI hiện chạy toàn bộ tests, bao gồm `tests/parallel`.
+Gói này không triển khai PostgreSQL, queue, OCR/LLM/search providers hay production authentication. Những phần đó có thể phát triển song song và thay vào các điểm bàn giao đã có. CI hiện chạy toàn bộ tests, bao gồm `backend/tests/contract/parallel`.

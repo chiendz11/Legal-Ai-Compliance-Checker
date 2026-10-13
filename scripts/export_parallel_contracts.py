@@ -1,8 +1,8 @@
 """Export the shared handoff schemas for independent module implementations."""
 
-from app.contracts.handoffs import HandoffSet
-from app.shared.config import PROJECT_ROOT
 from devtools.parallel import json_text
+from legal_checker.core.config import PROJECT_ROOT
+from legal_checker.shared.contracts.handoffs import HandoffSet
 
 
 def main():
