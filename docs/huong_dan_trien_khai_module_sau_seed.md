@@ -578,7 +578,7 @@ ORDER BY a.yeu_cau_ca_id, r.thu_hang, r.truy_xuat_id;
 Quote check thực thi theo text chunk:
 
 ```python
-assert chunk.noi_dung[evidence.ky_tu_bat_dau:evidence.ky_tu_ket_thuc] == evidence.trich_dan
+assert chunk.noi_dung[evidence.ky_tu_bat_dau : evidence.ky_tu_ket_thuc] == evidence.trich_dan
 ```
 
 `chunk`/`evidence` trong ví dụ là DTO đã dựng. Offset là vị trí ký tự trong text chunk,
@@ -833,10 +833,12 @@ with connect_postgres(os.environ["DATABASE_URL"]) as connection:
 
 fields = set(ApplicableRequirement.model_fields) - {"reason"}
 requirements = [
-    ApplicableRequirement.model_validate({
-        **{name: row[name] for name in fields},
-        "reason": {"summary": row["ly_do"] or ""},
-    })
+    ApplicableRequirement.model_validate(
+        {
+            **{name: row[name] for name in fields},
+            "reason": {"summary": row["ly_do"] or ""},
+        }
+    )
     for row in rows
 ]
 print([item.requirement_id for item in requirements])
