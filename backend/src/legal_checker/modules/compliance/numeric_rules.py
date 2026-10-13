@@ -35,26 +35,47 @@ def numeric_finding(criterion_id: str, rule: dict, observation: Observation):
                 raise ValueError("Deposit inclusion must be explicitly known")
             value = ratio(first + (Decimal(0) if included else deposit), "contract_price")
             passed = value <= Decimal(str(rule["first_payment_including_deposit_lte_ratio"]))
+        elif "first_payment_lte_ratio" in rule:
+            # The historical knowledge leaves inclusion of a deposit for expert review.
+            # A zero-deposit scenario has no inclusion ambiguity; never assume absent = zero.
+            if amount("deposit") != 0:
+                raise ValueError("Historical deposit inclusion requires separate legal review")
+            value = ratio(amount("first_payment"), rule.get("denominator", "contract_price"))
+            passed = value <= Decimal(str(rule["first_payment_lte_ratio"]))
         elif "prehandover_cumulative_lte_ratio" in rule:
-            foreign = facts.get("foreign_seller_art10_4")
+            modern = "foreign_seller_art10_4_lte_ratio" in rule
+            foreign = facts.get("foreign_seller_art10_4" if modern else "foreign_invested_seller")
             if type(foreign) is not bool:
                 raise ValueError("Seller classification is unresolved")
             value = ratio(amount("prehandover_cumulative"), "contract_price")
-            limit = rule[
+            foreign_key = (
                 "foreign_seller_art10_4_lte_ratio"
-                if foreign
-                else "prehandover_cumulative_lte_ratio"
-            ]
+                if modern
+                else "foreign_invested_seller_lte_ratio"
+            )
+            limit = rule[foreign_key if foreign else "prehandover_cumulative_lte_ratio"]
             passed = value <= Decimal(str(limit))
         elif "before_certificate_cumulative_lte_ratio" in rule:
             value = ratio(amount("before_certificate_cumulative"), "contract_price")
             passed = value <= Decimal(str(rule["before_certificate_cumulative_lte_ratio"]))
         elif "maintenance_ratio" in rule:
-            value = ratio(amount("maintenance_amount"), "maintenance_base_price")
-            separate = facts.get("separate_from_sale_price")
-            if type(separate) is not bool:
-                raise ValueError("Maintenance separation is unknown")
-            passed = value == Decimal(str(rule["maintenance_ratio"])) and separate
+            historical = rule.get("included_in_sale_payment") is True
+            base = (
+                rule.get("denominator", "maintenance_base_price")
+                if historical
+                else "maintenance_base_price"
+            )
+            value = ratio(amount("maintenance_amount"), base)
+            treatment = facts.get(
+                "included_in_sale_payment" if historical else "separate_from_sale_price"
+            )
+            if type(treatment) is not bool:
+                raise ValueError("Maintenance price treatment is unknown")
+            if historical and facts.get("maintenance_base_definition_resolved") is not True:
+                raise ValueError(
+                    "Historical maintenance denominator requires separate legal review"
+                )
+            passed = value == Decimal(str(rule["maintenance_ratio"])) and treatment
         elif "warranty_min_months" in rule:
             if facts.get("warranty_start") != rule["start"]:
                 raise ValueError("Warranty starting event is not resolved")

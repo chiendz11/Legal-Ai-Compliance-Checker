@@ -5,6 +5,7 @@ import json
 
 from devtools.evaluation_controls import verify_control
 from devtools.qa_validation import join_artifacts
+from devtools.synthetic_workbook import assert_synthetic_response
 from legal_checker.core.config import Settings
 from legal_checker.core.postgres import connect_postgres
 from legal_checker.modules.assessments.audit import digest
@@ -23,9 +24,11 @@ def main():
     knowledge = Knowledge(args.database_url)
     passed = []
     failed = []
+    synthetic_passed = []
     with connect_postgres(args.database_url) as connection:
         cases = connection.execute(
-            "SELECT * FROM qa.case_manifest WHERE split=%s ORDER BY case_id", (args.split,)
+            "SELECT * FROM qa.case_manifest WHERE split=%s ORDER BY case_id",
+            (args.split,),
         ).fetchall()
         if not cases:
             parser.error("No cases in requested split; seed the appropriate workbook first")
@@ -44,7 +47,8 @@ def main():
                 raw = artifacts[(cid, "INPUT", "PipelineRequest", cid)]
                 if case["case_kind"] == "CONTROLLED":
                     assertions = connection.execute(
-                        "SELECT * FROM qa.controlled_assertions WHERE case_id=%s", (cid,)
+                        "SELECT * FROM qa.controlled_assertions WHERE case_id=%s",
+                        (cid,),
                     ).fetchone()
                     verify_control(
                         {
@@ -59,6 +63,16 @@ def main():
                         artifacts[(cid, "EXPECTED", "PipelineResponse", cid)]
                     )
                     actual = evaluate(PipelineRequest.model_validate(raw), knowledge)
+                    if case["label_quality"] == "SYNTHETIC_SPEC":
+                        assertions = connection.execute(
+                            "SELECT expected_assertions_json FROM qa.controlled_assertions "
+                            "WHERE case_id=%s",
+                            (cid,),
+                        ).fetchone()
+                        if not assertions:
+                            raise ValueError("Synthetic case is missing authored assertions")
+                        assert_synthetic_response(assertions["expected_assertions_json"], actual)
+                        synthetic_passed.append(cid)
                     if digest(actual.payload) != digest(expected.payload):
                         raise ValueError("Output differs from deterministic reference")
                 passed.append(cid)
@@ -70,9 +84,13 @@ def main():
                 "split": args.split,
                 "passed": len(passed),
                 "failed": failed,
-                "metric_kind": "SYNTHETIC_SPEC_CHECK"
+                "metric_kind": "SYNTHETIC_SPEC_CHECK_AND_REFERENCE_REPLAY"
+                if synthetic_passed
+                else "SYNTHETIC_SPEC_CHECK"
                 if args.split == "REGRESSION"
                 else "DETERMINISTIC_REFERENCE_REPLAY",
+                "authored_synthetic_assertions_passed": len(synthetic_passed),
+                "production_modules_1_4_evaluated": False,
                 "legal_accuracy_measured": False,
                 "ocr_or_llm_quality_measured": False,
                 "pending_document_implementation": pending_documents,

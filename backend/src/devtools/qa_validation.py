@@ -39,6 +39,10 @@ def validate_qa(seed):
     for row in cases.values():
         if row["split"] not in ("DEV", "VALIDATION", "TEST", "REGRESSION"):
             raise SeedError("Invalid QA split")
+        if row["case_kind"] not in ("CORPUS", "CONTROLLED"):
+            raise SeedError("Invalid QA case_kind")
+        if row["label_quality"] not in ("SILVER_GUARD_REFERENCE", "SYNTHETIC_SPEC"):
+            raise SeedError("Invalid QA label_quality")
         if row["case_kind"] == "CORPUS" and runtime.get(row["case_id"]) != row["hop_dong_id"]:
             raise SeedError("QA corpus case references a foreign runtime contract")
         if row["group_id"] in splits and splits[row["group_id"]] != row["split"]:
@@ -47,4 +51,9 @@ def validate_qa(seed):
     for table in ("artifacts", "controlled_assertions"):
         if any(r["case_id"] not in cases for r in seed.qa_tables.get(table, [])):
             raise SeedError("QA record references an unknown case")
+    if any(
+        r["role"] not in ("INPUT", "EXPECTED", "PROPOSAL")
+        for r in seed.qa_tables.get("artifacts", [])
+    ):
+        raise SeedError("Invalid QA artifact role")
     join_artifacts(seed.qa_tables.get("artifacts", []))

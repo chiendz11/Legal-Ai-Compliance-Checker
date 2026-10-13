@@ -961,6 +961,13 @@ def subset_release(seed, splits, hide_expected=False, include_controls=False):
         for row in data["ca_danh_gia"]:
             row["profile_snapshot_json"] = {"evaluation_mode": "RAW_INPUT_ONLY"}
         qa["change_log"] = []
+        qa["controlled_assertions"] = []
+        for row in qa["case_manifest"]:
+            row["limitations_json"] = {
+                "synthetic": row["limitations_json"].get("synthetic", False),
+                "legal_gold": False,
+                "evaluation_mode": "RAW_INPUT_ONLY",
+            }
         qa["artifacts"] = [r for r in qa["artifacts"] if r["contract_name"] == "DocumentInput"]
     result = WorkbookSeed(seed.source_sha256, data, qa)
     validate_references(result)
@@ -980,9 +987,9 @@ def excel_value(value, kind):
     return value
 
 
-def write_release(seed, path, distribution):
+def write_release(seed, path, distribution, *, version=VERSION, synthetic=False, coverage=None):
     workbook = Workbook(write_only=True)
-    workbook.properties.title = VERSION + " " + distribution
+    workbook.properties.title = version + " " + distribution
 
     def sheet(name, headers, rows):
         ws = workbook.create_sheet(name)
@@ -1015,7 +1022,7 @@ def write_release(seed, path, distribution):
         ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(rows) + 1}"
 
     guide = [
-        ["Phiên bản", VERSION],
+        ["Phiên bản", version],
         ["Distribution", distribution],
         ["Runtime cases", len(seed.tables["ca_danh_gia"])],
         ["Quality", "SILVER_GUARD_REFERENCE + separate SYNTHETIC_SPEC; NO LEGAL GOLD"],
@@ -1043,6 +1050,26 @@ def write_release(seed, path, distribution):
         ["C13", "bao_cao_danh_gia is a compact projection. Full typed C13 in QA_ARTIFACTS."],
         ["DB", "50 business tables + QA schema; seed each workbook into a separate fresh DB."],
     ]
+    if synthetic:
+        guide = [
+            ["Phiên bản", version],
+            ["Distribution", distribution],
+            ["Runtime cases", len(seed.tables["ca_danh_gia"])],
+            ["Mode", "SYNTHETIC_EVALUATION; facts/dates/gates are scenario assumptions"],
+            ["Quality", "SYNTHETIC_SPEC; authored assertions; no human legal approval"],
+            ["Knowledge SHA256", guide[4][1]],
+            ["Split", "60 DEV / 15 VALIDATION / 15 TEST; all developers use the same DEV pack"],
+            ["Source", "Generated Vietnamese text PDFs and matching UTF-8 text; actual bytes/SHA"],
+            [
+                "C05",
+                "Selected-family reference resolver; production services still need development",
+            ],
+            ["C07/C08", "Scenario assertions authored before engine execution; compare both"],
+            ["Review", "All human_verified=false; reports DRAFT and review PENDING"],
+            ["C13", "Full typed report in QA_ARTIFACTS; native report table is compact"],
+            ["Scope", "Nine selected requirement families; not an exhaustive legal checklist"],
+            ["Test inputs", "No module outputs, assertions, scenario names or target labels"],
+        ]
     sheet("QA_README", ["muc", "noi_dung"], guide)
     sheet(
         "BANG_VA_SO_DONG",
@@ -1061,37 +1088,64 @@ def write_release(seed, path, distribution):
             )
         ],
     )
-    sheet(
-        "QA_TODO",
-        ["module", "can_bo_sung", "current_eligibility"],
+    todo = [
         [
+            "Document Intelligence",
+            "Independent OCR/profile annotation; align downloaded file with source text",
+            "TEXT_REFERENCE_ONLY",
+        ],
+        [
+            "Scope/Temporal",
+            "Verify date/scope/transition for corpus cases; complete checklist",
+            "UNKNOWN_GUARD_PATH",
+        ],
+        [
+            "Retrieval",
+            "Independent relevance annotation; production embeddings",
+            "LEXICAL_REFERENCE_NOT_RELEVANCE_GOLD",
+        ],
+        [
+            "Compliance/Risk/Recommendation",
+            "Human legal review for corpus; synthetic assertions for branch coverage",
+            "SILVER_AND_SYNTHETIC_REGRESSION",
+        ],
+        [
+            "Review/Report",
+            "Authorization/publishing implementation; real review records",
+            "DRAFT_SCHEMA_REFERENCE",
+        ],
+    ]
+    if synthetic:
+        todo = [
             [
                 "Document Intelligence",
-                "Independent OCR/profile annotation; align downloaded file with source text",
-                "TEXT_REFERENCE_ONLY",
+                "Implement parser/OCR and compare source PDF fields",
+                "SOURCE_ALIGNED_SYNTHETIC_TEXT_PDF_NOT_SCAN",
             ],
             [
                 "Scope/Temporal",
-                "Verify date/scope/transition for corpus cases; complete checklist",
-                "UNKNOWN_GUARD_PATH",
+                "Implement production resolver; selected-family oracle available",
+                "SYNTHETIC_DATE_SCOPE_TRANSITION_SCENARIOS",
             ],
             [
                 "Retrieval",
-                "Independent relevance annotation; production embeddings",
-                "LEXICAL_REFERENCE_NOT_RELEVANCE_GOLD",
+                "Implement retriever/embeddings; use seeded relevance as reference",
+                "AUTHORED_RELEVANCE_ORACLE",
             ],
             [
                 "Compliance/Risk/Recommendation",
-                "Human legal review for corpus; synthetic assertions for branch coverage",
-                "SILVER_AND_SYNTHETIC_REGRESSION",
+                "Implement LLM adapter and evaluate authored specs",
+                "SYNTHETIC_SELECTED_FAMILY_EVALUATION",
             ],
             [
                 "Review/Report",
-                "Authorization/publishing implementation; real review records",
-                "DRAFT_SCHEMA_REFERENCE",
+                "Implement review/auth/publish; sources are fictional",
+                "DRAFT_ONLY_PENDING_REVIEW",
             ],
-        ],
-    )
+        ]
+    sheet("QA_TODO", ["module", "can_bo_sung", "current_eligibility"], todo)
+    if coverage is not None:
+        sheet("QA_COVERAGE", ["metric", "split", "label", "count"], coverage)
     for t in TABLES:
         sheet(
             t.name,
@@ -1111,12 +1165,19 @@ def write_release(seed, path, distribution):
     workbook.save(path)
 
 
-def package_distribution(root, filename, seed, tag):
+def package_distribution(
+    root,
+    filename,
+    seed,
+    tag,
+    *,
+    prefix="dataset://v750-r1/",
+    archive_prefix="legal_compliance_v750",
+):
     """Only the selected workbook and its referenced sources enter each archive."""
     from zipfile import ZIP_DEFLATED, ZipFile
 
     members = {Path(filename), Path("README_SU_DUNG.md")}
-    prefix = "dataset://v750-r1/"
     for row in seed.tables["tep_nguon"]:
         uri = row["object_uri"]
         if uri and uri.startswith(prefix):
@@ -1133,7 +1194,7 @@ def package_distribution(root, filename, seed, tag):
             uri = json.loads(row["content"])["case"]["source"]["object_uri"]
             if uri and uri.startswith(prefix):
                 members.add(Path(uri.removeprefix(prefix)))
-    destination = root.parent / f"legal_compliance_v750_{tag}.zip"
+    destination = root.parent / f"{archive_prefix}_{tag}.zip"
     with ZipFile(destination, "w", ZIP_DEFLATED) as bundle:
         for member in sorted(members):
             path = root / member

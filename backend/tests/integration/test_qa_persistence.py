@@ -6,6 +6,7 @@ from devtools.database_schema import TABLES
 from devtools.database_seed import WorkbookSeed, seed_database
 from devtools.qa_schema import QA_TABLES
 from devtools.qa_validation import join_artifacts
+from devtools.synthetic_workbook import native_row
 from devtools.workbook_optimization import artifact
 from legal_checker.core.postgres import connect_postgres
 
@@ -54,6 +55,26 @@ def test_qa_seed_roundtrip_and_no_runtime_case_pollution(database_url):
         assert next(iter(join_artifacts(rows).values())) == {"text": "Đầu vào " * 5000}
         row = connection.execute("SELECT * FROM qa.case_manifest").fetchone()
         assert row["limitations_json"] == {"synthetic": True, "legal_gold": False}
+
+
+def test_synthetic_spec_is_supported_for_runtime_corpus_cases(database_url):
+    seed = qa_seed()
+    manifest = seed.qa_tables["case_manifest"][0]
+    manifest.update(case_kind="CORPUS", split="DEV")
+    seed.tables["hop_dong"].append(native_row("hop_dong", hop_dong_id="SYNTHETIC_DOC"))
+    seed.tables["ca_danh_gia"].append(
+        native_row(
+            "ca_danh_gia",
+            ca_id="QA_ONLY",
+            hop_dong_id="SYNTHETIC_DOC",
+            loai_du_lieu="SYNTHETIC_EVALUATION",
+        )
+    )
+    seed_database(database_url, seed)
+    with connect_postgres(database_url) as connection:
+        row = connection.execute("SELECT * FROM qa.case_manifest").fetchone()
+        assert row["label_quality"] == "SYNTHETIC_SPEC"
+        assert row["case_kind"] == "CORPUS"
 
 
 @pytest.mark.parametrize("table", ["case_manifest", "artifacts", "controlled_assertions"])

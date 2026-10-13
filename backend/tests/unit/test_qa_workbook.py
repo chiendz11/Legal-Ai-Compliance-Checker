@@ -58,10 +58,21 @@ def test_multipart_artifact_roundtrip_and_tamper_detection():
 
 def test_blind_input_pack_has_no_targets_or_proposals():
     seed = sample()
+    seed.qa_tables["case_manifest"][0]["limitations_json"]["scenario"] = "SECRET_VIOLATION"
+    seed.qa_tables["controlled_assertions"].append(
+        {
+            "case_id": "CASE",
+            "expected_assertions_json": {"finding": "VIOLATED"},
+            "rationale": "Secret expected label",
+            "legal_review_id": None,
+        }
+    )
     blind = subset_release(seed, {"TEST"}, hide_expected=True)
     assert [r["role"] for r in blind.qa_tables["artifacts"]] == ["INPUT"]
     assert [r["contract_name"] for r in blind.qa_tables["artifacts"]] == ["DocumentInput"]
     assert blind.qa_tables["change_log"] == []
+    assert blind.qa_tables["controlled_assertions"] == []
+    assert "scenario" not in blind.qa_tables["case_manifest"][0]["limitations_json"]
     assert blind.tables["ca_danh_gia"][0]["profile_snapshot_json"] == {
         "evaluation_mode": "RAW_INPUT_ONLY"
     }
@@ -91,6 +102,16 @@ def test_document_family_cannot_cross_splits():
         {**seed.qa_tables["case_manifest"][0], "case_id": "CASE2", "split": "DEV"}
     )
     with pytest.raises(SeedError, match="family crosses"):
+        validate_qa(seed)
+
+
+@pytest.mark.parametrize(
+    "field,value", [("case_kind", "WRONG"), ("label_quality", "UNSUPPORTED_NEW_LABEL")]
+)
+def test_manifest_enums_match_sql_before_export(field, value):
+    seed = sample()
+    seed.qa_tables["case_manifest"][0][field] = value
+    with pytest.raises(SeedError, match=field):
         validate_qa(seed)
 
 

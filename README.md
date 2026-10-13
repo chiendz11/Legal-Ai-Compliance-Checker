@@ -24,7 +24,8 @@ pip install -e './backend[dev]' -c constraints.txt
 cp .env.example .env
 ```
 
-Nhận gói DEV_VALIDATION của bộ v7.5.0 dev/eval r1, giải nén workbook và sources vào `data/private/`
+Nhận gói SYNTHETIC_DEV_VALIDATION của bộ v7.5.0 synthetic r2, giải nén vào
+`data/private/v750_synthetic_r2/`
 hoặc chỉnh `SEED_WORKBOOK_PATH` trong `.env`. Mỗi dev dùng DB riêng và cùng workbook.
 
 ```bash
@@ -35,12 +36,12 @@ uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/local_database.md).
-Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_v750_r1`;
+Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_v750_synthetic_r2`;
 Swagger: http://127.0.0.1:8000/docs.
 
 ```bash
 python -m scripts.local_db check
-python -m scripts.db_module_input --case CA90_001 --run CA90_001_V750_R1_REFERENCE
+python -m scripts.db_module_input --case CA90_001 --run CA90_001_SYN_R2_REFERENCE
 curl -s http://127.0.0.1:8000/api/v1/knowledge
 ```
 
@@ -106,6 +107,7 @@ python -m scripts.export_contracts
 - [Triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md)
 - [DB local, migration và seed](docs/local_database.md)
 - [Bộ v7.5.0 dev/eval, gói dữ liệu và cách chạy](docs/v750_dev_eval.md)
+- [Bộ v7.5.0 synthetic cho đồ án: 90 PDF và 15 nhóm tình huống](docs/v750_synthetic_eval.md)
 - [Khởi tạo dependencies](docs/startup.md)
 - [Ghép module](docs/module_integration.md)
 - [Contracts nghiệp vụ](docs/data_contracts_v7_3_2.md), [schemas module](docs/module_contracts.schema.json)
