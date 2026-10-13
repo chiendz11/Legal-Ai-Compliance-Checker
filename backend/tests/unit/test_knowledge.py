@@ -2,7 +2,7 @@ import json
 
 
 def test_snapshot_relationships_and_disabled_rules(knowledge):
-    assert len(knowledge.criteria) == 356
+    assert len(knowledge.criteria) == 9
     for row in knowledge.criteria.values():
         assert row["requirement_version_id"] in knowledge.versions
         assert knowledge.decision(row["tieu_chi_id"], "UNKNOWN")
@@ -14,4 +14,5 @@ def test_snapshot_relationships_and_disabled_rules(knowledge):
     for link in knowledge.tables["rui_ro_khuyen_nghi"]:
         assert link["rui_ro_id"] in knowledge.risks
         assert link["khuyen_nghi_id"] in knowledge.recommendations
-    assert all("hop_dong" not in name for name in knowledge.tables)
+    assert "doan_hop_dong" not in knowledge.tables
+    assert "ca_danh_gia" not in knowledge.tables

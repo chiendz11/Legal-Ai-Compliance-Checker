@@ -1,102 +1,112 @@
 # Legal-Ai-Compliance-Checker
 
-Backend Python/FastAPI triển khai **bước 5–7 của mục 6 (Quy trình nghiệp vụ mục tiêu)** trong BRD v1.1:
+Backend Python/FastAPI cho AI Legal Compliance Checker theo BRD v1.1.
+Development sử dụng **PostgreSQL local và dữ liệu workbook đã seed**.
+Knowledge, runtime và snapshot lịch sử nằm trong DB; repo không chứa bộ DTO mẫu tĩnh.
 
-1. **Compliance Reasoning + Rule Aggregation:** C05/C06 và observation có evidence → C07 → C08.
-2. **Risk Aggregation:** C07 + C09 → C10; giữ nguồn `COMPLIANCE`, `CITATION`, `VERIFICATION` riêng.
-3. **Recommendation / Remediation:** C10 + knowledge + context → C11; mọi kết quả chờ human review.
+- `backend/src/legal_checker/modules/`: nghiệp vụ và repository theo module.
+- `shared/contracts/`: contracts C01–C13/X01/X02 và schemas bàn giao.
+- `core/postgres.py`, `core/migrations.py`: connection và SQL migrations dùng chung.
+- `api/dependencies.py`: tạo Knowledge PostgreSQL + Store PostgreSQL.
+- `workflows/`: điều phối và kiểm tra các điểm bàn giao.
 
-Baseline: [BRD v1.1](docs/BRD_v1.1.pdf), [contracts v7.3.2](docs/data_contracts_v7_3_2.md), workbook runtime người dùng cung cấp. Nhánh bước 5–7 ban đầu: `feat/brd-steps-5-7`. Nhánh skeleton trước: `feat/brd-system-skeleton-v2`, phát triển từ `feat/brd-system-skeleton`.
+Bước 5–7 có engines deterministic: C05/C06 + observations → C07 → C08;
+C07/C09 → C10; C10 + knowledge/templates → C11 chờ review.
+Bước 1–4, review, export/UI và worker còn cần implementations thật;
+không coi việc seed DB là bằng chứng OCR/search/LLM đã chạy.
 
-Nhánh chuyển backend theo module: `feat/backend-module-layout`. Xem [kiến trúc và mapping BRD → module](docs/architecture.md). Backend nằm tại `backend/src/legal_checker/`, tổ chức theo `api`, `core`, `shared`, `modules`, `workflows`, `worker`; xem [trách nhiệm từng folder](backend/README.md). `frontend/` mới là folder skeleton, chưa có UI runtime.
-
-Skeleton có module cho bước 1–9, contracts C01–C13/X01/X02, ports cho tài liệu/OCR, retrieval, LLM/audit, authorization, review và report. `DraftAssessmentWorkflow` nối adapters bước 1–4 với engines bước 5–7 khi được inject đầy đủ. Chỉ bước 5–7 có implementations mặc định; pipeline draft chưa được mở thành API full-assessment. Xem [hướng dẫn nối module](docs/module_integration.md).
-
-Ví dụ khởi tạo JSON/SQLite trong `api/dependencies.py` và `main.py`: [hướng dẫn khởi tạo](docs/startup.md). Chạy demo bằng `python -m scripts.demo_startup`.
-
-Gói bắt đầu song song cho 5 người nằm trên nhánh `feat/parallel-module-starter`: [hướng dẫn theo từng vai trò](docs/parallel_development.md), [fixtures](examples/parallel/) và [schema bàn giao](docs/parallel_contracts.schema.json). Chạy `python -m scripts.parallel_dev --all-scenarios`, hoặc dùng `--person 1` đến `--person 5` để lấy input/output mẫu và kiểm tra phần riêng.
-
-DB local cho từng dev đã có trên nhánh `feat/local-postgres-seed`: PostgreSQL 17, hai schema `knowledge` và `runtime`, 50 bảng theo workbook `v7_4_9_RISK`. Xem [hướng dẫn tạo DB và seed](docs/local_database.md). Mỗi máy dùng DB riêng và cùng workbook; migration, seed và SQL repositories được quản lý trong Git.
-
-Sau khi seed, xem [hướng dẫn triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md): từng nhóm nhận/trả contract nào, đọc/ghi bảng nào, trình tự triển khai, mapping, tests và cách bàn giao.
-
-## Chạy local
-
-Python 3.11+; CI dùng Python 3.12. Chạy từ thư mục repo:
+## Bắt đầu
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e './backend[dev]' -c constraints.txt
+cp .env.example .env
+```
+
+Nhận workbook `bang_du_lieu_runtime_v7_4_9_RISK.xlsx`, đặt vào `data/private/`
+hoặc chỉnh `SEED_WORKBOOK_PATH` trong `.env`. Mỗi dev dùng DB riêng và cùng workbook.
+
+```bash
+docker compose up -d --wait postgres
+python -m scripts.local_db init
+python -m scripts.local_db seed
 uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Swagger: http://127.0.0.1:8000/docs. SQLite mặc định: `data/private/runtime.sqlite3`; cấu hình bằng biến môi trường `DATABASE_PATH`.
+Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/local_database.md).
+DB mặc định ở `127.0.0.1:5433/legal_checker_dev`; Swagger: http://127.0.0.1:8000/docs.
 
 ```bash
+python -m scripts.local_db check
+python -m scripts.db_module_input --case SEED_CA_001 --run SEED_RUN_SEED_CA_001
 curl -s http://127.0.0.1:8000/api/v1/knowledge
-curl -s -X POST http://127.0.0.1:8000/api/v1/pipeline/steps-5-7 \
-  -H 'Content-Type: application/json' --data-binary @examples/steps_5_7.json
 ```
 
-[Payload ví dụ](examples/steps_5_7.json) là fixture tổng hợp minh họa một requirement thiếu nội dung, có nhãn fixture trong context; không phải đánh giá hợp đồng thực.
+`db_module_input` in rows SQL thực để lập trình mapper/query độc lập; chưa tự tạo C06
+per-criterion. Các retrieval rows trong workbook thiếu criterion ID vẫn giữ nguyên;
+module Retrieval cần chọn evidence cho từng criterion trước khi phát hành C06.
 
-## API và ghép module
+## API hiện có
 
-| Endpoint | Input | Output |
-|---|---|---|
-| `POST /api/v1/reasoning` | `CriterionReasoningInput`: C05, C06, chunks, observations | `CriterionReasoning` / C07 |
-| `POST /api/v1/aggregation` | `RequirementAggregationInput`: C05 + C07 | `RequirementAggregation` / C08 |
-| `POST /api/v1/risks` | `RiskInput`: C05 + C07 + C09 | `RiskResult` / C10 |
-| `POST /api/v1/recommendations` | `RecommendationInput`: C05 + C10 | `Recommendation` / C11 |
-| `POST /api/v1/pipeline/steps-5-7` | `Steps57Input` | `Steps57Result`; persist toàn bộ output |
-| `GET /api/v1/cases/{ca_id}/runs/{run_id}` | case/run ID | Kết quả snapshot đã lưu |
-| `GET /api/v1/knowledge` | — | Checksum, version, số record |
+| Endpoint | Chức năng |
+|---|---|
+| `POST /api/v1/reasoning` | C05/C06/chunks/observations → C07 |
+| `POST /api/v1/aggregation` | C05 + C07 → C08 |
+| `POST /api/v1/risks` | C05 + C07 + C09 → C10 |
+| `POST /api/v1/recommendations` | C05 + C10 → C11 |
+| `POST /api/v1/pipeline/steps-5-7` | Ghép bước 5–7, lưu kết quả vào PostgreSQL |
+| `GET /api/v1/cases/{ca_id}/runs/{run_id}` | Đọc output bất biến của một lần chạy |
+| `GET /api/v1/knowledge` | Hash/schema/counts của snapshot knowledge đang dùng |
 
-Envelope có `ca_id`, `phien_ban_id`, `rule_version`, `legal_knowledge_version`, `knowledge_snapshot_sha256`, `run_id`, `trace_id`, `contract_version`. Output có thêm `contract_name`, `produced_at`, `payload`. Consumer module nhận trực tiếp output predecessor; không cần chạy lại retrieval/reasoning. API independent là phép tính thuần; endpoint pipeline mới ghi DB.
+Các endpoint độc lập là phép tính; endpoint pipeline mới ghi DB.
+Input dùng contracts trong code và [OpenAPI](docs/openapi.json), cần đúng hash/case/run.
+Không có default payload dựa trên file mẫu cũ.
 
-Bước 5–7 nằm trong `backend/src/legal_checker/modules/compliance`, `risks`, `recommendations`; pipeline ở `workflows/steps_5_7.py`. Knowledge JSON reader thuộc `modules/legal_knowledge/repository.py`; SQLite run store thuộc `modules/assessments/repository.py`. Các imports dùng package `legal_checker`; package `app` trước đây đã được xóa. Tests nằm tại `backend/tests/`.
+## Knowledge và persistence
 
-Mỗi endpoint nhận đúng contract của mình: `Steps57Input` dành cho pipeline, `CriterionReasoningInput` dành cho reasoning và không chứa citation results. Payload gọi riêng bước 5 có tại [examples/reasoning.json](examples/reasoning.json). Tests/scripts sử dụng imports từ legal_checker.modules/shared.contracts và cấu hình factory bằng `Settings`; không còn lớp chuyển tiếp của cấu trúc trước.
+`Knowledge` đọc 18 bảng knowledge nghiệp vụ, tạo snapshot nội dung có SHA256 trong
+`knowledge.knowledge_snapshots`. Các bảng quản trị vẫn giữ riêng ở schema knowledge.
+Snapshot giữ flags draft/unverified; mặc định `DEV_UNVERIFIED`, không tự duyệt tri thức.
+`KNOWLEDGE_SNAPSHOT_SHA256` chọn snapshot lịch sử đã có trong DB. Không dùng hash Excel
+làm hash knowledge. Muốn nạp thay đổi source tables vào app, khởi tạo lại reader/app.
 
-Schema input/output được khai báo trong [`backend/src/legal_checker/shared/contracts/`](backend/src/legal_checker/shared/contracts/); OpenAPI sinh tự động. Xem [hướng dẫn tích hợp](docs/implementation.md) về trường dữ liệu, ownership, evidence và persistence.
-
-## Quy tắc đã triển khai
-
-- Retrieval rỗng không tạo `VIOLATED`; `MISSING` chỉ có khi nội dung bắt buộc, absence/coverage được xác minh, toàn bộ trang/phụ lục đọc được, nguồn/scope/version/ngoại lệ xác nhận và không mâu thuẫn.
-- Evidence phải nằm trong selected FINAL retrieval, cùng hợp đồng, có quote khớp chính xác offset. Evidence ngoài phải được xác minh.
-- Thiếu observation, dữ kiện, source, scope, version hoặc ngoại lệ → `UNKNOWN`; giữ requirement chưa resolve ở `INSUFFICIENT`.
-- Theo `AGG_CAN_HO_V1`: scope/version chưa rõ → `INSUFFICIENT`; có vi phạm chứng minh → `NON_COMPLIANT` kèm coverage flag; còn `UNKNOWN` → `INSUFFICIENT`; tất cả `MISSING` đã xác minh → `NON_COMPLIANT`; đáp ứng một phần + thiếu đã xác minh → `PARTIAL`; tất cả đáp ứng → `COMPLIANT`.
-- Citation VALID ở relevant date không thành STALE vì current status REPEALED. Citation chưa xác minh → verification risk. Citation không sửa checklist hoặc compliance status.
-- Risk và recommendation tra rule/catalog/link trong workbook, theo đúng criterion/citation và snapshot. Severity giữ nguyên từ Risk Engine; `SATISFIED`/`VALID` không sinh hành động khắc phục.
-- Rule số liệu dùng `Decimal`: thanh toán đầu gồm cọc và không tính hai lần, ngưỡng trước bàn giao theo loại bên bán, trước cấp giấy, kinh phí bảo trì, thời hạn bảo hành, hạn nộp hồ sơ và các tiêu chí đặt cọc. Các ngưỡng được đọc từ workbook đã cung cấp; code không tự cập nhật tri thức pháp luật.
-
-## Knowledge và phạm vi tích hợp
-
-`data/knowledge.json` chứa 12 bảng knowledge được nhập từ workbook: 356 criterion, 1.424 decision rule, 850 risk rule, cùng legal sources, versions, templates và exceptions. Giữ nguyên `human_verified`, trạng thái chờ review và giới hạn sinh nội dung.
-
-```bash
-python scripts/import_workbook.py '/path/to/runtime.xlsx' --output data/knowledge.json
-```
-
-Workbook gốc, hồ sơ/chunks hợp đồng và runtime demo không được nhập vào snapshot public. Chúng là input của các module trước hoặc fixture riêng. Snapshot có checksum workbook nguồn và API yêu cầu checksum knowledge khớp chính xác.
-
-Engine bước 5 nhận **structured observations từ adapter rule/LLM hoặc reviewer**. Code tự tính các numeric rule được hỗ trợ; với các tiêu chí ngữ nghĩa khác, adapter cung cấp proposed finding và evidence, engine kiểm tra gates rồi mới phát hành C07. Có builder C13 draft từ outputs đã ghép; chưa tích hợp nhà cung cấp LLM, OCR, scope/temporal/retrieval bước 1–4, human review bước 8 hay export/publish report. Không giả tạo log gọi LLM. Knowledge chưa human-approved vẫn giữ kết quả dạng `PENDING`; bộ khung này chưa cung cấp production authentication/tenant authorization.
-
-SQLite là adapter MVP lưu JSON snapshots trong các bảng runtime, không phải migration hoàn chỉnh cho mọi cột của workbook. Case pin bất biến, run idempotent, ghi output/evidence/audit trong một transaction; đổi input cùng run hoặc đổi deployment của case trả `409`.
+`Store` ghi các bảng runtime workbook theo cột/quan hệ thật, đồng thời giữ input/output
+trong `runtime.assessment_runs`, pins trong `assessment_case_pins`, và DTO/run lineage
+trong `assessment_output_lineage`. Một transaction; cùng input/case/run trả output đã lưu,
+input khác trả 409. IDs/outputs đã dùng không được ghi đè bằng nội dung khác.
+Nguồn chứng từ ngoài/mốc DI phải được đăng ký trước; pipeline không giả tạo PDF/LLM log.
+API bước 5–7 hiện chưa phải hệ thống production authentication/tenant authorization.
 
 ## Kiểm tra
-
-Chạy E2E qua HTTP sau khi bật server:
-
-```bash
-python scripts/e2e_steps_5_7.py
-```
 
 ```bash
 ruff check --config backend/pyproject.toml .
 ruff format --check --config backend/pyproject.toml .
-pytest -q -c backend/pyproject.toml
+TEST_DATABASE_URL='postgresql://legal_checker:legal_checker_local_only@127.0.0.1:5433/legal_checker_test' \
+  pytest -q -c backend/pyproject.toml
 ```
 
-CI chạy cùng lệnh trên PR và `main`, với check name **`CI / required`**. Ruleset active áp dụng `refs/heads/main`: PR bắt buộc, **0 approval**, CI thành công và up-to-date theo main, resolve review discussions, chỉ squash, cấm xóa/force push, không bypass actor.
+Tests tạo DB con riêng, nạp SQL seed nhỏ trong `backend/tests/seed_knowledge.sql`, rồi xóa
+DB test. Các DTO test được dựng trong tests hoặc đọc từ DB test; không phụ thuộc file
+Downloads hoặc cloud DB. Thiếu `TEST_DATABASE_URL` thì nhóm test cần DB được skip.
+CI luôn có PostgreSQL service và check **CI / required**.
+
+Schemas có thể xuất mà không kết nối DB:
+
+```bash
+python -m scripts.export_openapi
+python -m scripts.export_contracts
+```
+
+## Hướng dẫn nhóm
+
+- [Triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md)
+- [DB local, migration và seed](docs/local_database.md)
+- [Khởi tạo dependencies](docs/startup.md)
+- [Ghép module](docs/module_integration.md)
+- [Contracts nghiệp vụ](docs/data_contracts_v7_3_2.md), [schemas module](docs/module_contracts.schema.json)
+- [Kiến trúc](docs/architecture.md), [chi tiết engines bước 5–7](docs/implementation.md)
+
+Ruleset `main`: PR bắt buộc, 0 approval, CI thành công và up-to-date, resolve discussions,
+chỉ squash, chặn xóa/force push, không bypass.

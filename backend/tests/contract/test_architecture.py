@@ -30,7 +30,7 @@ def test_modules_do_not_depend_on_http_routes_or_development_fixtures():
 
 def test_evaluation_engines_do_not_open_database_or_provider_connections():
     root = BACKEND_ROOT / "src/legal_checker/modules"
-    prohibited = ("sqlite3", "httpx", "legal_checker.core.database", "legal_checker.shared.llm")
+    prohibited = ("psycopg", "httpx", "legal_checker.core.postgres", "legal_checker.shared.llm")
     engines = (
         "compliance/criterion_reasoner.py",
         "compliance/numeric_rules.py",

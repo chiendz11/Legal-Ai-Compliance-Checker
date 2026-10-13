@@ -1,47 +1,39 @@
-# Khởi tạo backend theo cấu trúc module
+# Khởi tạo backend từ PostgreSQL
 
-`legal_checker.main.create_app()` tạo FastAPI. `legal_checker.api.dependencies.build_services()` tạo hai đối tượng dùng chung: bộ đọc knowledge và nơi lưu assessment runs.
+Sau khi chạy `local_db init` và seed workbook, `create_app()` đọc cấu hình DB và
+`build_services()` tạo hai dependencies dùng chung.
 
 ```python
 from legal_checker.api.dependencies import build_services
-from legal_checker.core.config import PROJECT_ROOT, Settings
+from legal_checker.core.config import Settings
 from legal_checker.main import create_app
 
-settings = Settings(
-    knowledge_path=PROJECT_ROOT / "data/knowledge.json",
-    database_path=PROJECT_ROOT / "data/private/runtime.sqlite3",
-)
+settings = Settings.from_env()
 services = build_services(settings)
 api = create_app(settings=settings, services=services)
 ```
 
-1. `Settings(...)` chỉ ghi nhận đường dẫn, chưa mở file/DB.
-2. `build_services(...)` gọi `Knowledge(...)` trong `modules/legal_knowledge/repository.py`: đọc JSON, tính SHA256 và lập bảng tra cứu criteria/rules/versions.
-3. Hàm đó gọi `Store(...)` trong `modules/assessments/repository.py`: chuẩn bị SQLite và các bảng MVP còn thiếu, giữ kết quả đã có. Kết nối được mở/đóng cho mỗi thao tác qua `core/database.py`.
-4. `Services(...)` gom hai đối tượng đã sẵn sàng; không tự chạy đánh giá.
-5. `create_app(...)` gắn chúng vào `api.state.services` và đăng ký router. Vì đã truyền services nên không khởi tạo lại. Tạo app chưa tự bật HTTP server.
-
-Khi không truyền services, `create_app()` đọc environment rồi gọi `build_services()` một lần cho mỗi app instance. Chạy từ root repo, sau khi cài `pip install -e './backend[dev]' -c constraints.txt`:
+1. `Settings` giữ `database_url` và optional `knowledge_snapshot_sha256`, đọc `.env`.
+2. `Knowledge(database_url, snapshot_sha256)` đọc SQL và tạo/lấy snapshot nội dung
+   trong DB, tính hash rồi lập indices criteria/rules/versions. Không đọc file knowledge.
+3. `Store(database_url)` cung cấp get/save PostgreSQL; mỗi thao tác mở transaction riêng.
+4. `Services` gom hai dependency. Các module không tự lấy environment/secret trong engine.
+5. `create_app` gắn Services vào app và đăng ký routes. Đây chưa phải chạy HTTP server.
 
 ```bash
+python -m scripts.local_db init
+python -m scripts.local_db seed
 uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Với request pipeline, `api/dependencies.py:get_services` lấy các đối tượng đó; route gọi `modules/assessments/service.py:run_steps_5_7`. Service gọi workflow rồi lưu kết quả bằng repository.
+Migration cần chạy trước app. API không tự nạp Excel và không tự duyệt knowledge.
+Khi không chỉ định hash, reader capture source tables hiện tại vào snapshot dev bất biến.
+Muốn replay snapshot cũ, export `KNOWLEDGE_SNAPSHOT_SHA256` bằng hash đã có trong DB.
+Đổi source tables không thay nội dung reader đang dùng; khởi tạo reader mới để capture thay đổi.
 
-```python
-response = evaluate(request, knowledge)
-saved = store.save(request, response)
-```
+Pipeline HTTP → assessments service → workflow → engines → PostgreSQL Store.
+Factory có thể nhận `Services(knowledge, memory_store)` trong unit tests để thay writer.
+Export schemas dùng dependencies rỗng và không chạy handlers; không dùng app export để phục vụ HTTP.
 
-Demo dùng SQLite tạm, chạy workflow và đọc lại kết quả:
-
-```bash
-python -m scripts.demo_startup
-```
-
-Code khởi tạo trước đây trong `bootstrap.py` đã chuyển vào `api/dependencies.py`. Tên `Services` vẫn là dataclass chứa dependency đã tạo, không phải một folder dịch vụ.
-
-Khi integration test, truyền `Services(knowledge, memory_store)` qua `create_app(services=...)` để thay repository. Factory không tạo SQLite nếu services đã được cung cấp.
-
-Các phần LLM, OCR, search, auth, report export và worker chưa được tự khởi tạo. [Backend README](../backend/README.md) ghi trạng thái từng folder.
+Các phần OCR/search/LLM/review/export/worker vẫn cần implementations riêng.
+Xem [DB local](local_database.md) và [hướng dẫn nhóm](huong_dan_trien_khai_module_sau_seed.md).

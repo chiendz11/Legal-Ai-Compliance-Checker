@@ -20,16 +20,10 @@ class Services:
 
 
 def build_services(settings: Settings) -> Services:
-    """Load JSON knowledge and prepare SQLite tables once per app instance."""
+    """Read PostgreSQL knowledge and persist all run results in the same local DB."""
+    knowledge = Knowledge(settings.database_url, settings.knowledge_snapshot_sha256)
+    assessment_store = Store(settings.database_url)
 
-    # Read the JSON file, calculate its checksum and index criteria/rules in memory.
-    knowledge = Knowledge(settings.knowledge_path)
-
-    # Create the DB directory/file and missing tables; existing results are preserved.
-    # Store opens a connection for each get/save operation, not a permanent connection.
-    assessment_store = Store(settings.database_path)
-
-    # Routes receive these same objects via app.state.services and get_services.
     return Services(knowledge=knowledge, assessments=assessment_store)
 
 

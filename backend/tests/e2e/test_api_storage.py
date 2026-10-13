@@ -1,7 +1,6 @@
-import sqlite3
-
 import pytest
 from fastapi.testclient import TestClient
+from legal_checker.core.postgres import connect_postgres
 
 
 @pytest.fixture
@@ -46,17 +45,18 @@ def test_invalid_input_is_422(client, request_factory, mutation):
     assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 422
 
 
-def test_workbook_runtime_tables_are_persisted(tmp_path, app_factory, request_factory):
-    path = tmp_path / "runtime.sqlite3"
+def test_workbook_runtime_tables_are_persisted(database_url, app_factory, request_factory):
     client = TestClient(app_factory())
     payload = request_factory(finding="MISSING").model_dump(mode="json")
     assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 200
-    with sqlite3.connect(path) as db:
+    with connect_postgres(database_url) as db:
         for name in [
             "ket_qua_tieu_chi",
             "ket_qua_tuan_thu",
             "ket_qua_rui_ro",
             "khuyen_nghi_danh_gia",
         ]:
-            assert db.execute(f"SELECT count(*) FROM {name}").fetchone()[0] > 0
-        assert db.execute("SELECT input_sha256, output_sha256 FROM nhat_ky_ra_soat").fetchone()
+            assert db.execute(f"SELECT count(*) AS n FROM runtime.{name}").fetchone()["n"] > 0
+        assert db.execute(
+            "SELECT input_sha256, output_sha256 FROM runtime.assessment_runs"
+        ).fetchone()

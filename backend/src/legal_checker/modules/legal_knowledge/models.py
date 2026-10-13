@@ -5,6 +5,7 @@ class KnowledgeSnapshot(Protocol):
     """Read-only knowledge contract used by business modules; no storage implementation."""
 
     sha256: str
+    schema_version: str
     tables: dict[str, list[dict[str, Any]]]
     criteria: dict[str, dict[str, Any]]
     versions: dict[str, dict[str, Any]]

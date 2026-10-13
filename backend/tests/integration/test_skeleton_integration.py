@@ -27,7 +27,7 @@ def test_reasoning_rejects_pipeline_contract(app_factory, request_factory, inclu
     assert client.post("/api/v1/reasoning", json=request).status_code == 422
 
 
-def test_composition_can_replace_storage_without_creating_sqlite(
+def test_composition_can_replace_storage_without_opening_database(
     tmp_path, app_factory, knowledge, request_factory
 ):
     class MemoryStore:
@@ -41,9 +41,9 @@ def test_composition_can_replace_storage_without_creating_sqlite(
         def get(self, ca_id, run_id):
             return self.runs.get((ca_id, run_id))
 
-    database = tmp_path / "must-not-be-created.sqlite3"
+    database = "postgresql://invalid/never_connected"
     memory = MemoryStore()
-    settings = replace(Settings.from_env(), database_path=database)
+    settings = replace(Settings.from_env(), database_url=database)
     client = TestClient(app_factory(settings=settings, services=Services(knowledge, memory)))
     response = client.post(
         "/api/v1/pipeline/steps-5-7",
@@ -51,15 +51,12 @@ def test_composition_can_replace_storage_without_creating_sqlite(
     )
     assert response.status_code == 200, response.text
     assert client.get("/api/v1/cases/CA_TEST/runs/RUN_TEST").json() == response.json()
-    assert not database.exists()
+    assert memory.runs
 
 
-def test_environment_can_select_knowledge_snapshot(tmp_path, monkeypatch, app_factory):
-    missing = tmp_path / "missing-snapshot.json"
-    monkeypatch.setenv("KNOWLEDGE_PATH", str(missing))
-    try:
-        app_factory()
-    except FileNotFoundError as exc:
-        assert exc.filename == str(missing)
-    else:
-        raise AssertionError("The application ignored the configured knowledge snapshot")
+def test_environment_can_select_database_and_snapshot(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://custom/custom_db")
+    monkeypatch.setenv("KNOWLEDGE_SNAPSHOT_SHA256", "a" * 64)
+    settings = Settings.from_env()
+    assert settings.database_url == "postgresql://custom/custom_db"
+    assert settings.knowledge_snapshot_sha256 == "a" * 64

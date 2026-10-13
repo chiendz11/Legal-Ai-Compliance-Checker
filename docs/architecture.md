@@ -45,7 +45,7 @@ backend/
 | 5 Compliance | `compliance` | C05/C06/observations/knowledge → C07 → C08; engines deterministic |
 | 6 Risk | `risks` | C07 + C09 → C10; hai mappers giữ riêng nguồn |
 | 7 Recommendation | `recommendations` | C10 + templates → C11; pending review |
-| Assessment | `assessments` | Service gọi workflow, repository lưu JSON run snapshots trong SQLite |
+| Assessment | `assessments` | Service gọi workflow, repository ghi PostgreSQL normalized outputs và run snapshots |
 | 8 Review | `reviews` | C12 service/repository interfaces, chưa triển khai |
 | 9 Report | `reports` | Builder C13 DRAFT/PENDING; chưa export/persist/publish |
 
@@ -54,7 +54,7 @@ backend/
 - API dùng shared contracts và gọi module service/workflow; API không chứa rules pháp lý.
 - Workflows chọn thứ tự gọi, truyền context/knowledge và kiểm tra bàn giao.
 - Module sở hữu thuật toán, prompts, queries và repository của mình.
-- `core/database.py` tạo connection chung; repository sở hữu SQL và transaction. Hiện mới có assessment repository SQLite.
+- `core/postgres.py` tạo connection chung; repository sở hữu SQL và transaction. Knowledge và assessment repositories đang dùng PostgreSQL.
 - LLM/embedding/storage dùng client/capability chung trong `shared`; provider implementations chưa có.
 - Các hàm deterministic trong compliance/risk/recommendation không mở DB hoặc gọi provider. Khi thêm LLM, module service/observation provider ghép đề xuất với facts/gates đã xác minh.
 - Contracts chỉ mô tả dữ liệu. Runtime không import `devtools`.
@@ -70,7 +70,7 @@ flowchart TD
     R --> N[Recommendation: C11]
     AS --> DB[Assessment repository]
     DB --> CONN[Core database]
-    CONN --> SQL[SQLite]
+    CONN --> SQL[PostgreSQL]
     K[Knowledge repository] --> W
 ```
 
@@ -86,12 +86,12 @@ Applicable Law chỉ nhận profile/scope/knowledge; Citation Validation nhận 
 | Entry point Compliance | `modules/compliance/service.py:evaluate_compliance` |
 | Risk branches | `modules/risks/compliance_mapper.py`, `citation_mapper.py`, `aggregator.py` |
 | Recommendation | `modules/recommendations/generator.py`, `validator.py` |
-| JSON knowledge reader | `modules/legal_knowledge/repository.py` |
-| SQLite run store | `modules/assessments/repository.py`, connection chung trong `core/database.py` |
+| PostgreSQL knowledge reader | `modules/legal_knowledge/repository.py` |
+| PostgreSQL run store | `modules/assessments/repository.py`, connection chung trong `core/postgres.py` |
 | C13 draft | `modules/reports/builder.py` |
 | Document/source/search interfaces | `modules/documents/parser.py`, `shared/storage/source.py`, `modules/retrieval/` |
 | Khởi tạo dependency | `api/dependencies.py`, được gọi từ `main.py` |
 
-Không giữ package `app`, `business_modules`, `adapters`, `workflows/interfaces` hay import aliases cho đường dẫn trước. API payloads, knowledge snapshot và SQLite schema giữ nguyên. Các endpoint hiện có được giữ; routes reviews/reports/contracts mới chỉ có APIRouter rỗng.
+Không giữ package `app`, `business_modules`, `adapters`, `workflows/interfaces` hay import aliases cho đường dẫn trước. Contracts API được giữ; knowledge/run persistence đã chuyển sang PostgreSQL. Các endpoint hiện có được giữ; routes reviews/reports/contracts mới chỉ có APIRouter rỗng.
 
-Xem [khởi tạo](startup.md), [nối module](module_integration.md) và [phát triển song song](parallel_development.md).
+Xem [khởi tạo](startup.md), [nối module](module_integration.md) và [hướng dẫn nhóm](huong_dan_trien_khai_module_sau_seed.md).

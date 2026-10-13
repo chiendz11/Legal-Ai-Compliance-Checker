@@ -1,23 +1,111 @@
+"""Load full engine knowledge from PostgreSQL and pin immutable content in the DB."""
+
 import hashlib
 import json
-from pathlib import Path
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any
 
-from legal_checker.core.config import PROJECT_ROOT
+from psycopg import sql
+from psycopg.types.json import Jsonb
 
-DEFAULT_KNOWLEDGE = PROJECT_ROOT / "data" / "knowledge.json"
+from legal_checker.core.postgres import connect_postgres
+
+TABLE_KEYS = {
+    "loai_hop_dong": "loai_hop_dong_id",
+    "van_ban_phap_ly": "van_ban_id",
+    "dieu_khoan_phap_ly": "dieu_khoan_id",
+    "nguon_phap_ly": "nguon_id",
+    "quan_he_van_ban": "quan_he_id",
+    "yeu_cau_phap_ly": "requirement_id",
+    "phien_ban_yeu_cau": "requirement_version_id",
+    "nguon_yeu_cau": "lien_ket_id",
+    "pham_vi_ap_dung": "pham_vi_id",
+    "ngoai_le_ap_dung": "ngoai_le_id",
+    "tieu_chi_danh_gia": "tieu_chi_id",
+    "quy_tac_quyet_dinh": "quy_tac_id",
+    "chinh_sach_bang_chung": "chinh_sach_id",
+    "quy_tac_tong_hop": "quy_tac_tong_hop_id",
+    "quy_tac_rui_ro": "quy_tac_id",
+    "danh_muc_rui_ro": "rui_ro_id",
+    "danh_muc_khuyen_nghi": "khuyen_nghi_id",
+    "rui_ro_khuyen_nghi": "lien_ket_id",
+}
+
+
+def json_value(value):
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    raise TypeError(f"Unsupported knowledge value: {type(value).__name__}")
+
+
+def canonical(content) -> str:
+    return json.dumps(
+        content,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        default=json_value,
+        allow_nan=False,
+    )
 
 
 class Knowledge:
-    """Immutable, checksummed knowledge snapshot, separate from runtime fixtures."""
+    """Full KnowledgeSnapshot adapter with SQL source tables and immutable history.
 
-    def __init__(self, path: Path = DEFAULT_KNOWLEDGE):
-        content = path.read_bytes()
-        self.sha256 = hashlib.sha256(content).hexdigest()
-        snapshot = json.loads(content)
-        if snapshot["schema_version"] != "v7.3.2":
-            raise ValueError("Unsupported knowledge schema")
+    The content hash is independent of the Excel archive/old releases. Verification
+    flags remain unchanged: capturing dev data never approves it as legal knowledge.
+    """
+
+    def __init__(self, database_url: str, snapshot_sha256: str | None = None):
+        with connect_postgres(database_url) as connection:
+            if snapshot_sha256:
+                row = connection.execute(
+                    "SELECT content FROM knowledge.knowledge_snapshots WHERE sha256=%s",
+                    (snapshot_sha256,),
+                ).fetchone()
+                if row is None:
+                    raise ValueError("Unknown knowledge snapshot SHA256")
+                snapshot = row["content"]
+            else:
+                connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                tables = {
+                    name: connection.execute(
+                        sql.SQL("SELECT * FROM {} ORDER BY {}").format(
+                            sql.Identifier("knowledge", name), sql.Identifier(key)
+                        )
+                    ).fetchall()
+                    for name, key in TABLE_KEYS.items()
+                }
+                if not tables["tieu_chi_danh_gia"]:
+                    raise ValueError("Knowledge is empty. Seed the workbook into PostgreSQL first")
+                snapshot = json.loads(canonical({"schema_version": "v7.4.9", "tables": tables}))
+                sha = hashlib.sha256(canonical(snapshot).encode()).hexdigest()
+                # Persist the captured content in a fresh READ COMMITTED transaction.
+                # Concurrent app startups can then insert the same hash idempotently.
+                connection.commit()
+                connection.execute(
+                    "INSERT INTO knowledge.knowledge_snapshots (sha256, schema_version, content) "
+                    "VALUES (%s, %s, %s) ON CONFLICT (sha256) DO NOTHING",
+                    (sha, snapshot["schema_version"], Jsonb(snapshot)),
+                )
+        self.sha256 = hashlib.sha256(canonical(snapshot).encode()).hexdigest()
+        if snapshot_sha256 and self.sha256 != snapshot_sha256:
+            raise ValueError("Stored knowledge snapshot checksum is invalid")
+        self.schema_version = snapshot["schema_version"]
         self.tables = snapshot["tables"]
+        # Existing rule engines consume JSON text. Normalize these cells at the adapter
+        # boundary; source tables and immutable content retain JSONB and verification flags.
+        for name, columns in {
+            "quy_tac_quyet_dinh": ("dieu_kien_json",),
+            "quy_tac_rui_ro": ("trigger_json",),
+        }.items():
+            for row in self.tables[name]:
+                for column in columns:
+                    if not isinstance(row[column], str):
+                        row[column] = canonical(row[column])
         self.criteria = self.index("tieu_chi_danh_gia", "tieu_chi_id")
         self.versions = self.index("phien_ban_yeu_cau", "requirement_version_id")
         self.risks = self.index("danh_muc_rui_ro", "rui_ro_id")

@@ -7,7 +7,7 @@ Không cần Supabase để phát triển từng module.
 legal_checker_dev
 ├── knowledge    22 bảng: luật, requirements, criteria, rules, templates, quản trị knowledge
 ├── runtime      28 bảng: hợp đồng, chunks, evidence, case, kết quả, review, quyền
-└── dev_meta      2 bảng kỹ thuật: phiên bản migration và lần seed
+└── dev_meta      migration và lần seed; snapshots/run lineage nằm ở schema tương ứng
 ```
 
 Workbook `bang_du_lieu_runtime_v7_4_9_RISK.xlsx` có 50 sheet dữ liệu và 5 sheet hướng dẫn.
@@ -75,7 +75,7 @@ python -m scripts.local_db seed
 python -m scripts.local_db check
 ```
 
-- `init`: tạo database nếu chưa có, áp dụng migration 1, tạo 50 bảng và 78 khóa ngoại.
+- `init`: tạo database nếu chưa có, áp dụng các migrations: 50 bảng workbook, 78 FK nền và các bảng snapshot/run lineage.
 - `preview`: đọc workbook, kiểm tra tên sheet/cột, PK/FK, JSON, kiểu số/ngày và số dòng.
   Không ghi DB.
 - `seed`: kiểm tra như preview, nhập cả workbook trong **một transaction**.
@@ -183,6 +183,8 @@ không gọi LLM và không duyệt knowledge. Module khác đặt query riêng 
 | `backend/src/legal_checker/core/sql/001_workbook_v7_4_9.sql` | Migration 1, đóng gói cùng backend |
 | `backend/src/devtools/database_seed.py` | Đọc Excel, validate, seed transaction và idempotency |
 | `backend/src/legal_checker/core/postgres.py` | Connection dùng chung |
+| `backend/src/legal_checker/core/migrations.py` | Áp dụng SQL migrations có checksum |
+| `backend/src/legal_checker/core/sql/002_snapshots_and_runs.sql` | Snapshot knowledge, case/run pins và output lineage |
 | `modules/legal_knowledge/postgres_repository.py` | Query criteria, rules, risk/templates |
 | `modules/retrieval/repository.py` | Ghép input theo case và evidence theo case/run |
 
@@ -190,10 +192,20 @@ Migration đã áp dụng có checksum. Khi sửa schema, thêm migration kế t
 migration 1 trên DB đã có dữ liệu. `backend/alembic/` vẫn là folder dự phòng;
 CLI này dùng SQL migration trực tiếp, chưa cấu hình Alembic.
 
-**API bước 5–7 hiện tại vẫn dùng JSON knowledge v7.3.2 và SQLite snapshots.**
-DB mới phục vụ dev từng module và dữ liệu workbook v7_4_9; chưa tự thay adapter của API.
-Đổi persistence của API cần map contracts, case/run, deployment pins và snapshots đúng
-với schema mới. Tests/fixtures `examples/parallel` cũ vẫn chạy độc lập.
+**API bước 5–7 đã dùng PostgreSQL.** `Knowledge` đầy đủ đọc 18 bảng nghiệp vụ,
+lưu snapshot bất biến trong `knowledge.knowledge_snapshots`. `Store` ghi runtime normalized
+và `assessment_runs`/`assessment_output_lineage` để tái hiện lịch sử.
+Cấu hình `DATABASE_URL`; optional `KNOWLEDGE_SNAPSHOT_SHA256` để chọn snapshot cũ.
+Hash snapshot là hash nội dung knowledge, độc lập với checksum file Excel.
+Reader capture source tables khi khởi tạo; flags draft/unverified giữ nguyên.
+
+Đọc input rows cho module qua CLI:
+
+```bash
+python -m scripts.db_module_input --case SEED_CA_001 --run SEED_RUN_SEED_CA_001
+```
+
+Đây là rows thật cần mapper/validation, không giả tạo criterion IDs/evidence đã được chọn.
 
 ## 7. Kiểm tra trên DB test riêng
 

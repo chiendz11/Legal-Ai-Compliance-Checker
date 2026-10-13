@@ -1,10 +1,9 @@
-# Database migrations
+# SQL migrations
 
-Reserved for future Alembic migrations; Alembic is not configured yet.
+Alembic chưa được cấu hình. Migrations ở `src/legal_checker/core/sql/` và được
+`core/migrations.py` áp dụng theo version/checksum; không sửa migration đã áp dụng.
 
-Local PostgreSQL currently uses the versioned SQL migration at
-`src/legal_checker/core/sql/001_workbook_v7_4_9.sql`, tracked in `dev_meta.schema_migrations`.
-Run `python -m scripts.local_db init` from the repository root. See
-[local database setup](../../../docs/local_database.md).
+- 001: 50 bảng workbook.
+- 002: knowledge snapshots và assessment pins/runs/output lineage.
 
-The existing API SQLite repository still initializes its MVP tables directly.
+Chạy `python -m scripts.local_db init` từ repo root.

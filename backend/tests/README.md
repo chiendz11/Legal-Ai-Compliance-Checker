@@ -1,18 +1,23 @@
-# Verification ownership
+# Tests
 
-- `unit/`: reasoning, numeric boundaries, aggregation, citation risk rules and knowledge relationships.
-- `integration/`: injected draft workflow, service composition, environment configuration and installed package startup outside the repository.
-- `contract/`: downstream C07/C10 provenance checks, module dependency boundaries and `parallel/` handoff conformance tests for five roles.
-- `e2e/test_api_storage.py`: HTTP steps-5-7 pipeline through real engines and SQLite, snapshot GET, conflicts and idempotency. This uses synthetic input; it is not PDF/OCR-to-report E2E.
-- Root `scripts/e2e_steps_5_7.py`: live HTTP reasoning → aggregation → risks → recommendations, comparison with pipeline and stored output.
+- `unit/`: gate, numeric/aggregation/risk logic, Excel conversions.
+- `contract/`: schema/provenance and independent branch boundaries.
+- `integration/`: PostgreSQL seed/snapshots, installed package and workflow wiring.
+- `e2e/`: HTTP endpoints, normalized SQL persistence, idempotency/conflicts.
 
-From the repository root:
+Set `TEST_DATABASE_URL` to a PostgreSQL role with CREATEDB and a database name prefixed
+`legal_checker_test`. Tests create/drop uniquely named test databases; never write the dev DB.
+CI always enables the PostgreSQL service. Without the variable, DB-dependent tests skip.
+
+`seed_knowledge.sql` is a compact regression baseline retained from previously public
+knowledge examples. It is not approved legal gold and contains no private contract corpus.
+Module handoffs are constructed/validated in tests and loaded from PostgreSQL where needed;
+there is no checked-in JSON/DOCX scenario pack or replay runner.
 
 ```bash
-pytest -q -c backend/pyproject.toml
-pytest -q -c backend/pyproject.toml backend/tests/contract/parallel
+TEST_DATABASE_URL='postgresql://legal_checker:legal_checker_local_only@127.0.0.1:5433/legal_checker_test' \
+  pytest -q -c backend/pyproject.toml
 ```
 
-From `backend/`, use `pytest -q` after installing the package.
-
-[Parallel development](../../docs/parallel_development.md) describes per-person commands, ownership and fixture limitations. Complete PDF extraction, retrieval/LLM quality, review and publishing tests require real implementations and independently checked expected outputs.
+Real PDF/OCR/search/LLM quality still requires actual implementations and independently
+annotated sources/expected outputs. Refer to the module development guide in `docs/`.

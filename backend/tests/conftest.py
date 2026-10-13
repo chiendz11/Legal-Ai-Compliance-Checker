@@ -1,26 +1,72 @@
+import os
+import uuid
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import replace
+from pathlib import Path
 
+import psycopg
 import pytest
 from legal_checker.core.config import Settings
+from legal_checker.core.migrations import migrate
+from legal_checker.core.postgres import connect_postgres
 from legal_checker.main import create_app
 from legal_checker.modules.legal_knowledge.repository import Knowledge
 from legal_checker.shared.contracts.pipeline import PipelineRequest
+from psycopg import sql
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 
 @pytest.fixture
-def app_factory(tmp_path):
+def app_factory(database_url):
     def build(*, settings=None, services=None):
         if settings is None:
-            settings = replace(Settings.from_env(), database_path=tmp_path / "runtime.sqlite3")
+            settings = replace(Settings.from_env(), database_url=database_url)
         return create_app(settings=settings, services=services)
 
     return build
 
 
+@contextmanager
+def isolated_database():
+    base_url = os.environ.get("TEST_DATABASE_URL")
+    if not base_url:
+        pytest.skip("Set TEST_DATABASE_URL to run tests using PostgreSQL")
+    if not conninfo_to_dict(base_url).get("dbname", "").startswith("legal_checker_test"):
+        pytest.fail("TEST_DATABASE_URL dbname must start with legal_checker_test")
+    name = "legal_checker_test_" + uuid.uuid4().hex
+    admin_url = make_conninfo(base_url, dbname="postgres")
+    with psycopg.connect(admin_url, autocommit=True) as connection:
+        connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    url = make_conninfo(base_url, dbname=name)
+    try:
+        with connect_postgres(url) as connection:
+            migrate(connection)
+            connection.execute((Path(__file__).parent / "seed_knowledge.sql").read_text())
+            connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        yield url
+    finally:
+        with psycopg.connect(admin_url, autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name))
+            )
+
+
 @pytest.fixture(scope="session")
-def knowledge():
-    return Knowledge()
+def knowledge_database_url():
+    with isolated_database() as url:
+        yield url
+
+
+@pytest.fixture
+def database_url():
+    with isolated_database() as url:
+        yield url
+
+
+@pytest.fixture(scope="session")
+def knowledge(knowledge_database_url):
+    return Knowledge(knowledge_database_url)
 
 
 def make_request(knowledge, version_id="PV_GYC005", finding="SATISFIED"):

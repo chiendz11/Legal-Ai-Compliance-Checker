@@ -4,14 +4,12 @@ These DTOs reuse C01–C11/C13 schemas; they are local integration contracts,
 not new HTTP endpoints or new legal findings.
 """
 
-from typing import Literal
-
 from pydantic import Field, model_validator
 
 from legal_checker.shared.contracts.aggregation import RequirementResult
 from legal_checker.shared.contracts.assessment import AssessmentCase
 from legal_checker.shared.contracts.citation import CitationExtraction, CitationValidation
-from legal_checker.shared.contracts.common import Context, Model, RequirementStatus
+from legal_checker.shared.contracts.common import Context, Model
 from legal_checker.shared.contracts.document_intelligence import (
     Chunk,
     ContractProfile,
@@ -85,7 +83,7 @@ class IntegrationInput(Model):
 
 
 class HandoffSet(Model):
-    """All development checkpoints; one JSON file per field in each scenario."""
+    """Schema bundle for module boundary documentation; independent of storage."""
 
     document_input: DocumentInput
     document_output: DocumentIntelligenceResult
@@ -100,22 +98,3 @@ class HandoffSet(Model):
     integration_input: IntegrationInput
     pipeline_output: PipelineResponse
     report_output: FinalReport
-
-
-class FixtureExpectations(Model):
-    requirement_status: RequirementStatus
-    criterion_findings: list[Literal["SATISFIED", "MISSING", "VIOLATED", "UNKNOWN"]]
-    compliance_risks: int = Field(ge=0)
-    citation_risks: int = Field(ge=0)
-    verification_risks: int = Field(ge=0)
-
-
-class FixtureManifest(Model):
-    schema_version: Literal["v7.3.2"] = "v7.3.2"
-    fixture_version: Literal["parallel-v1"] = "parallel-v1"
-    fixture_only: Literal[True] = True
-    scenario: str
-    notice: Literal["SYNTHETIC_NOT_GOLD_NOT_HUMAN_VERIFIED"]
-    knowledge_snapshot_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
-    files: dict[str, str]
-    expected: FixtureExpectations

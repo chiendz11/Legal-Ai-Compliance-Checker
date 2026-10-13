@@ -1,7 +1,7 @@
 """Workbook knowledge queries for independent module development.
 
-Returns SQL rows, including source verification flags; does not approve knowledge
-or silently convert the new workbook into the engine's v7.3.2 JSON snapshot.
+Returns SQL rows, including source verification flags. Use Knowledge in repository.py
+when an engine needs the complete, content-hashed KnowledgeSnapshot interface.
 """
 
 from legal_checker.core.postgres import connect_postgres

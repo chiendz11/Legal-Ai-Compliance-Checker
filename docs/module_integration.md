@@ -19,7 +19,7 @@ Backend tại `backend/src/legal_checker/`; `api/` xử lý HTTP, `shared/contra
 | 8 | `reviews` | `HumanReviewService` + `ReviewStore`: append-only C12 events |
 | 9 | `reports` | `ReportService` + `ReportStore`/`ReportExporter`: C13 versions/export |
 
-Các services bước 1–4, 8–9 và Knowledge Curation có interfaces `Protocol`. Bước 9 có helper `reports/builder.py` dựng C13 draft; export/persist/publish vẫn chưa triển khai. Ports mô tả input/output để team lập trình độc lập; chúng không gọi LLM/OCR hay tạo dữ liệu giả. [Gói phát triển song song](parallel_development.md) cung cấp JSON/DOCX fixtures, reference runners và validator cho từng người.
+Các services bước 1–4, 8–9 và Knowledge Curation có interfaces `Protocol`. Bước 9 có helper `reports/builder.py` dựng C13 draft; export/persist/publish vẫn chưa triển khai. Ports mô tả input/output để team lập trình độc lập; chúng không gọi LLM/OCR hay tạo dữ liệu giả. [Hướng dẫn nhóm](huong_dan_trien_khai_module_sau_seed.md) mô tả query/mapping từ DB và tests từng phần.
 
 ## Skeleton điều phối draft
 
@@ -67,7 +67,7 @@ Imports theo module sở hữu:
 | Request/context validation | `legal_checker.shared.validation` |
 | Stable IDs | `legal_checker.shared.ids` |
 
-Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline trong workflows chịu trách nhiệm ghép các inputs này. Contracts được import từ `shared/contracts/reasoning.py`, `shared/contracts/pipeline.py`, `shared/contracts/risk.py` và các owning modules khác. Knowledge reader ở `modules/legal_knowledge/repository.py`; run store ở `modules/assessments/repository.py`; kết nối dùng chung ở `core/database.py`.
+Khi gọi engines trực tiếp, truyền `Context` cùng requirements/citations theo chữ ký hiện tại; pipeline trong workflows chịu trách nhiệm ghép các inputs này. Contracts được import từ `shared/contracts/reasoning.py`, `shared/contracts/pipeline.py`, `shared/contracts/risk.py` và các owning modules khác. Knowledge reader ở `modules/legal_knowledge/repository.py`; run store ở `modules/assessments/repository.py`; kết nối dùng chung ở `core/postgres.py`.
 
 ```python
 from legal_checker.workflows.steps_5_7 import evaluate
@@ -77,20 +77,13 @@ response = evaluate(pipeline_request, knowledge)
 results = aggregate(context, knowledge, criterion_results, applicable_requirements)
 ```
 
-Factory dùng một cấu hình `Settings` rõ ràng hoặc đọc environment khi không truyền settings:
+Factory dùng một cấu hình `Settings` rõ ràng hoặc đọc DATABASE_URL khi không truyền settings:
 
 ```python
-from pathlib import Path
-
 from legal_checker.core.config import Settings
 from legal_checker.main import create_app
 
-api = create_app(
-    settings=Settings(
-        knowledge_path=Path("data/knowledge.json"),
-        database_path=Path("data/private/runtime.sqlite3"),
-    )
-)
+api = create_app(settings=Settings.from_env())
 ```
 
 `api/dependencies.py:build_services` tạo knowledge/run store và được `main.create_app()` gọi khi chưa inject Services. `main.py` tạo FastAPI và router. Trong tests có thể inject `Services` bằng `create_app(settings=settings, services=services)` để thay storage mà không tạo DB mặc định.
@@ -109,12 +102,11 @@ Review/report cần `AccessPolicy`, append-only C12, effective reviewed result v
 
 `backend/tests/contract/test_downstream_boundaries.py` kiểm tra API từ chối C07/C10 sai provenance, duplicate IDs hoặc source ngoài checklist. `backend/tests/contract/test_architecture.py` giữ modules độc lập với HTTP/fixtures và giữ engines deterministic độc lập với DB/provider calls. Repositories được phép dùng kết nối DB chung.
 
-E2E HTTP thực cho engines bước 5–7:
+Kiểm tra HTTP và persistence trên PostgreSQL test riêng:
 
 ```bash
-DATABASE_PATH=data/private/e2e.sqlite3 uvicorn legal_checker.main:create_app --factory
-# Terminal khác, từ thư mục repo:
-python scripts/e2e_steps_5_7.py
+TEST_DATABASE_URL='postgresql://legal_checker:legal_checker_local_only@127.0.0.1:5433/legal_checker_test' \
+  pytest -q -c backend/pyproject.toml backend/tests/e2e/test_api_storage.py
 ```
 
 Quality evaluation theo BRD mục 13 có skeleton tại `evals/`; chưa có gold datasets/metric runners. Test software pass không thay thế đánh giá legal/model quality.

@@ -53,9 +53,14 @@ Hạn 50 ngày áp dụng cho nộp hồ sơ, không thay thế ngày cơ quan n
 
 ## Persistence và tái hiện
 
-SQLite adapter dùng các bảng hiện có về mặt nghiệp vụ: `ca_danh_gia`, `ket_qua_tieu_chi`, `bang_chung_ket_qua`, `bang_chung_ngoai`, `ket_qua_tuan_thu`, `ket_qua_rui_ro`, `khuyen_nghi_danh_gia`, `nhat_ky_ra_soat`. Các row output được lưu dưới `payload_json`; `nhat_ky_ra_soat` giữ cả input/output và SHA256, không giả danh X02 LLM audit.
+PostgreSQL Store ghi các bảng runtime workbook theo cột thật, thêm
+`runtime.assessment_runs` giữ input/output hashes và DTOs, `assessment_case_pins`
+giữ snapshot pin, `assessment_output_lineage` gắn output với run. Không dùng log
+knowledge `nhat_ky_ra_soat` để giả danh audit runtime hoặc LLM audit.
 
-Đây là storage adapter tối thiểu có thể thay bằng ORM/Postgres đầy đủ theo workbook. Không tạo bảng mới cho từng logical contract. Chưa lưu toàn bộ schema runtime và chưa hỗ trợ migration DB đã tồn tại từ phiên bản khác.
+`knowledge.knowledge_snapshots` giữ bản nội dung knowledge bất biến trong DB;
+reader chọn snapshot theo hash hoặc capture source tables hiện tại ở startup.
+Cờ draft/unverified không được nâng thành approved khi capture snapshot.
 
 Một transaction ghi case, criterion, requirement, risks, recommendations, evidence và audit. ID ổn định theo case/run/source. Cùng case/run + input y hệt trả output cũ kể cả timestamp; input khác trả 409. Case không thể đổi contract/deployment/rule/knowledge pin. Knowledge mới cần case mới; cùng case có thể rerun dưới snapshot cũ.
 

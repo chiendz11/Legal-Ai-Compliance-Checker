@@ -12,7 +12,7 @@ ServicesDependency = Annotated[Services, Depends(get_services)]
 def snapshot(services: ServicesDependency):
     knowledge = services.knowledge
     return {
-        "schema_version": "v7.3.2",
+        "schema_version": knowledge.schema_version,
         "knowledge_snapshot_sha256": knowledge.sha256,
         "counts": {k: len(v) for k, v in knowledge.tables.items()},
         "review_status": "PENDING_HUMAN_REVIEW",

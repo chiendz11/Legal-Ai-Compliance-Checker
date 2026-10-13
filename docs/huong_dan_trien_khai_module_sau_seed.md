@@ -49,17 +49,17 @@ Khi ghép hệ thống, input đó được thay bằng output thật của các
 | Phần | Hiện trạng | Dev tiếp tục làm gì? |
 |---|---|---|
 | PostgreSQL local | Có server setup, migration 50 bảng, seed và integration tests | Dùng DB riêng; bổ sung query của module |
-| Knowledge SQL | Có `WorkbookKnowledgeRepository` đọc criteria, decision rules, risk/templates | Viết reader/snapshot đáp ứng interface của engines khi chuyển bước 5–7 sang DB |
+| Knowledge SQL | Có full `Knowledge` SQL reader/snapshots và helper `WorkbookKnowledgeRepository` | Dùng reader đã chọn snapshot; mở rộng policies cần thiết |
 | Retrieval SQL | Có `RetrievalDatasetRepository` lấy source rows theo case/run | Map DTO; triển khai index/search/rerank và writer |
 | Bước 1–4 | Có interfaces/DTOs và skeleton files | Triển khai intake, parser/OCR, extraction, scope, temporal, citation, retrieval |
-| Bước 5–7 | Có engines deterministic, numeric rules, gates, aggregation, risk và template recommendation | Nối DB, knowledge adapter, input mapper, observations/provider và persistence |
+| Bước 5–7 | Có engines deterministic, numeric rules, gates, aggregation, risk và template recommendation | Bổ sung input mapper/observations/provider của module; DB reader/writer đã có |
 | Workflow | Có `DraftAssessmentWorkflow` để nối implementations được inject | Ghép implementations thật; bổ sung orchestration/persistence/recovery |
 | Bước 9 | Có `build_draft_report` tạo C13 draft từ handoffs cũ | Đọc DB, ghép report, lưu version, export, API và UI |
 | Bước 8 | Có C12 và interfaces review | Bổ sung review thật hoặc giữ báo cáo draft khi chưa có review |
 
-**API đang chạy vẫn dùng knowledge JSON v7.3.2 và SQLite snapshots.**
-Đặt `DATABASE_URL` không tự chuyển API sang PostgreSQL. Tài liệu này hướng dẫn công việc
-cần làm tiếp trên DB đã seed; không xác nhận các module trên đã hoàn thiện.
+**API bước 5–7 đã đọc/ghi PostgreSQL.** Snapshot knowledge và run lịch sử nằm trong DB.
+Cấu hình bằng `DATABASE_URL`, optional `KNOWLEDGE_SNAPSHOT_SHA256` để pin snapshot cũ.
+Mapper các bước upstream, OCR/search/LLM/review/export vẫn cần implementations thật.
 
 ### 1.3 Phân công theo phần bạn yêu cầu
 
@@ -73,7 +73,7 @@ cần làm tiếp trên DB đã seed; không xác nhận các module trên đã 
 Nếu vẫn phân công **5 người như trước**, tách nhóm B thành:
 người 2 làm 3A/3B; người 3 làm Retrieval bước 4.
 Nhóm A tương ứng người 1, C tương ứng người 4, D tương ứng người 5.
-Các tham số `--person` của tooling cũ vẫn dùng cách đánh số 5 người này.
+Hướng dẫn này nhóm theo bước; nếu chia 5 người thì giữ ranh giới trên.
 
 ### 1.4 Luồng ghép module
 
@@ -336,10 +336,10 @@ Tái sử dụng các files `intake.py`, `parser.py`, `ocr.py`, `chunker.py`,
 `modules/documents/`. Phần lớn hiện vẫn là skeleton/interface.
 
 ```bash
-pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_1_documents.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -k document
 ```
 
-Lệnh này kiểm tra handoff mẫu cũ; cần thêm unit/integration/eval của parser thật.
+Lệnh này cần TEST_DATABASE_URL và kiểm tra handoffs trên DB test; vẫn cần eval parser thật.
 Bàn giao C01, C02/chunks, C03, mapper/writer, PDF test hợp lệ và các test mới.
 
 ## 5. Nhóm B: bước 3–4: Applicable Law, Citation Validation và Retrieval
@@ -489,34 +489,32 @@ semantic embedding của LLM; khi đổi embedding model phải xây index tươ
 - Search toàn hợp đồng, không chỉ các đoạn có tên luật; retrieval miss không thành VIOLATED.
 
 ```bash
-pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_2_legal.py
-pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_3_retrieval.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -k legal
+pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -k retrieval
 ```
 
-Đây là tests của handoffs tổng hợp cũ; bổ sung DB mapper/query tests và eval riêng.
+Đây là tests DB handoff/provenance; bổ sung query/mapping riêng của implementation và eval.
 Bàn giao C04/C05 cho Retrieval/Compliance, C09 cho Risk/Report, C06 cho Compliance.
 
 ## 6. Nhóm C: bước 5–7: Compliance, Risk và Recommendation
 
 ### 6.1 Việc nên làm đầu tiên
 
-Logic bước 5–7 đã có. Trước khi gọi LLM, làm ba việc để dùng được workbook DB mới:
+Logic bước 5–7 và adapter PostgreSQL đã có:
 
-1. Viết `SqlKnowledgeSnapshot` hoặc adapter tương đương đáp ứng `KnowledgeSnapshot`.
-   Đây là implementation **cần bổ sung**, không phải class đã có.
-2. Map C05/C06/chunks/facts thành input của engines, với case/run/release nhất quán.
-3. Viết PostgreSQL writer cho C07/C08/C10/C11 và evidence.
+1. `modules/legal_knowledge/repository.py:Knowledge(database_url, snapshot_sha256=None)`
+   đáp ứng `KnowledgeSnapshot`, đọc 18 bảng nghiệp vụ và freeze nội dung trong DB.
+2. `WorkbookKnowledgeRepository` vẫn là helper query, không phải full snapshot reader.
+3. `modules/assessments/repository.py:Store(database_url)` lưu normalized outputs,
+   case/run pins, toàn bộ input/output và DTO lineage của bước 5–7.
 
-`WorkbookKnowledgeRepository` hiện là helper query, **chưa đáp ứng toàn bộ**
-`KnowledgeSnapshot`: engines cần các indices `criteria`, `versions`, `risks`,
-`recommendations`, `aggregations`, `articles`, `documents`, `tables`, cùng
-`criteria_for`, `decision`, `legal_basis`, `sha256`.
+Nhóm C cần hoàn thiện mapper C05/C06/chunks/facts, observations/provider và các policies
+chưa hỗ trợ. Nạp JSONB rule được reader chuẩn hóa tại boundary cho engine hiện có;
+không thực thi chuỗi bằng eval. Hash lấy từ nội dung snapshot, không mượn hash workbook.
+Cờ draft/unverified giữ nguyên; snapshot capture không phải phê duyệt chuyên gia.
 
-Reader hiện có từ JSON chỉ nhận schema v7.3.2. Reader SQL mới phải xử lý workbook v7_4_9:
-JSONB trả dict/list trong khi một số engines hiện gọi `json.loads` trên chuỗi rule.
-Chọn một dạng rule nội bộ thống nhất và test adapter, không pass raw SQL helper vào engine.
-Soát các rule shapes/policies mới; policy chưa hỗ trợ phải báo chưa hỗ trợ/UNKNOWN rõ.
-Không diễn giải JSON bằng `eval` và không gán old hash cho knowledge mới.
+Nếu muốn replay knowledge cũ, truyền hash snapshot đã có trong DB. Đổi source tables
+không đổi reader đã khởi tạo; reader mới capture snapshot mới có hash tương ứng.
 
 ### 6.2 Bước 5: criterion reasoning → C07 → aggregation C08
 
@@ -671,10 +669,10 @@ Không tạo log SUCCESS giả cho template engine hoặc fixture replay.
 - Writer rollback, retry không nhân đôi, lịch sử run không bị ghi đè.
 
 ```bash
-pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_4_compliance.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -k compliance
 ```
 
-Test này dùng knowledge/fixtures cũ; thêm integration DB và adapter tests cho v7_4_9.
+Tests dùng SQL seed nhỏ trên DB test; thêm eval độc lập với workbook corpus cho implementation mới.
 Bàn giao C07/C08/C10/C11, knowledge adapter, observations/provider,
 mapper/writer và các test chứng minh lineage/grounding.
 
@@ -779,7 +777,7 @@ hoặc migration trước khi writer thật; không cast `draft-v1` thành số 
 - Report version mới khi review thay đổi; export/read đúng quyền.
 
 ```bash
-pytest -q -c backend/pyproject.toml backend/tests/contract/parallel/test_person_5_integration.py
+pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -k report
 ```
 
 Bàn giao report reader/mapper/builder/writer/exporter, API/UI, wiring và integration/E2E tests.
@@ -866,34 +864,31 @@ Không sửa enum của một module riêng rồi để module kế tiếp nhậ
 
 ### 8.4 Run lineage và snapshot là phần code chung còn phải bổ sung
 
-**Schema seed hiện tại chưa đủ để bảo đảm mọi historical run bằng một phép lọc `lan_chay_id`.**
+**Các bảng workbook không có run column ở mọi nơi; dùng snapshots/output lineage bổ sung để chọn đúng kết quả lịch sử.**
 
 | Dữ liệu | Có run ID trực tiếp trong schema hiện tại? | Cách xử lý |
 |---|---|---|
 | Retrieval, C07, C09 | Có `lan_chay_id` | Luôn lọc cùng case/run và kiểm tra target IDs |
 | Evidence C07 | Không; có `ket_qua_id` | JOIN qua C07 đã chọn đúng run |
-| C08 | Không | Cần lineage bổ sung/snapshot run trước khi chạy nhiều runs cùng ca |
-| C10 | Không; có source C07 hoặc C09 | JOIN theo finding nguồn đã pin; phải xử lý cả hai nhánh |
+| C08 | Không | Dùng membership và DTO trong assessment_output_lineage |
+| C10 | Không; có source C07 hoặc C09 | Theo finding nguồn đã pin hoặc assessment_output_lineage |
 | C11 | Không; có risk ID | Theo risk đã chọn đúng lineage |
 | C13 | Không; có report version | Report cần pin run/outputs trong snapshot hoặc metadata bổ sung |
 | Profile/subjects/time markers | Không có run/extraction version đầy đủ | Re-extraction cần version/snapshot trước khi giữ nhiều kết quả lịch sử |
-| C04/C05 checklist | Không có run ID | Chốt checklist snapshot/revision theo ca/lần chạy, không overwrite lịch sử |
+| C04/C05 checklist | Không có run ID | C05 trong assessment_runs input snapshot; full Temporal writer cần policy riêng |
 
-Để phát triển logic, mỗi người có thể bắt đầu bằng **case dev mới cho mỗi lần thử**.
-Trước khi triển khai rerun/retry đầy đủ cho cùng ca, người phụ trách phần chung
-(thường nhóm D phối hợp nhóm C) cần migration tiếp theo: bảng run/checkpoints hoặc
-các cột/quan hệ lineage phù hợp, unique constraints và reader/writer tests.
-Đây là việc **cần viết**, không phải đã được migration 1 giải quyết.
-Không sửa migration 1 đã áp dụng hoặc đoán C08 cùng run chỉ vì cùng `ca_id`.
+Migration 002 đã bổ sung `runtime.assessment_case_pins`, `assessment_runs` và
+`assessment_output_lineage`: writer bước 5–7 lưu raw input/output và bản DTO bất biến,
+reader có thể truy membership theo case/run ngay cả khi bảng workbook không có run column.
+Các incoming IDs đã tồn tại nhưng khác nội dung bị conflict; khi đổi checklist/chunk
+hãy tạo IDs/version phù hợp thay vì ghi đè. Full DI/review/report writers vẫn cần lineage
+và extraction/report version policies riêng như bảng trên.
 
-**Knowledge version cũng cần reader phát hành snapshot:** `dev_meta.seed_imports.source_sha256`
-là hash **file Excel nhập**, không phải hash knowledge của mọi ca.
-`phien_ban_trien_khai` và runtime có pins/hashes lịch sử; các bảng knowledge SQL hiện
-chứa một baseline nhập chung, chưa là kho nội dung đầy đủ của mọi release lịch sử.
-Adapter phải chọn/tạo snapshot có nội dung rõ và hash đúng nội dung đó; giữ các cờ draft/
-unverified, không tự gọi dataset dev là release đã chuyên gia duyệt.
-Case seed dùng historical pins chỉ dùng để đối chiếu dữ liệu, không mặc định tái dựng
-được toàn bộ historical knowledge từ các bảng mutable hiện tại.
+`knowledge.knowledge_snapshots` lưu nội dung/hash của 18 bảng nghiệp vụ được capture
+hiện tại hoặc hash lịch sử đã có. `dev_meta.seed_imports.source_sha256` chỉ là hash Excel.
+Không mặc định hash lịch sử của một ca seed có snapshot tương ứng đã được nhập: reader
+chọn hash không tồn tại sẽ báo lỗi, không gán nội dung hiện tại vào hash cũ.
+Snapshot dev giữ status DEV_UNVERIFIED và flags nguồn; không tự biến dataset thành gold.
 
 ### 8.5 Điểm nối kiến trúc hiện tại
 
@@ -903,8 +898,8 @@ Repo đã tổ chức theo module: ports ở owning modules, implementations DB/
 `api/dependencies.py` hoặc factory dùng cho workflow/worker.
 Không cần tạo lại các folder cũ đã bỏ để thực hiện hướng dẫn này.
 
-Factory hiện chỉ build JSON Knowledge + SQLite Store.
-Chuyển runtime API sang PostgreSQL cần inject reader/store mới và test endpoints;
+Factory hiện build PostgreSQL Knowledge + Store; API endpoints đã dùng DB.
+Khi nối các services upstream vào full workflow, inject reader/provider/writer rõ ràng;
 không đưa query SQL trực tiếp vào route hoặc engine để bỏ qua ranh giới module.
 
 ## 9. Thứ tự làm và cách bàn giao
@@ -916,7 +911,7 @@ không đưa query SQL trực tiếp vào route hoặc engine để bỏ qua ran
 | A | PDF test + parser/extraction/chunker + C01/C02/C03 mapper/writer | Scope/Retrieval/Reasoning |
 | B — Legal | Profile seed → scope/temporal/citation rules + C04/C05/C09 | DI thật |
 | B — Retrieval | C05/chunks/criteria seed → search/select per-criterion + C06 | Scope/Temporal thật |
-| C | SQL knowledge adapter, rule/gate tests, input mapper/writer; candidates seed để dựng test có criterion rõ | DI/Search/LLM thật |
+| C | Dùng SQL Knowledge/Store hiện có, viết rule/gate/mapper/provider; candidates seed cần criterion rõ | DI/Search/LLM thật |
 | D | Report reader/mapper/UI layout với outputs mẫu; review/run/version/wiring design | Upstream implementations thật |
 
 Riêng **test hiệu quả DI thật** cần PDF có annotation. **Test Retrieval/Reasoning thật**
@@ -926,7 +921,7 @@ có thể kiểm tra mapping/joins; việc dùng chúng làm gold về pháp lý
 ### 9.2 Các phần chung nên chốt trước khi ghép
 
 - Shared DTO/version và mapping khác biệt mục 8.
-- DB knowledge snapshot reader/hash policy: nhóm C phối hợp người quản trị knowledge.
+- Dùng SQL snapshot reader/hash đã có; curation/release policy mới: nhóm C phối hợp người quản trị knowledge.
 - Case/run/extraction/report lineage, transactions/idempotency: nhóm D phối hợp writers.
 - Quyền tenant/case, source storage và LLM audit transport: phần dùng chung, owner rõ.
 - Bước 8: owner/ports review và điều kiện report được publish; chưa có thì chỉ draft.
@@ -951,26 +946,24 @@ Workflow hiện tạo draft C01–C11, chưa tự tạo/publish C13 hoặc persi
 ```bash
 ruff check --config backend/pyproject.toml .
 ruff format --check --config backend/pyproject.toml .
-python -m scripts.parallel_dev --all-scenarios
+python -m scripts.db_module_input --case SEED_CA_001 --run SEED_RUN_SEED_CA_001
 ```
 
-`parallel_dev` dùng fixtures tổng hợp cũ ở `examples/parallel`, không tự đọc workbook DB.
-Nó kiểm tra schema/handoff/wiring của baseline cũ, không đo OCR/search/LLM của module thật.
-Có thể dùng `--person` và `--verify-output` theo [hướng dẫn parallel cũ](parallel_development.md),
-nhưng dataset/case/hash phải đúng với bộ fixture đó. Không đưa output của case workbook
-v7_4_9 vào validator của một scenario v7.3.2 rồi kỳ vọng tự khớp knowledge/context.
+CLI đọc rows từ DB thật; cần map/validate contract trước khi chạy implementation.
+Không có bộ payload/reference tĩnh dùng để replay module. Các tests dựng DTO nhỏ
+hoặc load run từ PostgreSQL test để kiểm tra module và conformance validators.
 
-Chạy suite có PostgreSQL integration trên DB test riêng:
+Chạy suite trên DB test riêng:
 
 ```bash
 TEST_DATABASE_URL='postgresql://legal_checker:legal_checker_local_only@127.0.0.1:5433/legal_checker_test' \
   pytest -q -c backend/pyproject.toml
 ```
 
-Tests DB hiện tạo DB con riêng và xóa sau khi chạy; không ghi DB dev.
-Tests mới của mỗi module cũng dùng DB test/fake provider và seed nhỏ có refs đóng;
-không phụ thuộc đường dẫn Downloads của một người hoặc truy cập cloud DB chung.
-CI có PostgreSQL service; dữ liệu workbook gốc ở `data/private` không được commit public.
+Tests tự tạo DB con, nạp SQL seed nhỏ có refs đóng và xóa sau khi chạy;
+không ghi DB dev hoặc dùng đường dẫn Downloads/cloud DB. Thiếu biến TEST_DATABASE_URL
+thì tests cần DB được skip. CI luôn có PostgreSQL service.
+Module mới thêm tests và eval có annotation riêng; không coi SQL seed là legal gold.
 
 ## 10. Tiêu chí hoàn thành và các test cần có
 
@@ -998,5 +991,5 @@ Tài liệu liên quan:
 - [DB local, seed và cấu hình](local_database.md)
 - [Contracts gốc v7.3.2](data_contracts_v7_3_2.md)
 - [Cách nối interfaces/workflow hiện có](module_integration.md)
-- [Tooling phát triển song song theo 5 người](parallel_development.md)
+- [Module schemas](module_contracts.schema.json)
 - [Kiến trúc folder hiện tại](architecture.md)

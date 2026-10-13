@@ -6,11 +6,11 @@ import math
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
-from importlib.resources import files
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+from legal_checker.core.migrations import migrate
 from legal_checker.core.postgres import connect_postgres
 from openpyxl import load_workbook
 from openpyxl.utils.datetime import from_excel
@@ -155,33 +155,6 @@ def read_workbook(path: Path) -> WorkbookSeed:
         return seed
     finally:
         workbook.close()
-
-
-def migrate(connection) -> None:
-    migration = files("legal_checker.core").joinpath("sql/001_workbook_v7_4_9.sql").read_text()
-    checksum = hashlib.sha256(migration.encode()).hexdigest()
-    connection.execute("CREATE SCHEMA IF NOT EXISTS dev_meta")
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS dev_meta.schema_migrations (
-            version INTEGER PRIMARY KEY, sha256 TEXT NOT NULL,
-            applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    applied = connection.execute(
-        "SELECT sha256 FROM dev_meta.schema_migrations WHERE version=1"
-    ).fetchone()
-    if applied:
-        if applied["sha256"] != checksum:
-            raise SeedError("Migration 1 checksum changed; use a new migration or fresh local DB")
-        return
-    connection.execute(migration)
-    connection.execute("""
-        CREATE TABLE dev_meta.seed_imports (
-            source_sha256 TEXT PRIMARY KEY, row_counts JSONB NOT NULL,
-            imported_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    connection.execute("INSERT INTO dev_meta.schema_migrations VALUES (1, %s, now())", (checksum,))
 
 
 def insert_table(connection, table: Table, rows: list[dict[str, Any]]) -> int:
