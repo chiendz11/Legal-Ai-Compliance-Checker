@@ -1,0 +1,6048 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Legal Compliance Checker — proposed frontend API",
+    "version": "1.0.0-draft",
+    "description": "Design contract for frontend mocks/client generation and backend implementation. Proposed endpoints do not run. See x-implementation-status per operation; The running backend exposes its runtime schema at /openapi.json. Auth/error envelope are proposed. Decimal values can be JSON strings: do not assume floating-point money. Unknown/null and review/uncertainty states must remain visible."
+  },
+  "x-contract-status": "PROPOSED",
+  "x-authoritative-runtime-spec": "/openapi.json",
+  "x-follow-up-design": [
+    "Identity provider/login and permission administration",
+    "Legal knowledge curation/approval/release APIs"
+  ],
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000",
+      "description": "Local backend; planned routes unavailable"
+    }
+  ],
+  "tags": [
+    {
+      "name": "system"
+    },
+    {
+      "name": "contracts"
+    },
+    {
+      "name": "assessments"
+    },
+    {
+      "name": "reviews"
+    },
+    {
+      "name": "reports"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_HealthResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "IMPLEMENTED",
+        "security": [],
+        "x-authentication-status": "NOT_IMPLEMENTED"
+      }
+    },
+    "/api/v1/knowledge": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Snapshot",
+        "operationId": "getKnowledgeSnapshot",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_KnowledgeResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "IMPLEMENTED",
+        "security": [],
+        "x-authentication-status": "NOT_IMPLEMENTED"
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Get Run",
+        "operationId": "getStoredSteps57Result",
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ca Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No stored run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "detail"
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "IMPLEMENTED",
+        "security": [],
+        "x-authentication-status": "NOT_IMPLEMENTED",
+        "description": "Existing legacy reader for stored steps 5–7 output only, not a full report. Seeded corpus cases do not automatically have assessment_runs."
+      }
+    },
+    "/api/v1/contracts": {
+      "post": {
+        "operationId": "uploadContract",
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Upload a source PDF/DOCX",
+        "description": "Store original bytes, compute SHA-256 and source metadata. This does not run extraction or return a completed assessment.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_ContractRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "File too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported file format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "ten_tai_lieu": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "encoding": {
+                "file": {
+                  "contentType": "application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listContracts",
+        "tags": [
+          "contracts"
+        ],
+        "summary": "List accessible contracts",
+        "description": "List accessible contracts",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_Page_ContractRecord_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{hop_dong_id}": {
+      "get": {
+        "operationId": "getContract",
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Get source metadata",
+        "description": "Get source metadata",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_ContractRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hop_dong_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{hop_dong_id}/source": {
+      "get": {
+        "operationId": "downloadContractSource",
+        "tags": [
+          "contracts"
+        ],
+        "summary": "Read original source bytes",
+        "description": "Return pinned original bytes for the evidence viewer; authorize access first.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Original source file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hop_dong_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases": {
+      "post": {
+        "operationId": "createAssessmentCase",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Create a pinned case",
+        "description": "Backend derives actor/tenant and pins; client does not submit C05/C06 or computed statuses. A missing relevant date remains unknown, not today's date.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "X01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_CaseRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Input_CaseCreate"
+              },
+              "example": {
+                "hop_dong_id": "HD_EXAMPLE",
+                "ngay_danh_gia": "2026-10-15",
+                "moc_ap_dung": null
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listAssessmentCases",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "List accessible cases",
+        "description": "List accessible cases",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_Page_CaseRecord_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}": {
+      "get": {
+        "operationId": "getAssessmentCase",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Read a case",
+        "description": "Read a case",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_CaseRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs": {
+      "post": {
+        "operationId": "startAssessmentRun",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Queue the complete machine assessment",
+        "description": "Server creates run/trace IDs and immutable input/knowledge pins. No request body; frontend does not orchestrate steps 5–7. Same actor/case/idempotency key returns the original acceptance record.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "X01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_RunAccepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Retry with the same client key; use a new key to start a new run.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/status": {
+      "get": {
+        "operationId": "getAssessmentProgress",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Poll machine processing progress",
+        "description": "Law and citation stages may run in parallel. COMPLETED means machine outputs are ready, not human-reviewed/published. Do not fabricate percentage progress.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_RunProgress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/results": {
+      "get": {
+        "operationId": "getAssessmentResults",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Read pinned full machine results",
+        "description": "Return pinned run inputs/results through step 7; no fallback to QA answers. 409 RESULT_NOT_READY until completed. Human decisions are separate review events.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "C02",
+          "C03",
+          "C04",
+          "C05",
+          "C06",
+          "C07",
+          "C08",
+          "C09",
+          "C10",
+          "C11"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_AssessmentDraft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/reviews": {
+      "post": {
+        "operationId": "appendHumanReview",
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Append a review decision",
+        "description": "Authorize actor; validate target case/run membership and expected hash. Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid after data; never overwrite machine output.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C12"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_ReviewRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Input_ReviewCreate"
+              },
+              "example": {
+                "target": {
+                  "doi_tuong_loai": "ket_qua_tieu_chi",
+                  "doi_tuong_id": "KQ_EXAMPLE"
+                },
+                "action": "COMMENT",
+                "after": {},
+                "reason": "Cần đối chiếu phụ lục.",
+                "expected_target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listHumanReviews",
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Read append-only review history for this run",
+        "description": "Read append-only review history for this run",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C12"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_Page_ReviewRecord_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/reports": {
+      "post": {
+        "operationId": "buildDraftReport",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Build and persist a new report version",
+        "description": "Build DRAFT from exact completed run and review revision. Backend gathers sections; client does not submit report_json or legal conclusions. Pin all upstream document/profile/checklist versions. Does not publish.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_ReportRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listReportVersions",
+        "tags": [
+          "reports"
+        ],
+        "summary": "List report versions belonging to this run",
+        "description": "List report versions belonging to this run",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_Page_ReportRecord_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/{bao_cao_id}": {
+      "get": {
+        "operationId": "getReport",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Read a specific report version",
+        "description": "Render profile, compliance, citations, risks, recommendations and review. This is not a raw LLM response. UI must display draft/review status and uncertainty.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_ReportRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bao_cao_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/{bao_cao_id}/publish": {
+      "post": {
+        "operationId": "publishReport",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Publish an authorized reviewed report",
+        "description": "Require publish permission and expected_review_revision. Reject stale or incomplete required review. A review of an older run cannot approve this report.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C12",
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_ReportRecord"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bao_cao_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Input_PublishRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{bao_cao_id}/export": {
+      "get": {
+        "operationId": "exportReport",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Export the exact report version",
+        "description": "Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings.",
+        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exported report file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bao_cao_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pdf",
+                "docx"
+              ],
+              "default": "pdf"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Planned authentication; not implemented."
+      }
+    },
+    "schemas": {
+      "CriterionResult": {
+        "properties": {
+          "ket_qua_id": {
+            "type": "string",
+            "title": "Ket Qua Id"
+          },
+          "ca_id": {
+            "type": "string",
+            "title": "Ca Id"
+          },
+          "yeu_cau_ca_id": {
+            "type": "string",
+            "title": "Yeu Cau Ca Id"
+          },
+          "tieu_chi_id": {
+            "type": "string",
+            "title": "Tieu Chi Id"
+          },
+          "finding": {
+            "type": "string",
+            "enum": [
+              "SATISFIED",
+              "MISSING",
+              "VIOLATED",
+              "UNKNOWN"
+            ],
+            "title": "Finding"
+          },
+          "giai_thich": {
+            "type": "string",
+            "title": "Giai Thich"
+          },
+          "gates": {
+            "$ref": "#/components/schemas/Gates"
+          },
+          "uncertainty_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uncertainty Reason"
+          },
+          "pham_vi_ket_luan": {
+            "type": "string",
+            "const": "CURRENT_CRITERION",
+            "title": "Pham Vi Ket Luan",
+            "default": "CURRENT_CRITERION"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "external_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ExternalEvidence"
+            },
+            "type": "array",
+            "title": "External Evidence"
+          },
+          "legal_basis_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Legal Basis Ids"
+          },
+          "tieu_chi_snapshot_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tieu Chi Snapshot Json"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "prompt_version": {
+            "type": "string",
+            "title": "Prompt Version"
+          },
+          "lan_chay_id": {
+            "type": "string",
+            "title": "Lan Chay Id"
+          },
+          "review_status": {
+            "type": "string",
+            "const": "PENDING",
+            "title": "Review Status",
+            "default": "PENDING"
+          },
+          "mandatory": {
+            "type": "boolean",
+            "title": "Mandatory"
+          },
+          "excluded": {
+            "type": "boolean",
+            "title": "Excluded",
+            "default": false
+          },
+          "exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusion Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ket_qua_id",
+          "ca_id",
+          "yeu_cau_ca_id",
+          "tieu_chi_id",
+          "finding",
+          "giai_thich",
+          "gates",
+          "tieu_chi_snapshot_json",
+          "model_version",
+          "prompt_version",
+          "lan_chay_id",
+          "mandatory"
+        ],
+        "title": "CriterionResult"
+      },
+      "Evidence": {
+        "properties": {
+          "doan_id": {
+            "type": "string",
+            "title": "Doan Id"
+          },
+          "trich_dan": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Trich Dan"
+          },
+          "ky_tu_bat_dau": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ky Tu Bat Dau"
+          },
+          "ky_tu_ket_thuc": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Ky Tu Ket Thuc"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "doan_id",
+          "trich_dan",
+          "ky_tu_bat_dau",
+          "ky_tu_ket_thuc"
+        ],
+        "title": "Evidence"
+      },
+      "ExternalEvidence": {
+        "properties": {
+          "bang_chung_id": {
+            "type": "string",
+            "title": "Bang Chung Id"
+          },
+          "object_uri": {
+            "type": "string",
+            "title": "Object Uri"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Sha256"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bang_chung_id",
+          "object_uri",
+          "sha256"
+        ],
+        "title": "ExternalEvidence"
+      },
+      "Gates": {
+        "properties": {
+          "coverage_complete": {
+            "type": "boolean",
+            "title": "Coverage Complete",
+            "default": false
+          },
+          "absence_verified": {
+            "type": "boolean",
+            "title": "Absence Verified",
+            "default": false
+          },
+          "evidence_validated": {
+            "type": "boolean",
+            "title": "Evidence Validated",
+            "default": false
+          },
+          "source_verified": {
+            "type": "boolean",
+            "title": "Source Verified",
+            "default": false
+          },
+          "scope_confirmed": {
+            "type": "boolean",
+            "title": "Scope Confirmed",
+            "default": false
+          },
+          "version_resolved": {
+            "type": "boolean",
+            "title": "Version Resolved",
+            "default": false
+          },
+          "evidence_conflict": {
+            "type": "boolean",
+            "title": "Evidence Conflict",
+            "default": false
+          },
+          "exceptions_resolved": {
+            "type": "boolean",
+            "title": "Exceptions Resolved",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Gates"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Input_ApiError": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Input_ApiErrorDetail"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ApiError",
+        "type": "object"
+      },
+      "Input_ApiErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "VALIDATION_ERROR",
+              "UNAUTHENTICATED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "CONFLICT",
+              "RESULT_NOT_READY",
+              "STALE_REVIEW",
+              "REVIEW_REQUIRED",
+              "FILE_TOO_LARGE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INTERNAL_ERROR",
+              "PROCESSING_FAILED"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "details": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Details",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "trace_id"
+        ],
+        "title": "ApiErrorDetail",
+        "type": "object"
+      },
+      "Input_CaseCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "hop_dong_id": {
+            "examples": [
+              "HD_EXAMPLE"
+            ],
+            "minLength": 1,
+            "title": "Hop Dong Id",
+            "type": "string"
+          },
+          "ngay_danh_gia": {
+            "format": "date",
+            "title": "Ngay Danh Gia",
+            "type": "string"
+          },
+          "moc_ap_dung": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Moc Ap Dung"
+          },
+          "loai_moc_ap_dung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Moc Ap Dung"
+          },
+          "phien_ban_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Omit to let backend select an allowed deployment release.",
+            "title": "Phien Ban Id"
+          }
+        },
+        "required": [
+          "hop_dong_id",
+          "ngay_danh_gia"
+        ],
+        "title": "CaseCreate",
+        "type": "object"
+      },
+      "Input_PublishRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_review_revision": {
+            "minLength": 1,
+            "title": "Expected Review Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_review_revision"
+        ],
+        "title": "PublishRequest",
+        "type": "object"
+      },
+      "Input_ReviewCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/Input_ReviewTarget"
+          },
+          "action": {
+            "enum": [
+              "CONFIRM",
+              "OVERRIDE",
+              "REQUEST_MORE_EVIDENCE",
+              "REJECT",
+              "COMMENT"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "after": {
+            "additionalProperties": true,
+            "title": "After",
+            "type": "object"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "expected_target_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Expected Target Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "action",
+          "reason",
+          "expected_target_sha256"
+        ],
+        "title": "ReviewCreate",
+        "type": "object"
+      },
+      "Input_ReviewTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "doi_tuong_loai": {
+            "title": "Doi Tuong Loai",
+            "type": "string"
+          },
+          "doi_tuong_id": {
+            "title": "Doi Tuong Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doi_tuong_loai",
+          "doi_tuong_id"
+        ],
+        "title": "ReviewTarget",
+        "type": "object"
+      },
+      "Output_ApiErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "VALIDATION_ERROR",
+              "UNAUTHENTICATED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "CONFLICT",
+              "RESULT_NOT_READY",
+              "STALE_REVIEW",
+              "REVIEW_REQUIRED",
+              "FILE_TOO_LARGE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "INTERNAL_ERROR",
+              "PROCESSING_FAILED"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "details": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Details",
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "trace_id"
+        ],
+        "title": "ApiErrorDetail",
+        "type": "object"
+      },
+      "Output_ApplicableRequirement": {
+        "additionalProperties": false,
+        "properties": {
+          "yeu_cau_ca_id": {
+            "minLength": 1,
+            "title": "Yeu Cau Ca Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "minLength": 1,
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "requirement_id": {
+            "minLength": 1,
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "requirement_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requirement Version Id"
+          },
+          "nhom_phien_ban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nhom Phien Ban"
+          },
+          "scope_status": {
+            "enum": [
+              "MATCH",
+              "NO_MATCH",
+              "UNKNOWN"
+            ],
+            "title": "Scope Status",
+            "type": "string"
+          },
+          "version_status": {
+            "enum": [
+              "RESOLVED",
+              "UNKNOWN"
+            ],
+            "title": "Version Status",
+            "type": "string"
+          },
+          "applicability_status": {
+            "enum": [
+              "CONFIRMED",
+              "NOT_APPLICABLE",
+              "UNKNOWN"
+            ],
+            "title": "Applicability Status",
+            "type": "string"
+          },
+          "moc_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Moc Id"
+          },
+          "loai_moc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Moc"
+          },
+          "moc_ap_dung": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Moc Ap Dung"
+          },
+          "resolution_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resolution Method"
+          },
+          "profile_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Profile Snapshot Json",
+            "type": "object"
+          },
+          "dieu_kien_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Dieu Kien Snapshot Json",
+            "type": "object"
+          },
+          "nguon_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Nguon Snapshot Json",
+            "type": "object"
+          },
+          "phien_ban_id": {
+            "title": "Phien Ban Id",
+            "type": "string"
+          },
+          "reason": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Reason",
+            "type": "object"
+          }
+        },
+        "required": [
+          "yeu_cau_ca_id",
+          "ca_id",
+          "requirement_id",
+          "scope_status",
+          "version_status",
+          "applicability_status",
+          "phien_ban_id"
+        ],
+        "title": "ApplicableRequirement",
+        "type": "object"
+      },
+      "Output_AssessmentCase": {
+        "additionalProperties": false,
+        "properties": {
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "hop_dong_id": {
+            "title": "Hop Dong Id",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Output_SourceDocument"
+          },
+          "assessment_context": {
+            "$ref": "#/components/schemas/Output_AssessmentTiming"
+          },
+          "deployment": {
+            "$ref": "#/components/schemas/Output_DeploymentPin"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ca_id",
+          "hop_dong_id",
+          "source",
+          "assessment_context",
+          "deployment",
+          "tenant_id",
+          "created_by"
+        ],
+        "title": "AssessmentCase",
+        "type": "object"
+      },
+      "Output_AssessmentDraft": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/Output_Context"
+          },
+          "case": {
+            "$ref": "#/components/schemas/Output_AssessmentCase"
+          },
+          "contract_profile": {
+            "$ref": "#/components/schemas/Output_ContractProfile"
+          },
+          "chunks": {
+            "items": {
+              "$ref": "#/components/schemas/Output_Chunk"
+            },
+            "title": "Chunks",
+            "type": "array"
+          },
+          "extracted_citations": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CitationExtraction"
+            },
+            "title": "Extracted Citations",
+            "type": "array"
+          },
+          "citation_findings": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CitationValidation"
+            },
+            "title": "Citation Findings",
+            "type": "array"
+          },
+          "scope": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ScopeResolution"
+            },
+            "title": "Scope",
+            "type": "array"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ApplicableRequirement"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "retrieval": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RetrievalEvidence"
+            },
+            "title": "Retrieval",
+            "type": "array"
+          },
+          "evaluation": {
+            "$ref": "#/components/schemas/Output_PipelineResponse"
+          }
+        },
+        "required": [
+          "context",
+          "case",
+          "contract_profile",
+          "chunks",
+          "extracted_citations",
+          "citation_findings",
+          "scope",
+          "requirements",
+          "retrieval",
+          "evaluation"
+        ],
+        "title": "AssessmentDraft",
+        "type": "object"
+      },
+      "Output_AssessmentTiming": {
+        "additionalProperties": false,
+        "properties": {
+          "ngay_danh_gia": {
+            "format": "date",
+            "title": "Ngay Danh Gia",
+            "type": "string"
+          },
+          "moc_ap_dung": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Moc Ap Dung"
+          },
+          "loai_moc_ap_dung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Moc Ap Dung"
+          }
+        },
+        "required": [
+          "ngay_danh_gia"
+        ],
+        "title": "AssessmentTiming",
+        "type": "object"
+      },
+      "Output_CaseRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "$ref": "#/components/schemas/Output_AssessmentCase"
+          },
+          "latest_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Latest Run Id"
+          },
+          "latest_run_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "QUEUED",
+                  "RUNNING",
+                  "COMPLETED",
+                  "FAILED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Latest Run Status"
+          }
+        },
+        "required": [
+          "case"
+        ],
+        "title": "CaseRecord",
+        "type": "object"
+      },
+      "Output_Chunk": {
+        "additionalProperties": false,
+        "properties": {
+          "doan_id": {
+            "minLength": 1,
+            "title": "Doan Id",
+            "type": "string"
+          },
+          "hop_dong_id": {
+            "minLength": 1,
+            "title": "Hop Dong Id",
+            "type": "string"
+          },
+          "noi_dung": {
+            "minLength": 1,
+            "title": "Noi Dung",
+            "type": "string"
+          },
+          "page_start": {
+            "minimum": 1,
+            "title": "Page Start",
+            "type": "integer"
+          },
+          "page_end": {
+            "minimum": 1,
+            "title": "Page End",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doan_id",
+          "hop_dong_id",
+          "noi_dung",
+          "page_start",
+          "page_end"
+        ],
+        "title": "Chunk",
+        "type": "object"
+      },
+      "Output_CitationExtraction": {
+        "additionalProperties": false,
+        "description": "C03: contract-authored citations; independent of the applicable-law checklist.",
+        "properties": {
+          "vien_dan_id": {
+            "title": "Vien Dan Id",
+            "type": "string"
+          },
+          "hop_dong_id": {
+            "title": "Hop Dong Id",
+            "type": "string"
+          },
+          "raw_text": {
+            "title": "Raw Text",
+            "type": "string"
+          },
+          "normalized": {
+            "$ref": "#/components/schemas/Output_CitationNormalization"
+          },
+          "extraction": {
+            "$ref": "#/components/schemas/Output_CitationExtractionMetadata"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CitationPosition"
+            },
+            "minItems": 1,
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "vien_dan_id",
+          "hop_dong_id",
+          "raw_text",
+          "normalized",
+          "extraction",
+          "evidence"
+        ],
+        "title": "CitationExtraction",
+        "type": "object"
+      },
+      "Output_CitationExtractionMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": [
+              "EXTRACTED",
+              "AMBIGUOUS",
+              "UNKNOWN"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Confidence"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "CitationExtractionMetadata",
+        "type": "object"
+      },
+      "Output_CitationNormalization": {
+        "additionalProperties": false,
+        "properties": {
+          "so_hieu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "So Hieu"
+          },
+          "ten_van_ban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ten Van Ban"
+          },
+          "loai_van_ban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Van Ban"
+          },
+          "nam": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nam"
+          },
+          "ngay_ban_hanh": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ngay Ban Hanh"
+          },
+          "dieu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Dieu"
+          },
+          "khoan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Khoan"
+          }
+        },
+        "title": "CitationNormalization",
+        "type": "object"
+      },
+      "Output_CitationPosition": {
+        "additionalProperties": false,
+        "properties": {
+          "doan_id": {
+            "title": "Doan Id",
+            "type": "string"
+          },
+          "page_start": {
+            "minimum": 1,
+            "title": "Page Start",
+            "type": "integer"
+          },
+          "page_end": {
+            "minimum": 1,
+            "title": "Page End",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doan_id",
+          "page_start",
+          "page_end"
+        ],
+        "title": "CitationPosition",
+        "type": "object"
+      },
+      "Output_CitationValidation": {
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": {
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "vien_dan_id": {
+            "title": "Vien Dan Id",
+            "type": "string"
+          },
+          "normalized_van_ban_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Normalized Van Ban Id"
+          },
+          "relevant_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Relevant Date"
+          },
+          "status": {
+            "enum": [
+              "VALID",
+              "STALE",
+              "INVALID",
+              "UNKNOWN"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "reason_code": {
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "ly_do": {
+            "title": "Ly Do",
+            "type": "string"
+          },
+          "domain_status": {
+            "enum": [
+              "MATCH",
+              "MISMATCH",
+              "UNKNOWN"
+            ],
+            "title": "Domain Status",
+            "type": "string"
+          },
+          "finding_verified": {
+            "title": "Finding Verified",
+            "type": "boolean"
+          },
+          "current_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Current Status"
+          },
+          "replacement_van_ban_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Replacement Van Ban Id"
+          },
+          "source_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Source Snapshot Json",
+            "type": "object"
+          },
+          "lan_chay_id": {
+            "title": "Lan Chay Id",
+            "type": "string"
+          },
+          "knowledge_version": {
+            "title": "Knowledge Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "finding_id",
+          "ca_id",
+          "vien_dan_id",
+          "status",
+          "reason_code",
+          "ly_do",
+          "domain_status",
+          "finding_verified",
+          "source_snapshot_json",
+          "lan_chay_id",
+          "knowledge_version"
+        ],
+        "title": "CitationValidation",
+        "type": "object"
+      },
+      "Output_Context": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "ca_id": {
+            "minLength": 1,
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "phien_ban_id": {
+            "minLength": 1,
+            "title": "Phien Ban Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "minLength": 1,
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "legal_knowledge_version": {
+            "minLength": 1,
+            "title": "Legal Knowledge Version",
+            "type": "string"
+          },
+          "knowledge_snapshot_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "run_id": {
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ca_id",
+          "phien_ban_id",
+          "rule_version",
+          "legal_knowledge_version",
+          "knowledge_snapshot_sha256",
+          "run_id",
+          "trace_id"
+        ],
+        "title": "Context",
+        "type": "object"
+      },
+      "Output_ContractProfile": {
+        "additionalProperties": false,
+        "description": "C02: typed extraction output with nullable facts and explicit provenance.",
+        "properties": {
+          "hop_dong_id": {
+            "title": "Hop Dong Id",
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Output_ProfileFields"
+          },
+          "subjects": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ProfileSubject"
+            },
+            "title": "Subjects",
+            "type": "array"
+          },
+          "time_markers": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ProfileTimeMarker"
+            },
+            "title": "Time Markers",
+            "type": "array"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ExtractedFact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ProfileEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hop_dong_id",
+          "profile"
+        ],
+        "title": "ContractProfile",
+        "type": "object"
+      },
+      "Output_ContractRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "hop_dong_id": {
+            "examples": [
+              "HD_EXAMPLE"
+            ],
+            "minLength": 1,
+            "title": "Hop Dong Id",
+            "type": "string"
+          },
+          "ten_tai_lieu": {
+            "minLength": 1,
+            "title": "Ten Tai Lieu",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Output_SourceDocument"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hop_dong_id",
+          "ten_tai_lieu",
+          "source",
+          "created_at"
+        ],
+        "title": "ContractRecord",
+        "type": "object"
+      },
+      "Output_CriterionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "ket_qua_id": {
+            "title": "Ket Qua Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "yeu_cau_ca_id": {
+            "title": "Yeu Cau Ca Id",
+            "type": "string"
+          },
+          "tieu_chi_id": {
+            "title": "Tieu Chi Id",
+            "type": "string"
+          },
+          "finding": {
+            "enum": [
+              "SATISFIED",
+              "MISSING",
+              "VIOLATED",
+              "UNKNOWN"
+            ],
+            "title": "Finding",
+            "type": "string"
+          },
+          "giai_thich": {
+            "title": "Giai Thich",
+            "type": "string"
+          },
+          "gates": {
+            "$ref": "#/components/schemas/Output_Gates"
+          },
+          "uncertainty_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Uncertainty Reason"
+          },
+          "pham_vi_ket_luan": {
+            "const": "CURRENT_CRITERION",
+            "default": "CURRENT_CRITERION",
+            "title": "Pham Vi Ket Luan",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Output_Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "external_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ExternalEvidence"
+            },
+            "title": "External Evidence",
+            "type": "array"
+          },
+          "legal_basis_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Legal Basis Ids",
+            "type": "array"
+          },
+          "tieu_chi_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Tieu Chi Snapshot Json",
+            "type": "object"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "prompt_version": {
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "lan_chay_id": {
+            "title": "Lan Chay Id",
+            "type": "string"
+          },
+          "review_status": {
+            "const": "PENDING",
+            "default": "PENDING",
+            "title": "Review Status",
+            "type": "string"
+          },
+          "mandatory": {
+            "title": "Mandatory",
+            "type": "boolean"
+          },
+          "excluded": {
+            "default": false,
+            "title": "Excluded",
+            "type": "boolean"
+          },
+          "exclusion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Exclusion Reason"
+          }
+        },
+        "required": [
+          "ket_qua_id",
+          "ca_id",
+          "yeu_cau_ca_id",
+          "tieu_chi_id",
+          "finding",
+          "giai_thich",
+          "gates",
+          "tieu_chi_snapshot_json",
+          "model_version",
+          "prompt_version",
+          "lan_chay_id",
+          "mandatory"
+        ],
+        "title": "CriterionResult",
+        "type": "object"
+      },
+      "Output_DeploymentPin": {
+        "additionalProperties": false,
+        "properties": {
+          "phien_ban_id": {
+            "minLength": 1,
+            "title": "Phien Ban Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "minLength": 1,
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "legal_knowledge_version": {
+            "minLength": 1,
+            "title": "Legal Knowledge Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phien_ban_id",
+          "rule_version",
+          "legal_knowledge_version"
+        ],
+        "title": "DeploymentPin",
+        "type": "object"
+      },
+      "Output_Evidence": {
+        "additionalProperties": false,
+        "properties": {
+          "doan_id": {
+            "title": "Doan Id",
+            "type": "string"
+          },
+          "trich_dan": {
+            "minLength": 1,
+            "title": "Trich Dan",
+            "type": "string"
+          },
+          "ky_tu_bat_dau": {
+            "minimum": 0,
+            "title": "Ky Tu Bat Dau",
+            "type": "integer"
+          },
+          "ky_tu_ket_thuc": {
+            "minimum": 1,
+            "title": "Ky Tu Ket Thuc",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doan_id",
+          "trich_dan",
+          "ky_tu_bat_dau",
+          "ky_tu_ket_thuc"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "Output_ExternalEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "bang_chung_id": {
+            "title": "Bang Chung Id",
+            "type": "string"
+          },
+          "object_uri": {
+            "title": "Object Uri",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "verified": {
+            "default": false,
+            "title": "Verified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "bang_chung_id",
+          "object_uri",
+          "sha256"
+        ],
+        "title": "ExternalEvidence",
+        "type": "object"
+      },
+      "Output_ExtractedFact": {
+        "additionalProperties": false,
+        "properties": {
+          "trich_xuat_id": {
+            "title": "Trich Xuat Id",
+            "type": "string"
+          },
+          "ten_truong": {
+            "title": "Ten Truong",
+            "type": "string"
+          },
+          "gia_tri_raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Gia Tri Raw"
+          },
+          "gia_tri_chuan_json": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Gia Tri Chuan Json"
+          },
+          "trang_thai": {
+            "title": "Trang Thai",
+            "type": "string"
+          },
+          "phuong_phap": {
+            "title": "Phuong Phap",
+            "type": "string"
+          },
+          "human_verified": {
+            "default": false,
+            "title": "Human Verified",
+            "type": "boolean"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "trich_xuat_id",
+          "ten_truong",
+          "trang_thai",
+          "phuong_phap"
+        ],
+        "title": "ExtractedFact",
+        "type": "object"
+      },
+      "Output_FinalReport": {
+        "additionalProperties": false,
+        "properties": {
+          "bao_cao_id": {
+            "title": "Bao Cao Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "phien_ban_bao_cao": {
+            "title": "Phien Ban Bao Cao",
+            "type": "string"
+          },
+          "report_json": {
+            "$ref": "#/components/schemas/Output_ReportContent"
+          },
+          "report_status": {
+            "enum": [
+              "DRAFT",
+              "REVIEW_REQUIRED",
+              "PUBLISHED"
+            ],
+            "title": "Report Status",
+            "type": "string"
+          },
+          "review_status": {
+            "title": "Review Status",
+            "type": "string"
+          },
+          "report_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Report Uri"
+          }
+        },
+        "required": [
+          "bao_cao_id",
+          "ca_id",
+          "phien_ban_bao_cao",
+          "report_json",
+          "report_status",
+          "review_status"
+        ],
+        "title": "FinalReport",
+        "type": "object"
+      },
+      "Output_Gates": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage_complete": {
+            "default": false,
+            "title": "Coverage Complete",
+            "type": "boolean"
+          },
+          "absence_verified": {
+            "default": false,
+            "title": "Absence Verified",
+            "type": "boolean"
+          },
+          "evidence_validated": {
+            "default": false,
+            "title": "Evidence Validated",
+            "type": "boolean"
+          },
+          "source_verified": {
+            "default": false,
+            "title": "Source Verified",
+            "type": "boolean"
+          },
+          "scope_confirmed": {
+            "default": false,
+            "title": "Scope Confirmed",
+            "type": "boolean"
+          },
+          "version_resolved": {
+            "default": false,
+            "title": "Version Resolved",
+            "type": "boolean"
+          },
+          "evidence_conflict": {
+            "default": false,
+            "title": "Evidence Conflict",
+            "type": "boolean"
+          },
+          "exceptions_resolved": {
+            "default": false,
+            "title": "Exceptions Resolved",
+            "type": "boolean"
+          }
+        },
+        "title": "Gates",
+        "type": "object"
+      },
+      "Output_HealthResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "schema_version"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "Output_HumanReview": {
+        "additionalProperties": false,
+        "properties": {
+          "review_id": {
+            "title": "Review Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/Output_ReviewTarget"
+          },
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "CONFIRM",
+              "OVERRIDE",
+              "REQUEST_MORE_EVIDENCE",
+              "REJECT",
+              "COMMENT"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "before": {
+            "additionalProperties": true,
+            "title": "Before",
+            "type": "object"
+          },
+          "after": {
+            "additionalProperties": true,
+            "title": "After",
+            "type": "object"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "title": "Reviewed At",
+            "type": "string"
+          },
+          "phien_ban_id": {
+            "title": "Phien Ban Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_id",
+          "ca_id",
+          "target",
+          "actor_id",
+          "action",
+          "before",
+          "after",
+          "reason",
+          "reviewed_at",
+          "phien_ban_id"
+        ],
+        "title": "HumanReview",
+        "type": "object"
+      },
+      "Output_KnowledgeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "knowledge_snapshot_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "review_status": {
+            "const": "PENDING_HUMAN_REVIEW",
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "knowledge_snapshot_sha256",
+          "counts",
+          "review_status"
+        ],
+        "title": "KnowledgeResponse",
+        "type": "object"
+      },
+      "Output_Page_CaseRecord_": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CaseRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ],
+        "title": "Page[CaseRecord]",
+        "type": "object"
+      },
+      "Output_Page_ContractRecord_": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ContractRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ],
+        "title": "Page[ContractRecord]",
+        "type": "object"
+      },
+      "Output_Page_ReportRecord_": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ReportRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ],
+        "title": "Page[ReportRecord]",
+        "type": "object"
+      },
+      "Output_Page_ReviewRecord_": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ReviewRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "minimum": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total"
+        ],
+        "title": "Page[ReviewRecord]",
+        "type": "object"
+      },
+      "Output_PipelineResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "ca_id": {
+            "minLength": 1,
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "phien_ban_id": {
+            "minLength": 1,
+            "title": "Phien Ban Id",
+            "type": "string"
+          },
+          "rule_version": {
+            "minLength": 1,
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "legal_knowledge_version": {
+            "minLength": 1,
+            "title": "Legal Knowledge Version",
+            "type": "string"
+          },
+          "knowledge_snapshot_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "run_id": {
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "trace_id": {
+            "minLength": 1,
+            "title": "Trace Id",
+            "type": "string"
+          },
+          "contract_name": {
+            "const": "Steps57Result",
+            "default": "Steps57Result",
+            "title": "Contract Name",
+            "type": "string"
+          },
+          "produced_at": {
+            "format": "date-time",
+            "title": "Produced At",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/Output_PipelineResult"
+          }
+        },
+        "required": [
+          "ca_id",
+          "phien_ban_id",
+          "rule_version",
+          "legal_knowledge_version",
+          "knowledge_snapshot_sha256",
+          "run_id",
+          "trace_id",
+          "produced_at",
+          "payload"
+        ],
+        "title": "PipelineResponse",
+        "type": "object"
+      },
+      "Output_PipelineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_results": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CriterionResult"
+            },
+            "title": "Criterion Results",
+            "type": "array"
+          },
+          "requirement_results": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RequirementResult"
+            },
+            "title": "Requirement Results",
+            "type": "array"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RiskResult"
+            },
+            "title": "Risks",
+            "type": "array"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/Output_Recommendation"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "excluded_requirements": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Excluded Requirements",
+            "type": "array"
+          }
+        },
+        "required": [
+          "criterion_results",
+          "requirement_results",
+          "risks",
+          "recommendations",
+          "excluded_requirements"
+        ],
+        "title": "PipelineResult",
+        "type": "object"
+      },
+      "Output_ProfileEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "doan_id": {
+            "title": "Doan Id",
+            "type": "string"
+          },
+          "trich_dan": {
+            "minLength": 1,
+            "title": "Trich Dan",
+            "type": "string"
+          },
+          "ky_tu_bat_dau": {
+            "minimum": 0,
+            "title": "Ky Tu Bat Dau",
+            "type": "integer"
+          },
+          "ky_tu_ket_thuc": {
+            "minimum": 1,
+            "title": "Ky Tu Ket Thuc",
+            "type": "integer"
+          },
+          "bang_chung_id": {
+            "title": "Bang Chung Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doan_id",
+          "trich_dan",
+          "ky_tu_bat_dau",
+          "ky_tu_ket_thuc",
+          "bang_chung_id"
+        ],
+        "title": "ProfileEvidence",
+        "type": "object"
+      },
+      "Output_ProfileFields": {
+        "additionalProperties": false,
+        "description": "C02 fields from the data contract. Unknown values remain null, including booleans.",
+        "properties": {
+          "loai_hop_dong_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Hop Dong Id"
+          },
+          "doi_tuong": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Doi Tuong"
+          },
+          "linh_vuc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linh Vuc"
+          },
+          "he_phap_luat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "He Phap Luat"
+          },
+          "muc_dich_giao_dich": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Muc Dich Giao Dich"
+          },
+          "ngay_giao_ket": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ngay Giao Ket"
+          },
+          "ngay_giao_ket_raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ngay Giao Ket Raw"
+          },
+          "do_chinh_xac_ngay": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Do Chinh Xac Ngay"
+          },
+          "trang_thai_ngay": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trang Thai Ngay"
+          },
+          "loai_moc_ap_dung": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Moc Ap Dung"
+          },
+          "ngay_hieu_luc_hop_dong": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ngay Hieu Luc Hop Dong"
+          },
+          "ngay_ban_giao_du_kien": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ngay Ban Giao Du Kien"
+          },
+          "quan_he_chu_the": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quan He Chu The"
+          },
+          "ben_ban_co_von_nuoc_ngoai": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ben Ban Co Von Nuoc Ngoai"
+          },
+          "ben_ban_la_chu_dau_tu": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ben Ban La Chu Dau Tu"
+          },
+          "ben_ban_la_ca_nhan": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ben Ban La Ca Nhan"
+          },
+          "ben_mua_la_ca_nhan": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ben Mua La Ca Nhan"
+          },
+          "gia_tri_hop_dong": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Gia Tri Hop Dong"
+          },
+          "don_vi_tien": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Don Vi Tien"
+          },
+          "tinh_trang_tai_san": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tinh Trang Tai San"
+          },
+          "la_nha_o_xa_hoi": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "La Nha O Xa Hoi"
+          },
+          "la_hop_dong_theo_mau": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "La Hop Dong Theo Mau"
+          },
+          "la_nha_xay_moi": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "La Nha Xay Moi"
+          },
+          "che_do_giao_dich": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Che Do Giao Dich"
+          },
+          "muc_dich_su_dung_can_ho": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Muc Dich Su Dung Can Ho"
+          }
+        },
+        "title": "ProfileFields",
+        "type": "object"
+      },
+      "Output_ProfileSubject": {
+        "additionalProperties": false,
+        "properties": {
+          "chu_the_id": {
+            "title": "Chu The Id",
+            "type": "string"
+          },
+          "vai_tro": {
+            "title": "Vai Tro",
+            "type": "string"
+          },
+          "ten_chu_the": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ten Chu The"
+          },
+          "loai_chu_the": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Loai Chu The"
+          },
+          "la_thuong_nhan": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "La Thuong Nhan"
+          },
+          "la_chu_the_kinh_doanh": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "La Chu The Kinh Doanh"
+          },
+          "human_verified": {
+            "default": false,
+            "title": "Human Verified",
+            "type": "boolean"
+          },
+          "doan_bang_chung_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Doan Bang Chung Id"
+          }
+        },
+        "required": [
+          "chu_the_id",
+          "vai_tro"
+        ],
+        "title": "ProfileSubject",
+        "type": "object"
+      },
+      "Output_ProfileTimeMarker": {
+        "additionalProperties": false,
+        "properties": {
+          "moc_id": {
+            "title": "Moc Id",
+            "type": "string"
+          },
+          "loai_moc": {
+            "title": "Loai Moc",
+            "type": "string"
+          },
+          "gia_tri_raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Gia Tri Raw"
+          },
+          "ngay": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ngay"
+          },
+          "do_chinh_xac": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Do Chinh Xac"
+          },
+          "trang_thai": {
+            "title": "Trang Thai",
+            "type": "string"
+          },
+          "duoc_dung_phan_giai": {
+            "default": false,
+            "title": "Duoc Dung Phan Giai",
+            "type": "boolean"
+          },
+          "trich_xuat_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Trich Xuat Id"
+          }
+        },
+        "required": [
+          "moc_id",
+          "loai_moc",
+          "trang_thai"
+        ],
+        "title": "ProfileTimeMarker",
+        "type": "object"
+      },
+      "Output_Recommendation": {
+        "additionalProperties": false,
+        "properties": {
+          "khuyen_nghi_ca_id": {
+            "title": "Khuyen Nghi Ca Id",
+            "type": "string"
+          },
+          "ket_qua_rui_ro_id": {
+            "title": "Ket Qua Rui Ro Id",
+            "type": "string"
+          },
+          "khuyen_nghi_id": {
+            "title": "Khuyen Nghi Id",
+            "type": "string"
+          },
+          "noi_dung": {
+            "title": "Noi Dung",
+            "type": "string"
+          },
+          "loai_hanh_dong": {
+            "title": "Loai Hanh Dong",
+            "type": "string"
+          },
+          "uu_tien": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL",
+              "REVIEW_REQUIRED"
+            ],
+            "title": "Uu Tien",
+            "type": "string"
+          },
+          "dieu_kien_snapshot": {
+            "additionalProperties": true,
+            "title": "Dieu Kien Snapshot",
+            "type": "object"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "legal_basis_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Legal Basis Ids",
+            "type": "array"
+          },
+          "template_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Template Snapshot Json",
+            "type": "object"
+          },
+          "rule_version": {
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "knowledge_snapshot_sha256": {
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "model_version": {
+            "const": "TEMPLATE_ENGINE_NO_LLM",
+            "default": "TEMPLATE_ENGINE_NO_LLM",
+            "title": "Model Version",
+            "type": "string"
+          },
+          "prompt_version": {
+            "const": "NOT_USED",
+            "default": "NOT_USED",
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "review_status": {
+            "const": "PENDING",
+            "default": "PENDING",
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "khuyen_nghi_ca_id",
+          "ket_qua_rui_ro_id",
+          "khuyen_nghi_id",
+          "noi_dung",
+          "loai_hanh_dong",
+          "uu_tien",
+          "dieu_kien_snapshot",
+          "evidence_ids",
+          "legal_basis_ids",
+          "template_snapshot_json",
+          "rule_version",
+          "knowledge_snapshot_sha256"
+        ],
+        "title": "Recommendation",
+        "type": "object"
+      },
+      "Output_ReportCitations": {
+        "additionalProperties": false,
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CitationExtraction"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CitationValidation"
+            },
+            "title": "Findings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "citations",
+          "findings"
+        ],
+        "title": "ReportCitations",
+        "type": "object"
+      },
+      "Output_ReportCompliance": {
+        "additionalProperties": false,
+        "properties": {
+          "requirement_results": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RequirementResult"
+            },
+            "title": "Requirement Results",
+            "type": "array"
+          },
+          "criterion_results": {
+            "items": {
+              "$ref": "#/components/schemas/Output_CriterionResult"
+            },
+            "title": "Criterion Results",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "legal_basis": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Legal Basis",
+            "type": "array"
+          }
+        },
+        "required": [
+          "requirement_results",
+          "criterion_results"
+        ],
+        "title": "ReportCompliance",
+        "type": "object"
+      },
+      "Output_ReportContent": {
+        "additionalProperties": false,
+        "properties": {
+          "case": {
+            "$ref": "#/components/schemas/Output_AssessmentCase"
+          },
+          "contract_profile": {
+            "$ref": "#/components/schemas/Output_ContractProfile"
+          },
+          "applicable_legal_scope": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ApplicableRequirement"
+            },
+            "title": "Applicable Legal Scope",
+            "type": "array"
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/Output_ScopeResolution"
+            },
+            "title": "Checklist",
+            "type": "array"
+          },
+          "compliance": {
+            "$ref": "#/components/schemas/Output_ReportCompliance"
+          },
+          "citation_validation": {
+            "$ref": "#/components/schemas/Output_ReportCitations"
+          },
+          "risks": {
+            "$ref": "#/components/schemas/Output_ReportRisks"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/Output_Recommendation"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "overall_summary": {
+            "additionalProperties": true,
+            "title": "Overall Summary",
+            "type": "object"
+          },
+          "audit": {
+            "additionalProperties": true,
+            "title": "Audit",
+            "type": "object"
+          }
+        },
+        "required": [
+          "case",
+          "contract_profile",
+          "applicable_legal_scope",
+          "checklist",
+          "compliance",
+          "citation_validation",
+          "risks",
+          "recommendations",
+          "overall_summary",
+          "audit"
+        ],
+        "title": "ReportContent",
+        "type": "object"
+      },
+      "Output_ReportRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "review_revision": {
+            "minLength": 1,
+            "title": "Review Revision",
+            "type": "string"
+          },
+          "report": {
+            "$ref": "#/components/schemas/Output_FinalReport"
+          }
+        },
+        "required": [
+          "run_id",
+          "review_revision",
+          "report"
+        ],
+        "title": "ReportRecord",
+        "type": "object"
+      },
+      "Output_ReportRisks": {
+        "additionalProperties": false,
+        "properties": {
+          "compliance": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RiskResult"
+            },
+            "title": "Compliance",
+            "type": "array"
+          },
+          "citation": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RiskResult"
+            },
+            "title": "Citation",
+            "type": "array"
+          },
+          "verification": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RiskResult"
+            },
+            "title": "Verification",
+            "type": "array"
+          }
+        },
+        "required": [
+          "compliance",
+          "citation",
+          "verification"
+        ],
+        "title": "ReportRisks",
+        "type": "object"
+      },
+      "Output_RequirementResult": {
+        "additionalProperties": false,
+        "properties": {
+          "tuan_thu_id": {
+            "title": "Tuan Thu Id",
+            "type": "string"
+          },
+          "yeu_cau_ca_id": {
+            "title": "Yeu Cau Ca Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "COMPLIANT",
+              "PARTIAL",
+              "NON_COMPLIANT",
+              "INSUFFICIENT"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "so_tieu_chi_ap_dung": {
+            "title": "So Tieu Chi Ap Dung",
+            "type": "integer"
+          },
+          "so_tieu_chi_da_danh_gia": {
+            "title": "So Tieu Chi Da Danh Gia",
+            "type": "integer"
+          },
+          "so_unknown": {
+            "title": "So Unknown",
+            "type": "integer"
+          },
+          "rule_version": {
+            "title": "Rule Version",
+            "type": "string"
+          },
+          "giai_thich": {
+            "title": "Giai Thich",
+            "type": "string"
+          },
+          "requirement_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Requirement Snapshot Json",
+            "type": "object"
+          },
+          "coverage_complete": {
+            "title": "Coverage Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tuan_thu_id",
+          "yeu_cau_ca_id",
+          "status",
+          "so_tieu_chi_ap_dung",
+          "so_tieu_chi_da_danh_gia",
+          "so_unknown",
+          "rule_version",
+          "giai_thich",
+          "requirement_snapshot_json",
+          "coverage_complete"
+        ],
+        "title": "RequirementResult",
+        "type": "object"
+      },
+      "Output_RetrievalEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "truy_xuat_id": {
+            "title": "Truy Xuat Id",
+            "type": "string"
+          },
+          "yeu_cau_ca_id": {
+            "title": "Yeu Cau Ca Id",
+            "type": "string"
+          },
+          "tieu_chi_id": {
+            "title": "Tieu Chi Id",
+            "type": "string"
+          },
+          "doan_id": {
+            "title": "Doan Id",
+            "type": "string"
+          },
+          "giai_doan": {
+            "default": "FINAL",
+            "title": "Giai Doan",
+            "type": "string"
+          },
+          "scores": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Scores",
+            "type": "object"
+          },
+          "thu_hang": {
+            "minimum": 1,
+            "title": "Thu Hang",
+            "type": "integer"
+          },
+          "duoc_chon": {
+            "title": "Duoc Chon",
+            "type": "boolean"
+          },
+          "query_text": {
+            "default": "",
+            "title": "Query Text",
+            "type": "string"
+          },
+          "retrieval_version": {
+            "title": "Retrieval Version",
+            "type": "string"
+          },
+          "embedding_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Embedding Model"
+          },
+          "index_version": {
+            "title": "Index Version",
+            "type": "string"
+          },
+          "rerank_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rerank Model"
+          },
+          "lan_chay_id": {
+            "title": "Lan Chay Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "truy_xuat_id",
+          "yeu_cau_ca_id",
+          "tieu_chi_id",
+          "doan_id",
+          "thu_hang",
+          "duoc_chon",
+          "retrieval_version",
+          "index_version",
+          "lan_chay_id"
+        ],
+        "title": "RetrievalEvidence",
+        "type": "object"
+      },
+      "Output_ReviewRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "target_sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Target Sha256",
+            "type": "string"
+          },
+          "review": {
+            "$ref": "#/components/schemas/Output_HumanReview"
+          }
+        },
+        "required": [
+          "run_id",
+          "target_sha256",
+          "review"
+        ],
+        "title": "ReviewRecord",
+        "type": "object"
+      },
+      "Output_ReviewTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "doi_tuong_loai": {
+            "title": "Doi Tuong Loai",
+            "type": "string"
+          },
+          "doi_tuong_id": {
+            "title": "Doi Tuong Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doi_tuong_loai",
+          "doi_tuong_id"
+        ],
+        "title": "ReviewTarget",
+        "type": "object"
+      },
+      "Output_RiskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "ket_qua_rui_ro_id": {
+            "title": "Ket Qua Rui Ro Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "risk_type": {
+            "enum": [
+              "COMPLIANCE",
+              "CITATION",
+              "VERIFICATION"
+            ],
+            "title": "Risk Type",
+            "type": "string"
+          },
+          "rui_ro_id": {
+            "title": "Rui Ro Id",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL",
+              "REVIEW_REQUIRED"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Output_RiskSource"
+          },
+          "quy_tac_id": {
+            "title": "Quy Tac Id",
+            "type": "string"
+          },
+          "giai_thich": {
+            "title": "Giai Thich",
+            "type": "string"
+          },
+          "risk_snapshot": {
+            "additionalProperties": true,
+            "title": "Risk Snapshot",
+            "type": "object"
+          },
+          "rule_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Rule Snapshot Json",
+            "type": "object"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "legal_basis_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Legal Basis Ids",
+            "type": "array"
+          },
+          "review_status": {
+            "const": "PENDING",
+            "default": "PENDING",
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ket_qua_rui_ro_id",
+          "ca_id",
+          "risk_type",
+          "rui_ro_id",
+          "severity",
+          "source",
+          "quy_tac_id",
+          "giai_thich",
+          "risk_snapshot",
+          "rule_snapshot_json",
+          "evidence_ids",
+          "legal_basis_ids"
+        ],
+        "title": "RiskResult",
+        "type": "object"
+      },
+      "Output_RiskSource": {
+        "additionalProperties": false,
+        "properties": {
+          "yeu_cau_ca_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Yeu Cau Ca Id"
+          },
+          "ket_qua_tieu_chi_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ket Qua Tieu Chi Id"
+          },
+          "citation_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Citation Finding Id"
+          }
+        },
+        "title": "RiskSource",
+        "type": "object"
+      },
+      "Output_RunAccepted": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/Output_Context"
+          },
+          "status": {
+            "const": "QUEUED",
+            "default": "QUEUED",
+            "title": "Status",
+            "type": "string"
+          },
+          "status_url": {
+            "title": "Status Url",
+            "type": "string"
+          },
+          "results_url": {
+            "title": "Results Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "context",
+          "status_url",
+          "results_url"
+        ],
+        "title": "RunAccepted",
+        "type": "object"
+      },
+      "Output_RunProgress": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/Output_Context"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/Output_StageProgress"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Output_ApiErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "context",
+          "status",
+          "stages",
+          "updated_at"
+        ],
+        "title": "RunProgress",
+        "type": "object"
+      },
+      "Output_ScopeResolution": {
+        "additionalProperties": false,
+        "properties": {
+          "yeu_cau_ca_id": {
+            "title": "Yeu Cau Ca Id",
+            "type": "string"
+          },
+          "ca_id": {
+            "title": "Ca Id",
+            "type": "string"
+          },
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "nhom_phien_ban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Nhom Phien Ban"
+          },
+          "scope_status": {
+            "enum": [
+              "MATCH",
+              "NO_MATCH",
+              "UNKNOWN"
+            ],
+            "title": "Scope Status",
+            "type": "string"
+          },
+          "profile_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Profile Snapshot Json",
+            "type": "object"
+          },
+          "dieu_kien_snapshot_json": {
+            "additionalProperties": true,
+            "title": "Dieu Kien Snapshot Json",
+            "type": "object"
+          },
+          "scope_reason": {
+            "minLength": 1,
+            "title": "Scope Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "yeu_cau_ca_id",
+          "ca_id",
+          "requirement_id",
+          "scope_status",
+          "scope_reason"
+        ],
+        "title": "ScopeResolution",
+        "type": "object"
+      },
+      "Output_SourceDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "tep_id": {
+            "minLength": 1,
+            "title": "Tep Id",
+            "type": "string"
+          },
+          "url_nguon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url Nguon"
+          },
+          "object_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Object Uri"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tep_id",
+          "mime_type",
+          "sha256"
+        ],
+        "title": "SourceDocument",
+        "type": "object"
+      },
+      "Output_StageProgress": {
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "enum": [
+              "INTAKE",
+              "DOCUMENT_INTELLIGENCE",
+              "SCOPE_RESOLUTION",
+              "TEMPORAL_RESOLUTION",
+              "CITATION_VALIDATION",
+              "RETRIEVAL",
+              "COMPLIANCE",
+              "RISK_AGGREGATION",
+              "RECOMMENDATION"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED",
+              "SKIPPED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Finished At"
+          }
+        },
+        "required": [
+          "stage",
+          "status"
+        ],
+        "title": "StageProgress",
+        "type": "object"
+      },
+      "PipelineResponse": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Contract Version",
+            "default": "1.0"
+          },
+          "ca_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Ca Id"
+          },
+          "phien_ban_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Phien Ban Id"
+          },
+          "rule_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Rule Version"
+          },
+          "legal_knowledge_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Legal Knowledge Version"
+          },
+          "knowledge_snapshot_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Knowledge Snapshot Sha256"
+          },
+          "run_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Run Id"
+          },
+          "trace_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Trace Id"
+          },
+          "contract_name": {
+            "type": "string",
+            "const": "Steps57Result",
+            "title": "Contract Name",
+            "default": "Steps57Result"
+          },
+          "produced_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Produced At"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/PipelineResult"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ca_id",
+          "phien_ban_id",
+          "rule_version",
+          "legal_knowledge_version",
+          "knowledge_snapshot_sha256",
+          "run_id",
+          "trace_id",
+          "produced_at",
+          "payload"
+        ],
+        "title": "PipelineResponse"
+      },
+      "PipelineResult": {
+        "properties": {
+          "criterion_results": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionResult"
+            },
+            "type": "array",
+            "title": "Criterion Results"
+          },
+          "requirement_results": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementResult"
+            },
+            "type": "array",
+            "title": "Requirement Results"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/components/schemas/RiskResult"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/Recommendation"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "excluded_requirements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded Requirements"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_results",
+          "requirement_results",
+          "risks",
+          "recommendations",
+          "excluded_requirements"
+        ],
+        "title": "PipelineResult"
+      },
+      "Recommendation": {
+        "properties": {
+          "khuyen_nghi_ca_id": {
+            "type": "string",
+            "title": "Khuyen Nghi Ca Id"
+          },
+          "ket_qua_rui_ro_id": {
+            "type": "string",
+            "title": "Ket Qua Rui Ro Id"
+          },
+          "khuyen_nghi_id": {
+            "type": "string",
+            "title": "Khuyen Nghi Id"
+          },
+          "noi_dung": {
+            "type": "string",
+            "title": "Noi Dung"
+          },
+          "loai_hanh_dong": {
+            "type": "string",
+            "title": "Loai Hanh Dong"
+          },
+          "uu_tien": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL",
+              "REVIEW_REQUIRED"
+            ],
+            "title": "Uu Tien"
+          },
+          "dieu_kien_snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dieu Kien Snapshot"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "legal_basis_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Legal Basis Ids"
+          },
+          "template_snapshot_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Template Snapshot Json"
+          },
+          "rule_version": {
+            "type": "string",
+            "title": "Rule Version"
+          },
+          "knowledge_snapshot_sha256": {
+            "type": "string",
+            "title": "Knowledge Snapshot Sha256"
+          },
+          "model_version": {
+            "type": "string",
+            "const": "TEMPLATE_ENGINE_NO_LLM",
+            "title": "Model Version",
+            "default": "TEMPLATE_ENGINE_NO_LLM"
+          },
+          "prompt_version": {
+            "type": "string",
+            "const": "NOT_USED",
+            "title": "Prompt Version",
+            "default": "NOT_USED"
+          },
+          "review_status": {
+            "type": "string",
+            "const": "PENDING",
+            "title": "Review Status",
+            "default": "PENDING"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "khuyen_nghi_ca_id",
+          "ket_qua_rui_ro_id",
+          "khuyen_nghi_id",
+          "noi_dung",
+          "loai_hanh_dong",
+          "uu_tien",
+          "dieu_kien_snapshot",
+          "evidence_ids",
+          "legal_basis_ids",
+          "template_snapshot_json",
+          "rule_version",
+          "knowledge_snapshot_sha256"
+        ],
+        "title": "Recommendation"
+      },
+      "RequirementResult": {
+        "properties": {
+          "tuan_thu_id": {
+            "type": "string",
+            "title": "Tuan Thu Id"
+          },
+          "yeu_cau_ca_id": {
+            "type": "string",
+            "title": "Yeu Cau Ca Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLIANT",
+              "PARTIAL",
+              "NON_COMPLIANT",
+              "INSUFFICIENT"
+            ],
+            "title": "Status"
+          },
+          "so_tieu_chi_ap_dung": {
+            "type": "integer",
+            "title": "So Tieu Chi Ap Dung"
+          },
+          "so_tieu_chi_da_danh_gia": {
+            "type": "integer",
+            "title": "So Tieu Chi Da Danh Gia"
+          },
+          "so_unknown": {
+            "type": "integer",
+            "title": "So Unknown"
+          },
+          "rule_version": {
+            "type": "string",
+            "title": "Rule Version"
+          },
+          "giai_thich": {
+            "type": "string",
+            "title": "Giai Thich"
+          },
+          "requirement_snapshot_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Requirement Snapshot Json"
+          },
+          "coverage_complete": {
+            "type": "boolean",
+            "title": "Coverage Complete"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tuan_thu_id",
+          "yeu_cau_ca_id",
+          "status",
+          "so_tieu_chi_ap_dung",
+          "so_tieu_chi_da_danh_gia",
+          "so_unknown",
+          "rule_version",
+          "giai_thich",
+          "requirement_snapshot_json",
+          "coverage_complete"
+        ],
+        "title": "RequirementResult"
+      },
+      "RiskResult": {
+        "properties": {
+          "ket_qua_rui_ro_id": {
+            "type": "string",
+            "title": "Ket Qua Rui Ro Id"
+          },
+          "ca_id": {
+            "type": "string",
+            "title": "Ca Id"
+          },
+          "risk_type": {
+            "type": "string",
+            "enum": [
+              "COMPLIANCE",
+              "CITATION",
+              "VERIFICATION"
+            ],
+            "title": "Risk Type"
+          },
+          "rui_ro_id": {
+            "type": "string",
+            "title": "Rui Ro Id"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL",
+              "REVIEW_REQUIRED"
+            ],
+            "title": "Severity"
+          },
+          "source": {
+            "$ref": "#/components/schemas/RiskSource"
+          },
+          "quy_tac_id": {
+            "type": "string",
+            "title": "Quy Tac Id"
+          },
+          "giai_thich": {
+            "type": "string",
+            "title": "Giai Thich"
+          },
+          "risk_snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Risk Snapshot"
+          },
+          "rule_snapshot_json": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rule Snapshot Json"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "legal_basis_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Legal Basis Ids"
+          },
+          "review_status": {
+            "type": "string",
+            "const": "PENDING",
+            "title": "Review Status",
+            "default": "PENDING"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ket_qua_rui_ro_id",
+          "ca_id",
+          "risk_type",
+          "rui_ro_id",
+          "severity",
+          "source",
+          "quy_tac_id",
+          "giai_thich",
+          "risk_snapshot",
+          "rule_snapshot_json",
+          "evidence_ids",
+          "legal_basis_ids"
+        ],
+        "title": "RiskResult"
+      },
+      "RiskSource": {
+        "properties": {
+          "yeu_cau_ca_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yeu Cau Ca Id"
+          },
+          "ket_qua_tieu_chi_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ket Qua Tieu Chi Id"
+          },
+          "citation_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation Finding Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RiskSource"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

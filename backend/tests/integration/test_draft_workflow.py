@@ -96,14 +96,10 @@ def assemble(request, knowledge, citation_status=None):
     return DraftAssessmentWorkflow(modules, knowledge), case, context, document, scopes
 
 
-def test_upstream_adapters_feed_existing_steps_5_7(knowledge, request_factory):
+def test_upstream_adapters_stop_at_unimplemented_step_5(knowledge, request_factory):
     workflow, case, context, _, _ = assemble(request_factory(finding="MISSING"), knowledge)
-    draft = workflow.evaluate(case, context)
-    assert draft.case == case
-    assert len(draft.retrieval) == 3
-    assert draft.evaluation.payload.requirement_results[0].status == "NON_COMPLIANT"
-    assert len(draft.evaluation.payload.risks) == len(draft.evaluation.payload.recommendations) == 3
-    assert all(item.review_status == "PENDING" for item in draft.evaluation.payload.recommendations)
+    with pytest.raises(NotImplementedError, match="skeletons"):
+        workflow.evaluate(case, context)
 
 
 def test_intake_cannot_mutate_the_original_pin(knowledge, request_factory):
@@ -117,25 +113,6 @@ def test_intake_cannot_mutate_the_original_pin(knowledge, request_factory):
     with pytest.raises(ValueError, match="Intake changed"):
         workflow.evaluate(case, context)
     assert case.deployment.rule_version == context.rule_version
-
-
-def test_citation_changes_only_citation_branch(knowledge, request_factory):
-    request = request_factory()
-    first, case, context, _, _ = assemble(request, knowledge, "VALID")
-    second, _, _, _, _ = assemble(request, knowledge, "INVALID")
-    valid = first.evaluate(case, context)
-    invalid = second.evaluate(case, context)
-    assert valid.requirements == invalid.requirements
-    assert (
-        valid.evaluation.payload.criterion_results == invalid.evaluation.payload.criterion_results
-    )
-    assert (
-        valid.evaluation.payload.requirement_results
-        == invalid.evaluation.payload.requirement_results
-    )
-    assert valid.evaluation.payload.risks == []
-    assert len(invalid.evaluation.payload.risks) == 1
-    assert invalid.evaluation.payload.risks[0].risk_type == "CITATION"
 
 
 @pytest.mark.parametrize("change", ["deployment", "profile", "chunk", "scope", "checklist"])

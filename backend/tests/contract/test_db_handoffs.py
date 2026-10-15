@@ -5,7 +5,6 @@ from copy import deepcopy
 import pytest
 from legal_checker.core.postgres import connect_postgres
 from legal_checker.modules.assessments.repository import Store
-from legal_checker.modules.compliance.service import evaluate_compliance
 from legal_checker.modules.reports.builder import build_draft_report
 from legal_checker.modules.retrieval.repository import RetrievalDatasetRepository
 from legal_checker.shared.contracts.assessment import AssessmentCase
@@ -16,28 +15,26 @@ from legal_checker.shared.contracts.document_intelligence import (
     ProfileFields,
 )
 from legal_checker.shared.contracts.handoffs import (
+    ComplianceOutput,
     IntegrationInput,
     LegalOutput,
     RetrievalInput,
     ScopeInput,
 )
-from legal_checker.shared.contracts.reasoning import ReasoningPayload, ReasoningRequest
 from legal_checker.shared.contracts.scope import ScopeResolution
 from legal_checker.workflows.handoffs import (
-    validate_compliance,
     validate_document,
     validate_legal,
     validate_report,
     validate_retrieval,
 )
-from legal_checker.workflows.steps_5_7 import evaluate
 from pydantic import ValidationError
 
 
 @pytest.fixture
-def handoffs(database_url, knowledge, request_factory):
+def handoffs(database_url, knowledge, request_factory, response_factory):
     request = request_factory()
-    response = evaluate(request, knowledge)
+    response = response_factory(request)
     # Capture this snapshot in the isolated runtime DB too.
     from legal_checker.modules.legal_knowledge.repository import Knowledge
 
@@ -180,60 +177,38 @@ def test_retrieval_boundary_uses_persisted_case_run(handoffs, knowledge, change)
         validate_retrieval(inputs, output, knowledge)
 
 
-@pytest.mark.parametrize("change", ["aggregate", "context", "quote", "risk", "recommendation"])
-def test_compliance_boundary_rejects_modified_output(knowledge, request_factory, change):
-    pipeline = request_factory(finding="VIOLATED")
-    request = ReasoningRequest(
-        **pipeline.model_dump(exclude={"payload", "contract_name"}),
-        payload=ReasoningPayload(**pipeline.payload.model_dump(exclude={"citations"})),
-    )
-    result = evaluate_compliance(request, knowledge)
-    validate_compliance(request, result, knowledge)
-    if change == "aggregate":
-        result.requirement_results[0].status = "COMPLIANT"
-    elif change == "context":
-        result.context.run_id = "FOREIGN"
-    elif change == "quote":
-        result.criterion_results[0].evidence[0].trich_dan = "Invented"
-    elif change == "risk":
-        result.risks[0].severity = "CRITICAL"
-    else:
-        result.recommendations.clear()
-    with pytest.raises(ValueError):
-        validate_compliance(request, result, knowledge)
-
-
-@pytest.mark.parametrize("change", ["findings", "evidence", "run", "publish", "risk"])
+@pytest.mark.parametrize("change", ["profile", "evidence", "run", "publish", "scope"])
 def test_report_boundary_preserves_pending_branches(handoffs, knowledge, request_factory, change):
     pipeline, context, case, document, legal = handoffs
-    request = ReasoningRequest(
-        **pipeline.model_dump(exclude={"payload", "contract_name"}),
-        payload=ReasoningPayload(**pipeline.payload.model_dump(exclude={"citations"})),
-    )
     integration = IntegrationInput(
         context=context,
         case=case,
         document=document,
         legal=legal,
-        compliance=evaluate_compliance(request, knowledge),
+        compliance=ComplianceOutput(
+            context=context,
+            hop_dong_id=case.hop_dong_id,
+            criterion_results=[],
+            requirement_results=[],
+            risks=[],
+            recommendations=[],
+        ),
     )
-    report = build_draft_report(integration, knowledge)
-    validate_report(integration, report, knowledge)
+    report = build_draft_report(integration, knowledge, risks=[], recommendations=[])
+    validate_report(integration, report, knowledge, risks=[], recommendations=[])
     report = report.model_copy(deep=True)
-    if change == "findings":
-        report.report_json.compliance.requirement_results[0].status = "NON_COMPLIANT"
+    if change == "profile":
+        report.report_json.contract_profile.hop_dong_id = "FOREIGN"
     elif change == "evidence":
-        report.report_json.compliance.evidence.clear()
+        report.report_json.compliance.evidence.append({"invented": True})
     elif change == "run":
         report.report_json.audit["context"]["run_id"] = "FOREIGN"
     elif change == "publish":
         report.report_status = "PUBLISHED"
     else:
-        report.report_json.risks.citation = deepcopy(
-            evaluate(request_factory(finding="MISSING"), knowledge).payload.risks
-        )
+        report.report_json.applicable_legal_scope.clear()
     with pytest.raises(ValueError):
-        validate_report(integration, report, knowledge)
+        validate_report(integration, report, knowledge, risks=[], recommendations=[])
 
 
 def test_db_reader_can_load_module_input_without_file_fixtures(handoffs, database_url):

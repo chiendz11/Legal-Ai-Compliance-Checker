@@ -33,10 +33,8 @@ def test_evaluation_engines_do_not_open_database_or_provider_connections():
     prohibited = ("psycopg", "httpx", "legal_checker.core.postgres", "legal_checker.shared.llm")
     engines = (
         "compliance/criterion_reasoner.py",
-        "compliance/numeric_rules.py",
         "compliance/requirement_aggregator.py",
         "compliance/grounding_validator.py",
-        "risks/common.py",
         "risks/compliance_mapper.py",
         "risks/citation_mapper.py",
         "risks/aggregator.py",

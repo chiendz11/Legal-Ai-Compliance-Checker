@@ -1,7 +1,5 @@
 """Actual PostgreSQL integration. Isolated databases, never the developer's DB."""
 
-import os
-import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -10,31 +8,14 @@ import pytest
 from devtools.database_schema import BY_NAME, TABLES
 from devtools.database_seed import SeedError, WorkbookSeed, database_counts, seed_database
 from legal_checker.core.postgres import connect_postgres
+from legal_checker.migrations.manager import upgrade_database
 from legal_checker.modules.legal_knowledge.postgres_repository import WorkbookKnowledgeRepository
 from legal_checker.modules.retrieval.repository import RetrievalDatasetRepository
-from psycopg import sql
-from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 
 @pytest.fixture
-def database_url():
-    base_url = os.environ.get("TEST_DATABASE_URL")
-    if not base_url:
-        pytest.skip("Set TEST_DATABASE_URL to run PostgreSQL integration tests")
-    base_name = conninfo_to_dict(base_url).get("dbname", "")
-    if not base_name.startswith("legal_checker_test"):
-        pytest.fail("TEST_DATABASE_URL dbname must start with legal_checker_test")
-    test_name = "legal_checker_test_" + uuid.uuid4().hex
-    admin_url = make_conninfo(base_url, dbname="postgres")
-    with psycopg.connect(admin_url, autocommit=True) as admin:
-        admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(test_name)))
-    try:
-        yield make_conninfo(base_url, dbname=test_name)
-    finally:
-        with psycopg.connect(admin_url, autocommit=True) as admin:
-            admin.execute(
-                sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(test_name))
-            )
+def database_url(empty_database_url):
+    return empty_database_url
 
 
 @pytest.fixture
@@ -159,27 +140,28 @@ def test_sql_roundtrip_preserves_source_types_and_status(database_url, seed):
         assert case["ngay_danh_gia"] == datetime(2026, 10, 10, tzinfo=timezone.utc)
 
 
-def test_failed_seed_rolls_back_schema_and_all_rows(database_url, seed):
+def test_failed_seed_rolls_back_all_rows_but_keeps_alembic_schema(database_url, seed):
     # FKs are valid, but PostgreSQL's INTEGER bound rejects this value during insertion.
     seed.tables["doan_hop_dong"][0]["thu_tu"] = 2**40
     with pytest.raises(psycopg.errors.NumericValueOutOfRange):
         seed_database(database_url, seed)
     with connect_postgres(database_url) as connection:
+        assert connection.execute("SELECT count(*) AS n FROM runtime.hop_dong").fetchone()["n"] == 0
         assert (
-            connection.execute("SELECT to_regnamespace('runtime') AS schema").fetchone()["schema"]
-            is None
+            connection.execute("SELECT count(*) AS n FROM dev_meta.seed_imports").fetchone()["n"]
+            == 0
         )
         assert (
-            connection.execute("SELECT to_regnamespace('dev_meta') AS schema").fetchone()["schema"]
-            is None
+            connection.execute("SELECT version_num FROM dev_meta.alembic_version").fetchone()[
+                "version_num"
+            ]
+            == "0003_qa"
         )
 
 
 def test_seed_preserves_rows_already_in_initialized_database(database_url, seed):
-    from devtools.database_seed import migrate
-
+    upgrade_database(database_url)
     with connect_postgres(database_url) as connection:
-        migrate(connection)
         connection.execute(
             "INSERT INTO runtime.hop_dong (hop_dong_id, ten_tai_lieu) "
             "VALUES ('DOC-1', 'Prior edit')"

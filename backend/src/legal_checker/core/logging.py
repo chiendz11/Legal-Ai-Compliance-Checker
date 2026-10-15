@@ -1,1 +1,1 @@
-"""Planned shared logging configuration. No database audit sink is configured yet."""
+"""Application text logging placeholder. LLM audit is implemented in shared.llm.audit."""

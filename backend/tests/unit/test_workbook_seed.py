@@ -6,7 +6,6 @@ from decimal import Decimal
 from importlib.resources import files
 
 import pytest
-from devtools.database_migration import render_migration
 from devtools.database_schema import BY_NAME, FOREIGN_KEYS, TABLES
 from devtools.database_seed import SeedError, convert_cell, read_workbook
 from openpyxl import Workbook
@@ -23,9 +22,16 @@ def make_workbook(path):
     return workbook
 
 
-def test_migration_is_packaged_and_matches_frozen_contract():
-    migration = files("legal_checker.core").joinpath("sql/001_workbook_v7_4_9.sql").read_text()
-    assert migration == render_migration()
+def test_initial_sql_revisions_are_packaged_with_expected_checksums():
+    import hashlib
+
+    root = files("legal_checker.migrations")
+    baselines = json.loads(root.joinpath("legacy_baselines.json").read_text())
+    for entry in baselines.values():
+        assert (
+            hashlib.sha256(root.joinpath("sql", entry["sql_file"]).read_bytes()).hexdigest()
+            == entry["sql_sha256"]
+        )
     assert len(TABLES) == 50
     assert sum(table.schema == "knowledge" for table in TABLES) == 22
     assert len(FOREIGN_KEYS) == 78

@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "doan_id": {
+          "title": "Doan Id",
+          "type": "string"
+        },
+        "trich_dan": {
+          "minLength": 1,
+          "title": "Trich Dan",
+          "type": "string"
+        },
+        "ky_tu_bat_dau": {
+          "minimum": 0,
+          "title": "Ky Tu Bat Dau",
+          "type": "integer"
+        },
+        "ky_tu_ket_thuc": {
+          "minimum": 1,
+          "title": "Ky Tu Ket Thuc",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "doan_id",
+        "trich_dan",
+        "ky_tu_bat_dau",
+        "ky_tu_ket_thuc"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "ExternalEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "bang_chung_id": {
+          "title": "Bang Chung Id",
+          "type": "string"
+        },
+        "object_uri": {
+          "title": "Object Uri",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "verified": {
+          "default": false,
+          "title": "Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "bang_chung_id",
+        "object_uri",
+        "sha256"
+      ],
+      "title": "ExternalEvidence",
+      "type": "object"
+    },
+    "Gates": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage_complete": {
+          "default": false,
+          "title": "Coverage Complete",
+          "type": "boolean"
+        },
+        "absence_verified": {
+          "default": false,
+          "title": "Absence Verified",
+          "type": "boolean"
+        },
+        "evidence_validated": {
+          "default": false,
+          "title": "Evidence Validated",
+          "type": "boolean"
+        },
+        "source_verified": {
+          "default": false,
+          "title": "Source Verified",
+          "type": "boolean"
+        },
+        "scope_confirmed": {
+          "default": false,
+          "title": "Scope Confirmed",
+          "type": "boolean"
+        },
+        "version_resolved": {
+          "default": false,
+          "title": "Version Resolved",
+          "type": "boolean"
+        },
+        "evidence_conflict": {
+          "default": false,
+          "title": "Evidence Conflict",
+          "type": "boolean"
+        },
+        "exceptions_resolved": {
+          "default": false,
+          "title": "Exceptions Resolved",
+          "type": "boolean"
+        }
+      },
+      "title": "Gates",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "ket_qua_id": {
+      "title": "Ket Qua Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "yeu_cau_ca_id": {
+      "title": "Yeu Cau Ca Id",
+      "type": "string"
+    },
+    "tieu_chi_id": {
+      "title": "Tieu Chi Id",
+      "type": "string"
+    },
+    "finding": {
+      "enum": [
+        "SATISFIED",
+        "MISSING",
+        "VIOLATED",
+        "UNKNOWN"
+      ],
+      "title": "Finding",
+      "type": "string"
+    },
+    "giai_thich": {
+      "title": "Giai Thich",
+      "type": "string"
+    },
+    "gates": {
+      "$ref": "#/$defs/Gates"
+    },
+    "uncertainty_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Uncertainty Reason"
+    },
+    "pham_vi_ket_luan": {
+      "const": "CURRENT_CRITERION",
+      "default": "CURRENT_CRITERION",
+      "title": "Pham Vi Ket Luan",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "external_evidence": {
+      "items": {
+        "$ref": "#/$defs/ExternalEvidence"
+      },
+      "title": "External Evidence",
+      "type": "array"
+    },
+    "legal_basis_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Legal Basis Ids",
+      "type": "array"
+    },
+    "tieu_chi_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Tieu Chi Snapshot Json",
+      "type": "object"
+    },
+    "model_version": {
+      "title": "Model Version",
+      "type": "string"
+    },
+    "prompt_version": {
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "lan_chay_id": {
+      "title": "Lan Chay Id",
+      "type": "string"
+    },
+    "review_status": {
+      "const": "PENDING",
+      "default": "PENDING",
+      "title": "Review Status",
+      "type": "string"
+    },
+    "mandatory": {
+      "title": "Mandatory",
+      "type": "boolean"
+    },
+    "excluded": {
+      "default": false,
+      "title": "Excluded",
+      "type": "boolean"
+    },
+    "exclusion_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exclusion Reason"
+    }
+  },
+  "required": [
+    "ket_qua_id",
+    "ca_id",
+    "yeu_cau_ca_id",
+    "tieu_chi_id",
+    "finding",
+    "giai_thich",
+    "gates",
+    "tieu_chi_snapshot_json",
+    "model_version",
+    "prompt_version",
+    "lan_chay_id",
+    "mandatory"
+  ],
+  "title": "CriterionResult",
+  "type": "object",
+  "x-contract-id": "C07",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

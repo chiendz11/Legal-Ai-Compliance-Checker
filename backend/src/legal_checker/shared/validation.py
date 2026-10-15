@@ -80,12 +80,3 @@ def validate_request(request: PipelineRequest | ReasoningRequest, knowledge: Kno
             raise ValueError("Retrieval references a foreign criterion, requirement or chunk")
         if retrieval.lan_chay_id != request.run_id:
             raise ValueError("Retrieval run does not match envelope")
-
-
-def stage_context(request, knowledge: KnowledgeSnapshot) -> Context:
-    context = request.model_dump(exclude={"contract_name", "payload"})
-    context = Context(**context)
-    validate_context(context, knowledge)
-    validate_requirements(context, request.payload.requirements, knowledge)
-    validate_citations(context, getattr(request.payload, "citations", []))
-    return context

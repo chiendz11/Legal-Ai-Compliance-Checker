@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CitationExtractionMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "EXTRACTED",
+            "AMBIGUOUS",
+            "UNKNOWN"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "CitationExtractionMetadata",
+      "type": "object"
+    },
+    "CitationNormalization": {
+      "additionalProperties": false,
+      "properties": {
+        "so_hieu": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "So Hieu"
+        },
+        "ten_van_ban": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ten Van Ban"
+        },
+        "loai_van_ban": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loai Van Ban"
+        },
+        "nam": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nam"
+        },
+        "ngay_ban_hanh": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ngay Ban Hanh"
+        },
+        "dieu": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dieu"
+        },
+        "khoan": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Khoan"
+        }
+      },
+      "title": "CitationNormalization",
+      "type": "object"
+    },
+    "CitationPosition": {
+      "additionalProperties": false,
+      "properties": {
+        "doan_id": {
+          "title": "Doan Id",
+          "type": "string"
+        },
+        "page_start": {
+          "minimum": 1,
+          "title": "Page Start",
+          "type": "integer"
+        },
+        "page_end": {
+          "minimum": 1,
+          "title": "Page End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "doan_id",
+        "page_start",
+        "page_end"
+      ],
+      "title": "CitationPosition",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "C03: contract-authored citations; independent of the applicable-law checklist.",
+  "properties": {
+    "vien_dan_id": {
+      "title": "Vien Dan Id",
+      "type": "string"
+    },
+    "hop_dong_id": {
+      "title": "Hop Dong Id",
+      "type": "string"
+    },
+    "raw_text": {
+      "title": "Raw Text",
+      "type": "string"
+    },
+    "normalized": {
+      "$ref": "#/$defs/CitationNormalization"
+    },
+    "extraction": {
+      "$ref": "#/$defs/CitationExtractionMetadata"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/CitationPosition"
+      },
+      "minItems": 1,
+      "title": "Evidence",
+      "type": "array"
+    }
+  },
+  "required": [
+    "vien_dan_id",
+    "hop_dong_id",
+    "raw_text",
+    "normalized",
+    "extraction",
+    "evidence"
+  ],
+  "title": "CitationExtraction",
+  "type": "object",
+  "x-contract-id": "C03",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

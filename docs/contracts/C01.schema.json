@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AssessmentTiming": {
+      "additionalProperties": false,
+      "properties": {
+        "ngay_danh_gia": {
+          "format": "date",
+          "title": "Ngay Danh Gia",
+          "type": "string"
+        },
+        "moc_ap_dung": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Moc Ap Dung"
+        },
+        "loai_moc_ap_dung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loai Moc Ap Dung"
+        }
+      },
+      "required": [
+        "ngay_danh_gia"
+      ],
+      "title": "AssessmentTiming",
+      "type": "object"
+    },
+    "DeploymentPin": {
+      "additionalProperties": false,
+      "properties": {
+        "phien_ban_id": {
+          "minLength": 1,
+          "title": "Phien Ban Id",
+          "type": "string"
+        },
+        "rule_version": {
+          "minLength": 1,
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "legal_knowledge_version": {
+          "minLength": 1,
+          "title": "Legal Knowledge Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phien_ban_id",
+        "rule_version",
+        "legal_knowledge_version"
+      ],
+      "title": "DeploymentPin",
+      "type": "object"
+    },
+    "SourceDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "tep_id": {
+          "minLength": 1,
+          "title": "Tep Id",
+          "type": "string"
+        },
+        "url_nguon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url Nguon"
+        },
+        "object_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Object Uri"
+        },
+        "mime_type": {
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tep_id",
+        "mime_type",
+        "sha256"
+      ],
+      "title": "SourceDocument",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "ca_id": {
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "hop_dong_id": {
+      "title": "Hop Dong Id",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceDocument"
+    },
+    "assessment_context": {
+      "$ref": "#/$defs/AssessmentTiming"
+    },
+    "deployment": {
+      "$ref": "#/$defs/DeploymentPin"
+    },
+    "tenant_id": {
+      "title": "Tenant Id",
+      "type": "string"
+    },
+    "created_by": {
+      "title": "Created By",
+      "type": "string"
+    }
+  },
+  "required": [
+    "ca_id",
+    "hop_dong_id",
+    "source",
+    "assessment_context",
+    "deployment",
+    "tenant_id",
+    "created_by"
+  ],
+  "title": "AssessmentCase",
+  "type": "object",
+  "x-contract-id": "C01",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

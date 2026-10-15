@@ -1,7 +1,9 @@
 # Khởi tạo backend từ PostgreSQL
 
+Nếu chưa có môi trường Python của repo, làm theo [hướng dẫn tạo/kích hoạt `.venv`](dev_setup.md) trước.
+
 Sau khi chạy `local_db init` và seed workbook, `create_app()` đọc cấu hình DB và
-`build_services()` tạo hai dependencies dùng chung.
+`build_services()` tạo Knowledge reader, assessment Store, audit sink và source storage dùng chung.
 
 ```python
 from legal_checker.api.dependencies import build_services
@@ -13,12 +15,14 @@ services = build_services(settings)
 api = create_app(settings=settings, services=services)
 ```
 
-1. `Settings` giữ `database_url` và optional `knowledge_snapshot_sha256`, đọc `.env`.
+1. `Settings` đọc `.env`: DB URL, optional knowledge hash và cấu hình cache/timeout/giới hạn bytes nguồn.
 2. `Knowledge(database_url, snapshot_sha256)` đọc SQL và tạo/lấy snapshot nội dung
    trong DB, tính hash rồi lập indices criteria/rules/versions. Không đọc file knowledge.
 3. `Store(database_url)` cung cấp get/save PostgreSQL; mỗi thao tác mở transaction riêng.
-4. `Services` gom hai dependency. Các module không tự lấy environment/secret trong engine.
-5. `create_app` gắn Services vào app và đăng ký routes. Đây chưa phải chạy HTTP server.
+4. `PostgresLlmAuditSink(database_url)` dùng bảng X02 có sẵn; constructor không gọi provider hoặc ghi log giả.
+5. `CachedHttpSourceStorage` được tạo với cấu hình local; constructor không tải PDF hoặc tạo folder cache. Xem [cách dùng cho nhóm A](source_storage.md).
+6. `Services` gom các dependencies, có `llm_audit` và `source_storage` để inject vào service của từng module. Các module không tự lấy environment/secret trong engine.
+7. `create_app` gắn Services vào app và đăng ký routes. Đây chưa phải chạy HTTP server.
 
 ```bash
 python -m scripts.local_db init
@@ -26,14 +30,14 @@ python -m scripts.local_db seed
 uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Migration cần chạy trước app. API không tự nạp Excel và không tự duyệt knowledge.
+Chạy `python -m scripts.local_db init` để Alembic cập nhật schema trước app; dùng `seed` để nạp workbook. API không tự chạy migration, nạp Excel hoặc duyệt knowledge. [Hướng dẫn Alembic](database_migrations.md).
 Khi không chỉ định hash, reader capture source tables hiện tại vào snapshot dev bất biến.
 Muốn replay snapshot cũ, export `KNOWLEDGE_SNAPSHOT_SHA256` bằng hash đã có trong DB.
 Đổi source tables không thay nội dung reader đang dùng; khởi tạo reader mới để capture thay đổi.
 
-Pipeline HTTP → assessments service → workflow → engines → PostgreSQL Store.
+Các POST chạy riêng bước 5–7 đã bỏ; API khởi chạy toàn bộ assessment vẫn cần triển khai.
+GET run dùng Store; GET knowledge dùng Knowledge. Bước 5–7 cần triển khai trước khi nối luồng tính toán và lưu run.
 Factory có thể nhận `Services(knowledge, memory_store)` trong unit tests để thay writer.
-Export schemas dùng dependencies rỗng và không chạy handlers; không dùng app export để phục vụ HTTP.
 
 Các phần OCR/search/LLM/review/export/worker vẫn cần implementations riêng.
 Xem [DB local](local_database.md) và [hướng dẫn nhóm](huong_dan_trien_khai_module_sau_seed.md).

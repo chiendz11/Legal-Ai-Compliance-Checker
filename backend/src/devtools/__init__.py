@@ -1,1 +1,1 @@
-"""Development-only fixtures and conformance tools; never imported by runtime modules."""
+"""Dataset download, workbook seed and QA tools; never imported by runtime modules."""

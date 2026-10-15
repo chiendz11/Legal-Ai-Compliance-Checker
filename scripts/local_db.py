@@ -7,9 +7,10 @@ from pathlib import Path
 
 import psycopg
 from devtools.database_schema import TABLES
-from devtools.database_seed import database_counts, migrate, read_workbook, seed_database
+from devtools.database_seed import database_counts, read_workbook, seed_database
 from dotenv import load_dotenv
 from legal_checker.core.postgres import connect_postgres
+from legal_checker.migrations.manager import upgrade_database
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
@@ -25,7 +26,7 @@ def main() -> None:
         "--database-url", default=os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
     )
     commands = parser.add_subparsers(dest="command", required=True)
-    commands.add_parser("init", help="Create database if absent and apply versioned SQL migration")
+    commands.add_parser("init", help="Create database if absent and upgrade Alembic to head")
     for command in ("seed", "preview"):
         child = commands.add_parser(command)
         child.add_argument("--workbook", type=Path, default=os.environ.get("SEED_WORKBOOK_PATH"))
@@ -43,10 +44,8 @@ def main() -> None:
             ).fetchone()
             if not exists:
                 connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database)))
-        with connect_postgres(args.database_url) as connection:
-            connection.execute("SELECT pg_advisory_xact_lock(743249)")
-            migrate(connection)
-        print(f"Database {database}: migration ready, {len(TABLES)} tables")
+        upgrade_database(args.database_url)
+        print(f"Database {database}: Alembic head ready, {len(TABLES)} workbook tables")
     elif args.command in ("seed", "preview"):
         if args.workbook is None:
             parser.error("Provide --workbook or SEED_WORKBOOK_PATH in .env")

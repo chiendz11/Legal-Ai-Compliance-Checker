@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ReviewTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "doi_tuong_loai": {
+          "title": "Doi Tuong Loai",
+          "type": "string"
+        },
+        "doi_tuong_id": {
+          "title": "Doi Tuong Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doi_tuong_loai",
+        "doi_tuong_id"
+      ],
+      "title": "ReviewTarget",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "review_id": {
+      "title": "Review Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "target": {
+      "$ref": "#/$defs/ReviewTarget"
+    },
+    "actor_id": {
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "action": {
+      "enum": [
+        "CONFIRM",
+        "OVERRIDE",
+        "REQUEST_MORE_EVIDENCE",
+        "REJECT",
+        "COMMENT"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "before": {
+      "additionalProperties": true,
+      "title": "Before",
+      "type": "object"
+    },
+    "after": {
+      "additionalProperties": true,
+      "title": "After",
+      "type": "object"
+    },
+    "reason": {
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "reviewed_at": {
+      "format": "date-time",
+      "title": "Reviewed At",
+      "type": "string"
+    },
+    "phien_ban_id": {
+      "title": "Phien Ban Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "review_id",
+    "ca_id",
+    "target",
+    "actor_id",
+    "action",
+    "before",
+    "after",
+    "reason",
+    "reviewed_at",
+    "phien_ban_id"
+  ],
+  "title": "HumanReview",
+  "type": "object",
+  "x-contract-id": "C12",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

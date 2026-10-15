@@ -3,22 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from legal_checker.api.dependencies import Services, get_services
-from legal_checker.core.exceptions import ConflictError
-from legal_checker.modules.assessments.service import run_steps_5_7
-from legal_checker.shared.contracts.pipeline import PipelineRequest, PipelineResponse
+from legal_checker.shared.contracts.pipeline import PipelineResponse
 
 router = APIRouter(prefix="/api/v1")
 ServicesDependency = Annotated[Services, Depends(get_services)]
-
-
-@router.post("/pipeline/steps-5-7", response_model=PipelineResponse)
-def pipeline(request: PipelineRequest, services: ServicesDependency):
-    try:
-        return run_steps_5_7(request, services.knowledge, services.assessments)
-    except ConflictError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/cases/{ca_id}/runs/{run_id}", response_model=PipelineResponse)

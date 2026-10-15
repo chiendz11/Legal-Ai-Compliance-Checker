@@ -1,13 +1,5 @@
-"""Execute the implemented assessment workflow and persist an immutable run."""
+"""Full-assessment use cases: create cases, start runs and expose processing state.
 
-from legal_checker.modules.assessments.interfaces import AssessmentStore
-from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
-from legal_checker.shared.contracts.pipeline import PipelineRequest, PipelineResponse
-from legal_checker.workflows.steps_5_7 import evaluate
-
-
-def run_steps_5_7(
-    request: PipelineRequest, knowledge: KnowledgeSnapshot, store: AssessmentStore
-) -> PipelineResponse:
-    response = evaluate(request, knowledge)
-    return store.save(request, response)
+Implementation pending. Coordinate the workflow and module repositories here;
+step-specific reasoning/risk/recommendation logic belongs to its business module.
+"""

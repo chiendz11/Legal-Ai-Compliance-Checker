@@ -8,9 +8,9 @@ from pathlib import Path
 import psycopg
 import pytest
 from legal_checker.core.config import Settings
-from legal_checker.core.migrations import migrate
 from legal_checker.core.postgres import connect_postgres
 from legal_checker.main import create_app
+from legal_checker.migrations.manager import upgrade_database
 from legal_checker.modules.legal_knowledge.repository import Knowledge
 from legal_checker.shared.contracts.pipeline import PipelineRequest
 from psycopg import sql
@@ -28,7 +28,7 @@ def app_factory(database_url):
 
 
 @contextmanager
-def isolated_database():
+def isolated_database(*, initialize=True):
     base_url = os.environ.get("TEST_DATABASE_URL")
     if not base_url:
         pytest.skip("Set TEST_DATABASE_URL to run tests using PostgreSQL")
@@ -40,10 +40,11 @@ def isolated_database():
         connection.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
     url = make_conninfo(base_url, dbname=name)
     try:
-        with connect_postgres(url) as connection:
-            migrate(connection)
-            connection.execute((Path(__file__).parent / "seed_knowledge.sql").read_text())
-            connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        if initialize:
+            upgrade_database(url)
+            with connect_postgres(url) as connection:
+                connection.execute((Path(__file__).parent / "seed_knowledge.sql").read_text())
+                connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
         yield url
     finally:
         with psycopg.connect(admin_url, autocommit=True) as connection:
@@ -61,6 +62,12 @@ def knowledge_database_url():
 @pytest.fixture
 def database_url():
     with isolated_database() as url:
+        yield url
+
+
+@pytest.fixture
+def empty_database_url():
+    with isolated_database(initialize=False) as url:
         yield url
 
 
@@ -164,5 +171,28 @@ def request_factory(knowledge):
         if mutate:
             mutate(data)
         return PipelineRequest.model_validate(data)
+
+    return build
+
+
+@pytest.fixture
+def response_factory():
+    """Transport-only output for persistence tests, not a legal evaluation or reference."""
+    from datetime import datetime, timezone
+
+    from legal_checker.shared.contracts.pipeline import PipelineResponse, PipelineResult
+
+    def build(request):
+        return PipelineResponse(
+            **request.model_dump(exclude={"contract_name", "payload"}),
+            produced_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            payload=PipelineResult(
+                criterion_results=[],
+                requirement_results=[],
+                risks=[],
+                recommendations=[],
+                excluded_requirements=[],
+            ),
+        )
 
     return build

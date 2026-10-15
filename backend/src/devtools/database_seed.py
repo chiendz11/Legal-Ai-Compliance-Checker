@@ -1,4 +1,4 @@
-"""Validate Excel data, migrate once and seed in one PostgreSQL transaction."""
+"""Validate Excel data, upgrade with Alembic, then seed rows in one transaction."""
 
 import hashlib
 import json
@@ -10,8 +10,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from legal_checker.core.migrations import migrate
 from legal_checker.core.postgres import connect_postgres
+from legal_checker.migrations.manager import upgrade_database
 from openpyxl import load_workbook
 from openpyxl.utils.datetime import from_excel
 from psycopg import sql
@@ -204,10 +204,10 @@ def seed_database(database_url: str, seed: WorkbookSeed) -> dict:
         from devtools.qa_validation import validate_qa
 
         validate_qa(seed)
+    upgrade_database(database_url)
     with connect_postgres(database_url) as connection:
-        # Serialize migration/seed across shells; all DDL and rows roll back together on error.
+        # Alembic schema changes already committed; seed data has a separate atomic transaction.
         connection.execute("SELECT pg_advisory_xact_lock(743249)")
-        migrate(connection)
         prior = connection.execute("SELECT source_sha256 FROM dev_meta.seed_imports").fetchall()
         if prior:
             if any(row["source_sha256"] != seed.source_sha256 for row in prior):

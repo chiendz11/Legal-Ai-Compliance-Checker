@@ -36,4 +36,4 @@ jobs:
           pytest -q -c backend/pyproject.toml
       - name: Verify installed package outside the repository
         working-directory: /tmp
-        run: python -c 'from legal_checker.main import create_app; from importlib.resources import files; assert files("legal_checker.core").joinpath("sql/002_snapshots_and_runs.sql").is_file()'
+        run: python -c 'from legal_checker.main import create_app; from importlib.resources import files; assert files("legal_checker.migrations").joinpath("env.py").is_file(); assert files("legal_checker.migrations").joinpath("sql/002_snapshots_and_runs.sql").is_file()'

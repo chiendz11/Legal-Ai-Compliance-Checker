@@ -56,4 +56,9 @@ def validate_qa(seed):
         for r in seed.qa_tables.get("artifacts", [])
     ):
         raise SeedError("Invalid QA artifact role")
-    join_artifacts(seed.qa_tables.get("artifacts", []))
+    # Validate one payload at a time: large workbooks need not retain every decoded DTO.
+    groups = defaultdict(list)
+    for row in seed.qa_tables.get("artifacts", []):
+        groups[(row["case_id"], row["role"], row["contract_name"], row["record_id"])].append(row)
+    for parts in groups.values():
+        join_artifacts(parts)

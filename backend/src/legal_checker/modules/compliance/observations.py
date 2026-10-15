@@ -11,6 +11,12 @@ from legal_checker.shared.contracts.temporal import ApplicableRequirement
 
 
 class ObservationProvider(Protocol):
+    """Step-5 input interface injected into DraftModules.
+
+    Provider proposals are not trusted findings. The implementation must derive
+    verification gates from actual checks, never from an LLM's claimed certainty.
+    """
+
     def observe(
         self,
         context: Context,

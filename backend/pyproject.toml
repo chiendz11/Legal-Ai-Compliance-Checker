@@ -5,20 +5,21 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "legal-ai-compliance-checker"
 version = "0.1.0"
-description = "BRD steps 5–7: criterion reasoning, risk and recommendations"
+description = "Modular backend foundation for AI legal compliance checking"
 requires-python = ">=3.11"
-dependencies = ["fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1", "psycopg[binary]>=3.3,<4", "python-dotenv>=1,<2"]
+dependencies = ["fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1", "psycopg[binary]>=3.3,<4", "python-dotenv>=1,<2", "alembic>=1.16,<2", "sqlalchemy>=2,<3"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1", "openpyxl>=3.1,<4", "reportlab>=4,<5"]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1", "openpyxl>=3.1,<4", "openapi-spec-validator>=0.7,<1"]
 local-server = ["celerp-postgres==17.10.0"]
+dataset = ["gdown>=6.4.2,<7"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["legal_checker*", "devtools*"]
 
 [tool.setuptools.package-data]
-"legal_checker.core" = ["sql/*.sql"]
+"legal_checker.migrations" = ["sql/*.sql", "legacy_baselines.json", "script.py.mako"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

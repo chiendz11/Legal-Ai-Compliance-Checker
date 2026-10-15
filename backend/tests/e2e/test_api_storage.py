@@ -1,62 +1,40 @@
-import pytest
+"""Internal evaluation routes are absent; historical run reads remain usable."""
+
 from fastapi.testclient import TestClient
 from legal_checker.core.postgres import connect_postgres
+from legal_checker.modules.assessments.repository import Store
+from legal_checker.modules.legal_knowledge.repository import Knowledge
 
 
-@pytest.fixture
-def client(app_factory):
-    return TestClient(app_factory())
-
-
-def test_pipeline_roundtrip_and_idempotency(client, request_factory):
-    payload = request_factory().model_dump(mode="json")
-    first = client.post("/api/v1/pipeline/steps-5-7", json=payload)
-    assert first.status_code == 200, first.text
-    second = client.post("/api/v1/pipeline/steps-5-7", json=payload)
-    assert second.json() == first.json()
-    stored = client.get("/api/v1/cases/CA_TEST/runs/RUN_TEST")
-    assert stored.json() == first.json()
-    assert client.get("/api/v1/cases/none/runs/none").status_code == 404
-
-
-def test_changed_run_input_and_case_snapshot_conflict(client, request_factory):
-    payload = request_factory().model_dump(mode="json")
-    assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 200
-    payload["trace_id"] = "DIFFERENT"
-    assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 409
-    payload["run_id"] = "NEW_RUN"
-    payload["rule_version"] = "DIFFERENT"
-    for r in payload["payload"]["retrieval"]:
-        r["lan_chay_id"] = "NEW_RUN"
-    assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 409
-
-
-@pytest.mark.parametrize("mutation", ["checksum", "foreign_chunk", "foreign_citation", "date"])
-def test_invalid_input_is_422(client, request_factory, mutation):
-    payload = request_factory().model_dump(mode="json")
-    if mutation == "checksum":
-        payload["knowledge_snapshot_sha256"] = "0" * 64
-    elif mutation == "foreign_chunk":
-        payload["payload"]["chunks"][0]["hop_dong_id"] = "FOREIGN"
-    elif mutation == "date":
-        payload["payload"]["requirements"][0]["moc_ap_dung"] = "2020-01-01"
-    else:
-        payload["payload"]["observations"][0]["tieu_chi_id"] = "FOREIGN"
-    assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 422
-
-
-def test_workbook_runtime_tables_are_persisted(database_url, app_factory, request_factory):
+def test_internal_evaluation_routes_are_not_public_and_do_not_persist(app_factory, database_url):
     client = TestClient(app_factory())
-    payload = request_factory(finding="MISSING").model_dump(mode="json")
-    assert client.post("/api/v1/pipeline/steps-5-7", json=payload).status_code == 200
-    with connect_postgres(database_url) as db:
-        for name in [
+    public_paths = client.get("/openapi.json").json()["paths"]
+    for path in ["pipeline/steps-5-7", "reasoning", "aggregation", "risks", "recommendations"]:
+        url = f"/api/v1/{path}"
+        assert url not in public_paths
+        assert client.post(url, json={}).status_code == 404
+    with connect_postgres(database_url) as connection:
+        for table in (
+            "assessment_runs",
+            "ca_danh_gia",
             "ket_qua_tieu_chi",
             "ket_qua_tuan_thu",
             "ket_qua_rui_ro",
             "khuyen_nghi_danh_gia",
-        ]:
-            assert db.execute(f"SELECT count(*) AS n FROM runtime.{name}").fetchone()["n"] > 0
-        assert db.execute(
-            "SELECT input_sha256, output_sha256 FROM runtime.assessment_runs"
-        ).fetchone()
+        ):
+            assert (
+                connection.execute(f"SELECT count(*) AS n FROM runtime.{table}").fetchone()["n"]
+                == 0
+            )
+    assert client.get("/api/v1/cases/CA_TEST/runs/RUN_TEST").status_code == 404
+
+
+def test_existing_run_can_be_read(app_factory, request_factory, response_factory, database_url):
+    request = request_factory()
+    Knowledge(database_url)
+    response = response_factory(request)
+    Store(database_url).save(request, response)
+    client = TestClient(app_factory())
+    saved = client.get(f"/api/v1/cases/{request.ca_id}/runs/{request.run_id}")
+    assert saved.status_code == 200
+    assert saved.json() == response.model_dump(mode="json")

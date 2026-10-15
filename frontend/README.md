@@ -7,7 +7,7 @@ This directory defines ownership and feature boundaries. No frontend framework, 
 - `src/features/review`: permission-aware confirm/override/request-evidence with append-only C12 events.
 - `src/features/reports`: render separate compliance/citation risk sections and export C13.
 - `src/features/knowledge`: legal source/version/criterion/risk catalog curation and release snapshots (X01).
-- `src/shared/api`: generated clients/types from `docs/openapi.json` once a stack is selected.
+- `src/shared/api`: generated clients/types from `docs/openapi.design.json` once a stack is selected; planned endpoints need backend implementations. Inspect `/openapi.json` on the running backend for actual routes.
 - `src/shared/components`: evidence viewer, status badges and reusable display components.
 
 Do not recalculate C08/C10 statuses in the UI, derive applicable law from contract citations, or present pending AI output as a published/reviewed report.

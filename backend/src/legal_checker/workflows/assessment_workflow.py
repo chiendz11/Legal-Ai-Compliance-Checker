@@ -1,7 +1,7 @@
 """Wiring skeleton for steps 1–7 with explicitly injected upstream implementations.
 
 There are no default OCR, scope, temporal, retrieval or LLM implementations.
-The result is a draft checkpoint, not a reviewed/published C13 report.
+Steps 5–7 are unimplemented: this wiring stops with NotImplementedError at step 5.
 """
 
 from dataclasses import dataclass

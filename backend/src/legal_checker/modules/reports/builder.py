@@ -1,9 +1,8 @@
 """Build an unreviewed C13 draft from validated handoffs; no publishing or persistence."""
 
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
-from legal_checker.modules.recommendations.generator import recommend
-from legal_checker.modules.risks.citation_mapper import citation_risks
 from legal_checker.shared.contracts.handoffs import IntegrationInput
+from legal_checker.shared.contracts.recommendation import Recommendation
 from legal_checker.shared.contracts.report import (
     FinalReport,
     ReportCitations,
@@ -11,11 +10,19 @@ from legal_checker.shared.contracts.report import (
     ReportContent,
     ReportRisks,
 )
+from legal_checker.shared.contracts.risk import RiskResult
 from legal_checker.shared.ids import stable_id
 from legal_checker.shared.validation import validate_citations, validate_context
 
 
-def build_draft_report(request: IntegrationInput, knowledge: KnowledgeSnapshot) -> FinalReport:
+def build_draft_report(
+    request: IntegrationInput,
+    knowledge: KnowledgeSnapshot,
+    *,
+    risks: list[RiskResult],
+    recommendations: list[Recommendation],
+) -> FinalReport:
+    """Assemble a draft from supplied C10/C11; never infer risks or actions."""
     validate_context(request.context, knowledge)
     validate_citations(request.context, request.legal.citations)
     if (
@@ -25,11 +32,6 @@ def build_draft_report(request: IntegrationInput, knowledge: KnowledgeSnapshot) 
         or request.compliance.hop_dong_id != request.case.hop_dong_id
     ):
         raise ValueError("Report handoffs belong to different contexts/contracts")
-    extra_risks = citation_risks(request.context, knowledge, request.legal.citations)
-    risks = request.compliance.risks + extra_risks
-    recommendations = request.compliance.recommendations + recommend(
-        request.context, knowledge, extra_risks, request.legal.requirements
-    )
     content = ReportContent(
         case=request.case,
         contract_profile=request.document.contract_profile,

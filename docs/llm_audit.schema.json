@@ -1,0 +1,171 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "lan_goi_id": {
+      "minLength": 1,
+      "title": "Lan Goi Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "minLength": 1,
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "module": {
+      "minLength": 1,
+      "title": "Module",
+      "type": "string"
+    },
+    "provider": {
+      "minLength": 1,
+      "title": "Provider",
+      "type": "string"
+    },
+    "model_version": {
+      "minLength": 1,
+      "title": "Model Version",
+      "type": "string"
+    },
+    "prompt_version": {
+      "minLength": 1,
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "schema_version": {
+      "minLength": 1,
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "input_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Sha256",
+      "type": "string"
+    },
+    "output_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Sha256"
+    },
+    "input_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Input Tokens"
+    },
+    "output_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Tokens"
+    },
+    "latency_ms": {
+      "minimum": 0,
+      "title": "Latency Ms",
+      "type": "integer"
+    },
+    "chi_phi": {
+      "anyOf": [
+        {
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Chi Phi"
+    },
+    "don_vi_tien": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Z]{3}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Don Vi Tien"
+    },
+    "trang_thai": {
+      "enum": [
+        "SUCCESS",
+        "ERROR"
+      ],
+      "title": "Trang Thai",
+      "type": "string"
+    },
+    "ma_loi": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ma Loi"
+    },
+    "so_lan_thu": {
+      "minimum": 1,
+      "title": "So Lan Thu",
+      "type": "integer"
+    },
+    "trace_id": {
+      "minLength": 1,
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "ngay_goi": {
+      "format": "date-time",
+      "title": "Ngay Goi",
+      "type": "string"
+    }
+  },
+  "required": [
+    "lan_goi_id",
+    "ca_id",
+    "module",
+    "provider",
+    "model_version",
+    "prompt_version",
+    "schema_version",
+    "input_sha256",
+    "latency_ms",
+    "trang_thai",
+    "so_lan_thu",
+    "trace_id",
+    "ngay_goi"
+  ],
+  "title": "LlmAudit",
+  "type": "object"
+}

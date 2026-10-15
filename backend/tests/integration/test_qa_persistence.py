@@ -6,9 +6,8 @@ from devtools.database_schema import TABLES
 from devtools.database_seed import WorkbookSeed, seed_database
 from devtools.qa_schema import QA_TABLES
 from devtools.qa_validation import join_artifacts
-from devtools.synthetic_workbook import native_row
-from devtools.workbook_optimization import artifact
 from legal_checker.core.postgres import connect_postgres
+from seed_helpers import artifact, native_row
 
 
 def qa_seed():

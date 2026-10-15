@@ -9,6 +9,9 @@ from legal_checker.modules.assessments.interfaces import AssessmentStore
 from legal_checker.modules.assessments.repository import Store
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.modules.legal_knowledge.repository import Knowledge
+from legal_checker.shared.llm.audit import LlmAuditSink, PostgresLlmAuditSink
+from legal_checker.shared.storage.http import CachedHttpSourceStorage
+from legal_checker.shared.storage.source import SourceStorage
 
 
 @dataclass(frozen=True)
@@ -17,6 +20,8 @@ class Services:
 
     knowledge: KnowledgeSnapshot
     assessments: AssessmentStore
+    llm_audit: LlmAuditSink | None = None
+    source_storage: SourceStorage | None = None
 
 
 def build_services(settings: Settings) -> Services:
@@ -24,7 +29,16 @@ def build_services(settings: Settings) -> Services:
     knowledge = Knowledge(settings.database_url, settings.knowledge_snapshot_sha256)
     assessment_store = Store(settings.database_url)
 
-    return Services(knowledge=knowledge, assessments=assessment_store)
+    return Services(
+        knowledge=knowledge,
+        assessments=assessment_store,
+        llm_audit=PostgresLlmAuditSink(settings.database_url),
+        source_storage=CachedHttpSourceStorage(
+            settings.source_cache_dir,
+            timeout_seconds=settings.source_download_timeout_seconds,
+            max_bytes=settings.source_max_bytes,
+        ),
+    )
 
 
 def get_services(request: Request) -> Services:

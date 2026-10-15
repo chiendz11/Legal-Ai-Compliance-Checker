@@ -1,12 +1,6 @@
 """Conformance checks usable by each module owner without running its predecessors."""
 
-from legal_checker.modules.compliance.grounding_validator import validate_criteria
-from legal_checker.modules.compliance.requirement_aggregator import aggregate
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
-from legal_checker.modules.recommendations.generator import recommend
-from legal_checker.modules.recommendations.validator import validate_risks
-from legal_checker.modules.risks.citation_mapper import citation_risks
-from legal_checker.modules.risks.compliance_mapper import compliance_risks
 from legal_checker.shared.contracts.assessment import AssessmentCase
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.document_intelligence import DocumentIntelligenceResult
@@ -16,10 +10,11 @@ from legal_checker.shared.contracts.handoffs import (
     LegalOutput,
     RetrievalInput,
 )
-from legal_checker.shared.contracts.modules import AggregationPayload, AggregationRequest
 from legal_checker.shared.contracts.reasoning import ReasoningPayload, ReasoningRequest
+from legal_checker.shared.contracts.recommendation import Recommendation
 from legal_checker.shared.contracts.report import FinalReport
 from legal_checker.shared.contracts.retrieval import RetrievalEvidence
+from legal_checker.shared.contracts.risk import RiskResult
 from legal_checker.shared.contracts.workflow import AssessmentDraft
 from legal_checker.shared.validation import (
     validate_citations,
@@ -195,60 +190,17 @@ def validate_retrieval(
 def validate_compliance(
     request: ReasoningRequest, output: ComplianceOutput, knowledge: KnowledgeSnapshot
 ):
-    validate_request(request, knowledge)
-    context = Context(**request.model_dump(exclude={"contract_name", "payload"}))
-    if output.context != context or output.hop_dong_id != request.payload.hop_dong_id:
-        raise ValueError("Compliance output changed the input context/contract")
-    consumer = AggregationRequest(
-        **context.model_dump(),
-        payload=AggregationPayload(
-            hop_dong_id=output.hop_dong_id,
-            requirements=request.payload.requirements,
-            criterion_results=output.criterion_results,
-        ),
-    )
-    validate_criteria(consumer, knowledge, complete=True)
-    unique(output.criterion_results, "ket_qua_id")
-    chunks = {item.doan_id: item for item in request.payload.chunks}
-    for result in output.criterion_results:
-        if result.finding == "UNKNOWN":
-            continue  # Untrusted evidence may be retained for review, as in the reasoning engine.
-        selected = {
-            item.doan_id
-            for item in request.payload.retrieval
-            if item.yeu_cau_ca_id == result.yeu_cau_ca_id
-            and item.tieu_chi_id == result.tieu_chi_id
-            and item.duoc_chon
-            and item.giai_doan == "FINAL"
-        }
-        for evidence in result.evidence:
-            chunk = chunks.get(evidence.doan_id)
-            if (
-                evidence.doan_id not in selected
-                or not chunk
-                or evidence.ky_tu_ket_thuc > len(chunk.noi_dung)
-                or chunk.noi_dung[evidence.ky_tu_bat_dau : evidence.ky_tu_ket_thuc]
-                != evidence.trich_dan
-            ):
-                raise ValueError("Known criterion finding has ungrounded evidence")
-    expected_requirements = aggregate(
-        context, knowledge, output.criterion_results, request.payload.requirements
-    )
-    if output.requirement_results != expected_requirements:
-        raise ValueError("C08 differs from deterministic aggregation of C07")
-    if any(r.source.citation_finding_id for r in output.risks):
-        raise ValueError("Compliance output contains citation-branch risks")
-    validate_risks(context, output.risks, knowledge, request.payload.requirements)
-    expected_risks = compliance_risks(context, knowledge, output.criterion_results)
-    if output.risks != expected_risks:
-        raise ValueError("Compliance risks differ from pinned rules/C07")
-    if output.recommendations != recommend(
-        context, knowledge, expected_risks, request.payload.requirements
-    ):
-        raise ValueError("Recommendations differ from pinned templates/compliance risks")
+    raise NotImplementedError("Step 5–7 output validation is a skeleton.")
 
 
-def validate_report(request: IntegrationInput, report: FinalReport, knowledge: KnowledgeSnapshot):
+def validate_report(
+    request: IntegrationInput,
+    report: FinalReport,
+    knowledge: KnowledgeSnapshot,
+    *,
+    risks: list[RiskResult],
+    recommendations: list[Recommendation],
+):
     content = report.report_json
     if report.ca_id != request.context.ca_id or content.case != request.case:
         raise ValueError("Report belongs to a different case")
@@ -295,8 +247,7 @@ def validate_report(request: IntegrationInput, report: FinalReport, knowledge: K
     ):
         if any(item.risk_type != risk_type for item in getattr(content.risks, name)):
             raise ValueError("Report mixed risk sections")
-    extra_risks = citation_risks(request.context, knowledge, request.legal.citations)
-    all_risks = request.compliance.risks + extra_risks
+    all_risks = risks
     for name, risk_type in (
         ("compliance", "COMPLIANCE"),
         ("citation", "CITATION"),
@@ -304,11 +255,8 @@ def validate_report(request: IntegrationInput, report: FinalReport, knowledge: K
     ):
         if getattr(content.risks, name) != [r for r in all_risks if r.risk_type == risk_type]:
             raise ValueError("Report lost or changed risks from a source branch")
-    expected_recommendations = request.compliance.recommendations + recommend(
-        request.context, knowledge, extra_risks, request.legal.requirements
-    )
-    if content.recommendations != expected_recommendations:
-        raise ValueError("Report lost or changed recommendations")
+    if content.recommendations != recommendations:
+        raise ValueError("Report lost or changed supplied recommendations")
     if report.report_status != "DRAFT" or report.review_status != "PENDING":
         raise ValueError("Development handoff report must remain DRAFT/PENDING")
     if content.audit.get("context") != request.context.model_dump(mode="json"):

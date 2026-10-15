@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "truy_xuat_id": {
+      "title": "Truy Xuat Id",
+      "type": "string"
+    },
+    "yeu_cau_ca_id": {
+      "title": "Yeu Cau Ca Id",
+      "type": "string"
+    },
+    "tieu_chi_id": {
+      "title": "Tieu Chi Id",
+      "type": "string"
+    },
+    "doan_id": {
+      "title": "Doan Id",
+      "type": "string"
+    },
+    "giai_doan": {
+      "default": "FINAL",
+      "title": "Giai Doan",
+      "type": "string"
+    },
+    "scores": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Scores",
+      "type": "object"
+    },
+    "thu_hang": {
+      "minimum": 1,
+      "title": "Thu Hang",
+      "type": "integer"
+    },
+    "duoc_chon": {
+      "title": "Duoc Chon",
+      "type": "boolean"
+    },
+    "query_text": {
+      "default": "",
+      "title": "Query Text",
+      "type": "string"
+    },
+    "retrieval_version": {
+      "title": "Retrieval Version",
+      "type": "string"
+    },
+    "embedding_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Embedding Model"
+    },
+    "index_version": {
+      "title": "Index Version",
+      "type": "string"
+    },
+    "rerank_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rerank Model"
+    },
+    "lan_chay_id": {
+      "title": "Lan Chay Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "truy_xuat_id",
+    "yeu_cau_ca_id",
+    "tieu_chi_id",
+    "doan_id",
+    "thu_hang",
+    "duoc_chon",
+    "retrieval_version",
+    "index_version",
+    "lan_chay_id"
+  ],
+  "title": "RetrievalEvidence",
+  "type": "object",
+  "x-contract-id": "C06",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}
