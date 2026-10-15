@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "finding_id": {
+      "title": "Finding Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "vien_dan_id": {
+      "title": "Vien Dan Id",
+      "type": "string"
+    },
+    "normalized_van_ban_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Normalized Van Ban Id"
+    },
+    "relevant_date": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Relevant Date"
+    },
+    "status": {
+      "enum": [
+        "VALID",
+        "STALE",
+        "INVALID",
+        "UNKNOWN"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "reason_code": {
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "ly_do": {
+      "title": "Ly Do",
+      "type": "string"
+    },
+    "domain_status": {
+      "enum": [
+        "MATCH",
+        "MISMATCH",
+        "UNKNOWN"
+      ],
+      "title": "Domain Status",
+      "type": "string"
+    },
+    "finding_verified": {
+      "title": "Finding Verified",
+      "type": "boolean"
+    },
+    "current_status": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Current Status"
+    },
+    "replacement_van_ban_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Replacement Van Ban Id"
+    },
+    "source_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Source Snapshot Json",
+      "type": "object"
+    },
+    "lan_chay_id": {
+      "title": "Lan Chay Id",
+      "type": "string"
+    },
+    "knowledge_version": {
+      "title": "Knowledge Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "finding_id",
+    "ca_id",
+    "vien_dan_id",
+    "status",
+    "reason_code",
+    "ly_do",
+    "domain_status",
+    "finding_verified",
+    "source_snapshot_json",
+    "lan_chay_id",
+    "knowledge_version"
+  ],
+  "title": "CitationValidation",
+  "type": "object",
+  "x-contract-id": "C09",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

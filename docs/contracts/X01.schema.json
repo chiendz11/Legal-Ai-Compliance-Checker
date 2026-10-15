@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "phien_ban_id": {
+      "title": "Phien Ban Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "legal_snapshot_sha256": {
+      "title": "Legal Snapshot Sha256",
+      "type": "string"
+    },
+    "contract_snapshot_sha256": {
+      "title": "Contract Snapshot Sha256",
+      "type": "string"
+    },
+    "model_reasoning": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Reasoning"
+    },
+    "model_embedding": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Embedding"
+    },
+    "prompt_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompt Version"
+    },
+    "rule_version": {
+      "title": "Rule Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "phien_ban_id",
+    "schema_version",
+    "legal_snapshot_sha256",
+    "contract_snapshot_sha256",
+    "rule_version"
+  ],
+  "title": "DeploymentSnapshot",
+  "type": "object",
+  "x-contract-id": "X01",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

@@ -11,3 +11,6 @@ data/private/
 *.sqlite3
 build/
 dist/
+
+# Temporary editor lock files
+.~lock.*#

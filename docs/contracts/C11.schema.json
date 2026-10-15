@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "khuyen_nghi_ca_id": {
+      "title": "Khuyen Nghi Ca Id",
+      "type": "string"
+    },
+    "ket_qua_rui_ro_id": {
+      "title": "Ket Qua Rui Ro Id",
+      "type": "string"
+    },
+    "khuyen_nghi_id": {
+      "title": "Khuyen Nghi Id",
+      "type": "string"
+    },
+    "noi_dung": {
+      "title": "Noi Dung",
+      "type": "string"
+    },
+    "loai_hanh_dong": {
+      "title": "Loai Hanh Dong",
+      "type": "string"
+    },
+    "uu_tien": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL",
+        "REVIEW_REQUIRED"
+      ],
+      "title": "Uu Tien",
+      "type": "string"
+    },
+    "dieu_kien_snapshot": {
+      "additionalProperties": true,
+      "title": "Dieu Kien Snapshot",
+      "type": "object"
+    },
+    "evidence_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "legal_basis_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Legal Basis Ids",
+      "type": "array"
+    },
+    "template_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Template Snapshot Json",
+      "type": "object"
+    },
+    "rule_version": {
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "knowledge_snapshot_sha256": {
+      "title": "Knowledge Snapshot Sha256",
+      "type": "string"
+    },
+    "model_version": {
+      "const": "TEMPLATE_ENGINE_NO_LLM",
+      "default": "TEMPLATE_ENGINE_NO_LLM",
+      "title": "Model Version",
+      "type": "string"
+    },
+    "prompt_version": {
+      "const": "NOT_USED",
+      "default": "NOT_USED",
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "review_status": {
+      "const": "PENDING",
+      "default": "PENDING",
+      "title": "Review Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "khuyen_nghi_ca_id",
+    "ket_qua_rui_ro_id",
+    "khuyen_nghi_id",
+    "noi_dung",
+    "loai_hanh_dong",
+    "uu_tien",
+    "dieu_kien_snapshot",
+    "evidence_ids",
+    "legal_basis_ids",
+    "template_snapshot_json",
+    "rule_version",
+    "knowledge_snapshot_sha256"
+  ],
+  "title": "Recommendation",
+  "type": "object",
+  "x-contract-id": "C11",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

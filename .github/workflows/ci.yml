@@ -9,6 +9,20 @@ jobs:
   required:
     name: CI / required
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.10-bookworm
+        env:
+          POSTGRES_USER: legal_checker
+          POSTGRES_PASSWORD: ci_local_only
+          POSTGRES_DB: legal_checker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U legal_checker -d legal_checker_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://legal_checker:ci_local_only@127.0.0.1:5432/legal_checker_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,11 +30,10 @@ jobs:
           python-version: '3.12'
       - name: Check repository
         run: |
-          if [ -f pyproject.toml ]; then
-            python -m pip install -e '.[dev]'
-            ruff check .
-            ruff format --check .
-            pytest -q
-          else
-            test -s README.md
-          fi
+          python -m pip install -e './backend[dev]' -c constraints.txt
+          ruff check --config backend/pyproject.toml .
+          ruff format --check --config backend/pyproject.toml .
+          pytest -q -c backend/pyproject.toml
+      - name: Verify installed package outside the repository
+        working-directory: /tmp
+        run: python -c 'from legal_checker.main import create_app; from importlib.resources import files; assert files("legal_checker.migrations").joinpath("env.py").is_file(); assert files("legal_checker.migrations").joinpath("sql/002_snapshots_and_runs.sql").is_file()'

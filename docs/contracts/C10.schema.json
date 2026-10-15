@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "RiskSource": {
+      "additionalProperties": false,
+      "properties": {
+        "yeu_cau_ca_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Yeu Cau Ca Id"
+        },
+        "ket_qua_tieu_chi_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ket Qua Tieu Chi Id"
+        },
+        "citation_finding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Citation Finding Id"
+        }
+      },
+      "title": "RiskSource",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "ket_qua_rui_ro_id": {
+      "title": "Ket Qua Rui Ro Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "risk_type": {
+      "enum": [
+        "COMPLIANCE",
+        "CITATION",
+        "VERIFICATION"
+      ],
+      "title": "Risk Type",
+      "type": "string"
+    },
+    "rui_ro_id": {
+      "title": "Rui Ro Id",
+      "type": "string"
+    },
+    "severity": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL",
+        "REVIEW_REQUIRED"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/RiskSource"
+    },
+    "quy_tac_id": {
+      "title": "Quy Tac Id",
+      "type": "string"
+    },
+    "giai_thich": {
+      "title": "Giai Thich",
+      "type": "string"
+    },
+    "risk_snapshot": {
+      "additionalProperties": true,
+      "title": "Risk Snapshot",
+      "type": "object"
+    },
+    "rule_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Rule Snapshot Json",
+      "type": "object"
+    },
+    "evidence_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "legal_basis_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Legal Basis Ids",
+      "type": "array"
+    },
+    "review_status": {
+      "const": "PENDING",
+      "default": "PENDING",
+      "title": "Review Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "ket_qua_rui_ro_id",
+    "ca_id",
+    "risk_type",
+    "rui_ro_id",
+    "severity",
+    "source",
+    "quy_tac_id",
+    "giai_thich",
+    "risk_snapshot",
+    "rule_snapshot_json",
+    "evidence_ids",
+    "legal_basis_ids"
+  ],
+  "title": "RiskResult",
+  "type": "object",
+  "x-contract-id": "C10",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

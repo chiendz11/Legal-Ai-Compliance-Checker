@@ -1,0 +1,502 @@
+{
+  "catalog_version": "1.0",
+  "schema_dialect": "JSON Schema 2020-12",
+  "validation": {
+    "json_schema": "Structural validation only; not all Pydantic validators export to JSON Schema.",
+    "runtime": "Validate Pydantic models plus cross-record, grounding, authorization and run checks."
+  },
+  "shared_conventions": {
+    "context_schema": "../module_contracts.schema.json#/$defs/Context",
+    "unknown": "null/UNKNOWN is not false, zero, compliant or a proven violation.",
+    "identity": "Separate contract ID, assessment case ID, run ID and knowledge snapshot hash.",
+    "lineage": "Filter by case/run and immutable input/output lineage; do not mix seeded and live outputs.",
+    "knowledge": "Inject a read-only KnowledgeSnapshot; never import devtools into a business module.",
+    "review": "Machine findings stay immutable; human decisions form a separate effective-result view."
+  },
+  "contracts": [
+    {
+      "id": "C01",
+      "schema": "C01.schema.json",
+      "record_model": "AssessmentCase",
+      "python_import": "legal_checker.shared.contracts.assessment.AssessmentCase",
+      "version": "1.0",
+      "producer": "documents.intake",
+      "consumers": [
+        "documents"
+      ],
+      "handoff_cardinality": "one",
+      "tables": [
+        "runtime.hop_dong",
+        "runtime.tep_nguon",
+        "runtime.ca_danh_gia"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "At least one source URI/URL is nonempty; read bytes must match source.sha256.",
+        "Pin deployment and knowledge before processing; never silently change a started case."
+      ]
+    },
+    {
+      "id": "C02",
+      "schema": "C02.schema.json",
+      "record_model": "ContractProfile",
+      "python_import": "legal_checker.shared.contracts.document_intelligence.ContractProfile",
+      "version": "1.0",
+      "producer": "documents",
+      "consumers": [
+        "applicable_law",
+        "citation_validation",
+        "reports"
+      ],
+      "handoff_cardinality": "one",
+      "tables": [
+        "runtime.ho_so_hop_dong",
+        "runtime.chu_the_hop_dong",
+        "runtime.trich_xuat_truong",
+        "runtime.bang_chung_truong",
+        "runtime.bang_chung_ho_so",
+        "runtime.moc_thoi_gian_hop_dong"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Unknown extracted facts remain null; values need attributable source evidence.",
+        "Facts are extraction results, not legal conclusions."
+      ]
+    },
+    {
+      "id": "C03",
+      "schema": "C03.schema.json",
+      "record_model": "CitationExtraction",
+      "python_import": "legal_checker.shared.contracts.citation.CitationExtraction",
+      "version": "1.0",
+      "producer": "documents",
+      "consumers": [
+        "citation_validation",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.vien_dan_phap_ly_hop_dong",
+        "runtime.bang_chung_vien_dan"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Preserve each citation occurrence and source position, including ambiguous citations.",
+        "Contract-authored citations do not choose applicable requirements."
+      ],
+      "known_gap": "CitationPosition currently stores chunk/pages, not precise character/bbox occurrence offsets."
+    },
+    {
+      "id": "C04",
+      "schema": "C04.schema.json",
+      "record_model": "ScopeResolution",
+      "python_import": "legal_checker.shared.contracts.scope.ScopeResolution",
+      "version": "1.0",
+      "producer": "applicable_law.scope",
+      "consumers": [
+        "applicable_law.temporal",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.yeu_cau_ap_dung"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Resolve scope from profile and knowledge independently of contract citations."
+      ]
+    },
+    {
+      "id": "C05",
+      "schema": "C05.schema.json",
+      "record_model": "ApplicableRequirement",
+      "python_import": "legal_checker.shared.contracts.temporal.ApplicableRequirement",
+      "version": "1.0",
+      "producer": "applicable_law.temporal",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.yeu_cau_ap_dung"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "CONFIRMED requires MATCH, RESOLVED, requirement_version_id and relevant date.",
+        "Do not turn unresolved dates/scope into CONFIRMED to improve metrics."
+      ]
+    },
+    {
+      "id": "C06",
+      "schema": "C06.schema.json",
+      "record_model": "RetrievalEvidence",
+      "python_import": "legal_checker.shared.contracts.retrieval.RetrievalEvidence",
+      "version": "1.0",
+      "producer": "retrieval",
+      "consumers": [
+        "compliance"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.ket_qua_truy_xuat"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Selected evidence must reference a chunk of the same contract and criterion/version.",
+        "No selected evidence is not proof of MISSING."
+      ]
+    },
+    {
+      "id": "C07",
+      "schema": "C07.schema.json",
+      "record_model": "CriterionResult",
+      "python_import": "legal_checker.shared.contracts.reasoning.CriterionResult",
+      "version": "1.0",
+      "producer": "compliance.reasoning",
+      "consumers": [
+        "compliance.aggregation",
+        "risks",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.ket_qua_tieu_chi",
+        "runtime.bang_chung_ket_qua",
+        "runtime.bang_chung_ngoai",
+        "runtime.chung_tu_bo_sung"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "MISSING requires reliability, complete coverage and verified absence gates.",
+        "SATISFIED/VIOLATED require reliable attributable evidence and legal basis.",
+        "UNKNOWN requires uncertainty_reason; quote offsets must match actual source text."
+      ]
+    },
+    {
+      "id": "C08",
+      "schema": "C08.schema.json",
+      "record_model": "RequirementResult",
+      "python_import": "legal_checker.shared.contracts.aggregation.RequirementResult",
+      "version": "1.0",
+      "producer": "compliance.aggregation",
+      "consumers": [
+        "risks",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.ket_qua_tuan_thu"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Aggregate the applicable criterion set with the pinned rule, not status majority.",
+        "Preserve excluded requirements and insufficiency rather than reporting compliance."
+      ]
+    },
+    {
+      "id": "C09",
+      "schema": "C09.schema.json",
+      "record_model": "CitationValidation",
+      "python_import": "legal_checker.shared.contracts.citation.CitationValidation",
+      "version": "1.0",
+      "producer": "citation_validation",
+      "consumers": [
+        "risks",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.phat_hien_vien_dan"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Preserve relevant-date status separately from current status.",
+        "Unverified identity/time/domain stays uncertain and cannot alter C05/C08."
+      ]
+    },
+    {
+      "id": "C10",
+      "schema": "C10.schema.json",
+      "record_model": "RiskResult",
+      "python_import": "legal_checker.shared.contracts.risk.RiskResult",
+      "version": "1.0",
+      "producer": "risks",
+      "consumers": [
+        "recommendations",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.ket_qua_rui_ro"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Exactly one source: criterion finding or citation finding; same case/run.",
+        "UNKNOWN may produce VERIFICATION risk, not automatically a proven violation."
+      ]
+    },
+    {
+      "id": "C11",
+      "schema": "C11.schema.json",
+      "record_model": "Recommendation",
+      "python_import": "legal_checker.shared.contracts.recommendation.Recommendation",
+      "version": "1.0",
+      "producer": "recommendations",
+      "consumers": [
+        "reviews",
+        "reports"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.khuyen_nghi_danh_gia"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Link a risk instance, evidence and legal basis; status alone is not a recommendation.",
+        "Current DTO uses template-engine metadata; LLM-backed metadata needs a reviewed change."
+      ]
+    },
+    {
+      "id": "C12",
+      "schema": "C12.schema.json",
+      "record_model": "HumanReview",
+      "python_import": "legal_checker.shared.contracts.review.HumanReview",
+      "version": "1.0",
+      "producer": "reviews",
+      "consumers": [
+        "reports",
+        "reviews.effective_result"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.nhat_ky_review",
+        "runtime.phan_quyen_danh_gia"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Append review events; preserve original machine output.",
+        "Authorize actor and pin target to a specific run/output/report version."
+      ],
+      "known_gap": "SQL/C12 have no dedicated run_id; writer must validate target/run linkage explicitly."
+    },
+    {
+      "id": "C13",
+      "schema": "C13.schema.json",
+      "record_model": "FinalReport",
+      "python_import": "legal_checker.shared.contracts.report.FinalReport",
+      "version": "1.0",
+      "producer": "reports",
+      "consumers": [
+        "frontend",
+        "reports.exporter"
+      ],
+      "handoff_cardinality": "one",
+      "tables": [
+        "runtime.bao_cao_danh_gia"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Keep compliance, citation and verification risk sections distinct.",
+        "PUBLISHED requires authorized review of the exact outputs/version, not any old case review."
+      ],
+      "known_gap": "DTO report version is string; SQL phien_ban_bao_cao is INTEGER. Agree mapping/migration first."
+    },
+    {
+      "id": "X01",
+      "schema": "X01.schema.json",
+      "record_model": "DeploymentSnapshot",
+      "python_import": "legal_checker.shared.contracts.deployment.DeploymentSnapshot",
+      "version": "1.0",
+      "producer": "legal_knowledge",
+      "consumers": [
+        "all_modules"
+      ],
+      "handoff_cardinality": "one",
+      "tables": [
+        "knowledge.phien_ban_trien_khai",
+        "runtime.ca_danh_gia"
+      ],
+      "implementation_status": "PARTIAL_OR_SKELETON",
+      "semantic_rules": [
+        "Deployment/release contract is distinct from knowledge.knowledge_snapshots content.",
+        "Use the existing content SHA-256 to replay; never hash the Excel as a knowledge snapshot."
+      ],
+      "known_gap": "DeploymentSnapshot is a release DTO, not the full KnowledgeSnapshot protocol."
+    },
+    {
+      "id": "X02",
+      "schema": "X02.schema.json",
+      "record_model": "LlmAudit",
+      "python_import": "legal_checker.shared.contracts.audit.LlmAudit",
+      "version": "1.0",
+      "producer": "module_llm_client",
+      "consumers": [
+        "audit"
+      ],
+      "handoff_cardinality": "many",
+      "tables": [
+        "runtime.nhat_ky_goi_llm"
+      ],
+      "implementation_status": "IMPLEMENTED",
+      "semantic_rules": [
+        "SUCCESS requires output hash and no error code; ERROR requires a safe error code.",
+        "Unknown token usage/cost stays null; known cost needs currency.",
+        "Do not persist raw prompt/response/API keys in X02; one call ID per provider attempt."
+      ]
+    }
+  ],
+  "handoffs": [
+    {
+      "module": "documents",
+      "input": [
+        "C01"
+      ],
+      "output": [
+        "C02",
+        "C03",
+        "chunks"
+      ],
+      "input_schema": "../module_contracts.schema.json#/$defs/DocumentInput"
+    },
+    {
+      "module": "applicable_law.scope",
+      "input": [
+        "C02",
+        "knowledge"
+      ],
+      "output": [
+        "C04"
+      ],
+      "input_schema": "../module_contracts.schema.json#/$defs/ScopeInput"
+    },
+    {
+      "module": "applicable_law.temporal",
+      "input": [
+        "C02",
+        "C04",
+        "knowledge"
+      ],
+      "output": [
+        "C05"
+      ],
+      "input_schema": "../module_contracts.schema.json#/$defs/TemporalInput"
+    },
+    {
+      "module": "citation_validation",
+      "input": [
+        "C02",
+        "C03",
+        "chunks",
+        "knowledge"
+      ],
+      "output": [
+        "C09"
+      ],
+      "input_schema": "../module_contracts.schema.json#/$defs/CitationInput"
+    },
+    {
+      "module": "retrieval",
+      "input": [
+        "C05",
+        "chunks",
+        "knowledge"
+      ],
+      "output": [
+        "C06"
+      ],
+      "input_schema": "../module_contracts.schema.json#/$defs/RetrievalInput"
+    },
+    {
+      "module": "compliance",
+      "input": [
+        "C05",
+        "C06",
+        "chunks",
+        "observations",
+        "knowledge"
+      ],
+      "output": [
+        "C07",
+        "C08"
+      ],
+      "input_schema": "../module_contracts.schema.json#/$defs/ReasoningRequest"
+    },
+    {
+      "module": "risks",
+      "input": [
+        "C05",
+        "C07",
+        "C08",
+        "C09",
+        "knowledge"
+      ],
+      "output": [
+        "C10"
+      ],
+      "note": "Current RiskRequest carries C05/C07/C09, not a C08 field."
+    },
+    {
+      "module": "recommendations",
+      "input": [
+        "C05",
+        "C10",
+        "knowledge"
+      ],
+      "output": [
+        "C11"
+      ]
+    },
+    {
+      "module": "reviews",
+      "input": [
+        "pinned_outputs",
+        "actor",
+        "decision"
+      ],
+      "output": [
+        "C12"
+      ]
+    },
+    {
+      "module": "reports",
+      "input": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C11",
+        "C12",
+        "knowledge"
+      ],
+      "output": [
+        "C13"
+      ],
+      "note": "Current builder only assembles DRAFT; reviewed publishing is not implemented."
+    }
+  ],
+  "persistence": {
+    "table_catalog": "database_catalog.json",
+    "join_recipes": "../huong_dan_trien_khai_module_sau_seed.md",
+    "migrations": [
+      "backend/src/legal_checker/migrations/sql/001_workbook_v7_4_9.sql",
+      "backend/src/legal_checker/migrations/sql/002_snapshots_and_runs.sql",
+      "backend/src/legal_checker/migrations/sql/003_evaluation_workbook.sql"
+    ],
+    "alembic_config": "backend/alembic.ini",
+    "alembic_revisions": "backend/src/legal_checker/migrations/versions/",
+    "migration_version_table": "dev_meta.alembic_version",
+    "runtime_lineage_tables": [
+      "runtime.assessment_case_pins",
+      "runtime.assessment_runs",
+      "runtime.assessment_output_lineage"
+    ],
+    "knowledge_content_table": "knowledge.knowledge_snapshots"
+  }
+}

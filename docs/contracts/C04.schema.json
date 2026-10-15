@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "yeu_cau_ca_id": {
+      "title": "Yeu Cau Ca Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "requirement_id": {
+      "title": "Requirement Id",
+      "type": "string"
+    },
+    "nhom_phien_ban": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nhom Phien Ban"
+    },
+    "scope_status": {
+      "enum": [
+        "MATCH",
+        "NO_MATCH",
+        "UNKNOWN"
+      ],
+      "title": "Scope Status",
+      "type": "string"
+    },
+    "profile_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Profile Snapshot Json",
+      "type": "object"
+    },
+    "dieu_kien_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Dieu Kien Snapshot Json",
+      "type": "object"
+    },
+    "scope_reason": {
+      "minLength": 1,
+      "title": "Scope Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "yeu_cau_ca_id",
+    "ca_id",
+    "requirement_id",
+    "scope_status",
+    "scope_reason"
+  ],
+  "title": "ScopeResolution",
+  "type": "object",
+  "x-contract-id": "C04",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}

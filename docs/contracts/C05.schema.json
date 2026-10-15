@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "yeu_cau_ca_id": {
+      "minLength": 1,
+      "title": "Yeu Cau Ca Id",
+      "type": "string"
+    },
+    "ca_id": {
+      "minLength": 1,
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "requirement_id": {
+      "minLength": 1,
+      "title": "Requirement Id",
+      "type": "string"
+    },
+    "requirement_version_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requirement Version Id"
+    },
+    "nhom_phien_ban": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nhom Phien Ban"
+    },
+    "scope_status": {
+      "enum": [
+        "MATCH",
+        "NO_MATCH",
+        "UNKNOWN"
+      ],
+      "title": "Scope Status",
+      "type": "string"
+    },
+    "version_status": {
+      "enum": [
+        "RESOLVED",
+        "UNKNOWN"
+      ],
+      "title": "Version Status",
+      "type": "string"
+    },
+    "applicability_status": {
+      "enum": [
+        "CONFIRMED",
+        "NOT_APPLICABLE",
+        "UNKNOWN"
+      ],
+      "title": "Applicability Status",
+      "type": "string"
+    },
+    "moc_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Moc Id"
+    },
+    "loai_moc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Loai Moc"
+    },
+    "moc_ap_dung": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Moc Ap Dung"
+    },
+    "resolution_method": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resolution Method"
+    },
+    "profile_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Profile Snapshot Json",
+      "type": "object"
+    },
+    "dieu_kien_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Dieu Kien Snapshot Json",
+      "type": "object"
+    },
+    "nguon_snapshot_json": {
+      "additionalProperties": true,
+      "title": "Nguon Snapshot Json",
+      "type": "object"
+    },
+    "phien_ban_id": {
+      "title": "Phien Ban Id",
+      "type": "string"
+    },
+    "reason": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Reason",
+      "type": "object"
+    }
+  },
+  "required": [
+    "yeu_cau_ca_id",
+    "ca_id",
+    "requirement_id",
+    "scope_status",
+    "version_status",
+    "applicability_status",
+    "phien_ban_id"
+  ],
+  "title": "ApplicableRequirement",
+  "type": "object",
+  "x-contract-id": "C05",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+}
