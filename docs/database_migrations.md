@@ -25,6 +25,12 @@ Ba revision nền hiện tại:
 | `0002_snapshots` | Knowledge snapshots, case/run pins và output lineage |
 | `0003_qa` | Sáu bảng QA, indexes và bảo vệ dữ liệu QA bất biến |
 
+Revision tiếp theo:
+
+| Revision | Nội dung |
+|---|---|
+| `0004_workflow_runs` | `runtime.workflow_runs` (trạng thái run, tiến độ stage, draft) và `runtime.report_versions` (C13 bất biến, file export) của nhóm D |
+
 Xem lịch sử bằng:
 
 ```bash

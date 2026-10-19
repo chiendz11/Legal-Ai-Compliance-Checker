@@ -25,6 +25,13 @@ from sqlalchemy import text
 
 ROOT = files("legal_checker.migrations")
 BASELINES = json.loads(ROOT.joinpath("legacy_baselines.json").read_text())
+HEAD = "0004_workflow_runs"
+# Objects added after the frozen legacy baseline 3 (revision 0004).
+POST_BASELINE = {
+    "runtime.workflow_runs",
+    "runtime.report_versions",
+    "function:runtime.reject_report_change()",
+}
 
 
 def legacy_database(database_url, version=3):
@@ -70,11 +77,15 @@ def current_revision(database_url):
 
 def test_fresh_upgrade_matches_frozen_schema_and_is_idempotent(empty_database_url):
     upgrade_database(empty_database_url)
-    assert current_revision(empty_database_url) == "0003_qa"
+    assert current_revision(empty_database_url) == HEAD
     engine = migration_engine(empty_database_url)
     try:
         with engine.begin() as connection:
-            assert structure_fingerprints(connection) == BASELINES["3"]["objects"]
+            fingerprints = structure_fingerprints(connection)
+            assert set(fingerprints) - set(BASELINES["3"]["objects"]) == POST_BASELINE
+            assert {k: v for k, v in fingerprints.items() if k not in POST_BASELINE} == BASELINES[
+                "3"
+            ]["objects"]
             assert not connection.execute(
                 text("SELECT to_regclass('dev_meta.schema_migrations')")
             ).scalar_one()
@@ -91,7 +102,7 @@ def test_fresh_upgrade_matches_frozen_schema_and_is_idempotent(empty_database_ur
 def test_adopt_legacy_prefix_preserves_seeded_rows_and_history(empty_database_url, version):
     legacy_database(empty_database_url, version)
     upgrade_database(empty_database_url)
-    assert current_revision(empty_database_url) == "0003_qa"
+    assert current_revision(empty_database_url) == HEAD
     with connect_postgres(empty_database_url) as connection:
         assert (
             connection.execute("SELECT hop_dong_id FROM runtime.hop_dong").fetchone()["hop_dong_id"]
@@ -151,7 +162,7 @@ def test_unversioned_existing_schema_is_not_blindly_stamped(empty_database_url):
 def test_concurrent_init_uses_one_migration_history(empty_database_url):
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(upgrade_database, [empty_database_url] * 3))
-    assert current_revision(empty_database_url) == "0003_qa"
+    assert current_revision(empty_database_url) == HEAD
 
 
 def test_concurrent_cli_processes_serialize_upgrades(empty_database_url, tmp_path):
@@ -176,17 +187,17 @@ def test_concurrent_cli_processes_serialize_upgrades(empty_database_url, tmp_pat
     with ThreadPoolExecutor(max_workers=3) as pool:
         results = list(pool.map(upgrade, range(3)))
     assert all(result.returncode == 0 for result in results), [r.stderr for r in results]
-    assert current_revision(empty_database_url) == "0003_qa"
+    assert current_revision(empty_database_url) == HEAD
 
 
 def test_failed_upgrade_rolls_back_ddl_and_revision(empty_database_url, tmp_path, monkeypatch):
     upgrade_database(empty_database_url)
     local = tmp_path / "migrations"
     shutil.copytree(str(ROOT), local)
-    (local / "versions/0004_failure.py").write_text("""
+    (local / "versions/0005_failure.py").write_text(f"""
 from alembic import op
-revision = "0004_failure"
-down_revision = "0003_qa"
+revision = "0005_failure"
+down_revision = "{HEAD}"
 def upgrade():
     op.execute("ALTER TABLE runtime.hop_dong ADD COLUMN should_rollback TEXT")
     raise ValueError("simulated failure")
@@ -196,7 +207,7 @@ def upgrade():
     monkeypatch.setattr(manager, "alembic_config", lambda: config)
     with pytest.raises(ValueError, match="simulated failure"):
         upgrade_database(empty_database_url)
-    assert current_revision(empty_database_url) == "0003_qa"
+    assert current_revision(empty_database_url) == HEAD
     with connect_postgres(empty_database_url) as connection:
         assert not connection.execute("""
             SELECT 1 FROM information_schema.columns
@@ -221,7 +232,7 @@ def test_cli_works_outside_repo_and_uses_environment_database(empty_database_url
         env={**os.environ, "DATABASE_URL": empty_database_url},
     )
     assert result.returncode == 0, result.stderr
-    assert current_revision(empty_database_url) == "0003_qa"
+    assert current_revision(empty_database_url) == HEAD
 
 
 def test_revision_template_generates_valid_python_without_db(tmp_path):
@@ -229,7 +240,7 @@ def test_revision_template_generates_valid_python_without_db(tmp_path):
     shutil.copytree(str(ROOT), local)
     config = alembic_config()
     config.set_main_option("script_location", str(local))
-    revision = command.revision(config, message="example change", rev_id="0004_example")
-    assert revision.down_revision == "0003_qa"
-    assert ScriptDirectory.from_config(config).get_current_head() == "0004_example"
+    revision = command.revision(config, message="example change", rev_id="0005_example")
+    assert revision.down_revision == HEAD
+    assert ScriptDirectory.from_config(config).get_current_head() == "0005_example"
     compile(open(revision.path).read(), revision.path, "exec")
