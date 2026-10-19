@@ -4,6 +4,7 @@ import type {
   ReportContent,
 } from "../../../shared/api/client";
 import { Empty, Fields, Section, StatusBadge, Value } from "../../../shared/components/ui";
+import { displayText } from "../../../shared/text";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { riskTitle, useReportIndex } from "../../reports/reportIndex";
 
@@ -66,7 +67,7 @@ function CitationCard({
         <strong>{n.ten_van_ban ?? n.so_hieu ?? "Viện dẫn chưa chuẩn hóa được"}</strong>
         {article && <span>{article}</span>}
       </header>
-      <blockquote className="raw">{citation.raw_text}</blockquote>
+      <blockquote className="raw">{displayText(citation.raw_text)}</blockquote>
       <p className="small muted">
         <code>{citation.vien_dan_id}</code> · {pages || "không rõ trang"} ·{" "}
         <StatusBadge kind="extraction" code={citation.extraction.status} />

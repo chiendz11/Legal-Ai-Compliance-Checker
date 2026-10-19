@@ -6,6 +6,7 @@ are recomputed. Unpublished reports carry a visible DRAFT/REVIEW marking on ever
 
 import io
 import os
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -272,13 +273,29 @@ def _font() -> tuple[str, str]:
     )
 
 
-# Contract text carries Word bullets (private-use U+F0B7) and line separators fonts lack.
-_PDF_TEXT = str.maketrans({"": "•", " ": "\n", " ": "\n"})
+# Word keeps Symbol/Wingdings glyphs as private-use code points (U+F0xx) that report fonts
+# cannot draw; map the known ones to Unicode look-alikes, matching frontend/src/shared/text.ts.
+_SYMBOL_FONT = {
+    "\uf0b7": "\u2022",  # Symbol bullet
+    "\uf0a7": "\u25aa",  # Wingdings small square
+    "\uf06c": "\u25cf",  # Wingdings filled circle
+    "\uf06e": "\u25a0",  # Wingdings filled square
+    "\uf076": "\u2756",  # Wingdings diamond
+    "\uf0d8": "\u27a2",  # Wingdings arrowhead
+    "\uf0fc": "\u2713",  # Wingdings check mark
+    "\uf0fe": "\u2611",  # Wingdings checked box
+    "\uf02d": "-",  # Symbol minus
+    "\uf02b": "+",  # Symbol plus
+    "\u2028": "\n",  # line separator
+    "\u2029": "\n",  # paragraph separator
+}
+_UNDRAWABLE = re.compile("[\ue000-\uf8ff\u2028\u2029]")
 
 
 def _clean(value):
     if isinstance(value, str):
-        return value.translate(_PDF_TEXT)
+        # Unknown private-use glyphs become "?" rather than a missing-glyph box.
+        return _UNDRAWABLE.sub(lambda m: _SYMBOL_FONT.get(m.group(), "?"), value)
     if isinstance(value, list):
         return [_clean(item) for item in value]
     return value
@@ -299,7 +316,6 @@ def _pdf(document: Document) -> bytes:
     width = pdf.epw
     sizes = {1: 16, 2: 13, 3: 11}
     for block in document.blocks:
-        block = tuple(_clean(part) for part in block)
         kind = block[0]
         if kind == "heading":
             pdf.set_font("Body", "B", sizes.get(block[1], 11))
@@ -334,4 +350,5 @@ def export_report(report: FinalReport, fmt: str) -> bytes:
     if fmt not in MEDIA_TYPES:
         raise ValueError(f"Unsupported export format {fmt}")
     document = report_document(report)
+    document.blocks = [tuple(_clean(part) for part in block) for block in document.blocks]
     return _docx(document) if fmt == "docx" else _pdf(document)

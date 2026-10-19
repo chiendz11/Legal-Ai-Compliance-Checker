@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { label, type LabelKind } from "../labels";
+import { displayText } from "../text";
 
 export function StatusBadge({ kind, code }: { kind: LabelKind; code: string | null | undefined }) {
   const { text, tone } = label(kind, code);
@@ -70,7 +71,7 @@ export function Value({ value }: { value: unknown }) {
   if (value === null || value === undefined) return <span className="null">chưa có</span>;
   if (typeof value === "boolean") return <>{value ? "Có" : "Không"}</>;
   if (typeof value === "object") return <code>{JSON.stringify(value)}</code>;
-  return <>{String(value)}</>;
+  return <>{displayText(String(value))}</>;
 }
 
 export function Ids({ ids, empty = "—" }: { ids: string[] | undefined; empty?: string }) {
@@ -100,7 +101,7 @@ export function Quote({
 }) {
   return (
     <figure className="quote">
-      <blockquote>{text}</blockquote>
+      <blockquote>{displayText(text)}</blockquote>
       <figcaption>
         <code>{chunkId}</code>
         {start !== undefined && end !== undefined && (

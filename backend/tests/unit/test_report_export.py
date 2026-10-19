@@ -82,6 +82,35 @@ def test_pdf_export_renders_vietnamese_when_a_font_exists():
     assert exporter.export_report(minimal_report(), "pdf")[:5] == b"%PDF-"
 
 
+def test_word_symbol_font_glyphs_are_mapped_one_to_one():
+    # Word bullet U+F0B7, check U+F0FC, line separator U+2028, unknown private-use U+F064.
+    raw = "".join(map(chr, (0xF0B7, 0x20, 0x43, 0x0103, 0x6E, 0xF0FC, 0x2028, 0xF064)))
+    cleaned = exporter._clean(raw)
+    assert cleaned == "• Căn✓\n?"
+    assert len(cleaned) == len(raw)
+    assert exporter._clean([raw, 1]) == [cleaned, 1]
+
+
+def test_exported_docx_has_no_undrawable_glyphs():
+    report = minimal_report()
+    profile = report.report_json.contract_profile.profile.model_copy(
+        update={"doi_tuong": chr(0xF0B7) + " NHA_O"}
+    )
+    report.report_json.contract_profile.profile = profile
+    content = exporter.export_report(report, "docx")
+    from io import BytesIO
+
+    from docx import Document
+
+    text = "\n".join(
+        cell.text
+        for table in Document(BytesIO(content)).tables
+        for row in table.rows
+        for cell in row.cells
+    )
+    assert "• NHA_O" in text and chr(0xF0B7) not in text
+
+
 def test_unknown_format_is_rejected():
     with pytest.raises(ValueError):
         exporter.export_report(minimal_report(), "html")
