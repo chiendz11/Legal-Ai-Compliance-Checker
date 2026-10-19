@@ -7,8 +7,9 @@ Chạy từ root repo, dùng Python trong `.venv` đã cài `backend[dev,dataset
 | `dataset.py` | Tải/kiểm tra dataset DEV_VALIDATION theo manifest/hash | `python -m scripts.dataset pull` hoặc `check` | Đang dùng |
 | `local_db.py` | Tạo DB, Alembic upgrade, preview/seed/check workbook | `python -m scripts.local_db init` / `preview` / `seed` / `check` | Đang dùng |
 | `local_postgres.py` | Bật/tắt/kiểm tra PostgreSQL native trên Linux/macOS | `python -m scripts.local_postgres start` / `status` / `stop` | Tùy chọn cho người không dùng Docker; cần extra `[local-server]` |
+| `ui_fixtures.py` | Xuất report C13 tham chiếu (QA EXPECTED, split DEV) làm mock cho frontend | `python -m scripts.ui_fixtures` hoặc `--case CA360_051` | Đang dùng; ghi vào `frontend/src/mocks/fixtures/` (Git bỏ qua) |
 
-Ba script còn lại phục vụ tải dataset, chạy PostgreSQL và setup/seed DB. Mỗi module tự viết query/mapper
+Ba script đầu phục vụ tải dataset, chạy PostgreSQL và setup/seed DB; `ui_fixtures` chỉ đọc DB để dựng giao diện. Mỗi module tự viết query/mapper
 để dựng input từ DB theo [hướng dẫn JOIN sau seed](../docs/huong_dan_trien_khai_module_sau_seed.md).
 Chưa có runner/evaluator CLI cho bước 5–7; người phụ trách viết chúng khi đã có implementation thật.
 

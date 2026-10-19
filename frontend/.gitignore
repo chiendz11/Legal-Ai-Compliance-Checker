@@ -1,0 +1,5 @@
+node_modules/
+dist/
+*.local
+# Reference C13 fixtures are exported from each dev's local DB; keep dataset content out of Git.
+src/mocks/fixtures/*.json
