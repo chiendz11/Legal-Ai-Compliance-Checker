@@ -679,7 +679,7 @@
         ],
         "summary": "List accessible cases",
         "description": "List accessible cases",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -774,7 +774,7 @@
         ],
         "summary": "Read a case",
         "description": "Read a case",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01"
@@ -868,7 +868,7 @@
         ],
         "summary": "Queue the complete machine assessment",
         "description": "Server creates run/trace IDs and immutable input/knowledge pins. No request body; frontend does not orchestrate steps 5–7. Same actor/case/idempotency key returns the original acceptance record.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01",
@@ -983,7 +983,7 @@
         ],
         "summary": "Poll machine processing progress",
         "description": "Law and citation stages may run in parallel. COMPLETED means machine outputs are ready, not human-reviewed/published. Do not fabricate percentage progress.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -1085,7 +1085,7 @@
         ],
         "summary": "Read pinned full machine results",
         "description": "Return pinned run inputs/results through step 7; no fallback to QA answers. 409 RESULT_NOT_READY until completed. Human decisions are separate review events.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01",
@@ -1468,7 +1468,7 @@
         ],
         "summary": "Build and persist a new report version",
         "description": "Build DRAFT from exact completed run and review revision. Backend gathers sections; client does not submit report_json or legal conclusions. Pin all upstream document/profile/checklist versions. Does not publish.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1580,7 +1580,7 @@
         ],
         "summary": "List report versions belonging to this run",
         "description": "List report versions belonging to this run",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1707,7 +1707,7 @@
         ],
         "summary": "Read a specific report version",
         "description": "Render profile, compliance, citations, risks, recommendations and review. This is not a raw LLM response. UI must display draft/review status and uncertainty.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1916,7 +1916,7 @@
         ],
         "summary": "Export the exact report version",
         "description": "Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"

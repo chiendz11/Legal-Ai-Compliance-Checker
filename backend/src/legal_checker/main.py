@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from legal_checker.api.dependencies import Services, build_services
+from legal_checker.api.errors import install_error_handlers
 from legal_checker.api.v1.router import router
 from legal_checker.core.config import Settings
 
@@ -16,4 +17,5 @@ def create_app(
     api = FastAPI(title="Legal AI Compliance Checker", version="0.1.0")
     api.state.services = services if services is not None else build_services(settings)
     api.include_router(router)
+    install_error_handlers(api)
     return api
