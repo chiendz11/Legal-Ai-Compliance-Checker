@@ -76,9 +76,19 @@ Retrieval vẫn cần tìm/rank evidence thật và đánh giá relevance độc
 | `GET /health` | Kiểm tra ứng dụng đang chạy |
 | `GET /api/v1/cases/{ca_id}/runs/{run_id}` | Đọc output bất biến của một lần chạy |
 | `GET /api/v1/knowledge` | Hash/schema/counts của snapshot knowledge đang dùng |
+| `GET /api/v1/cases`, `GET /api/v1/cases/{ca_id}` | Danh sách/chi tiết ca (C01) và run gần nhất |
+| `POST /api/v1/cases/{ca_id}/runs` | Xếp hàng một lần đánh giá toàn bộ (header `Idempotency-Key`) |
+| `GET …/runs/{run_id}/status`, `GET …/runs/{run_id}/results` | Tiến độ theo stage; draft bước 1–7 đã pin |
+| `GET`/`POST …/runs/{run_id}/reports` | Phiên bản C13 của run; POST dựng lại draft (cùng nội dung → cùng phiên bản) |
+| `GET /api/v1/reports/{bao_cao_id}`, `GET …/export?format=pdf\|docx` | Đọc/xuất đúng một phiên bản báo cáo |
 
 Các module bước 5–7 giao tiếp qua hàm Python/contracts nội bộ, không có POST riêng.
-API bắt đầu đánh giá toàn bộ ca vẫn cần triển khai; GET run đọc dữ liệu đã lưu.
+Run đi qua `workflows/runner.py` → `DraftAssessmentWorkflow` → `build_draft_report`, chạy trong
+API (`ASSESSMENT_QUEUE=inline`) hoặc Celery worker (`celery`). Khi chưa có module bước 1–7,
+run kết thúc FAILED với lý do `MODULE_NOT_IMPLEMENTED`; `ASSESSMENT_MODULES=reference` phát lại
+tham chiếu QA để kiểm thử tích hợp và báo cáo được gắn nhãn `REFERENCE_REPLAY`.
+Chưa có xác thực/phân quyền tenant: các route này chỉ dùng cho môi trường local.
+[Kịch bản demo](docs/demo.md).
 Input dùng contracts trong code và schema runtime tại `/openapi.json` khi chạy backend,
 cần đúng hash/case/run.
 Không có default payload dựa trên file mẫu cũ.

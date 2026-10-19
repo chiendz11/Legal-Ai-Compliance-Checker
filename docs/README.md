@@ -21,6 +21,7 @@ Bắt đầu theo thứ tự:
 | [Đọc PDF và cache local](source_storage.md) | Nhóm A đọc nguồn HTTP(S), kiểm tra SHA-256 và đưa bytes vào parser/OCR |
 | [Alembic và schema DB](database_migrations.md) | Tiếp nhận DB cũ, tạo/chạy revisions và phân biệt migration với seed |
 | [Dataset structured r2](v750_source_pdf360_r2_structured.md) | Các gói, provenance/chunking, split và giới hạn của references |
+| [Kịch bản demo](demo.md) | Chạy run toàn bộ → báo cáo → export; reference replay; Docker Compose |
 
 Dataset hiện tại: v7.5.0-source-pdf360-r2-structured / supabase-public-v1, DEV_VALIDATION 240 DEV + 60 VALIDATION. Bước 5–7 chỉ còn skeleton nội bộ, không có HTTP POST riêng. PDF/Excel/DB được lưu ngoài Git; code tải/seed và tài liệu được versioned cùng repo.
 

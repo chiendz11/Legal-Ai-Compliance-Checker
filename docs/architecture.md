@@ -24,7 +24,7 @@ backend/
 │   │   │   ├── reviews/
 │   │   │   └── reports/
 │   │   ├── workflows/              # assessment_workflow, steps_5_7, handoffs, states
-│   │   └── worker/                 # celery_app và tasks, chưa cấu hình queue
+│   │   └── worker/                 # celery_app, task chạy run và khôi phục run bị mất
 │   └── devtools/                   # Tải dataset, seed SQL và kiểm tra QA
 ├── tests/{unit,integration,contract,e2e}/
 ├── alembic.ini
@@ -110,7 +110,7 @@ Implementation cũ của bước 5–7 đã được xóa theo yêu cầu. Folde
 | Risks | C07/C08 + C09 + knowledge | C10, giữ provenance hai nhánh | `compliance_mapper.py`, `citation_mapper.py`, `aggregator.py`, `service.py` |
 | Recommendations | C10 + C05/context + knowledge | C11 chờ review | `generator.py`, `validator.py`, `service.py` |
 
-Các hàm trên và `workflows/steps_5_7.evaluate` phát sinh `NotImplementedError`. Các routes POST chạy riêng reasoning/aggregation/risks/recommendations/pipeline đã xóa. Contracts vẫn dùng để bàn giao giữa các hàm Python; API khởi chạy assessment toàn bộ chưa triển khai.
+Các hàm trên và `workflows/steps_5_7.evaluate` phát sinh `NotImplementedError`. Các routes POST chạy riêng reasoning/aggregation/risks/recommendations/pipeline đã xóa. Contracts vẫn dùng để bàn giao giữa các hàm Python; API khởi chạy assessment toàn bộ đã có (`POST /api/v1/cases/{ca_id}/runs`, nhóm D); khi chưa có module bước 1–7, run kết thúc FAILED với `MODULE_NOT_IMPLEMENTED`. Xem [demo](demo.md).
 
 Giữ nguyên contracts C01–C13, Knowledge PostgreSQL reader, Store, migrations, scripts tải dataset/seed và dữ liệu tham chiếu đã khóa phiên bản. GET knowledge/run vẫn dùng được. Dữ liệu EXPECTED trong QA là kết quả tham chiếu của phiên bản dựng dataset trước đây; không chứng minh module hiện tại đã triển khai hoặc đã pass eval.
 

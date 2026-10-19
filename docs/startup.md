@@ -35,9 +35,9 @@ Khi không chỉ định hash, reader capture source tables hiện tại vào sn
 Muốn replay snapshot cũ, export `KNOWLEDGE_SNAPSHOT_SHA256` bằng hash đã có trong DB.
 Đổi source tables không thay nội dung reader đang dùng; khởi tạo reader mới để capture thay đổi.
 
-Các POST chạy riêng bước 5–7 đã bỏ; API khởi chạy toàn bộ assessment vẫn cần triển khai.
+Các POST chạy riêng bước 5–7 đã bỏ. API khởi chạy assessment toàn bộ đã có (`POST /api/v1/cases/{ca_id}/runs`, nhóm D); khi chưa có module bước 1–7, run kết thúc FAILED với `MODULE_NOT_IMPLEMENTED`.
 GET run dùng Store; GET knowledge dùng Knowledge. Bước 5–7 cần triển khai trước khi nối luồng tính toán và lưu run.
 Factory có thể nhận `Services(knowledge, memory_store)` trong unit tests để thay writer.
 
-Các phần OCR/search/LLM/review/export/worker vẫn cần implementations riêng.
+`build_services()` cũng tạo case/run/report repositories, `AssessmentRunner` và hàng đợi (`ASSESSMENT_QUEUE=inline|celery`). Các phần OCR/search/LLM/review vẫn cần implementations riêng.
 Xem [DB local](local_database.md) và [hướng dẫn nhóm](huong_dan_trien_khai_module_sau_seed.md).

@@ -1499,7 +1499,7 @@ Các bảng không có run ID cần cách chọn nhất quán như mục 8.4.
 8. **UI:** gọi API, hiển thị progress và từng section; chọn finding mở đúng evidence
    và legal basis; hiển thị relevant/current citation status riêng và badge draft/review.
 9. **Orchestration:** nối services trong `workflows/assessment_workflow.py`; API/worker
-   dùng chung use cases. Worker/Celery hiện là skeleton, queue/retry/recovery cần code riêng.
+   dùng chung use cases. Đã có `workflows/runner.py`, Celery task, retry và khôi phục run bị mất.
 
 UI không giữ database password, không gọi cloud DB bằng service/admin key,
 không tự JOIN DB hay gọi LLM để đưa ra kết luận khác backend.
@@ -1827,7 +1827,7 @@ Repo đã tổ chức theo module: ports ở owning modules, implementations DB/
 Không cần tạo lại các folder cũ đã bỏ để thực hiện hướng dẫn này.
 
 Factory khởi tạo Knowledge, Store, LLM audit sink và source storage; GET knowledge/run dùng DB.
-API khởi chạy assessment toàn bộ chưa triển khai; không có POST chạy riêng bước 5–7.
+API khởi chạy assessment toàn bộ đã có (`POST /api/v1/cases/{ca_id}/runs`, nhóm D); khi chưa có module bước 1–7, run kết thúc FAILED với `MODULE_NOT_IMPLEMENTED`; không có POST chạy riêng bước 5–7.
 Khi nối các services upstream vào full workflow, inject reader/provider/writer rõ ràng;
 không đưa query SQL trực tiếp vào route hoặc engine để bỏ qua ranh giới module.
 

@@ -17,7 +17,7 @@ Backend nằm ở `backend/src/legal_checker/`. Contracts ở `shared/contracts/
 `DraftAssessmentWorkflow` giữ wiring/pin/checks upstream khi inject implementations; hiện dừng với `NotImplementedError` ở bước 5. Không có factory full-system mặc định hoặc đánh giá thành công. `workflows/steps_5_7.evaluate`, services và validators bước 5–7 đều là stub.
 
 Các POST chạy riêng module trong `/api/v1` đã xóa. Các module trao đổi DTO qua hàm Python;
-GET knowledge và run vẫn hoạt động. API khởi chạy assessment toàn bộ chưa triển khai.
+GET knowledge và run vẫn hoạt động. API khởi chạy assessment toàn bộ đã có (`POST /api/v1/cases/{ca_id}/runs`, nhóm D); khi chưa có module bước 1–7, run kết thúc FAILED với `MODULE_NOT_IMPLEMENTED`.
 
 Nhóm A/B/C đọc input mẫu từ DB local riêng, map đúng DTO rồi tự triển khai module; dữ liệu output seed là reference của release đã dựng trước đây, không phải output của implementation hiện tại. Chọn đúng case/run/hash, không ghi đè run tham chiếu khi thử nghiệm. Xem [query/JOIN theo nhóm](huong_dan_trien_khai_module_sau_seed.md).
 

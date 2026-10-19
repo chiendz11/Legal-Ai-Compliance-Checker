@@ -152,7 +152,7 @@ Mở Swagger tại `http://127.0.0.1:8000/docs`, health tại `http://127.0.0.1:
 Khi bắt đầu module, tự viết query và mapper để dựng input đúng contract từ dữ liệu DB.
 Chọn case/run và JOIN theo [hướng dẫn triển khai sau seed](huong_dan_trien_khai_module_sau_seed.md).
 
-Bước 5–7 hiện là skeleton nội bộ; không có POST riêng cho reasoning/aggregation/risks/recommendations/pipeline. GET knowledge và run đã lưu vẫn dùng được. API khởi chạy assessment toàn bộ và implementation các module cần được bổ sung theo thiết kế. Người phụ trách dùng tests của module khi có implementation thật.
+Bước 5–7 hiện là skeleton nội bộ; không có POST riêng cho reasoning/aggregation/risks/recommendations/pipeline. GET knowledge và run đã lưu vẫn dùng được. API khởi chạy assessment toàn bộ đã có (`POST /api/v1/cases/{ca_id}/runs`, nhóm D); khi chưa có module bước 1–7, run kết thúc FAILED với `MODULE_NOT_IMPLEMENTED`; implementation các module cần được bổ sung theo thiết kế. Người phụ trách dùng tests của module khi có implementation thật.
 
 ## 7. Kiểm tra code
 
@@ -212,6 +212,6 @@ Khi pull code có revision schema mới, cài lại dependencies nếu thay đ�
 | `No module named scripts` | Chạy lệnh từ root repo |
 | DB connection refused | Bật PostgreSQL và đối chiếu `DATABASE_URL`/port |
 | Workbook thiếu hoặc sai checksum | Chạy `scripts.dataset check`, xem [hướng dẫn dataset](dataset_download.md) |
-| Gọi POST chạy riêng bước 5–7 bị 404 | Các routes nội bộ này đã xóa; module gọi qua hàm Python, API chạy assessment toàn bộ chưa triển khai |
+| Gọi POST chạy riêng bước 5–7 bị 404 | Các routes nội bộ này đã xóa; module gọi qua hàm Python; chạy toàn bộ bằng `POST /api/v1/cases/{ca_id}/runs` |
 
 Các script và trạng thái của chúng: [scripts/README](../scripts/README.md). Khi bắt đầu module, đọc [hướng dẫn JOIN và bàn giao theo nhóm](huong_dan_trien_khai_module_sau_seed.md).
