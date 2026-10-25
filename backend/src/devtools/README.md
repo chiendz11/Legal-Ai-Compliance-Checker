@@ -10,6 +10,7 @@ Folder này giữ công cụ tải dataset đã chốt, nạp workbook vào Post
 | `qa_schema.py` | Khai báo sáu bảng QA và tên sheet | Reader/seed |
 | `qa_validation.py` | Kiểm tra manifest, split và multipart payload/checksum | Reader/seed và tests |
 | `qa_runs.py` | Đổi ID cho input của run thử nghiệm mới | Tests persistence và chuẩn bị input cho run thử nghiệm |
+| `upstream_fixtures.py` | Đọc C02/chunks/C03 và Context tham chiếu từ QA để dev bước 3–4 khi chưa có output bước 1–2 | Dev/eval nhóm B |
 
 Đã bỏ các công cụ sinh PDF/synthetic scenarios, chia split và rebuild workbook/reference của release trước. Dataset, schema SQL và dữ liệu seed được giữ nguyên. Team tải gói DEV_VALIDATION bằng script dataset; không cần dựng lại dataset để bắt đầu dev.
 

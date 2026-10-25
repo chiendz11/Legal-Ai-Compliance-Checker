@@ -1,6 +1,7 @@
 """SQL inputs and seeded evidence for Retrieval module development."""
 
 from legal_checker.core.postgres import connect_postgres
+from legal_checker.modules.retrieval.fact_evidence import FactEvidence
 
 
 class RetrievalDatasetRepository:
@@ -46,6 +47,37 @@ class RetrievalDatasetRepository:
                 "chunks": chunks,
                 "criteria": criteria,
             }
+
+    def section_paths(self, hop_dong_id: str) -> dict[str, str]:
+        """doan_id → section_path for one contract; C02 Chunk DTOs do not carry the path."""
+        with connect_postgres(self.database_url) as connection:
+            rows = connection.execute(
+                "SELECT doan_id, section_path FROM runtime.doan_hop_dong WHERE hop_dong_id=%s",
+                (hop_dong_id,),
+            ).fetchall()
+        return {row["doan_id"]: row["section_path"] for row in rows if row["section_path"]}
+
+    def fact_evidence(self, hop_dong_id: str) -> list[FactEvidence]:
+        """Extracted C02 fields (not profile.* aliases) with their evidence chunks."""
+        with connect_postgres(self.database_url) as connection:
+            rows = connection.execute(
+                """
+                SELECT tx.ten_truong, b.doan_id
+                FROM runtime.trich_xuat_truong tx
+                JOIN runtime.bang_chung_truong b USING (trich_xuat_id)
+                JOIN runtime.doan_hop_dong d
+                  ON d.doan_id=b.doan_id AND d.hop_dong_id=tx.hop_dong_id
+                WHERE tx.hop_dong_id=%s AND tx.ten_truong NOT LIKE 'profile.%%'
+                ORDER BY tx.trich_xuat_id, b.bang_chung_id
+            """,
+                (hop_dong_id,),
+            ).fetchall()
+        chunks: dict[str, list[str]] = {}
+        for row in rows:
+            ids = chunks.setdefault(row["ten_truong"], [])
+            if row["doan_id"] not in ids:
+                ids.append(row["doan_id"])
+        return [FactEvidence(name, tuple(ids)) for name, ids in chunks.items()]
 
     def load_seeded_evidence(self, ca_id: str, lan_chay_id: str) -> list[dict]:
         """Read a single run; never mix another case's chunks or retrieval run."""
