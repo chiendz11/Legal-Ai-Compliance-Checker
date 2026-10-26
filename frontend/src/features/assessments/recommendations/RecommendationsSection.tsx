@@ -1,5 +1,6 @@
 import type { Recommendation } from "../../../shared/api/client";
 import { Empty, Ids, Section, StatusBadge } from "../../../shared/components/ui";
+import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 
 /** Verification requests are kept apart from corrective actions for established findings. */
@@ -52,7 +53,7 @@ function List({ items, empty }: { items: Recommendation[]; empty: string }) {
             <div>
               <dt>Căn cứ</dt>
               <dd>
-                <Ids ids={r.legal_basis_ids} />
+                <LegalBasis ids={r.legal_basis_ids} />
               </dd>
             </div>
             <div>

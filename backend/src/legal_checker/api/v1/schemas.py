@@ -55,6 +55,36 @@ class RunProgress(Model):
     error: ApiErrorDetail | None = None
 
 
+class LegalDocumentRef(Model):
+    van_ban_id: str
+    so_hieu: str | None = None
+    ten_van_ban: str | None = None
+
+
+class LegalBasisItem(Model):
+    """Display record for one cited ID; verification flags are shown, never upgraded."""
+
+    id: str
+    kind: Literal["DOCUMENT", "ARTICLE", "REQUIREMENT_VERSION", "UNKNOWN"]
+    title: str
+    number: str | None = None
+    excerpt: str | None = None
+    requirement_id: str | None = None
+    article_id: str | None = None
+    effective_from: str | None = None
+    effective_to: str | None = None
+    status: str | None = None
+    pages: list[int | None] | None = None
+    url: str | None = None
+    verification: str | None = None
+    document: LegalDocumentRef | None = None
+
+
+class LegalBasisList(Model):
+    knowledge_snapshot_sha256: str
+    items: list[LegalBasisItem]
+
+
 class ReportRecord(Model):
     run_id: str = Field(min_length=1)
     review_revision: str = Field(min_length=1)

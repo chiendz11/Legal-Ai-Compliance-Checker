@@ -1,5 +1,6 @@
 import type { Recommendation, ReportContent, RiskResult } from "../../../shared/api/client";
-import { Empty, Ids, Section, StatusBadge } from "../../../shared/components/ui";
+import { Empty, Section, StatusBadge } from "../../../shared/components/ui";
+import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { criterionText, riskTitle, useReportIndex } from "../../reports/reportIndex";
 
@@ -117,7 +118,7 @@ function RiskCard({
         <div>
           <dt>Căn cứ</dt>
           <dd>
-            <Ids ids={risk.legal_basis_ids} />
+            <LegalBasis ids={risk.legal_basis_ids} />
           </dd>
         </div>
         <div>

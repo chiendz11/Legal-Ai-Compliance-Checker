@@ -9,6 +9,7 @@ import {
   Value,
 } from "../../../shared/components/ui";
 import { useReportIndex } from "../../reports/reportIndex";
+import { useOpenEvidence } from "../evidence/EvidenceViewer";
 
 const PROFILE_LABELS: Record<string, string> = {
   loai_hop_dong_id: "Loại hợp đồng",
@@ -42,6 +43,7 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
   const index = useReportIndex();
   const fields = Object.entries(profile.profile);
   const unknownCount = fields.filter(([, v]) => v === null).length;
+  const openEvidence = useOpenEvidence();
   return (
     <Section
       title="Hồ sơ hợp đồng"
@@ -151,6 +153,17 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
                   chunkId={e.doan_id}
                   start={e.ky_tu_bat_dau}
                   end={e.ky_tu_ket_thuc}
+                  onOpen={
+                    openEvidence
+                      ? () =>
+                          openEvidence({
+                            doanId: e.doan_id,
+                            start: e.ky_tu_bat_dau,
+                            end: e.ky_tu_ket_thuc,
+                            quote: e.trich_dan,
+                          })
+                      : undefined
+                  }
                 />
               ) : (
                 <p key={id} className="uncertain">

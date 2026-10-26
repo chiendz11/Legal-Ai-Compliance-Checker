@@ -334,6 +334,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/{bao_cao_id}/legal-basis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Describe the legal basis a report cites
+         * @description Names, numbers, effective ranges and verification flags for every legal-basis ID in the report, read from the knowledge snapshot pinned in audit.context. Unknown IDs are returned as UNKNOWN. Verification flags are shown as stored, never upgraded.
+         */
+        get: operations["getReportLegalBasis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2010,6 +2030,95 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * LegalBasisItem
+         * @description Display record for one cited ID; verification flags are shown, never upgraded.
+         */
+        Output_LegalBasisItem: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "DOCUMENT" | "ARTICLE" | "REQUIREMENT_VERSION" | "UNKNOWN";
+            /** Title */
+            title: string;
+            /**
+             * Number
+             * @default null
+             */
+            number: string | null;
+            /**
+             * Excerpt
+             * @default null
+             */
+            excerpt: string | null;
+            /**
+             * Requirement Id
+             * @default null
+             */
+            requirement_id: string | null;
+            /**
+             * Article Id
+             * @default null
+             */
+            article_id: string | null;
+            /**
+             * Effective From
+             * @default null
+             */
+            effective_from: string | null;
+            /**
+             * Effective To
+             * @default null
+             */
+            effective_to: string | null;
+            /**
+             * Status
+             * @default null
+             */
+            status: string | null;
+            /**
+             * Pages
+             * @default null
+             */
+            pages: (number | null)[] | null;
+            /**
+             * Url
+             * @default null
+             */
+            url: string | null;
+            /**
+             * Verification
+             * @default null
+             */
+            verification: string | null;
+            /** @default null */
+            document: components["schemas"]["Output_LegalDocumentRef"] | null;
+        };
+        /** LegalDocumentRef */
+        Output_LegalDocumentRef: {
+            /** Van Ban Id */
+            van_ban_id: string;
+            /**
+             * So Hieu
+             * @default null
+             */
+            so_hieu: string | null;
+            /**
+             * Ten Van Ban
+             * @default null
+             */
+            ten_van_ban: string | null;
+        };
+        /** LegalBasisList */
+        Output_LegalBasisList: {
+            /** Knowledge Snapshot Sha256 */
+            knowledge_snapshot_sha256: string;
+            /** Items */
+            items: components["schemas"]["Output_LegalBasisItem"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -3323,6 +3432,82 @@ export interface operations {
                 };
             };
             /** @description State/revision conflict or result not ready */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+        };
+    };
+    getReportLegalBasis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bao_cao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Output_LegalBasisList"];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description No permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Object not found in the caller's permitted scope */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Pinned knowledge snapshot is not available */
             409: {
                 headers: {
                     [name: string]: unknown;

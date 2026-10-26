@@ -348,6 +348,45 @@ def test_case_listing_pages_registered_cases(env):
     assert env.client.get("/api/v1/cases", params={"page_size": 101}).status_code == 422
 
 
+def test_legal_basis_is_described_from_the_pinned_snapshot(env):
+    run_id = start(env.client)["context"]["run_id"]
+    report = env.client.get(f"/api/v1/cases/{CASE}/runs/{run_id}/reports").json()["items"][0][
+        "report"
+    ]
+    response = env.client.get(f"/api/v1/reports/{report['bao_cao_id']}/legal-basis")
+    assert response.status_code == 200
+    body = response.json()
+    pinned = report["report_json"]["audit"]["context"]["knowledge_snapshot_sha256"]
+    assert body["knowledge_snapshot_sha256"] == pinned
+    items = {item["id"]: item for item in body["items"]}
+    version = items["PV_GYC005"]
+    assert version["kind"] == "REQUIREMENT_VERSION" and version["title"]
+    assert env.client.get("/api/v1/reports/NOPE/legal-basis").status_code == 404
+
+
+def test_unknown_legal_ids_stay_visible_and_snapshot_must_match(env):
+    from legal_checker.modules.reports import legal_basis
+
+    knowledge = env.runner.knowledge
+    assert legal_basis.describe(knowledge, "NOT_A_SOURCE") == {
+        "id": "NOT_A_SOURCE",
+        "kind": "UNKNOWN",
+        "title": "NOT_A_SOURCE",
+    }
+    run_id = start(env.client)["context"]["run_id"]
+    stored = env.reports.list_for_run(CASE, run_id, offset=0, limit=1)[0][0]
+    content = stored.report.report_json
+    audit = {
+        **content.audit,
+        "context": {**content.audit["context"], "knowledge_snapshot_sha256": "b" * 64},
+    }
+    foreign = stored.report.model_copy(
+        update={"report_json": content.model_copy(update={"audit": audit})}
+    )
+    with pytest.raises(ValueError, match="pinned"):
+        legal_basis.legal_basis_for(foreign, knowledge)
+
+
 def test_export_returns_the_exact_version_and_records_it(env):
     accepted = start(env.client)
     run_id = accepted["context"]["run_id"]

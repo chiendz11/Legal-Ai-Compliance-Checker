@@ -7,6 +7,7 @@ import { Empty, Fields, Section, StatusBadge, Value } from "../../../shared/comp
 import { displayText } from "../../../shared/text";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { riskTitle, useReportIndex } from "../../reports/reportIndex";
+import { useOpenEvidence } from "../evidence/EvidenceViewer";
 
 export function CitationsSection({
   citations,
@@ -53,9 +54,28 @@ function CitationCard({
   const article = [n.dieu && `Điều ${n.dieu}`, n.khoan && `khoản ${n.khoan}`]
     .filter(Boolean)
     .join(" ");
-  const pages = citation.evidence
-    .map((p) => (p.page_start === p.page_end ? `tr. ${p.page_start}` : `tr. ${p.page_start}–${p.page_end}`))
-    .join(", ");
+  const openEvidence = useOpenEvidence();
+  const pageText = (p: CitationExtraction["evidence"][number]) =>
+    p.page_start === p.page_end ? `tr. ${p.page_start}` : `tr. ${p.page_start}–${p.page_end}`;
+  const pages = citation.evidence.length
+    ? citation.evidence.map((p, i) => (
+        <span key={`${p.doan_id}-${i}`}>
+          {i > 0 && ", "}
+          {openEvidence ? (
+            <button
+              type="button"
+              className="link"
+              title={`Mở đoạn ${p.doan_id}`}
+              onClick={() => openEvidence({ doanId: p.doan_id })}
+            >
+              {pageText(p)}
+            </button>
+          ) : (
+            pageText(p)
+          )}
+        </span>
+      ))
+    : "không rõ trang";
   return (
     <article className="card-flat" id={focusDomId(citation.vien_dan_id)}>
       <header className="criterion-head">
@@ -69,7 +89,7 @@ function CitationCard({
       </header>
       <blockquote className="raw">{displayText(citation.raw_text)}</blockquote>
       <p className="small muted">
-        <code>{citation.vien_dan_id}</code> · {pages || "không rõ trang"} ·{" "}
+        <code>{citation.vien_dan_id}</code> · {pages} ·{" "}
         <StatusBadge kind="extraction" code={citation.extraction.status} />
         {citation.extraction.confidence != null &&
           ` độ tin cậy ${Math.round(citation.extraction.confidence * 100)}%`}

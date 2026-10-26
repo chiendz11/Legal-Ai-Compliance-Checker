@@ -7,6 +7,7 @@ export const api = createClient<paths>({ baseUrl: "" });
 
 type Schemas = components["schemas"];
 export type CaseRecord = Schemas["Output_CaseRecord"];
+export type AssessmentCase = Schemas["Output_AssessmentCase"];
 export type ReportRecord = Schemas["Output_ReportRecord"];
 export type FinalReport = Schemas["Output_FinalReport"];
 export type ReportContent = Schemas["Output_ReportContent"];
@@ -21,6 +22,9 @@ export type CitationExtraction = Schemas["Output_CitationExtraction"];
 export type CitationValidation = Schemas["Output_CitationValidation"];
 export type RiskResult = Schemas["Output_RiskResult"];
 export type Recommendation = Schemas["Output_Recommendation"];
+export type LegalBasisItem = Schemas["Output_LegalBasisItem"];
+export type AssessmentDraft = Schemas["Output_AssessmentDraft"];
+export type Chunk = Schemas["Output_Chunk"];
 export type Page<T> = { items: T[]; page: number; page_size: number; total: number };
 
 export class ApiError extends Error {

@@ -92,12 +92,14 @@ export function Quote({
   start,
   end,
   pages,
+  onOpen,
 }: {
   text: string;
   chunkId: string;
   start?: number;
   end?: number;
   pages?: string;
+  onOpen?: () => void;
 }) {
   return (
     <figure className="quote">
@@ -110,6 +112,11 @@ export function Quote({
           </span>
         )}
         {pages && <span>{pages}</span>}
+        {onOpen && (
+          <button type="button" className="link" onClick={onOpen}>
+            Xem trong hợp đồng
+          </button>
+        )}
       </figcaption>
     </figure>
   );

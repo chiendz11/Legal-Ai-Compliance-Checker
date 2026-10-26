@@ -2032,6 +2032,110 @@
           }
         ]
       }
+    },
+    "/api/v1/reports/{bao_cao_id}/legal-basis": {
+      "get": {
+        "operationId": "getReportLegalBasis",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Describe the legal basis a report cites",
+        "description": "Names, numbers, effective ranges and verification flags for every legal-basis ID in the report, read from the knowledge snapshot pinned in audit.context. Unknown IDs are returned as UNKNOWN. Verification flags are shown as stored, never upgraded.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_LegalBasisList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Pinned knowledge snapshot is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bao_cao_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -6042,6 +6146,238 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Output_LegalBasisItem": {
+        "additionalProperties": false,
+        "description": "Display record for one cited ID; verification flags are shown, never upgraded.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "DOCUMENT",
+              "ARTICLE",
+              "REQUIREMENT_VERSION",
+              "UNKNOWN"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Number"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Excerpt"
+          },
+          "requirement_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requirement Id"
+          },
+          "article_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Article Id"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effective To"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pages"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Verification"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Output_LegalDocumentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title"
+        ],
+        "title": "LegalBasisItem",
+        "type": "object"
+      },
+      "Output_LegalDocumentRef": {
+        "additionalProperties": false,
+        "properties": {
+          "van_ban_id": {
+            "title": "Van Ban Id",
+            "type": "string"
+          },
+          "so_hieu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "So Hieu"
+          },
+          "ten_van_ban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ten Van Ban"
+          }
+        },
+        "required": [
+          "van_ban_id"
+        ],
+        "title": "LegalDocumentRef",
+        "type": "object"
+      },
+      "Output_LegalBasisList": {
+        "additionalProperties": false,
+        "properties": {
+          "knowledge_snapshot_sha256": {
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_LegalBasisItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "knowledge_snapshot_sha256",
+          "items"
+        ],
+        "title": "LegalBasisList",
+        "type": "object"
       }
     }
   }

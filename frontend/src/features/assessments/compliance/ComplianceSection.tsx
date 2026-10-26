@@ -11,7 +11,9 @@ import {
   Section,
   StatusBadge,
 } from "../../../shared/components/ui";
+import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
+import { useOpenEvidence } from "../evidence/EvidenceViewer";
 import {
   criterionText,
   requirementText,
@@ -112,7 +114,7 @@ function RequirementCard({ requirement }: { requirement: RequirementResult }) {
           <div>
             <dt>Căn cứ</dt>
             <dd>
-              <Ids
+              <LegalBasis
                 ids={[version?.source_van_ban_id, version?.dieu_khoan_id].filter(
                   (x): x is string => typeof x === "string",
                 )}
@@ -144,6 +146,7 @@ function RequirementCard({ requirement }: { requirement: RequirementResult }) {
 function CriterionCard({ criterion }: { criterion: CriterionResult }) {
   const index = useReportIndex();
   const { focus, go } = useReportNav();
+  const openEvidence = useOpenEvidence();
   const risks = index.risksByCriterion.get(criterion.ket_qua_id) ?? [];
   const snapshot = (criterion.tieu_chi_snapshot_json as { criterion?: Record<string, unknown> })
     .criterion;
@@ -188,6 +191,17 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
             chunkId={e.doan_id}
             start={e.ky_tu_bat_dau}
             end={e.ky_tu_ket_thuc}
+            onOpen={
+              openEvidence
+                ? () =>
+                    openEvidence({
+                      doanId: e.doan_id,
+                      start: e.ky_tu_bat_dau,
+                      end: e.ky_tu_ket_thuc,
+                      quote: e.trich_dan,
+                    })
+                : undefined
+            }
           />
         ))
       ) : (
@@ -203,7 +217,7 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
         <div>
           <dt>Căn cứ hệ thống</dt>
           <dd>
-            <Ids ids={criterion.legal_basis_ids} />
+            <LegalBasis ids={criterion.legal_basis_ids} />
             {basisText && <span className="small"> {basisText}</span>}{" "}
             {basisUrl && (
               <a href={basisUrl} target="_blank" rel="noreferrer">

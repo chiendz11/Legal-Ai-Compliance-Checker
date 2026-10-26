@@ -61,6 +61,37 @@ export function useRunReports(caId: string, runId: string, enabled = true) {
   });
 }
 
+/** Names for the report's legal-basis IDs, from the knowledge snapshot the report pinned. */
+export function useLegalBasis(baoCaoId: string) {
+  return useQuery({
+    queryKey: ["legal-basis", baoCaoId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/reports/{bao_cao_id}/legal-basis", {
+          params: { path: { bao_cao_id: baoCaoId } },
+        }),
+      ),
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
+/** Pinned run inputs/outputs (chunks for the evidence viewer); fetched only when needed. */
+export function useRunResults(caId: string, runId: string, enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: ["run-results", caId, runId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/cases/{ca_id}/runs/{run_id}/results", {
+          params: { path: { ca_id: caId, run_id: runId } },
+        }),
+      ),
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
 export function useReport(baoCaoId: string) {
   return useQuery({
     queryKey: ["report", baoCaoId],

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import timedelta
+from functools import lru_cache
 
 from fastapi import Request
 
@@ -100,3 +101,15 @@ def build_services(settings: Settings) -> Services:
 
 def get_services(request: Request) -> Services:
     return request.app.state.services
+
+
+@lru_cache(maxsize=4)
+def _stored_knowledge(database_url: str, sha256: str) -> KnowledgeSnapshot:
+    return Knowledge(database_url, sha256)
+
+
+def knowledge_snapshot(services: Services, sha256: str) -> KnowledgeSnapshot:
+    """The exact snapshot a run/report pinned; the current one when it matches."""
+    if services.knowledge.sha256 == sha256:
+        return services.knowledge
+    return _stored_knowledge(services.settings.database_url, sha256)

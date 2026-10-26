@@ -2,16 +2,18 @@ import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { FinalReport, ReportRecord } from "../../shared/api/client";
-import { useReport } from "../../shared/api/queries";
+import { useLegalBasis, useReport } from "../../shared/api/queries";
 import { LoadState, Notice, StatusBadge } from "../../shared/components/ui";
 import { mockEnabled } from "../../shared/env";
 import { CitationsSection } from "../assessments/citations/CitationsSection";
 import { ChecklistSection } from "../assessments/checklist/ChecklistSection";
 import { ComplianceSection } from "../assessments/compliance/ComplianceSection";
+import { EvidenceProvider } from "../assessments/evidence/EvidenceViewer";
 import { ProfileSection } from "../assessments/profile/ProfileSection";
 import { RecommendationsSection } from "../assessments/recommendations/RecommendationsSection";
 import { RisksSection } from "../assessments/risks/RisksSection";
 import { AuditSection } from "./AuditSection";
+import { LegalBasisContext } from "./legalBasis";
 import { focusDomId, TABS, useReportNav } from "./nav";
 import { buildIndex, ReportIndexContext } from "./reportIndex";
 import { SummaryTiles } from "./SummaryTiles";
@@ -27,6 +29,11 @@ function ReportView({ record }: { record: ReportRecord }) {
   const report = record.report;
   const content = report.report_json;
   const index = useMemo(() => buildIndex(content), [content]);
+  const legalBasis = useLegalBasis(report.bao_cao_id);
+  const basisById = useMemo(
+    () => new Map((legalBasis.data?.items ?? []).map((item) => [item.id, item])),
+    [legalBasis.data],
+  );
   const { tab, focus } = useReportNav();
 
   useEffect(() => {
@@ -40,6 +47,21 @@ function ReportView({ record }: { record: ReportRecord }) {
 
   return (
     <ReportIndexContext.Provider value={index}>
+      <LegalBasisContext.Provider value={basisById}>
+        <EvidenceProvider caseInfo={content.case} runId={record.run_id}>
+          <ReportBody record={record} />
+        </EvidenceProvider>
+      </LegalBasisContext.Provider>
+    </ReportIndexContext.Provider>
+  );
+}
+
+function ReportBody({ record }: { record: ReportRecord }) {
+  const report = record.report;
+  const content = report.report_json;
+  const { tab } = useReportNav();
+  return (
+    <>
       <ReportHeader record={record} />
       <ReportBanners report={report} />
       <SummaryTiles content={content} />
@@ -62,7 +84,7 @@ function ReportView({ record }: { record: ReportRecord }) {
         )}
         {tab === "audit" && <AuditSection record={record} />}
       </div>
-    </ReportIndexContext.Provider>
+    </>
   );
 }
 
