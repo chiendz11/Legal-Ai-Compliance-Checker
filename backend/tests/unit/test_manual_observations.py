@@ -4,7 +4,6 @@ from datetime import date
 from types import SimpleNamespace
 
 import pytest
-
 from legal_checker.modules.compliance.criterion_reasoner import reason
 from legal_checker.modules.compliance.demo_c07 import build_dev_request
 from legal_checker.modules.compliance.manual_observations import build_reviewed_observation

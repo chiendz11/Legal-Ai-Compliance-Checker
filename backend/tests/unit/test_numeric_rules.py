@@ -4,7 +4,6 @@ from copy import deepcopy
 from decimal import Decimal
 
 import pytest
-
 from legal_checker.modules.compliance.numeric_rules import (
     NumericInputError,
     evaluate_numeric,

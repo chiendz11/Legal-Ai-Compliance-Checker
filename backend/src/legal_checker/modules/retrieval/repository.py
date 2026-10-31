@@ -10,11 +10,13 @@ class RetrievalDatasetRepository:
     def load_input_rows(self, ca_id: str) -> dict:
         """C05 source rows and this contract's chunks. DTO mapping remains explicit."""
         with connect_postgres(self.database_url) as connection:
+            # Ca đánh giá
             case = connection.execute(
                 "SELECT * FROM runtime.ca_danh_gia WHERE ca_id=%s", (ca_id,)
             ).fetchone()
             if case is None:
                 raise KeyError(f"Unknown assessment case {ca_id}")
+            # yêu cầu áp dụng nối với phiên bản yêu cầu (nếu có)
             requirements = connection.execute(
                 """
                 SELECT a.*, to_jsonb(v) AS requirement_version
@@ -24,6 +26,7 @@ class RetrievalDatasetRepository:
             """,
                 (ca_id,),
             ).fetchall()
+            # Các đoạn hợp đồng của ca đánh giá
             chunks = connection.execute(
                 """
                 SELECT * FROM runtime.doan_hop_dong
@@ -31,6 +34,7 @@ class RetrievalDatasetRepository:
             """,
                 (case["hop_dong_id"],),
             ).fetchall()
+            # tiêu chí đánh giá áp dụng cho các yêu cầu áp dụng của ca đánh giá
             criteria = connection.execute(
                 """
                 SELECT a.yeu_cau_ca_id, c.*
@@ -50,6 +54,7 @@ class RetrievalDatasetRepository:
     def load_seeded_evidence(self, ca_id: str, lan_chay_id: str) -> list[dict]:
         """Read a single run; never mix another case's chunks or retrieval run."""
         with connect_postgres(self.database_url) as connection:
+            # Lấy C06 theo case/run cùng nội dung và vị trí đoạn của đúng hợp đồng cho C07.
             return connection.execute(
                 """
                 SELECT r.*, d.noi_dung, d.hop_dong_id, d.section_path,

@@ -4,9 +4,6 @@ import json
 from copy import deepcopy
 
 import pytest
-from test_c07_findings import register_external
-from test_criterion_reasoner import reasoning_case as reasoning_case
-
 from legal_checker.modules.compliance.criterion_reasoner import reason
 from legal_checker.modules.compliance.llm_observations import (
     INSTRUCTIONS,
@@ -21,6 +18,8 @@ from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.document_intelligence import ContractProfile, ProfileFields
 from legal_checker.shared.contracts.reasoning import ReasoningRequest
 from legal_checker.shared.llm.types import LlmClientError, LlmResponse
+from test_c07_findings import register_external
+from test_criterion_reasoner import reasoning_case as reasoning_case
 
 
 def semantic(data, **changes):

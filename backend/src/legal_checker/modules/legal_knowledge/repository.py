@@ -81,6 +81,8 @@ class Knowledge:
                 }
                 if not tables["tieu_chi_danh_gia"]:
                     raise ValueError("Knowledge is empty. Seed the workbook into PostgreSQL first")
+                for table_name, primary_key in TABLE_KEYS.items():
+                    tables[table_name].sort(key=lambda row, pk=primary_key: row[pk])
                 snapshot = json.loads(canonical({"schema_version": "v7.4.9", "tables": tables}))
                 sha = hashlib.sha256(canonical(snapshot).encode()).hexdigest()
                 # Persist the captured content in a fresh READ COMMITTED transaction.

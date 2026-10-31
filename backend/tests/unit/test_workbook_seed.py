@@ -8,6 +8,7 @@ from importlib.resources import files
 import pytest
 from devtools.database_schema import BY_NAME, FOREIGN_KEYS, TABLES
 from devtools.database_seed import SeedError, convert_cell, read_workbook
+from legal_checker.migrations.manager import sql_resource_checksum
 from openpyxl import Workbook
 from openpyxl.utils.datetime import WINDOWS_EPOCH
 
@@ -23,13 +24,11 @@ def make_workbook(path):
 
 
 def test_initial_sql_revisions_are_packaged_with_expected_checksums():
-    import hashlib
-
     root = files("legal_checker.migrations")
     baselines = json.loads(root.joinpath("legacy_baselines.json").read_text())
     for entry in baselines.values():
         assert (
-            hashlib.sha256(root.joinpath("sql", entry["sql_file"]).read_bytes()).hexdigest()
+            sql_resource_checksum(root.joinpath("sql", entry["sql_file"]).read_bytes())
             == entry["sql_sha256"]
         )
     assert len(TABLES) == 50

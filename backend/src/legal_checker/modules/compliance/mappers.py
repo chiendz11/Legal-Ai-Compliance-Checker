@@ -4,14 +4,11 @@ from legal_checker.shared.contracts.document_intelligence import Chunk
 from legal_checker.shared.contracts.retrieval import RetrievalEvidence
 from legal_checker.shared.contracts.temporal import ApplicableRequirement
 
-#runtime.yeu_cau_ap_dung
+
+# runtime.yeu_cau_ap_dung
 def map_requirement(row):
     # Chỉ lấy những cột DTO nhận.
-    data = {
-        name: row[name]
-        for name in ApplicableRequirement.model_fields
-        if name != "reason"
-    }
+    data = {name: row[name] for name in ApplicableRequirement.model_fields if name != "reason"}
 
     # SQL dùng ly_do, DTO dùng reason dạng dictionary.
     raw_reason = row["ly_do"]
@@ -30,7 +27,7 @@ def map_requirement(row):
     return ApplicableRequirement.model_validate(data)
 
 
-#runtime.doan_hop_dong
+# runtime.doan_hop_dong
 def map_chunk(row):
     return Chunk(
         doan_id=row["doan_id"],
@@ -41,13 +38,9 @@ def map_chunk(row):
     )
 
 
-#runtime.ket_qua_truy_xuat
+# runtime.ket_qua_truy_xuat
 def map_retrieval(row):
-    data = {
-        name: row[name]
-        for name in RetrievalEvidence.model_fields
-        if name != "scores"
-    }
+    data = {name: row[name] for name in RetrievalEvidence.model_fields if name != "scores"}
 
     # Ba cột điểm trong DB được gom vào một dictionary.
     data["scores"] = {

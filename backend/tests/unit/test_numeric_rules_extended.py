@@ -3,7 +3,6 @@
 from copy import deepcopy
 
 import pytest
-
 from legal_checker.modules.compliance.numeric_rules import (
     NumericInputError,
     evaluate_numeric,

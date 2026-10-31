@@ -10,10 +10,16 @@ Knowledge, runtime và snapshot lịch sử nằm trong DB; repo không chứa b
 - `api/dependencies.py`: tạo Knowledge PostgreSQL + Store PostgreSQL.
 - `workflows/`: điều phối và kiểm tra các điểm bàn giao.
 
-Bước 5–7 hiện **chỉ còn skeleton**; các entrypoint phát sinh `NotImplementedError`.
-Các route HTTP chạy riêng bước 5–7 đã bỏ. Nhóm C tự triển khai C07/C08/C10/C11;
-contracts, DB, dữ liệu seed tham chiếu và chức năng đọc run vẫn được giữ.
-Bước 1–4, review, export/UI và worker cũng cần implementations thật.
+Luồng C07 có provider tạo Observation cho checklist, client OpenAI tùy chọn, bốn findings,
+grounding và 12 numeric schema có allowlist. Runner mặc định offline, không phát sinh phí API;
+xem [cách chạy và giới hạn](backend/src/legal_checker/modules/compliance/README.md).
+C07 → C08 → C10 → C11 đã có engines thuần, workflow/DI và runner offline/replay.
+C10 giữ hai nhánh compliance/citation độc lập; C11 dùng template đã pin và luôn chờ review.
+Runner hỗ trợ save/read/export với PostgreSQL, kiểm tra đúng case/run, snapshots,
+normalized rows và lineage. `--read-run` đọc output đã lưu, không chạy lại engines.
+Xem [bàn giao nhóm C](docs/group_c_handoff.md) và [hướng dẫn chạy](backend/src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57).
+Các route HTTP chạy riêng bước 5–7 đã bỏ. Bước 1–4, C12 review, API khởi chạy toàn bộ
+assessment, report export/UI và worker vẫn cần implementations thật.
 
 ## Bắt đầu
 
@@ -96,7 +102,13 @@ trong `runtime.assessment_runs`, pins trong `assessment_case_pins`, và DTO/run 
 trong `assessment_output_lineage`. Một transaction; cùng input/case/run trả output đã lưu,
 input khác bị Store từ chối bằng ConflictError. IDs/outputs đã dùng không được ghi đè bằng nội dung khác.
 Nguồn chứng từ ngoài/mốc DI phải được đăng ký trước; pipeline không giả tạo PDF/LLM log.
-API bước 5–7 hiện chưa triển khai nghiệp vụ; authentication/tenant authorization cũng cần triển khai.
+Nghiệp vụ bước 5–7 được gọi qua hàm Python hoặc runner; API khởi chạy assessment toàn bộ
+và authentication/tenant authorization vẫn cần triển khai.
+
+Store đọc đúng cặp case/run trong snapshot lịch sử và kiểm tra cả DTO checksum, case pin,
+knowledge đã pin, normalized rows và output lineage. Dữ liệu legacy thiếu provenance hoặc
+lineage không được ghép bằng “run mới nhất” hay thay bằng QA EXPECTED. Nhóm D đọc các
+outputs này để dựng báo cáo; không chạy lại reasoning/risk/recommendation.
 
 ## Kiểm tra
 
@@ -134,7 +146,8 @@ tính hợp lệ và đối chiếu với models, không tự ghi đè đặc t�
 - [Khởi tạo dependencies](docs/startup.md)
 - [Ghép module](docs/module_integration.md)
 - [Contracts nghiệp vụ](docs/data_contracts_v7_3_2.md), [schemas module](docs/module_contracts.schema.json)
-- [Kiến trúc](docs/architecture.md), [trạng thái skeleton bước 5–7](docs/architecture.md#trạng-thái-skeleton-bước-57)
+- [Kiến trúc](docs/architecture.md), [trạng thái bước 5–7](docs/architecture.md#trạng-thái-triển-khai-bước-57)
+- [Bàn giao nhóm C và cách nhóm D đọc đúng run](docs/group_c_handoff.md)
 
 Ruleset `main`: PR bắt buộc, 0 approval, CI thành công và up-to-date, resolve discussions,
 chỉ squash, chặn xóa/force push, không bypass.

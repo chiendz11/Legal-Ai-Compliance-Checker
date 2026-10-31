@@ -114,7 +114,8 @@ def run_assessment(
     expected = {
         criterion["tieu_chi_id"]
         for requirement in request.payload.requirements
-        if requirement.version_status == "RESOLVED" and requirement.requirement_version_id is not None
+        if requirement.version_status == "RESOLVED"
+        and requirement.requirement_version_id is not None
         for criterion in knowledge.criteria_for(requirement.requirement_version_id)
     }
     observation_ids = [item.tieu_chi_id for item in batch.observations]

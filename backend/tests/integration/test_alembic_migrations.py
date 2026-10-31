@@ -24,7 +24,7 @@ from legal_checker.migrations.schema_state import structure_fingerprints
 from sqlalchemy import text
 
 ROOT = files("legal_checker.migrations")
-BASELINES = json.loads(ROOT.joinpath("legacy_baselines.json").read_text())
+BASELINES = json.loads(ROOT.joinpath("legacy_baselines.json").read_text(encoding="utf-8"))
 
 
 def legacy_database(database_url, version=3):
@@ -39,7 +39,7 @@ def legacy_database(database_url, version=3):
         """)
         for number in range(1, version + 1):
             entry = BASELINES[str(number)]
-            connection.execute(ROOT.joinpath("sql", entry["sql_file"]).read_text())
+            connection.execute(ROOT.joinpath("sql", entry["sql_file"]).read_text(encoding="utf-8"))
             if number == 1:
                 connection.execute("""
                     CREATE TABLE dev_meta.seed_imports (
@@ -118,6 +118,10 @@ def test_adopt_legacy_prefix_preserves_seeded_rows_and_history(empty_database_ur
         ("DELETE FROM dev_meta.schema_migrations WHERE version=1", "incomplete"),
         ("ALTER TABLE runtime.hop_dong ADD COLUMN untracked TEXT", "runtime.hop_dong"),
         (
+            "ALTER TABLE knowledge.knowledge_snapshots ALTER COLUMN content DROP NOT NULL",
+            "knowledge.knowledge_snapshots",
+        ),
+        (
             "ALTER TABLE runtime.hop_dong ALTER COLUMN hop_dong_id TYPE varchar(100)",
             "runtime.hop_dong",
         ),
@@ -146,6 +150,38 @@ def test_unversioned_existing_schema_is_not_blindly_stamped(empty_database_url):
     with pytest.raises(MigrationAdoptionError, match="unversioned"):
         upgrade_database(empty_database_url)
     assert current_revision(empty_database_url) is None
+
+
+@pytest.mark.parametrize("tampered", [False, True])
+def test_packaged_crlf_sql_keeps_frozen_checksum_and_rejects_edits(
+    empty_database_url, tmp_path, monkeypatch, tampered
+):
+    legacy_database(empty_database_url)
+    packaged = tmp_path / "packaged_migrations"
+    shutil.copytree(str(ROOT), packaged)
+    for baseline in BASELINES.values():
+        path = packaged / "sql" / baseline["sql_file"]
+        lf = path.read_bytes().replace(b"\r\n", b"\n")
+        path.write_bytes(lf.replace(b"\n", b"\r\n"))
+    if tampered:
+        path.write_bytes(path.read_bytes() + b"-- changed packaged SQL\r\n")
+    monkeypatch.setattr(manager, "files", lambda package: packaged)
+    if tampered:
+        with pytest.raises(MigrationAdoptionError, match="checksum"):
+            upgrade_database(empty_database_url)
+        assert current_revision(empty_database_url) is None
+    else:
+        upgrade_database(empty_database_url)
+        assert current_revision(empty_database_url) == "0003_qa"
+    with connect_postgres(empty_database_url) as connection:
+        rows = connection.execute(
+            "SELECT version, sha256 FROM dev_meta.schema_migrations ORDER BY version"
+        ).fetchall()
+        assert all(row["sha256"] == BASELINES[str(row["version"])]["sql_sha256"] for row in rows)
+        assert (
+            connection.execute("SELECT hop_dong_id FROM runtime.hop_dong").fetchone()["hop_dong_id"]
+            == "KEEP_ME"
+        )
 
 
 def test_concurrent_init_uses_one_migration_history(empty_database_url):

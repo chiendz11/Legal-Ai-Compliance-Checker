@@ -4,14 +4,16 @@ import pytest
 from fastapi.testclient import TestClient
 from legal_checker.api.dependencies import Services
 from legal_checker.core.config import Settings
-from legal_checker.shared.contracts.reasoning import ReasoningRequest
+from legal_checker.shared.contracts.reasoning import ReasoningPayload, ReasoningRequest
 from pydantic import ValidationError
 
 
 def test_reasoning_uses_its_own_contract(request_factory):
     pipeline = request_factory(finding="MISSING").model_dump(mode="json")
     direct = {**pipeline, "contract_name": "CriterionReasoningInput"}
-    direct["payload"] = {k: v for k, v in pipeline["payload"].items() if k != "citations"}
+    direct["payload"] = {
+        k: v for k, v in pipeline["payload"].items() if k in ReasoningPayload.model_fields
+    }
     assert ReasoningRequest.model_validate(direct).contract_name == "CriterionReasoningInput"
     direct["payload"]["observations"].append(direct["payload"]["observations"][0])
     with pytest.raises(ValidationError, match="Duplicate IDs"):

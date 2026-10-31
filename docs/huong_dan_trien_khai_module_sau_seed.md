@@ -15,7 +15,12 @@ Dataset đang dùng: **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**
 
 Các JOIN bên dưới dùng case/run r2: ví dụ `CA360_001` và `CA360_001_PDF360_LS2_REFERENCE`. Chọn IDs thực tế từ DB đã seed, giữ cùng knowledge hash và không trộn với IDs của dataset cũ.
 
-**Trạng thái code:** bước 5–7 chỉ còn skeleton nội bộ; các POST chạy riêng module đã xóa. Các mô tả nghiệp vụ và JOIN là hướng dẫn để nhóm C tự triển khai. Dữ liệu seed/QA là references của release đã chốt. Các CLI placeholder đánh giá và công cụ rebuild release cũ đã xóa. [Trạng thái đầy đủ](architecture.md#trạng-thái-skeleton-bước-57).
+**Trạng thái code:** C07/C08/C10/C11, service/workflow, runner offline/replay/save/read
+và PostgreSQL persistence đã triển khai. Các POST chạy riêng module đã xóa; API khởi
+chạy assessment toàn bộ, upstream thật bước 1–4, review/report export/UI và worker vẫn
+cần implementations. Dữ liệu seed/QA là references của release, không phải đáp án cho
+engines mới. [Trạng thái đầy đủ](architecture.md#trạng-thái-triển-khai-bước-57),
+[bàn giao nhóm C](group_c_handoff.md).
 
 ## Mục lục
 
@@ -73,7 +78,7 @@ Khi ghép hệ thống, input đó được thay bằng output thật của các
 | Knowledge SQL | Có full `Knowledge` SQL reader/snapshots và helper `WorkbookKnowledgeRepository` | Dùng reader đã chọn snapshot; mở rộng policies cần thiết |
 | Retrieval SQL | Có `RetrievalDatasetRepository` lấy source rows theo case/run | Map DTO; triển khai index/search/rerank và writer |
 | Bước 1–4 | Có interfaces/DTOs và skeleton files | Triển khai intake, parser/OCR, extraction, scope, temporal, citation, retrieval |
-| Bước 5–7 | Chỉ có skeleton và contracts; implementation cũ đã xóa | Triển khai toàn bộ mapper/reasoning/grounding/aggregation/risk/recommendation; Store dùng chung đã có |
+| Bước 5–7 | C07/C08/C10/C11, workflow, offline/replay/save/read runner và Store đã triển khai | Ghép upstream thật, nguồn/provenance và review đáng tin; đọc outputs đúng run theo bàn giao nhóm C |
 | Workflow | Có `DraftAssessmentWorkflow` để nối implementations được inject | Ghép implementations thật; bổ sung orchestration/persistence/recovery |
 | Bước 9 | Có `build_draft_report` tạo C13 draft từ handoffs cũ | Đọc DB, ghép report, lưu version, export, API và UI |
 | Bước 8 | Có C12 và interfaces review | Bổ sung review thật hoặc giữ báo cáo draft khi chưa có review |
@@ -1024,9 +1029,9 @@ vẫn cần triển khai, các query trên không tự tạo chúng.
 
 ## 6. Nhóm C: bước 5–7: Compliance, Risk và Recommendation
 
-### 6.1 Việc nên làm đầu tiên
+### 6.1 Entrypoints và knowledge đã pin
 
-Logic bước 5–7 chưa triển khai. Các thành phần DB dùng chung đã có:
+Logic bước 5–7 đã có engines/services và tests nghiệp vụ. Các thành phần DB gồm:
 
 1. `modules/legal_knowledge/repository.py:Knowledge(database_url, snapshot_sha256=None)`
    đáp ứng `KnowledgeSnapshot`, đọc 18 bảng nghiệp vụ và freeze nội dung trong DB.
@@ -1034,7 +1039,10 @@ Logic bước 5–7 chưa triển khai. Các thành phần DB dùng chung đã c
 3. `modules/assessments/repository.py:Store(database_url)` lưu normalized outputs,
    case/run pins, toàn bộ input/output và DTO lineage của bước 5–7.
 
-Nhóm C cần triển khai mapper C05/C06/chunks/facts, observations/provider và toàn bộ logic bước 5–7.
+Mapper C05/C06/chunks, provider/review tách biệt, C07/C08 và C10/C11 đã triển khai.
+`compliance.service.evaluate_compliance` chỉ xử lý compliance-sourced risks/actions;
+`workflows.steps_5_7.evaluate` nhận C09 để tạo full pipeline. `DraftAssessmentWorkflow`
+ghép upstream được inject; runner nhóm C hỗ trợ offline/replay/save/read/export.
 Nạp JSONB rule được reader chuẩn hóa tại boundary cho implementation mới;
 không thực thi chuỗi bằng eval. Hash lấy từ nội dung snapshot, không mượn hash workbook.
 Cờ draft/unverified giữ nguyên; snapshot capture không phải phê duyệt chuyên gia.
@@ -1108,7 +1116,12 @@ assert chunk.noi_dung[evidence.ky_tu_bat_dau : evidence.ky_tu_ket_thuc] == evide
 `chunk`/`evidence` trong ví dụ là DTO đã dựng. Offset là vị trí ký tự trong text chunk,
 không phải byte PDF hoặc vị trí trên text đã bị chuẩn hóa khác.
 
-#### Điểm đặt implementation mới (hiện chỉ là skeleton)
+#### Điểm đặt implementation
+
+C07/C08 đã có provider, reasoner, grounding, aggregation và service trong
+`modules/compliance/`; runner nhóm C mặc định offline, không gọi API trả phí.
+Xem [README compliance](../backend/src/legal_checker/modules/compliance/README.md)
+để chạy theo checklist, cấu hình OpenAI tùy chọn và thực hiện review/replay.
 
 ```text
 modules/compliance/observations.py             Interface cung cấp Observation
@@ -1118,7 +1131,7 @@ modules/compliance/requirement_aggregator.py   aggregate(context, knowledge, C07
 modules/compliance/grounding_validator.py      Kiểm tra handoff/provenance
 ```
 
-Policy `AGG_CAN_HO_V1` trong knowledge để nhóm C triển khai: chưa confirmed/thiếu rule/thiếu findings → INSUFFICIENT;
+Policy `AGG_CAN_HO_V1` đã triển khai theo knowledge: chưa confirmed/thiếu rule/thiếu findings → INSUFFICIENT;
 có VIOLATED → NON_COMPLIANT; còn UNKNOWN → INSUFFICIENT; tất cả MISSING → NON_COMPLIANT;
 có SATISFIED cùng MISSING → PARTIAL; tất cả SATISFIED → COMPLIANT.
 Đây là policy đang được code hỗ trợ, không phải rule chung cho mọi requirement trong tương lai.
@@ -1139,7 +1152,7 @@ Ghi `runtime.ket_qua_rui_ro`.
 6. Writer lưu mapping C10 → bảng SQL như mục 8.1, kiểm tra run lineage trước commit.
 
 Tái sử dụng `risks/aggregator.py`, `compliance_mapper.py`, `citation_mapper.py`,
-`common.py`, `service.py`. C10 hiện hỗ trợ COMPLIANCE / CITATION / VERIFICATION.
+`policy.py`, `service.py`. C10 hiện hỗ trợ COMPLIANCE / CITATION / VERIFICATION.
 UNKNOWN/chưa xác minh cần luồng yêu cầu thông tin phù hợp; không được biến thành
 một kết luận vi phạm đã xác nhận.
 
@@ -1153,31 +1166,35 @@ và context liên quan. Ghi `runtime.khuyen_nghi_danh_gia`.
 
 1. Theo `risk.rui_ro_id` tìm link → template; không viết một câu chung cho mọi risk.
 2. Giữ action/priority/severity và các `required_elements_json`/`gioi_han_sinh_json`.
-3. Triển khai template engine để tạo nội dung cơ bản. Nếu bổ sung LLM, chỉ cá thể hóa
+3. Template engine đã tạo nội dung theo policy ALL cho mọi mapped template. Nếu bổ sung LLM, chỉ cá thể hóa
    câu chữ từ facts/basis đã có; không tự tạo luật, ngày, số tiền hoặc danh tính.
 4. UNKNOWN/chưa đủ căn cứ → yêu cầu xác minh đúng dữ kiện còn thiếu.
 5. Validate C11: cùng risk ID, legal basis/evidence, template và knowledge/rule version.
 6. Lưu nội dung, action, priority và snapshots; giữ review PENDING.
 
 `Recommendation.model_version` hiện bị giới hạn `TEMPLATE_ENGINE_NO_LLM`,
-`prompt_version` là `NOT_USED`; validator nghiệp vụ mới cần được nhóm C triển khai theo contract.
+`prompt_version` là `NOT_USED`; generator/validator đã kiểm tra mapping, C10 instance,
+required elements/facts, constraints, evidence/legal basis và priority theo contract.
+Policy/template/fact chưa hỗ trợ giữ diagnostics, không chọn template đầu hoặc tự bịa dữ kiện.
 Muốn có LLM-generated C11 cần cập nhật contract/version/validator/tests có chủ đích;
 không ghi output LLM nhưng để metadata “NO_LLM”.
 
-#### Hai entrypoint dự kiến cần phân biệt (hiện đều là skeleton)
+#### Hai entrypoint đã triển khai cần phân biệt
 
-- `evaluate_compliance` trong `compliance/service.py` dự kiến phục vụ handoff **người 4 cũ**:
+- `evaluate_compliance` trong `compliance/service.py` phục vụ handoff compliance-only:
   C07/C08 + risks/actions chỉ từ compliance. `ComplianceOutput` không nhận citation-sourced risks.
-- `workflows/steps_5_7.evaluate` dự kiến nhận cả C09 và hợp nhất hai nhánh để trả C07–C11 đầy đủ.
+- `workflows/steps_5_7.evaluate` nhận cả C09 và hợp nhất hai nhánh để trả C07–C11 đầy đủ.
 
 Nếu nhóm C hiện phụ trách toàn bộ 5–7, dùng luồng đầy đủ. Nhóm D lấy C10/C11 đã hợp nhất
 để làm report; không tạo lại citation risks/recommendations một lần nữa.
 
 ### 6.5 LLM và audit: khi nào cần?
 
-Không bắt buộc LLM cho mọi criterion. Rule số liệu, aggregation và risk mapping có thể
-chạy deterministic; LLM phù hợp extraction fallback, semantic reasoning và viết khuyến nghị.
-Client LLM do từng module cấu hình; placeholder client chung đã xóa. `shared/llm/audit.py` có `audit_llm_call` và `PostgresLlmAuditSink` để ghi X02. [Ví dụ dùng audit](llm_audit.md).
+Không bắt buộc LLM cho mọi criterion. Numeric rules, C08, C10 và C11 chạy deterministic;
+C07 có semantic provider và OpenAI client tùy chọn. Prompt/schema/provider thuộc module;
+`shared/llm` có transport/config/types và `audit_llm_call`/`PostgresLlmAuditSink` cho X02.
+Runner nhóm C không tạo paid client; muốn dùng LLM-generated C11 phải đổi contract có
+chủ đích. [Ví dụ dùng audit](llm_audit.md).
 
 Mỗi lời gọi thật cần timeout, retry có giới hạn, validate structured output và X02 audit
 lưu vào `runtime.nhat_ky_goi_llm`: provider/model/prompt/schema version, input/output hash,
@@ -1385,7 +1402,9 @@ ORDER BY k.ket_qua_id, q.quy_tac_id;
 Engine còn kiểm tra enabled/gates/mandatory/excluded, nên query này không thay engine.
 Nhánh citation lấy `knowledge.quy_tac_rui_ro WHERE nhanh='CITATION'`, rồi dùng C09 status,
 reason, domain, verification và metadata để chọn rule; không JOIN trực tiếp C09 với
-criterion ID. Khi triển khai `citation_mapper.py`, đọc rule nhánh CITATION, các ID `RULE_CITATION_*` và guards tương ứng; file hiện chỉ là skeleton.
+criterion ID. `citation_mapper.py` đã đọc rule nhánh CITATION, các ID `RULE_CITATION_*`
+và guards tương ứng. Thiếu C09 provenance có diagnostic, STALE/INVALID không tạo risk
+khẳng định; UNKNOWN chỉ tạo VERIFICATION khi policy cho phép. Không tự gán pins còn thiếu.
 
 **Output C10:** ghi `ket_qua_rui_ro`. `nguon_tieu_chi_id` = **C07.ket_qua_id**, hoặc
 `nguon_vien_dan_id` = **C09.finding_id**, chỉ một trong hai. C08 là tổng hợp requirement,
@@ -1430,10 +1449,23 @@ dev_request.payload.observations = []  # Không dùng kết luận tham chiếu 
 # Bổ sung observations từ provider/rules của bạn trước khi evaluate/save.
 ```
 
-Implementation mới cần xử lý observations rỗng bằng uncertainty theo policy; stub hiện tại phát sinh `NotImplementedError` chứ chưa trả UNKNOWN. Viết provider bằng `ObservationProvider.observe`, giữ nguồn/gates thực tế. Khi test
+`new_run` chỉ là helper đổi identity cho dữ liệu thử nghiệm, không cấp verification,
+review hoặc provenance cho run mới. Review, external registry và C09 source snapshot
+gắn với run/digest cũ không được tự đổi pins để nhận là đã xác minh. Adapter upstream
+phải cung cấp provenance đáng tin cho context mới; C07 legacy thiếu context/contract/hash
+bị từ chối, còn C09 thiếu provenance giữ diagnostics và không tạo risk khẳng định.
+
+Implementation hiện xử lý observations rỗng bằng UNKNOWN và uncertainty cụ thể, giữ
+toàn bộ criteria của version resolved và requirement chưa resolve trong C08. Provider
+theo `ObservationProvider.observe` phải giữ nguồn/gates thực tế. Khi test
 Risk riêng, C07/C09 reference được phép là upstream; khi test Reasoning thì C07 là expected.
 
-Chưa có runner/evaluator CLI cho nhóm C; các placeholder cũ đã xóa. Nhóm C triển khai producer/mapper, logic module, persistence và bộ tests/evaluator của mình. Không dùng observations/EXPECTED đã seed làm kết quả của provider mới rồi báo metric pass.
+Runner `legal_checker.modules.assessments.run_group_c` đã hỗ trợ offline/replay,
+`--save`, `--read-run` và export atomic vào thư mục mới. Metadata/hash/counts/lineage
+phản ánh DTO thật; read kiểm tra dữ liệu đã lưu và không chạy lại engines. Xem
+[lệnh PowerShell](../backend/src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57)
+và [bàn giao nhóm C](group_c_handoff.md). Không dùng observations/EXPECTED đã seed
+làm kết quả của provider mới rồi báo metric pass.
 
 **Bàn giao nhóm C:** C07/C08/C10/C11 cùng Context/run/hash, rows + DTO lineage đã lưu,
 observations/provider thật, nguồn/chứng từ/gates và cách gọi. Nhóm D chỉ đọc các outputs
@@ -1564,11 +1596,17 @@ reference_report = FinalReport.model_validate(
     load_reference(database_url, case_id, "EXPECTED", "C13")
 )
 
-# Output bước 5–7 của run dev thực sự đã lưu; Store.get còn kiểm tra output checksum.
+# Output bước 5–7 đã lưu; Store kiểm tra graph/pins/checksums/normalized rows/lineage.
 dev_output = Store(database_url).get(case_id, dev_run_id)
 if dev_output is None:
     raise ValueError("Run chưa có kết quả; hiển thị pending/chưa chạy")
 ```
+
+`Store.get/get_input/get_lineage` đọc exact case/run, kiểm tra input/output checksums,
+case pins, knowledge đã pin, normalized rows và DTO lineage trong transaction đọc nhất
+quán; không gọi reasoning/risk/recommendation. Dùng các hàm này cho reader sản phẩm.
+Các SQL recipes dưới đây phục vụ kiểm tra/hiểu mapping, không thay thế integrity checks.
+Dữ liệu legacy thiếu lineage không được ghép bằng “run mới nhất” hoặc QA EXPECTED.
 
 #### D2 — Đọc context/input snapshot và full output
 

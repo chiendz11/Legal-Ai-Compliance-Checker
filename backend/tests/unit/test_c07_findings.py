@@ -4,12 +4,11 @@ import json
 from copy import deepcopy
 
 import pytest
+from legal_checker.modules.compliance.criterion_reasoner import reason
+from legal_checker.shared.contracts.reasoning import ReasoningRequest
 from test_criterion_reasoner import assert_unknown, only_result
 from test_criterion_reasoner import reasoning_case as reasoning_case
 from test_numeric_rules import NUMERIC_CASES
-
-from legal_checker.modules.compliance.criterion_reasoner import reason
-from legal_checker.shared.contracts.reasoning import ReasoningRequest
 
 
 def register_external(data):

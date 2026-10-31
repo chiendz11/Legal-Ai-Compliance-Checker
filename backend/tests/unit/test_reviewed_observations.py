@@ -3,9 +3,6 @@
 from copy import deepcopy
 
 import pytest
-from test_c07_findings import register_external
-from test_criterion_reasoner import reasoning_case as reasoning_case
-
 from legal_checker.modules.compliance.criterion_reasoner import reason
 from legal_checker.modules.compliance.reviewed_observations import (
     BackendReview,
@@ -13,6 +10,8 @@ from legal_checker.modules.compliance.reviewed_observations import (
     proposal_digest,
 )
 from legal_checker.shared.contracts.reasoning import Observation, ReasoningRequest
+from test_c07_findings import register_external
+from test_criterion_reasoner import reasoning_case as reasoning_case
 
 
 def make_review(request, proposal):

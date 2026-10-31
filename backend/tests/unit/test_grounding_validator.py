@@ -3,11 +3,10 @@
 from copy import deepcopy
 
 import pytest
-from test_c07_findings import register_external
-from test_criterion_reasoner import reasoning_case as reasoning_case
-
 from legal_checker.modules.compliance.grounding_validator import validate_criteria
 from legal_checker.shared.contracts.reasoning import ReasoningRequest
+from test_c07_findings import register_external
+from test_criterion_reasoner import reasoning_case as reasoning_case
 
 
 def test_grounding_can_be_used_directly_without_mutation(reasoning_case):

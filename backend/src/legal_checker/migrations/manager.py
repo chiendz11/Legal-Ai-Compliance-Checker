@@ -20,6 +20,16 @@ class MigrationAdoptionError(ValueError):
     """Legacy schema/history differs; no automatic stamp or repair was performed."""
 
 
+def sql_resource_checksum(content: bytes) -> str:
+    """Verify frozen LF SQL across checkout/package CRLF conversion only.
+
+    Git may materialize the same tracked SQL with CRLF on Windows. The frozen
+    baseline describes LF bytes; no other whitespace, Unicode or SQL contents
+    are normalized, and persisted migration checksums must still match exactly.
+    """
+    return hashlib.sha256(content.replace(b"\r\n", b"\n")).hexdigest()
+
+
 def alembic_config() -> Config:
     config = Config()
     config.set_main_option("script_location", "legal_checker:migrations")
@@ -89,10 +99,7 @@ def checked_legacy_revision(connection) -> str | None:
     for row in history:
         expected = baselines[str(row["version"])]["sql_sha256"]
         resource = root.joinpath("sql", baselines[str(row["version"])]["sql_file"])
-        if (
-            row["sha256"] != expected
-            or hashlib.sha256(resource.read_bytes()).hexdigest() != expected
-        ):
+        if row["sha256"] != expected or sql_resource_checksum(resource.read_bytes()) != expected:
             raise MigrationAdoptionError("Legacy migration checksum differs; adoption refused")
     expected = baseline["objects"]
     changed = sorted(

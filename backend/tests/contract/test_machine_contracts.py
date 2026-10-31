@@ -21,7 +21,7 @@ DOCS = PROJECT_ROOT / "docs"
 @pytest.fixture(scope="module")
 def documents():
     return {
-        str(path.relative_to(DOCS)): json.loads(path.read_text(encoding="utf-8"))
+        path.relative_to(DOCS).as_posix(): json.loads(path.read_text(encoding="utf-8"))
         for path in [
             *sorted((DOCS / "contracts").glob("*.json")),
             DOCS / "openapi.design.json",

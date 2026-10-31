@@ -4,7 +4,6 @@ import json
 from copy import deepcopy
 
 import pytest
-
 from legal_checker.modules.compliance.criterion_reasoner import reason
 from legal_checker.shared.contracts.reasoning import CriterionResult, ReasoningRequest
 

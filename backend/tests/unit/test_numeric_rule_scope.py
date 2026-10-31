@@ -3,15 +3,14 @@
 from copy import deepcopy
 
 import pytest
-from test_criterion_reasoner import assert_unknown, only_result
-from test_criterion_reasoner import reasoning_case as reasoning_case
-from test_numeric_rules_extended import EXTENDED_CASES
-
 from legal_checker.modules.compliance.numeric_rules import (
     NumericInputError,
     evaluate_numeric,
     evaluate_numeric_for_criterion,
 )
+from test_criterion_reasoner import assert_unknown, only_result
+from test_criterion_reasoner import reasoning_case as reasoning_case
+from test_numeric_rules_extended import EXTENDED_CASES
 
 
 def scope(target):
