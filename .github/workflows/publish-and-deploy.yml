@@ -1,0 +1,97 @@
+name: Build, Publish and Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch to update in GitOps repo'
+        required: true
+        default: 'main'
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'constraints.txt'
+      - '.github/workflows/publish-and-deploy.yml'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-publish:
+    name: Build & Publish Backend Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/legal-ai-compliance-checker-backend:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/legal-ai-compliance-checker-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  update-gitops:
+    name: Update GitOps Manifests
+    needs: [build-and-publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout App Repo
+        uses: actions/checkout@v4
+        with:
+          path: app
+
+      - name: Checkout GitOps Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/Legal-Ai-Compliance-Checker-gitops
+          token: ${{ secrets.GITOPS_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          path: gitops
+          ref: ${{ github.event.inputs.target_branch || 'main' }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Update image tags in GitOps
+        run: |
+          python3 app/.github/scripts/update_gitops_images.py \
+            --gitops-dir gitops \
+            --registry "ghcr.io/${{ github.repository_owner }}" \
+            --tag "sha-${{ github.sha }}"
+
+      - name: Commit and push GitOps changes
+        run: |
+          cd gitops
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "chore(gitops): promote legal-backend image to sha-${{ github.sha }}"
+            git push origin HEAD:${{ github.event.inputs.target_branch || 'main' }}
+            echo "GitOps repository updated with new image tag."
+          else
+            echo "No changes in GitOps repository."
+          fi
