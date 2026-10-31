@@ -1,0 +1,376 @@
+{
+  "status": "PASSED",
+  "database_name": "legal_checker_test_group_c_completion_8b39db4ae691",
+  "host": "127.0.0.1",
+  "port": "55433",
+  "case_id": "CA360_001",
+  "run_id": "CA360_001_C07_DEV_2a016b0fce614af78ae65af5f89dc5a9",
+  "source_reference_run_id": "CA360_001_PDF360_LS2_REFERENCE",
+  "reference_group_c_outputs_or_observations_read": false,
+  "paid_api_attempts": 0,
+  "knowledge_approval_inferred": false,
+  "knowledge_snapshot_sha256": "c47aa957127751775c850ea63b9ae1d0a57d6a05bfc7f65452738f243eaefdc4",
+  "input_sha256": "e2cbe07744063f58ac40d7df8a17b823e083557ff40500dbda51c78ef5246009",
+  "output_sha256": "253c117c444a8fee7851fe6f44732634b111f3d686e7cf7a43251c9f59308f95",
+  "commands": {
+    "saved": [
+      "--case",
+      "CA360_001",
+      "--reference-run",
+      "CA360_001_PDF360_LS2_REFERENCE",
+      "--save",
+      "--output-dir",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_saved"
+    ],
+    "read": [
+      "--case",
+      "CA360_001",
+      "--read-run",
+      "CA360_001_C07_DEV_2a016b0fce614af78ae65af5f89dc5a9",
+      "--output-dir",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_read"
+    ],
+    "retry": [
+      "--input",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_saved\\input.json",
+      "--save",
+      "--output-dir",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_retry"
+    ],
+    "replay": [
+      "--input",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_saved\\input.json",
+      "--replay-analyses",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_saved\\analyses.json",
+      "--output-dir",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_replay",
+      "--profile",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_saved\\profile.json"
+    ],
+    "newer": [
+      "--case",
+      "CA360_001",
+      "--reference-run",
+      "CA360_001_PDF360_LS2_REFERENCE",
+      "--save",
+      "--output-dir",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_newer"
+    ],
+    "historical_read": [
+      "--case",
+      "CA360_001",
+      "--read-run",
+      "CA360_001_C07_DEV_2a016b0fce614af78ae65af5f89dc5a9",
+      "--output-dir",
+      "C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\demo_verified_historical_read"
+    ]
+  },
+  "counts": {
+    "c05": 10,
+    "c06": 5,
+    "c07": 9,
+    "c08": 10,
+    "c09": 0,
+    "c10": 9,
+    "c11": 9
+  },
+  "findings": {
+    "UNKNOWN": 9
+  },
+  "requirement_statuses": {
+    "INSUFFICIENT": 10
+  },
+  "unknown_reasons": [
+    {
+      "criterion_id": "TC_PV_HYC049_01",
+      "reason": "Provider uncertainty: Thiếu C06 selected FINAL chứa nội dung cho criterion.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC049_02",
+      "reason": "Provider uncertainty: Thiếu C06 selected FINAL chứa nội dung cho criterion.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC049_03",
+      "reason": "Provider uncertainty: Thiếu C06 selected FINAL chứa nội dung cho criterion.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC006_01",
+      "reason": "Provider uncertainty: Thiếu C06 selected FINAL chứa nội dung cho criterion.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC006_02",
+      "reason": "Provider uncertainty: Thiếu C06 selected FINAL chứa nội dung cho criterion.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC019_01",
+      "reason": "Provider uncertainty: Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC019_02",
+      "reason": "Provider uncertainty: Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC053_01",
+      "reason": "Provider uncertainty: Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    },
+    {
+      "criterion_id": "TC_PV_HYC053_02",
+      "reason": "Provider uncertainty: Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.; Criterion local_applicability is not MATCH; Criterion requires verified current-criterion case facts; Unresolved gate: evidence_validated; Unresolved gate: source_verified; Unresolved gate: scope_confirmed; Unresolved gate: version_resolved; Unresolved gate: exceptions_resolved"
+    }
+  ],
+  "read_recomputed": false,
+  "read_blocked_call_names": [
+    "legal_checker.modules.assessments.run_group_c.run_pipeline",
+    "legal_checker.modules.assessments.run_group_c.run_assessment",
+    "legal_checker.modules.assessments.run_group_c.Knowledge",
+    "legal_checker.modules.assessments.run_group_c.C07InputRepository.load",
+    "legal_checker.modules.compliance.llm_observations.LLMObservationProvider.analyze",
+    "legal_checker.workflows.steps_5_7.evaluate",
+    "legal_checker.modules.compliance.criterion_reasoner.reason",
+    "legal_checker.modules.compliance.requirement_aggregator.aggregate",
+    "legal_checker.modules.risks.service.evaluate_risks",
+    "legal_checker.modules.recommendations.service.generate_recommendations"
+  ],
+  "read_blocked_call_count": 0,
+  "read_export_comparisons": {
+    "input.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "output.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c07.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c08.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c10.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c11.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "diagnostics.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "lineage.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "citations.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "registry.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "analyses.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "reviews.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "verifications.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "profile.json": {
+      "byte_equal": true,
+      "json_equal": true
+    }
+  },
+  "newer_run_id": "CA360_001_C07_DEV_3398fe97ea984c42a19c15d91331d8ef",
+  "historical_read_after_newer_run": true,
+  "historical_read_engine_calls": 0,
+  "historical_read_export_comparisons": {
+    "input.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "output.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c07.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c08.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c10.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "c11.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "diagnostics.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "lineage.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "citations.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "registry.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "analyses.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "reviews.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "verifications.json": {
+      "byte_equal": true,
+      "json_equal": true
+    },
+    "profile.json": {
+      "byte_equal": true,
+      "json_equal": true
+    }
+  },
+  "first_saved_output_preserved_after_second_save": true,
+  "retry_returned_original_output_bytes": true,
+  "retry_input_and_output_hashes_equal": true,
+  "initial_case_run_count": 0,
+  "final_case_run_count": 2,
+  "historical_run_hashes_before": [],
+  "historical_run_hashes_after": [],
+  "historical_input_output_hashes_unchanged": true,
+  "new_run_ids": [
+    "CA360_001_C07_DEV_2a016b0fce614af78ae65af5f89dc5a9",
+    "CA360_001_C07_DEV_3398fe97ea984c42a19c15d91331d8ef"
+  ],
+  "replay_mode": "REPLAY",
+  "replay_counts": {
+    "c05": 10,
+    "c06": 5,
+    "c07": 9,
+    "c08": 10,
+    "c09": 0,
+    "c10": 9,
+    "c11": 9
+  },
+  "replay_findings": {
+    "UNKNOWN": 9
+  },
+  "replay_analysis_origins": {
+    "REPLAY": 9
+  },
+  "replay_exact_text_equal_required": false,
+  "sql_verification": {
+    "raw_input_dto_equal": true,
+    "raw_output_dto_equal": true,
+    "raw_input_hash_equal": true,
+    "raw_output_hash_equal": true,
+    "normalized_column_projection_equal": true,
+    "normalized_columns_checked": {
+      "ket_qua_tieu_chi": [
+        "absence_verified",
+        "ca_id",
+        "coverage_complete",
+        "evidence_conflict",
+        "evidence_validated",
+        "exceptions_resolved",
+        "giai_thich",
+        "ket_qua_id",
+        "lan_chay_id",
+        "loai_phat_hien",
+        "model_version",
+        "ngay_danh_gia",
+        "pham_vi_ket_luan",
+        "prompt_version",
+        "review_status",
+        "scope_confirmed",
+        "source_verified",
+        "tieu_chi_id",
+        "tieu_chi_snapshot_json",
+        "uncertainty_reason",
+        "version_resolved",
+        "yeu_cau_ca_id"
+      ],
+      "ket_qua_tuan_thu": [
+        "giai_thich",
+        "ngay_tong_hop",
+        "nhan",
+        "requirement_snapshot_json",
+        "rule_version",
+        "so_tieu_chi_ap_dung",
+        "so_tieu_chi_da_danh_gia",
+        "so_unknown",
+        "tuan_thu_id",
+        "yeu_cau_ca_id"
+      ],
+      "ket_qua_rui_ro": [
+        "ca_id",
+        "giai_thich",
+        "ket_qua_id",
+        "loai_rui_ro",
+        "mo_ta_snapshot",
+        "nguon_tieu_chi_id",
+        "nguon_vien_dan_id",
+        "quy_tac_id",
+        "rui_ro_id",
+        "rule_snapshot_json",
+        "severity_snapshot",
+        "ten_snapshot",
+        "yeu_cau_ca_id"
+      ],
+      "khuyen_nghi_danh_gia": [
+        "dieu_kien_snapshot",
+        "evidence_ids_json",
+        "ket_qua_rui_ro_id",
+        "khuyen_nghi_ca_id",
+        "khuyen_nghi_id",
+        "knowledge_snapshot_sha256",
+        "legal_basis_ids_json",
+        "loai_hanh_dong",
+        "model_version",
+        "noi_dung_snapshot",
+        "prompt_version",
+        "review_status",
+        "rule_version",
+        "template_snapshot_json",
+        "uu_tien"
+      ]
+    },
+    "normalized_row_counts": {
+      "ket_qua_tieu_chi": 9,
+      "ket_qua_tuan_thu": 10,
+      "ket_qua_rui_ro": 9,
+      "khuyen_nghi_danh_gia": 9,
+      "bang_chung_ket_qua": 0,
+      "bang_chung_ngoai": 0,
+      "assessment_output_lineage": 37
+    },
+    "lineage_dto_membership_equal": true,
+    "assessment_run_count_for_case": 2
+  },
+  "limitations": [
+    "Offline proposals retain missing expert/backend review and remain draft/unverified.",
+    "No trusted current-run C09 was supplied; citation branch is NOT_RUN.",
+    "Replay executes pure engines again without save; read mode executes no engine."
+  ]
+}

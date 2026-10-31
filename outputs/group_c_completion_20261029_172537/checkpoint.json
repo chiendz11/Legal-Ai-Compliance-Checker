@@ -1,0 +1,152 @@
+{
+  "phase_1_status": "COMPLETE_REVALIDATED",
+  "phase_2_status": "COMPLETE_REVALIDATED",
+  "phase_3_status": "COMPLETE",
+  "group_c_engineering_status": "COMPLETE_WITH_DOCUMENTED_EXTERNAL_DEPENDENCIES",
+  "created_at_asia_saigon": "2026-10-29T18:07:58.364302+07:00",
+  "checks": {
+    "scope": "FULL_REPOSITORY_REQUIRED_CHECKS",
+    "verified_at_asia_saigon": "2026-10-29T18:00:43.250163+07:00",
+    "interpreter": "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+    "python_version": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+    "test_database_host": "127.0.0.1",
+    "test_database_port": "55433",
+    "required_test_database_prefix": "legal_checker_test",
+    "postgresql_tests_executed": true,
+    "test_counts": {
+      "tests": 1259,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "checks": [
+      {
+        "name": "ruff_check",
+        "command": [
+          "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+          "-m",
+          "ruff",
+          "check",
+          "--config",
+          "backend/pyproject.toml",
+          "."
+        ],
+        "cwd": "C:\\demo\\Legal-Ai-Compliance-Checker",
+        "exit_code": 0
+      },
+      {
+        "name": "ruff_format",
+        "command": [
+          "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+          "-m",
+          "ruff",
+          "format",
+          "--check",
+          "--config",
+          "backend/pyproject.toml",
+          "."
+        ],
+        "cwd": "C:\\demo\\Legal-Ai-Compliance-Checker",
+        "exit_code": 0
+      },
+      {
+        "name": "pytest",
+        "command": [
+          "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short",
+          "-c",
+          "backend/pyproject.toml",
+          "--junitxml=C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\pytest.xml"
+        ],
+        "cwd": "C:\\demo\\Legal-Ai-Compliance-Checker",
+        "exit_code": 0
+      },
+      {
+        "name": "installed_package",
+        "command": [
+          "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+          "-I",
+          "-c",
+          "from legal_checker.main import create_app; from importlib.resources import files; assert callable(create_app); assert files('legal_checker.migrations').joinpath('env.py').is_file(); assert files('legal_checker.migrations').joinpath('sql/002_snapshots_and_runs.sql').is_file(); print('Installed package and migration resources import outside repository')"
+        ],
+        "cwd": "C:\\Users\\hn845\\AppData\\Local\\Temp\\group-c-installed-1l3jh843",
+        "exit_code": 0
+      }
+    ],
+    "ci_reference": ".github/workflows/ci.yml",
+    "local_environment_difference": "Python 3.14 / PostgreSQL 18.4; CI declares Python 3.12 / PostgreSQL 17.10"
+  },
+  "stage3_semantic_and_docs_files_sha256": {
+    "backend/src/legal_checker/migrations/manager.py": "0bec92d30c0f93cc8d3b4a74cad3a61e597a200b5e5cba6a10f3ce8f592a58d8",
+    "backend/src/legal_checker/migrations/schema_state.py": "ff518cd00c9b30c15af49d8d0db98e5be80d597a773fa904273d1165b2391d89",
+    "backend/src/legal_checker/shared/storage/http.py": "671f2d3713981abfec81ec47db011e20dd1898f23508067e688f7a3f6e61b9f5",
+    "backend/src/devtools/dataset_download.py": "9addffdbac7e1981f6c0609a29563426d1f2615ad0f7697e482b4c2ffd4a3350",
+    "backend/src/legal_checker/modules/assessments/run_group_c.py": "ade981b1eb386cf6a0407b97f3185c3015b0aa72151162cb265299ada9da0013",
+    "docs/module_contracts.schema.json": "ad78b62ea860fdb76488ea8dadfc63cf49c06ac6a4b68ca4d1cd07dd55aff8c2",
+    "backend/tests/integration/test_alembic_migrations.py": "92a2078c045750652a5ccf90929240394307932b3b610b88481015ff56372a4c",
+    "backend/tests/integration/test_source_storage_http.py": "08346a99aff1d83f8d7cdcbd7dd7d2315c7e4653f332f67b3642f9a8138fa421",
+    "backend/tests/unit/test_migration_checksums.py": "0bde58e78ef6ff5c471ae57d762b18cdcfc2324bf8d47ac89ac3752f1592d6c5",
+    "backend/tests/unit/test_dataset_download.py": "d3b7f9e2e881e8e0023b264f5f4c37067294375f6d57145e23e176edfff8150f",
+    "backend/tests/unit/test_workbook_seed.py": "2e3c47d2c25725490b1e3e0901fff4fb8bf45774dabaffbff6a9e5b99f78b2ed",
+    "backend/tests/unit/test_group_c_runner.py": "a73863894325f4cddae98f328bf0cf09e5774b95e6b09bf2bad5519d49cb880a",
+    "README.md": "24fcd7b2746dad3a5eceb6433de81e5b6ef416c1e32324229be33916098882d5",
+    "backend/README.md": "8302136e4164fb7851101cfc01a492f69c412007886daf64fbee7edfc4c35ad0",
+    "backend/src/legal_checker/modules/compliance/README.md": "b1af7e8e2606c640c600dc2f602de348860f11dc5abcb7c463c8bbd35577fd2a",
+    "backend/src/legal_checker/modules/risks/README.md": "de16b7f68c85fae69d973cd001307cde1e089b57bfa07f669ef0a3f807f53090",
+    "backend/src/legal_checker/modules/recommendations/README.md": "789d297a5210646db5532d37da7d3e16c950ebcdc92be9274c725dd128a6fd02",
+    "docs/architecture.md": "84aecddf03401a5e23df9eb1f3299dec02ed087c5eea475fc27c4442726be5c2",
+    "docs/module_integration.md": "f4fab619e8d0fa78798db0d83ee8b520eb1a937d21e75e80b7525cda5ba709ac",
+    "docs/huong_dan_trien_khai_module_sau_seed.md": "b7868ad7e69423c6dc743dba3367da7252bd9b9a3b5f63ed55e153e3f87c37fa",
+    "docs/group_c_handoff.md": "eec8c947dc4a0ce25b07a5c4ceceeb39c3da5cd8c965bca582da8ffd59af57fd"
+  },
+  "other_edits": "Only imports/format/comments required for full Ruff; source_manifest.json is complete working-tree inventory",
+  "preexisting_dirty_work_preserved": true,
+  "commit_created": false,
+  "git_head": "debba5a84ebc83f2fcacca5335961b189b127ee5",
+  "dev_database_modified": false,
+  "paid_api_attempts": 0,
+  "knowledge_approved_by_snapshot": false,
+  "postgresql_version": "18.4",
+  "postgresql_tests_executed": true,
+  "test_instance_stopped_cleanly": true,
+  "cluster": "data/private/group_c_phase2_postgres/cluster",
+  "test_host": "127.0.0.1",
+  "test_port": 55433,
+  "demo_database": "legal_checker_test_group_c_completion_8b39db4ae691",
+  "case_id": "CA360_001",
+  "run_id": "CA360_001_C07_DEV_2a016b0fce614af78ae65af5f89dc5a9",
+  "newer_run_id": "CA360_001_C07_DEV_3398fe97ea984c42a19c15d91331d8ef",
+  "demo_counts": {
+    "c05": 10,
+    "c06": 5,
+    "c07": 9,
+    "c08": 10,
+    "c09": 0,
+    "c10": 9,
+    "c11": 9
+  },
+  "demo_findings": {
+    "UNKNOWN": 9
+  },
+  "demo_lineage_rows": 37,
+  "demo_read_recomputed": false,
+  "historical_read_after_newer_run": true,
+  "read_engine_call_count": 0,
+  "knowledge_snapshot_sha256": "c47aa957127751775c850ea63b9ae1d0a57d6a05bfc7f65452738f243eaefdc4",
+  "input_sha256": "e2cbe07744063f58ac40d7df8a17b823e083557ff40500dbda51c78ef5246009",
+  "output_sha256": "253c117c444a8fee7851fe6f44732634b111f3d686e7cf7a43251c9f59308f95",
+  "local_checks_not_remote_github_ci": true,
+  "pending_external_integration": [
+    "Real OCR/scope/temporal/retrieval/citation adapters",
+    "Human legal review/C12",
+    "Group D report/UI/C13 publish/export"
+  ],
+  "next_step": "Group D consumes saved outputs by exact case/run; preserve diagnostics/exclusions and draft/PENDING; do not recompute engines",
+  "handoff": "HANDOFF.md",
+  "reproduction": "powershell.md",
+  "source_inventory": "source_manifest.json",
+  "artifact_integrity": "artifact_manifest.json"
+}

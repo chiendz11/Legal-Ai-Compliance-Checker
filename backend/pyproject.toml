@@ -13,6 +13,7 @@ dependencies = ["fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1", "p
 dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1", "openpyxl>=3.1,<4", "openapi-spec-validator>=0.7,<1"]
 local-server = ["celerp-postgres==17.10.0"]
 dataset = ["gdown>=6.4.2,<7"]
+ai = ["httpx>=0.28,<1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, model_validator
 
@@ -7,7 +7,11 @@ from legal_checker.shared.contracts.aggregation import RequirementResult
 from legal_checker.shared.contracts.citation import CitationValidation
 from legal_checker.shared.contracts.common import Context, Model
 from legal_checker.shared.contracts.document_intelligence import Chunk
-from legal_checker.shared.contracts.reasoning import CriterionResult, Observation
+from legal_checker.shared.contracts.reasoning import (
+    CriterionResult,
+    ExternalEvidenceRegistration,
+    Observation,
+)
 from legal_checker.shared.contracts.recommendation import Recommendation
 from legal_checker.shared.contracts.retrieval import RetrievalEvidence
 from legal_checker.shared.contracts.risk import RiskResult
@@ -20,10 +24,15 @@ class PipelinePayload(Model):
     chunks: list[Chunk] = Field(default_factory=list)
     retrieval: list[RetrievalEvidence] = Field(default_factory=list)
     observations: list[Observation] = Field(default_factory=list)
+    external_evidence_registry: list[ExternalEvidenceRegistration] = Field(default_factory=list)
     citations: list[CitationValidation] = Field(default_factory=list)
+    citation_branch_status: Literal["NOT_RUN", "COMPLETED"] | None = None
+    reasoning_provenance: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def unique_ids(self):
+        if self.citation_branch_status == "NOT_RUN" and self.citations:
+            raise ValueError("NOT_RUN citation branch cannot contain findings")
         for attr, key in [
             ("requirements", "yeu_cau_ca_id"),
             ("chunks", "doan_id"),
@@ -49,6 +58,7 @@ class PipelineResult(Model):
     risks: list[RiskResult]
     recommendations: list[Recommendation]
     excluded_requirements: list[str]
+    diagnostics: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class PipelineResponse(Context):

@@ -4,6 +4,8 @@ These DTOs reuse C01–C11/C13 schemas; they are local integration contracts,
 not new HTTP endpoints or new legal findings.
 """
 
+from typing import Any
+
 from pydantic import Field, model_validator
 
 from legal_checker.shared.contracts.aggregation import RequirementResult
@@ -66,6 +68,7 @@ class ComplianceOutput(Model):
     requirement_results: list[RequirementResult]
     risks: list[RiskResult]
     recommendations: list[Recommendation]
+    diagnostics: list[dict[str, Any]] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def compliance_branch_only(self):
