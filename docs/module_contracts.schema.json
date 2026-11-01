@@ -664,6 +664,14 @@
           },
           "title": "Recommendations",
           "type": "array"
+        },
+        "diagnostics": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Diagnostics",
+          "type": "array"
         }
       },
       "required": [
@@ -1051,6 +1059,107 @@
         "sha256"
       ],
       "title": "ExternalEvidence",
+      "type": "object"
+    },
+    "ExternalEvidenceRegistration": {
+      "additionalProperties": false,
+      "description": "Backend registry attestation, supplied separately from a provider proposal.\n\nThe loader must verify stored bytes/hash and source before setting verified.\nThese fields are an internal trust boundary, not a public LLM output schema.",
+      "properties": {
+        "contract_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "ca_id": {
+          "minLength": 1,
+          "title": "Ca Id",
+          "type": "string"
+        },
+        "phien_ban_id": {
+          "minLength": 1,
+          "title": "Phien Ban Id",
+          "type": "string"
+        },
+        "rule_version": {
+          "minLength": 1,
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "legal_knowledge_version": {
+          "minLength": 1,
+          "title": "Legal Knowledge Version",
+          "type": "string"
+        },
+        "knowledge_snapshot_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Knowledge Snapshot Sha256",
+          "type": "string"
+        },
+        "run_id": {
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "trace_id": {
+          "minLength": 1,
+          "title": "Trace Id",
+          "type": "string"
+        },
+        "hop_dong_id": {
+          "title": "Hop Dong Id",
+          "type": "string"
+        },
+        "yeu_cau_ca_id": {
+          "title": "Yeu Cau Ca Id",
+          "type": "string"
+        },
+        "tieu_chi_id": {
+          "title": "Tieu Chi Id",
+          "type": "string"
+        },
+        "bang_chung_id": {
+          "title": "Bang Chung Id",
+          "type": "string"
+        },
+        "object_uri": {
+          "minLength": 1,
+          "title": "Object Uri",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "verified": {
+          "default": false,
+          "title": "Verified",
+          "type": "boolean"
+        },
+        "verification_reference": {
+          "minLength": 1,
+          "title": "Verification Reference",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ca_id",
+        "phien_ban_id",
+        "rule_version",
+        "legal_knowledge_version",
+        "knowledge_snapshot_sha256",
+        "run_id",
+        "trace_id",
+        "hop_dong_id",
+        "yeu_cau_ca_id",
+        "tieu_chi_id",
+        "bang_chung_id",
+        "object_uri",
+        "sha256",
+        "verification_reference"
+      ],
+      "title": "ExternalEvidenceRegistration",
       "type": "object"
     },
     "ExtractedFact": {
@@ -1515,6 +1624,14 @@
             "type": "string"
           },
           "title": "Excluded Requirements",
+          "type": "array"
+        },
+        "diagnostics": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Diagnostics",
           "type": "array"
         }
       },
@@ -2076,6 +2193,13 @@
             "$ref": "#/$defs/Observation"
           },
           "title": "Observations",
+          "type": "array"
+        },
+        "external_evidence_registry": {
+          "items": {
+            "$ref": "#/$defs/ExternalEvidenceRegistration"
+          },
+          "title": "External Evidence Registry",
           "type": "array"
         }
       },

@@ -1,5 +1,9 @@
 """Conformance checks usable by each module owner without running its predecessors."""
 
+from datetime import datetime, timezone
+
+from legal_checker.modules.assessments.integrity import validate_membership
+from legal_checker.modules.compliance.requirement_aggregator import excluded_requirement_ids
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.shared.contracts.assessment import AssessmentCase
 from legal_checker.shared.contracts.common import Context
@@ -9,6 +13,11 @@ from legal_checker.shared.contracts.handoffs import (
     IntegrationInput,
     LegalOutput,
     RetrievalInput,
+)
+from legal_checker.shared.contracts.pipeline import (
+    PipelineRequest,
+    PipelineResponse,
+    PipelineResult,
 )
 from legal_checker.shared.contracts.reasoning import ReasoningPayload, ReasoningRequest
 from legal_checker.shared.contracts.recommendation import Recommendation
@@ -49,6 +58,7 @@ def report_input_from_draft(draft: AssessmentDraft) -> IntegrationInput:
             requirement_results=output.requirement_results,
             risks=risks,
             recommendations=[r for r in output.recommendations if r.ket_qua_rui_ro_id in risk_ids],
+            diagnostics=output.diagnostics,
         ),
     )
 
@@ -128,6 +138,8 @@ def validate_legal(
     document: DocumentIntelligenceResult,
     output: LegalOutput,
     knowledge: KnowledgeSnapshot,
+    *,
+    citation_branch_status: str = "COMPLETED",
 ):
     validate_context(context, knowledge)
     unique(output.scope, "yeu_cau_ca_id")
@@ -158,9 +170,15 @@ def validate_legal(
             or scope.dieu_kien_snapshot_json != requirement.dieu_kien_snapshot_json
         ):
             raise ValueError("Temporal output changed scope provenance")
-    citation_ids = {item.vien_dan_id for item in document.citations}
-    if {item.vien_dan_id for item in output.citations} != citation_ids:
-        raise ValueError("Citation findings must cover exactly the extracted citations")
+    if citation_branch_status not in {"COMPLETED", "NOT_RUN"}:
+        raise ValueError("Unsupported citation branch status")
+    if citation_branch_status == "NOT_RUN":
+        if output.citations:
+            raise ValueError("NOT_RUN citation branch cannot contain findings")
+    else:
+        citation_ids = {item.vien_dan_id for item in document.citations}
+        if {item.vien_dan_id for item in output.citations} != citation_ids:
+            raise ValueError("Citation findings must cover exactly the extracted citations")
     if any(
         reference and reference not in knowledge.documents
         for item in output.citations
@@ -190,7 +208,46 @@ def validate_retrieval(
 def validate_compliance(
     request: ReasoningRequest, output: ComplianceOutput, knowledge: KnowledgeSnapshot
 ):
-    raise NotImplementedError("Step 5–7 output validation is a skeleton.")
+    """Check the handoff graph and checklist without recomputing any finding/risk."""
+    validate_request(request, knowledge)
+    output = ComplianceOutput.model_validate(output.model_dump())
+    context = request.model_dump(include=set(Context.model_fields))
+    if output.context.model_dump() != context or output.hop_dong_id != request.payload.hop_dong_id:
+        raise ValueError("Compliance output context or contract mismatch")
+    expected = {
+        (requirement.yeu_cau_ca_id, criterion["tieu_chi_id"])
+        for requirement in request.payload.requirements
+        if requirement.version_status == "RESOLVED" and requirement.requirement_version_id
+        for criterion in knowledge.criteria_for(requirement.requirement_version_id)
+    }
+    if {(row.yeu_cau_ca_id, row.tieu_chi_id) for row in output.criterion_results} != expected:
+        raise ValueError("Compliance output lost or added checklist criteria")
+    excluded = excluded_requirement_ids(request, knowledge, request.payload.requirements)
+    if {row.yeu_cau_ca_id for row in output.requirement_results} != (
+        {row.yeu_cau_ca_id for row in request.payload.requirements} - set(excluded)
+    ):
+        raise ValueError("Compliance output lost or added checklist requirements")
+    for result in output.criterion_results:
+        if any(
+            result.tieu_chi_snapshot_json.get(key) != value
+            for key, value in knowledge.criteria[result.tieu_chi_id].items()
+        ):
+            raise ValueError("Compliance output changed the pinned criterion snapshot")
+    validate_membership(
+        PipelineRequest(**context, payload=request.payload.model_dump()),
+        PipelineResponse(
+            **context,
+            produced_at=datetime.now(timezone.utc),
+            payload=PipelineResult(
+                criterion_results=output.criterion_results,
+                requirement_results=output.requirement_results,
+                risks=output.risks,
+                recommendations=output.recommendations,
+                excluded_requirements=excluded,
+                diagnostics=output.diagnostics,
+            ),
+        ),
+    )
 
 
 def validate_report(

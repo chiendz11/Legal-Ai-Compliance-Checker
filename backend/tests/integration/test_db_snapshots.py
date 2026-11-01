@@ -90,7 +90,7 @@ def test_foreign_output_failure_rolls_back_case_and_run(
             legal_basis_ids=[],
         )
     )
-    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+    with pytest.raises(ValueError, match="source C07 is outside current run"):
         Store(database_url).save(request, response)
     with connect_postgres(database_url) as connection:
         assert (

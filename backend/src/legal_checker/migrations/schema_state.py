@@ -44,12 +44,15 @@ def structure_fingerprints(connection) -> dict[str, str]:
                 .mappings()
                 .all()
             )
+            # PostgreSQL 18 also catalogs NOT NULL as contype='n'. Its semantics
+            # remain covered by attnotnull above, as in the frozen PG17 baseline.
             constraints = (
                 connection.execute(
                     text("""
                 SELECT conname AS name, pg_get_constraintdef(oid, true) AS definition,
                        convalidated AS validated
-                FROM pg_constraint WHERE conrelid=:oid ORDER BY conname
+                FROM pg_constraint
+                WHERE conrelid=:oid AND contype <> 'n' ORDER BY conname
             """),
                     oid,
                 )

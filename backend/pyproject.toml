@@ -15,6 +15,7 @@ local-server = ["celerp-postgres==17.10.0"]
 dataset = ["gdown>=6.4.2,<7"]
 # Semantic retrieval (step 4). Install a torch build for the machine first (CPU or CUDA).
 retrieval = ["sentence-transformers>=3,<6", "numpy>=1.26"]
+ai = ["httpx>=0.28,<1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
