@@ -29,7 +29,9 @@ class StoredReport:
 
 
 class ReportStore(Protocol):
-    def save_version(self, run_id: str, report: FinalReport) -> StoredReport: ...
+    def save_version(
+        self, run_id: str, report: FinalReport, review_revision: str = NO_REVIEW
+    ) -> StoredReport: ...
     def get(self, bao_cao_id: str) -> StoredReport | None: ...
     def list_for_run(
         self, ca_id: str, run_id: str, *, offset: int, limit: int
@@ -60,7 +62,9 @@ class PostgresReportStore:
     def __init__(self, database_url: str):
         self.database_url = database_url
 
-    def save_version(self, run_id: str, report: FinalReport) -> StoredReport:
+    def save_version(
+        self, run_id: str, report: FinalReport, review_revision: str = NO_REVIEW
+    ) -> StoredReport:
         """Same report content is idempotent; a different one under the same ID conflicts."""
         sha = report_digest(report)
         with connect_postgres(self.database_url) as connection:
@@ -91,7 +95,7 @@ class PostgresReportStore:
                     report.ca_id,
                     run_id,
                     version_no,
-                    NO_REVIEW,
+                    review_revision,
                     Jsonb(report.model_dump(mode="json")),
                     sha,
                 ),

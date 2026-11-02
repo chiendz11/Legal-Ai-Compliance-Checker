@@ -6,7 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from legal_checker.core.exceptions import ConflictError
-from legal_checker.modules.assessments.service import NotFound, ResultNotReady
+from legal_checker.modules.assessments.service import NotFound, ResultNotReady, ReviewRequired
+from legal_checker.modules.reviews.service import ReviewError, StaleReview
 
 STATUS = {
     "UNAUTHENTICATED": 401,
@@ -16,6 +17,8 @@ STATUS = {
     "NOT_FOUND": 404,
     "CONFLICT": 409,
     "RESULT_NOT_READY": 409,
+    "STALE_REVIEW": 409,
+    "REVIEW_REQUIRED": 409,
     "VALIDATION_ERROR": 422,
     "INTERNAL_ERROR": 500,
 }
@@ -51,6 +54,18 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ResultNotReady)
     async def not_ready(request: Request, error: ResultNotReady):
         return envelope(request, "RESULT_NOT_READY", str(error), [])
+
+    @app.exception_handler(ReviewRequired)
+    async def review_required(request: Request, error: ReviewRequired):
+        return envelope(request, "REVIEW_REQUIRED", str(error), error.details)
+
+    @app.exception_handler(StaleReview)
+    async def stale_review(request: Request, error: StaleReview):
+        return envelope(request, "STALE_REVIEW", str(error), [])
+
+    @app.exception_handler(ReviewError)
+    async def invalid_review(request: Request, error: ReviewError):
+        return envelope(request, "VALIDATION_ERROR", str(error), [])
 
     @app.exception_handler(ConflictError)
     async def conflict(request: Request, error: ConflictError):

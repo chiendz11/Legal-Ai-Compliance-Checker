@@ -1285,8 +1285,8 @@
           "reviews"
         ],
         "summary": "Append a review decision",
-        "description": "Authorize actor; validate target case/run membership and expected hash. Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid after data; never overwrite machine output.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "description": "Authorize actor (role reviewer); validate target case/run membership and expected hash under a per-run lock (409 STALE_REVIEW when another review changed the target). Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid values for the target's editable fields; machine output is never overwritten. Events are append-only and mirrored to runtime.nhat_ky_review.",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C12"
@@ -1418,7 +1418,7 @@
         ],
         "summary": "Read append-only review history for this run",
         "description": "Read append-only review history for this run",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C12"
@@ -1877,8 +1877,8 @@
           "reports"
         ],
         "summary": "Publish an authorized reviewed report",
-        "description": "Require publish permission and expected_review_revision. Reject stale or incomplete required review. A review of an older run cannot approve this report.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "description": "Require publish permission and expected_review_revision matching both the run's current reviews and this report version (rebuild the report after new reviews). Reject with 409 REVIEW_REQUIRED when there is no review, a REQUEST_MORE_EVIDENCE/REJECT decision is open, or a NON_COMPLIANT/PARTIAL requirement or HIGH/CRITICAL risk is not confirmed. Publication is a new immutable PUBLISHED version; repeating the call returns it. A review of an older run cannot approve this report.",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C12",
@@ -2530,6 +2530,110 @@
           }
         },
         "parameters": []
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/review-state": {
+      "get": {
+        "operationId": "getRunReviewState",
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Reviewable findings of a run with their current hash",
+        "description": "One entry per reviewable machine finding (criterion, requirement status, citation, risk, recommendation) with its target_sha256 for optimistic concurrency, effective reviewer overrides, latest decision, the run's review_revision and the findings that still block publication.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C12"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_RunReviewState"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
       }
     }
   },
@@ -6863,6 +6967,90 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "Output_TargetReviewState": {
+        "additionalProperties": false,
+        "properties": {
+          "doi_tuong_loai": {
+            "title": "Doi Tuong Loai",
+            "type": "string"
+          },
+          "doi_tuong_id": {
+            "title": "Doi Tuong Id",
+            "type": "string"
+          },
+          "target_sha256": {
+            "title": "Target Sha256",
+            "type": "string"
+          },
+          "overrides": {
+            "additionalProperties": true,
+            "title": "Overrides",
+            "type": "object"
+          },
+          "latest_decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Latest Decision"
+          },
+          "review_count": {
+            "default": 0,
+            "title": "Review Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doi_tuong_loai",
+          "doi_tuong_id",
+          "target_sha256"
+        ],
+        "title": "TargetReviewState",
+        "type": "object"
+      },
+      "Output_RunReviewState": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "review_revision": {
+            "title": "Review Revision",
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/Output_TargetReviewState"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "blockers": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Blockers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "review_revision",
+          "targets",
+          "blockers"
+        ],
+        "title": "RunReviewState",
         "type": "object"
       }
     }

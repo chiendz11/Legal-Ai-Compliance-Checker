@@ -241,7 +241,7 @@ export interface paths {
         put?: never;
         /**
          * Append a review decision
-         * @description Authorize actor; validate target case/run membership and expected hash. Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid after data; never overwrite machine output.
+         * @description Authorize actor (role reviewer); validate target case/run membership and expected hash under a per-run lock (409 STALE_REVIEW when another review changed the target). Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid values for the target's editable fields; machine output is never overwritten. Events are append-only and mirrored to runtime.nhat_ky_review.
          */
         post: operations["appendHumanReview"];
         delete?: never;
@@ -305,7 +305,7 @@ export interface paths {
         put?: never;
         /**
          * Publish an authorized reviewed report
-         * @description Require publish permission and expected_review_revision. Reject stale or incomplete required review. A review of an older run cannot approve this report.
+         * @description Require publish permission and expected_review_revision matching both the run's current reviews and this report version (rebuild the report after new reviews). Reject with 409 REVIEW_REQUIRED when there is no review, a REQUEST_MORE_EVIDENCE/REJECT decision is open, or a NON_COMPLIANT/PARTIAL requirement or HIGH/CRITICAL risk is not confirmed. Publication is a new immutable PUBLISHED version; repeating the call returns it. A review of an older run cannot approve this report.
          */
         post: operations["publishReport"];
         delete?: never;
@@ -366,6 +366,86 @@ export interface paths {
          * @description text/event-stream with one `progress` event (RunProgress JSON) per change; the stream ends when the run is COMPLETED or FAILED. Clients fall back to polling the status route if the stream drops. COMPLETED means machine outputs are ready, not reviewed.
          */
         get: operations["streamRunProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with a local account
+         * @description AUTH_MODE=on only (409 otherwise). Sets an HttpOnly SameSite=Strict session cookie; the same token is accepted as Authorization: Bearer. Repeated failures per user/client are throttled (403).
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign out (clears the session cookie)
+         * @description Stateless sessions: the cookie is removed; tokens expire after AUTH_SESSION_HOURS.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current user, tenant and roles
+         * @description With AUTH_MODE=off returns the local development identity (auth_mode=off).
+         */
+        get: operations["currentUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cases/{ca_id}/runs/{run_id}/review-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reviewable findings of a run with their current hash
+         * @description One entry per reviewable machine finding (criterion, requirement status, citation, risk, recommendation) with its target_sha256 for optimistic concurrency, effective reviewer overrides, latest decision, the run's review_revision and the findings that still block publication.
+         */
+        get: operations["getRunReviewState"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2153,6 +2233,62 @@ export interface components {
             /** Items */
             items: components["schemas"]["Output_LegalBasisItem"][];
         };
+        /** SessionInfo */
+        Output_SessionInfo: {
+            /** Actor Id */
+            actor_id: string;
+            /** Tenant Id */
+            tenant_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Roles */
+            roles: string[];
+            /** Auth Mode */
+            auth_mode: string;
+        };
+        /** LoginRequest */
+        Input_LoginRequest: {
+            /** User Id */
+            user_id: string;
+            /** Password */
+            password: string;
+        };
+        /** TargetReviewState */
+        Output_TargetReviewState: {
+            /** Doi Tuong Loai */
+            doi_tuong_loai: string;
+            /** Doi Tuong Id */
+            doi_tuong_id: string;
+            /** Target Sha256 */
+            target_sha256: string;
+            /** Overrides */
+            overrides?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Latest Decision
+             * @default null
+             */
+            latest_decision: string | null;
+            /**
+             * Review Count
+             * @default 0
+             */
+            review_count: number;
+        };
+        /** RunReviewState */
+        Output_RunReviewState: {
+            /** Run Id */
+            run_id: string;
+            /** Review Revision */
+            review_revision: string;
+            /** Targets */
+            targets: components["schemas"]["Output_TargetReviewState"][];
+            /** Blockers */
+            blockers: {
+                [key: string]: string;
+            }[];
+        };
     };
     responses: never;
     parameters: never;
@@ -3600,6 +3736,244 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description No permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Object not found in the caller's permitted scope */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Input_LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed in */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Output_SessionInfo"];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description No permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Object not found in the caller's permitted scope */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description State/revision conflict or result not ready */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed out */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+        };
+    };
+    currentUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Output_SessionInfo"];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description No permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Object not found in the caller's permitted scope */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+        };
+    };
+    getRunReviewState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ca_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Output_RunReviewState"];
                 };
             };
             /** @description Unauthenticated */

@@ -18,6 +18,7 @@ from legal_checker.modules.assessments.service import AssessmentService
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.modules.legal_knowledge.repository import Knowledge
 from legal_checker.modules.reports.repository import PostgresReportStore, ReportStore
+from legal_checker.modules.reviews.repository import ReviewRepository
 from legal_checker.shared.llm.audit import LlmAuditSink, PostgresLlmAuditSink
 from legal_checker.shared.storage.http import CachedHttpSourceStorage
 from legal_checker.shared.storage.source import SourceStorage
@@ -145,6 +146,7 @@ def build_services(settings: Settings) -> Services:
             knowledge=knowledge,
             queue=queue,
             module_source=source.name,
+            reviews=ReviewRepository(settings.database_url),
         ),
         contracts=ContractRepository(settings.database_url),
         uploads=uploads,

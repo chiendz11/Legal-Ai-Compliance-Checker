@@ -22,6 +22,7 @@ from legal_checker.modules.assessments.runs import RunRepository
 from legal_checker.modules.assessments.service import AssessmentService
 from legal_checker.modules.legal_knowledge.repository import Knowledge
 from legal_checker.modules.reports.repository import PostgresReportStore
+from legal_checker.modules.reviews.repository import ReviewRepository
 from legal_checker.shared.contracts.assessment import AssessmentCase
 from legal_checker.shared.contracts.document_intelligence import (
     ContractProfile,
@@ -74,6 +75,7 @@ class FixtureSource:
         self.request_factory = request_factory
         self.fail_with = None
         self.foreign_profile = False
+        self.real_steps_5_7 = False  # group C's evaluate instead of an empty response
 
     def prepare(self, context):
         if self.fail_with:
@@ -144,7 +146,7 @@ class FixtureSource:
                 ),
             )
 
-        return case, modules, evaluator
+        return case, modules, (None if self.real_steps_5_7 else evaluator)
 
 
 class SyncQueue:
@@ -176,6 +178,7 @@ def env(database_url, request_factory, tmp_path):
         knowledge=knowledge,
         queue=queue,
         module_source=source.name,
+        reviews=ReviewRepository(database_url),
     )
     settings = replace(
         Settings.from_env(),
