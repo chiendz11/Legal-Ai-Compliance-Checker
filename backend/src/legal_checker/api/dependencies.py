@@ -7,7 +7,8 @@ from functools import lru_cache
 from fastapi import Request
 
 from legal_checker.core.config import Settings
-from legal_checker.modules.assessments.cases import CaseRepository
+from legal_checker.modules.assessments.cases import CaseRepository, DeploymentCatalog
+from legal_checker.modules.assessments.contracts import ContractRepository
 from legal_checker.modules.assessments.interfaces import AssessmentStore
 from legal_checker.modules.assessments.repository import Store
 from legal_checker.modules.assessments.runs import RunRepository
@@ -18,6 +19,7 @@ from legal_checker.modules.reports.repository import PostgresReportStore, Report
 from legal_checker.shared.llm.audit import LlmAuditSink, PostgresLlmAuditSink
 from legal_checker.shared.storage.http import CachedHttpSourceStorage
 from legal_checker.shared.storage.source import SourceStorage
+from legal_checker.shared.storage.uploads import LocalUploadStorage, RoutingSourceStorage
 from legal_checker.workflows.runner import (
     AssessmentRunner,
     ModuleSource,
@@ -39,6 +41,11 @@ class Services:
     reports: ReportStore | None = None
     runner: AssessmentRunner | None = None
     assessment_service: AssessmentService | None = None
+    contracts: ContractRepository | None = None
+    uploads: LocalUploadStorage | None = None
+    # Reads uploaded (upload://) and HTTP(S) sources; source_storage stays HTTP-only.
+    document_sources: SourceStorage | None = None
+    deployments: DeploymentCatalog | None = None
 
 
 def llm_client_factory(settings: Settings):
@@ -102,15 +109,17 @@ def build_services(settings: Settings) -> Services:
     else:
         raise ValueError(f"Unknown ASSESSMENT_QUEUE={settings.assessment_queue!r}")
 
+    remote_sources = CachedHttpSourceStorage(
+        settings.source_cache_dir,
+        timeout_seconds=settings.source_download_timeout_seconds,
+        max_bytes=settings.source_max_bytes,
+    )
+    uploads = LocalUploadStorage(settings.upload_dir, max_bytes=settings.source_max_bytes)
     return Services(
         knowledge=knowledge,
         assessments=assessment_store,
         llm_audit=PostgresLlmAuditSink(settings.database_url),
-        source_storage=CachedHttpSourceStorage(
-            settings.source_cache_dir,
-            timeout_seconds=settings.source_download_timeout_seconds,
-            max_bytes=settings.source_max_bytes,
-        ),
+        source_storage=remote_sources,
         settings=settings,
         cases=cases,
         reports=reports,
@@ -122,6 +131,14 @@ def build_services(settings: Settings) -> Services:
             knowledge=knowledge,
             queue=queue,
             module_source=source.name,
+        ),
+        contracts=ContractRepository(settings.database_url),
+        uploads=uploads,
+        document_sources=RoutingSourceStorage(uploads, remote_sources),
+        deployments=DeploymentCatalog(
+            settings.database_url,
+            rule_version=settings.deployment_rule_version,
+            legal_knowledge_version=settings.deployment_legal_knowledge_version,
         ),
     )
 

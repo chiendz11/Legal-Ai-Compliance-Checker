@@ -1,11 +1,11 @@
 """HTTP response bodies matching docs/openapi.design.json; domain DTOs stay in shared/contracts."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import Field
 
-from legal_checker.shared.contracts.assessment import AssessmentCase
+from legal_checker.shared.contracts.assessment import AssessmentCase, SourceDocument
 from legal_checker.shared.contracts.common import Context, Model
 from legal_checker.shared.contracts.report import FinalReport
 from legal_checker.workflows.states import RunStatus, Stage, StageStatus
@@ -24,6 +24,29 @@ class CaseRecord(Model):
     case: AssessmentCase
     latest_run_id: str | None = None
     latest_run_status: RunStatus | None = None
+    # History view: contract title and the latest report's requirement-status counts.
+    ten_tai_lieu: str | None = None
+    latest_report_id: str | None = None
+    requirement_status_counts: dict[str, int] = Field(default_factory=dict)
+
+
+class CaseCreate(Model):
+    """Backend derives actor, tenant and knowledge pins; an unknown relevant date stays null."""
+
+    hop_dong_id: str = Field(min_length=1)
+    ngay_danh_gia: date
+    moc_ap_dung: date | None = None
+    loai_moc_ap_dung: str | None = None
+    phien_ban_id: str | None = Field(
+        default=None, description="Omit to let backend select an allowed deployment release."
+    )
+
+
+class ContractRecord(Model):
+    hop_dong_id: str = Field(min_length=1)
+    ten_tai_lieu: str = Field(min_length=1)
+    source: SourceDocument
+    created_at: datetime
 
 
 class RunAccepted(Model):

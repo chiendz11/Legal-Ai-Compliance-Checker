@@ -9,6 +9,10 @@ from legal_checker.core.exceptions import ConflictError
 from legal_checker.modules.assessments.service import NotFound, ResultNotReady
 
 STATUS = {
+    "UNAUTHENTICATED": 401,
+    "FORBIDDEN": 403,
+    "FILE_TOO_LARGE": 413,
+    "UNSUPPORTED_MEDIA_TYPE": 415,
     "NOT_FOUND": 404,
     "CONFLICT": 409,
     "RESULT_NOT_READY": 409,

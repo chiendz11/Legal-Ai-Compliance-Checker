@@ -16,7 +16,8 @@ from legal_checker.api.dependencies import Services
 from legal_checker.core.config import Settings
 from legal_checker.core.exceptions import ConflictError
 from legal_checker.core.postgres import connect_postgres
-from legal_checker.modules.assessments.cases import CaseRepository
+from legal_checker.modules.assessments.cases import CaseRepository, DeploymentCatalog
+from legal_checker.modules.assessments.contracts import ContractRepository
 from legal_checker.modules.assessments.runs import RunRepository
 from legal_checker.modules.assessments.service import AssessmentService
 from legal_checker.modules.legal_knowledge.repository import Knowledge
@@ -28,6 +29,7 @@ from legal_checker.shared.contracts.document_intelligence import (
 )
 from legal_checker.shared.contracts.pipeline import PipelineResponse, PipelineResult
 from legal_checker.shared.contracts.scope import ScopeResolution
+from legal_checker.shared.storage.uploads import LocalUploadStorage, RoutingSourceStorage
 from legal_checker.workflows.assessment_workflow import DraftModules
 from legal_checker.workflows.runner import (
     AssessmentRunner,
@@ -176,8 +178,13 @@ def env(database_url, request_factory, tmp_path):
         module_source=source.name,
     )
     settings = replace(
-        Settings.from_env(), database_url=database_url, report_export_dir=tmp_path / "exports"
+        Settings.from_env(),
+        database_url=database_url,
+        report_export_dir=tmp_path / "exports",
+        dev_tenant_id="TENANT_TEST",
+        dev_actor_id="USER_TEST",
     )
+    uploads = LocalUploadStorage(tmp_path / "uploads", max_bytes=4096)
     services = Services(
         knowledge=knowledge,
         assessments=None,
@@ -186,11 +193,17 @@ def env(database_url, request_factory, tmp_path):
         reports=reports,
         runner=runner,
         assessment_service=service,
+        contracts=ContractRepository(database_url),
+        uploads=uploads,
+        document_sources=RoutingSourceStorage(uploads, SimpleNamespace(read=None)),
+        deployments=DeploymentCatalog(database_url),
     )
     from legal_checker.main import create_app
 
-    client = TestClient(create_app(settings=settings, services=services))
+    app = create_app(settings=settings, services=services)
+    client = TestClient(app)
     return SimpleNamespace(
+        app=app,
         client=client,
         runs=runs,
         reports=reports,

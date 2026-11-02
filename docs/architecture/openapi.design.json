@@ -164,7 +164,7 @@
         ],
         "summary": "Upload a source PDF/DOCX",
         "description": "Store original bytes, compute SHA-256 and source metadata. This does not run extraction or return a completed assessment.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01"
@@ -284,7 +284,7 @@
         ],
         "summary": "List accessible contracts",
         "description": "List accessible contracts",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -379,7 +379,7 @@
         ],
         "summary": "Get source metadata",
         "description": "Get source metadata",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01"
@@ -473,7 +473,7 @@
         ],
         "summary": "Read original source bytes",
         "description": "Return pinned original bytes for the evidence viewer; authorize access first.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -572,7 +572,7 @@
         ],
         "summary": "Create a pinned case",
         "description": "Backend derives actor/tenant and pins; client does not submit C05/C06 or computed statuses. A missing relevant date remains unknown, not today's date.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01",
@@ -678,7 +678,7 @@
           "assessments"
         ],
         "summary": "List accessible cases",
-        "description": "List accessible cases",
+        "description": "History of the caller's tenant: cases with their latest run and report (title, requirement-status counts). Filter by text, run status, a requirement status present in the latest report, and assessment-date range; sort server-side. Reading history never re-runs inference.",
         "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
@@ -761,6 +761,83 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Substring of case ID, contract ID or title",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "run_status",
+            "in": "query",
+            "required": false,
+            "description": "Latest run status; NONE = never run",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "QUEUED",
+                "RUNNING",
+                "COMPLETED",
+                "FAILED",
+                "NONE"
+              ]
+            }
+          },
+          {
+            "name": "requirement_status",
+            "in": "query",
+            "required": false,
+            "description": "Latest report contains a requirement with this status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "COMPLIANT",
+                "PARTIAL",
+                "NON_COMPLIANT",
+                "INSUFFICIENT"
+              ]
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "description": "Assessment date from (inclusive)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "description": "Assessment date to (inclusive)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ca_id",
+                "-ngay_danh_gia",
+                "ngay_danh_gia",
+                "-latest_run"
+              ],
+              "default": "ca_id"
             }
           }
         ]
@@ -3098,6 +3175,37 @@
             ],
             "default": null,
             "title": "Latest Run Status"
+          },
+          "ten_tai_lieu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ten Tai Lieu"
+          },
+          "latest_report_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Latest Report Id"
+          },
+          "requirement_status_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Requirement Status Counts",
+            "type": "object"
           }
         },
         "required": [

@@ -35,6 +35,13 @@ class Settings:
     run_lease_seconds: int = 600
     run_requeue_after_seconds: int = 120
     report_export_dir: Path = PROJECT_ROOT / "data/private/report_exports"
+    upload_dir: Path = PROJECT_ROOT / "data/private/uploads"
+    # Deployment pins for new cases; default to the versions existing cases of the release use.
+    deployment_rule_version: str | None = None
+    deployment_legal_knowledge_version: str | None = None
+    # Caller identity when auth is off (local development only).
+    dev_actor_id: str = "LOCAL_DEV"
+    dev_tenant_id: str = "LOCAL_SOURCE_PDF360"
 
     @classmethod
     def from_env(cls):
@@ -58,4 +65,11 @@ class Settings:
             report_export_dir=_project_path(
                 os.getenv("REPORT_EXPORT_DIR", "data/private/report_exports")
             ),
+            upload_dir=_project_path(os.getenv("UPLOAD_DIR", "data/private/uploads")),
+            deployment_rule_version=os.getenv("DEPLOYMENT_RULE_VERSION") or None,
+            deployment_legal_knowledge_version=(
+                os.getenv("DEPLOYMENT_LEGAL_KNOWLEDGE_VERSION") or None
+            ),
+            dev_actor_id=os.getenv("DEV_ACTOR_ID", "LOCAL_DEV"),
+            dev_tenant_id=os.getenv("DEV_TENANT_ID", "LOCAL_SOURCE_PDF360"),
         )

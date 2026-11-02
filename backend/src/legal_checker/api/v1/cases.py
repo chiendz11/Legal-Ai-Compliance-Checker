@@ -1,19 +1,21 @@
-"""Case listing, full-assessment runs, progress, pinned results and report versions.
+"""Cases, full-assessment runs, progress, pinned results and report versions.
 
-Authentication/tenant authorization (core.security.AccessPolicy) is not wired yet: these
-routes are for local development until the shared access policy exists.
+Every route resolves the caller (api.auth) and only touches cases of the caller's tenant;
+a case of another tenant is reported as not found.
 """
 
 import asyncio
-from typing import Annotated
+from datetime import date
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query, Request, Response
+from fastapi import APIRouter, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from legal_checker.api.dependencies import Services, get_services
+from legal_checker.api.auth import ActorDependency, ServicesDependency
 from legal_checker.api.errors import ApiProblem
 from legal_checker.api.v1.schemas import (
     ApiErrorDetail,
+    CaseCreate,
     CaseRecord,
     Page,
     ReportRecord,
@@ -21,19 +23,26 @@ from legal_checker.api.v1.schemas import (
     RunProgress,
     StageProgress,
 )
+from legal_checker.core.security import Actor
+from legal_checker.modules.assessments.cases import CaseFilter, CaseRow
 from legal_checker.modules.assessments.runs import RunRecord
 from legal_checker.modules.reports.repository import StoredReport
+from legal_checker.shared.contracts.assessment import AssessmentTiming
 from legal_checker.shared.contracts.workflow import AssessmentDraft
 
 router = APIRouter(prefix="/api/v1")
-ServicesDependency = Annotated[Services, Depends(get_services)]
 PageNumber = Annotated[int, Query(ge=1)]
 PageSize = Annotated[int, Query(ge=1, le=100)]
 
 
-def _case_record(row) -> CaseRecord:
+def _case_record(row: CaseRow) -> CaseRecord:
     return CaseRecord(
-        case=row.case, latest_run_id=row.latest_run_id, latest_run_status=row.latest_run_status
+        case=row.case,
+        latest_run_id=row.latest_run_id,
+        latest_run_status=row.latest_run_status,
+        ten_tai_lieu=row.ten_tai_lieu,
+        latest_report_id=row.latest_report_id,
+        requirement_status_counts=row.requirement_status_counts,
     )
 
 
@@ -56,29 +65,86 @@ def _progress(record: RunRecord) -> RunProgress:
     )
 
 
+def accessible_case(services, actor: Actor, ca_id: str) -> CaseRow:
+    """The case if it belongs to the caller's tenant; otherwise 404 (no existence leak)."""
+    row = services.cases.get(ca_id, actor.tenant_id)
+    if row is None:
+        raise ApiProblem("NOT_FOUND", f"Case {ca_id} not found")
+    return row
+
+
+def _run(services, actor: Actor, ca_id: str, run_id: str) -> RunRecord:
+    accessible_case(services, actor, ca_id)
+    return services.assessment_service.get_run(ca_id, run_id)
+
+
 @router.get("/cases", response_model=Page[CaseRecord], tags=["cases"])
-def list_cases(services: ServicesDependency, page: PageNumber = 1, page_size: PageSize = 20):
-    rows, total = services.cases.list(offset=(page - 1) * page_size, limit=page_size)
+def list_cases(
+    services: ServicesDependency,
+    actor: ActorDependency,
+    page: PageNumber = 1,
+    page_size: PageSize = 20,
+    q: Annotated[str | None, Query(max_length=200)] = None,
+    run_status: Literal["QUEUED", "RUNNING", "COMPLETED", "FAILED", "NONE"] | None = None,
+    requirement_status: Literal["COMPLIANT", "PARTIAL", "NON_COMPLIANT", "INSUFFICIENT"]
+    | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    sort: Literal["ca_id", "-ngay_danh_gia", "ngay_danh_gia", "-latest_run"] = "ca_id",
+):
+    """History: the tenant's cases with their latest run/report; filter and sort server-side."""
+    filters = CaseFilter(
+        tenant_id=actor.tenant_id,
+        q=q.strip() if q and q.strip() else None,
+        run_status=run_status,
+        requirement_status=requirement_status,
+        date_from=date_from,
+        date_to=date_to,
+        sort=sort,
+    )
+    rows, total = services.cases.list(filters, offset=(page - 1) * page_size, limit=page_size)
     return Page[CaseRecord](
         items=[_case_record(row) for row in rows], page=page, page_size=page_size, total=total
     )
 
 
-@router.get("/cases/{ca_id}", response_model=CaseRecord, tags=["cases"])
-def get_case(ca_id: str, services: ServicesDependency):
-    row = services.cases.get(ca_id)
-    if row is None:
-        raise ApiProblem("NOT_FOUND", f"Case {ca_id} not found")
+@router.post("/cases", response_model=CaseRecord, status_code=201, tags=["cases"])
+def create_case(body: CaseCreate, services: ServicesDependency, actor: ActorDependency):
+    if not actor.has("uploader"):
+        raise ApiProblem("FORBIDDEN", "Creating cases requires the uploader role")
+    if services.contracts.get(body.hop_dong_id, actor.tenant_id) is None:
+        raise ApiProblem("NOT_FOUND", f"Contract {body.hop_dong_id} not found")
+    try:
+        deployment = services.deployments.resolve(body.phien_ban_id)
+    except LookupError as error:
+        raise ApiProblem("NOT_FOUND", str(error)) from error
+    row = services.cases.create(
+        body.hop_dong_id,
+        AssessmentTiming(
+            ngay_danh_gia=body.ngay_danh_gia,
+            moc_ap_dung=body.moc_ap_dung,
+            loai_moc_ap_dung=body.loai_moc_ap_dung,
+        ),
+        deployment,
+        actor,
+    )
     return _case_record(row)
+
+
+@router.get("/cases/{ca_id}", response_model=CaseRecord, tags=["cases"])
+def get_case(ca_id: str, services: ServicesDependency, actor: ActorDependency):
+    return _case_record(accessible_case(services, actor, ca_id))
 
 
 @router.post("/cases/{ca_id}/runs", response_model=RunAccepted, status_code=202, tags=["runs"])
 def start_run(
     ca_id: str,
     services: ServicesDependency,
+    actor: ActorDependency,
     response: Response,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1)],
 ):
+    accessible_case(services, actor, ca_id)
     record = services.assessment_service.start_run(ca_id, idempotency_key)
     base = f"/api/v1/cases/{ca_id}/runs/{record.run_id}"
     response.headers["X-Module-Source"] = record.module_source
@@ -88,8 +154,14 @@ def start_run(
 
 
 @router.get("/cases/{ca_id}/runs/{run_id}/status", response_model=RunProgress, tags=["runs"])
-def run_status(ca_id: str, run_id: str, services: ServicesDependency, response: Response):
-    record = services.assessment_service.get_run(ca_id, run_id)
+def run_status(
+    ca_id: str,
+    run_id: str,
+    services: ServicesDependency,
+    actor: ActorDependency,
+    response: Response,
+):
+    record = _run(services, actor, ca_id, run_id)
     response.headers["X-Module-Source"] = record.module_source
     return _progress(record)
 
@@ -105,11 +177,13 @@ SSE_MAX_SECONDS = 30 * 60
     responses={200: {"content": {"text/event-stream": {}}}},
     tags=["runs"],
 )
-async def run_events(ca_id: str, run_id: str, request: Request, services: ServicesDependency):
+async def run_events(
+    ca_id: str, run_id: str, request: Request, services: ServicesDependency, actor: ActorDependency
+):
     """Server-Sent Events: a `progress` event (RunProgress JSON) on every change, ending once
     the run is COMPLETED or FAILED. Clients fall back to polling /status if the stream drops."""
     service = services.assessment_service
-    first = await asyncio.to_thread(service.get_run, ca_id, run_id)  # 404 before streaming
+    first = await asyncio.to_thread(_run, services, actor, ca_id, run_id)  # 404 before streaming
 
     async def stream():
         record, sent, last_write = first, None, 0.0
@@ -137,10 +211,15 @@ async def run_events(ca_id: str, run_id: str, request: Request, services: Servic
 
 
 @router.get("/cases/{ca_id}/runs/{run_id}/results", response_model=AssessmentDraft, tags=["runs"])
-def run_results(ca_id: str, run_id: str, services: ServicesDependency, response: Response):
-    service = services.assessment_service
-    record = service.get_run(ca_id, run_id)
-    draft = service.runs.draft(ca_id, run_id)
+def run_results(
+    ca_id: str,
+    run_id: str,
+    services: ServicesDependency,
+    actor: ActorDependency,
+    response: Response,
+):
+    record = _run(services, actor, ca_id, run_id)
+    draft = services.assessment_service.runs.draft(ca_id, run_id)
     if draft is None:
         raise ApiProblem("RESULT_NOT_READY", f"Run {run_id} is {record.status}")
     response.headers["X-Module-Source"] = record.module_source
@@ -154,10 +233,11 @@ def list_run_reports(
     ca_id: str,
     run_id: str,
     services: ServicesDependency,
+    actor: ActorDependency,
     page: PageNumber = 1,
     page_size: PageSize = 20,
 ):
-    services.assessment_service.get_run(ca_id, run_id)
+    _run(services, actor, ca_id, run_id)
     stored, total = services.reports.list_for_run(
         ca_id, run_id, offset=(page - 1) * page_size, limit=page_size
     )
@@ -172,5 +252,6 @@ def list_run_reports(
     status_code=201,
     tags=["reports"],
 )
-def build_run_report(ca_id: str, run_id: str, services: ServicesDependency):
+def build_run_report(ca_id: str, run_id: str, services: ServicesDependency, actor: ActorDependency):
+    _run(services, actor, ca_id, run_id)
     return report_record(services.assessment_service.build_report(ca_id, run_id))
