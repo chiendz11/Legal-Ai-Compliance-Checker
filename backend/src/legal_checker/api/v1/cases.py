@@ -254,5 +254,6 @@ def list_run_reports(
 )
 def build_run_report(ca_id: str, run_id: str, services: ServicesDependency, actor: ActorDependency):
     _run(services, actor, ca_id, run_id)
-    require_role(actor, "uploader", "Rebuilding a report")
+    # Reviewers rebuild to fold their reviews into a new version before publication.
+    require_role(actor, "uploader", "Rebuilding a report", "reviewer")
     return report_record(services.assessment_service.build_report(ca_id, run_id))

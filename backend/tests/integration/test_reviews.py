@@ -95,6 +95,12 @@ def test_unknown_targets_and_missing_roles_are_rejected(run):
     )
     try:
         assert review(run, target(run, "ket_qua_tieu_chi"), "CONFIRM").status_code == 403
+        assert run.client.post(f"{run.base}/reports").status_code == 403
+        # A reviewer (without the uploader role) folds reviews into a new report version.
+        run.app.dependency_overrides[current_actor] = lambda: Actor(
+            "REVIEWER", "TENANT_TEST", frozenset({"viewer", "reviewer"})
+        )
+        assert run.client.post(f"{run.base}/reports").status_code == 201
     finally:
         run.app.dependency_overrides.clear()
 

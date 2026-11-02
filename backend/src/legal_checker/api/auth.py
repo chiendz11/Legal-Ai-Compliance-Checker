@@ -41,6 +41,7 @@ def current_actor(request: Request, services: ServicesDependency) -> Actor:
 ActorDependency = Annotated[Actor, Depends(current_actor)]
 
 
-def require_role(actor: Actor, role: str, action: str) -> None:
-    if not actor.has(role):
-        raise ApiProblem("FORBIDDEN", f"{action} requires the {role} role")
+def require_role(actor: Actor, role: str, action: str, *alternatives: str) -> None:
+    if not any(actor.has(r) for r in (role, *alternatives)):
+        allowed = " or ".join((role, *alternatives))
+        raise ApiProblem("FORBIDDEN", f"{action} requires the {allowed} role")
