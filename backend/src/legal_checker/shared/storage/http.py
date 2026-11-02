@@ -1,9 +1,11 @@
 """Read public HTTP(S) sources, verified against C01, with an atomic local cache."""
 
+import errno
 import hashlib
 import math
 import os
 import tempfile
+import time
 from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -35,6 +37,11 @@ class SourceFormatError(SourceStorageError):
 
 class SourceCacheError(SourceStorageError):
     """Cannot read or atomically write the local cache."""
+
+
+def _sharing_error(error: OSError) -> bool:
+    """Recognize Win32 sharing errors and CRT open()'s errno-only EACCES."""
+    return getattr(error, "winerror", None) in {5, 32, 33} or error.errno == errno.EACCES
 
 
 def _is_http_url(value: str) -> bool:
@@ -117,15 +124,28 @@ class CachedHttpSourceStorage:
 
     def _read_cache(self, path: Path, source: SourceDocument) -> bytes | None:
         try:
-            try:
-                with path.open("rb") as stream:
-                    payload = stream.read(self.max_bytes + 1)
-            except FileNotFoundError:
-                return None
+            for attempt in range(5):
+                try:
+                    with path.open("rb") as stream:
+                        payload = stream.read(self.max_bytes + 1)
+                    break
+                except FileNotFoundError:
+                    return None
+                except OSError as error:
+                    if not _sharing_error(error) or attempt == 4:
+                        raise
+                    time.sleep(0.01 * 2**attempt)
             try:
                 self._verify(payload, source)
             except (SourceIntegrityError, SourceFormatError, SourceTooLargeError):
-                path.unlink(missing_ok=True)
+                for attempt in range(5):
+                    try:
+                        path.unlink(missing_ok=True)
+                        break
+                    except OSError as error:
+                        if not _sharing_error(error) or attempt == 4:
+                            raise
+                        time.sleep(0.01 * 2**attempt)
                 return None
             return payload
         except OSError:
@@ -178,8 +198,24 @@ class CachedHttpSourceStorage:
             ) as f:
                 temporary = Path(f.name)
                 f.write(payload)
-            # Concurrent readers only see a complete, verified entry.
-            os.replace(temporary, path)
+            # Concurrent readers only see a complete, verified entry. On Windows,
+            # another reader can temporarily prevent replacing that same entry.
+            for attempt in range(5):
+                try:
+                    os.replace(temporary, path)
+                    break
+                except OSError as error:
+                    # Another publisher may already have installed these exact
+                    # verified bytes. Never accept a corrupt/different winner.
+                    try:
+                        with path.open("rb") as existing:
+                            if existing.read(len(payload) + 1) == payload:
+                                return
+                    except OSError:
+                        pass
+                    if not _sharing_error(error) or attempt == 4:
+                        raise
+                    time.sleep(0.01 * 2**attempt)
         except OSError:
             raise SourceCacheError(
                 "Cannot write the source cache; check directory permissions"

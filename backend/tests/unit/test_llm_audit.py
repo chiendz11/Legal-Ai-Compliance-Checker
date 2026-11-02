@@ -134,6 +134,14 @@ def test_unreported_usage_and_cost_remain_null():
     assert event.input_tokens is event.output_tokens is event.chi_phi is None
 
 
+def test_actual_returned_model_can_replace_requested_alias_without_extra_call():
+    sink = MemorySink()
+    with audit_llm_call(sink, **call_args(model_version="requested-alias")) as call:
+        call.complete("actual output", model_version="actual-model-snapshot")
+    assert len(sink.events) == 1
+    assert sink.events[0].model_version == "actual-model-snapshot"
+
+
 def test_provider_error_is_recorded_without_copying_its_message():
     sink = MemorySink()
     error = RuntimeError("api_key=PRIVATE_SECRET; provider body PRIVATE_TEXT")

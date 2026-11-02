@@ -1,6 +1,8 @@
 """Exercise the real HTTP reader against local servers; no Supabase/DB required."""
 
+import errno
 import hashlib
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -184,6 +186,125 @@ def test_cache_write_failure_is_explicit_and_cleans_temporary_file(
     with pytest.raises(SourceCacheError):
         CachedHttpSourceStorage(tmp_path).read(source(base + "/source.pdf"))
     assert list(tmp_path.iterdir()) == []
+
+
+def sharing_violation():
+    error = PermissionError("Destination is in use")
+    error.winerror = 32
+    return error
+
+
+def test_windows_cache_publication_retries_transient_sharing_errors(tmp_path, monkeypatch):
+    replace = os.replace
+    calls = []
+    delays = []
+
+    def busy_then_replace(temporary, destination):
+        calls.append(destination)
+        if len(calls) < 3:
+            raise sharing_violation()
+        replace(temporary, destination)
+
+    monkeypatch.setattr("legal_checker.shared.storage.http.os.replace", busy_then_replace)
+    monkeypatch.setattr("legal_checker.shared.storage.http.time.sleep", delays.append)
+    CachedHttpSourceStorage(tmp_path)._write_cache(tmp_path / SHA, PDF)
+    assert len(calls) == 3
+    assert delays == [0.01, 0.02]
+    assert list(tmp_path.iterdir()) == [tmp_path / SHA]
+    assert (tmp_path / SHA).read_bytes() == PDF
+
+
+@pytest.mark.parametrize("failures", [2, 5])
+@pytest.mark.parametrize("crt_errno", [False, True])
+def test_windows_cache_reads_retry_but_persistent_sharing_failure_is_explicit(
+    tmp_path, monkeypatch, failures, crt_errno
+):
+    from pathlib import Path
+
+    path = tmp_path / SHA
+    path.write_bytes(PDF)
+    original_open = Path.open
+    calls, delays = [], []
+
+    def busy_reader(candidate, *args, **kwargs):
+        if candidate == path:
+            calls.append(candidate)
+            if len(calls) <= failures:
+                if crt_errno:
+                    # Python's CRT file open reports errno=13, winerror=None.
+                    raise PermissionError(errno.EACCES, "Destination is temporarily in use")
+                raise sharing_violation()
+        return original_open(candidate, *args, **kwargs)
+
+    def forbidden_download(*args):
+        pytest.fail("An unreadable cache must not be silently treated as a miss")
+
+    monkeypatch.setattr(Path, "open", busy_reader)
+    monkeypatch.setattr(CachedHttpSourceStorage, "_download", forbidden_download)
+    monkeypatch.setattr("legal_checker.shared.storage.http.time.sleep", delays.append)
+    storage = CachedHttpSourceStorage(tmp_path)
+    if failures == 2:
+        assert storage.read(source("https://example.test/source.pdf")) == PDF
+        assert len(calls) == 3
+        assert delays == [0.01, 0.02]
+    else:
+        with pytest.raises(SourceCacheError):
+            storage.read(source("https://example.test/source.pdf"))
+        assert len(calls) == 5
+        assert delays == [0.01, 0.02, 0.04, 0.08]
+    assert path.stat().st_size == len(PDF)
+
+
+def test_windows_cache_publication_accepts_identical_concurrent_winner(tmp_path, monkeypatch):
+    def another_publisher_won(temporary, destination):
+        destination.write_bytes(PDF)
+        raise sharing_violation()
+
+    monkeypatch.setattr("legal_checker.shared.storage.http.os.replace", another_publisher_won)
+    CachedHttpSourceStorage(tmp_path)._write_cache(tmp_path / SHA, PDF)
+    assert list(tmp_path.iterdir()) == [tmp_path / SHA]
+    assert (tmp_path / SHA).read_bytes() == PDF
+
+
+def test_windows_cache_sharing_errors_never_accept_corrupt_winner(tmp_path, monkeypatch):
+    calls = []
+    (tmp_path / SHA).write_bytes(b"corrupt")
+
+    def still_busy(*args):
+        calls.append(True)
+        raise sharing_violation()
+
+    monkeypatch.setattr("legal_checker.shared.storage.http.os.replace", still_busy)
+    monkeypatch.setattr("legal_checker.shared.storage.http.time.sleep", lambda _: None)
+    with pytest.raises(SourceCacheError):
+        CachedHttpSourceStorage(tmp_path)._write_cache(tmp_path / SHA, PDF)
+    assert len(calls) == 5
+    assert list(tmp_path.iterdir()) == [tmp_path / SHA]
+    assert (tmp_path / SHA).read_bytes() == b"corrupt"
+
+
+def test_windows_corrupt_cache_removal_retries_sharing_error(tmp_path, http_source, monkeypatch):
+    from pathlib import Path
+
+    base, _ = http_source
+    path = tmp_path / SHA
+    path.write_bytes(b"corrupt")
+    unlink = Path.unlink
+    calls = []
+
+    def busy_once(candidate, **kwargs):
+        if candidate == path:
+            calls.append(candidate)
+            if len(calls) == 1:
+                raise sharing_violation()
+        return unlink(candidate, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", busy_once)
+    monkeypatch.setattr("legal_checker.shared.storage.http.time.sleep", lambda _: None)
+    assert CachedHttpSourceStorage(tmp_path).read(source(base + "/source.pdf")) == PDF
+    assert len(calls) == 2
+    assert list(tmp_path.iterdir()) == [path]
+    assert path.read_bytes() == PDF
 
 
 def test_non_http_locations_are_not_opened(tmp_path):

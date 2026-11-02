@@ -1,0 +1,75 @@
+{
+  "scope": "FULL_REPOSITORY_REQUIRED_CHECKS",
+  "verified_at_asia_saigon": "2026-10-29T18:00:43.250163+07:00",
+  "interpreter": "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+  "python_version": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "test_database_host": "127.0.0.1",
+  "test_database_port": "55433",
+  "required_test_database_prefix": "legal_checker_test",
+  "postgresql_tests_executed": true,
+  "test_counts": {
+    "tests": 1259,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "checks": [
+    {
+      "name": "ruff_check",
+      "command": [
+        "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "--config",
+        "backend/pyproject.toml",
+        "."
+      ],
+      "cwd": "C:\\demo\\Legal-Ai-Compliance-Checker",
+      "exit_code": 0
+    },
+    {
+      "name": "ruff_format",
+      "command": [
+        "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "--config",
+        "backend/pyproject.toml",
+        "."
+      ],
+      "cwd": "C:\\demo\\Legal-Ai-Compliance-Checker",
+      "exit_code": 0
+    },
+    {
+      "name": "pytest",
+      "command": [
+        "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short",
+        "-c",
+        "backend/pyproject.toml",
+        "--junitxml=C:\\demo\\Legal-Ai-Compliance-Checker\\outputs\\group_c_completion_20261029_172537\\pytest.xml"
+      ],
+      "cwd": "C:\\demo\\Legal-Ai-Compliance-Checker",
+      "exit_code": 0
+    },
+    {
+      "name": "installed_package",
+      "command": [
+        "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+        "-I",
+        "-c",
+        "from legal_checker.main import create_app; from importlib.resources import files; assert callable(create_app); assert files('legal_checker.migrations').joinpath('env.py').is_file(); assert files('legal_checker.migrations').joinpath('sql/002_snapshots_and_runs.sql').is_file(); print('Installed package and migration resources import outside repository')"
+      ],
+      "cwd": "C:\\Users\\hn845\\AppData\\Local\\Temp\\group-c-installed-1l3jh843",
+      "exit_code": 0
+    }
+  ],
+  "ci_reference": ".github/workflows/ci.yml",
+  "local_environment_difference": "Python 3.14 / PostgreSQL 18.4; CI declares Python 3.12 / PostgreSQL 17.10"
+}

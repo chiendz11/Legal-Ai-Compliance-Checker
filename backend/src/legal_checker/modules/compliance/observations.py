@@ -15,6 +15,8 @@ class ObservationProvider(Protocol):
 
     Provider proposals are not trusted findings. The implementation must derive
     verification gates from actual checks, never from an LLM's claimed certainty.
+    LLMObservationProvider in llm_observations.py is the concrete implementation;
+    it supports offline records, an injected API client, and independent review.
     """
 
     def observe(

@@ -1,10 +1,10 @@
 # Frontend — BRD step 9 and reviewer/curator screens
 
-Vite + React 18 + TypeScript. Data fetching uses TanStack Query and an `openapi-fetch` client typed from `docs/openapi.design.json`. In dev, `/api` and `/health` go through the Vite proxy to the backend. MSW can serve cases/reports from local fixtures instead, for UI work without a backend.
+Vite + React 18 + TypeScript. Data fetching uses TanStack Query and an `openapi-fetch` client typed from `docs/architecture/openapi.design.json`. In dev, `/api` and `/health` go through the Vite proxy to the backend. MSW can serve cases/reports from local fixtures instead, for UI work without a backend.
 
 ## Run
 
-Needs Node 20+ and the backend on 127.0.0.1:8000 (see [docs/demo.md](../docs/demo.md)). From `frontend/`:
+Needs Node 20+ and the backend on 127.0.0.1:8000 (see [docs/guides/demo.md](../docs/guides/demo.md)). From `frontend/`:
 
 ```bash
 npm install
@@ -25,7 +25,7 @@ Fixtures are QA `EXPECTED` C13 references for layout only, and the UI labels the
 | `npm run dev` | Dev server with backend proxy (or mock) |
 | `npm run build` | Typecheck and production build |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run gen:api` | Regenerate `src/shared/api/schema.d.ts` after `docs/openapi.design.json` changes |
+| `npm run gen:api` | Regenerate `src/shared/api/schema.d.ts` after `docs/architecture/openapi.design.json` changes |
 
 ## Layout
 

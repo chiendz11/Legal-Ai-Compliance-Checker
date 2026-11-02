@@ -1,0 +1,260 @@
+{
+  "source": "data\\private\\v750_source_pdf360_r2_supabase\\bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.xlsx",
+  "source_workbook_sha256_not_knowledge_snapshot": "e1f15b658d6ef511efa784eb09896adcda67befadbc51ae7411a90c1a4b29e61",
+  "sheets_read": [
+    "tieu_chi_danh_gia",
+    "quy_tac_quyet_dinh"
+  ],
+  "reference_outputs_or_observations_read": false,
+  "criterion_count": 441,
+  "decision_rule_count": 1764,
+  "criterion_type_counts": {
+    "CONTRACT_CLAUSE_AND_PERFORMANCE": 1,
+    "CONTRACT_CONTENT": 181,
+    "DOI_CHIEU_CO_DIEU_KIEN": 75,
+    "NOI_DUNG_BAT_BUOC": 57,
+    "PERFORMANCE_OR_CONDITIONAL": 9,
+    "PERFORMANCE_WITH_DOCUMENTS": 86,
+    "PROHIBITED_CLAUSE": 32
+  },
+  "unsupported_types_return_unknown": [],
+  "numeric_schema_count": 12,
+  "numeric_schemas": [
+    {
+      "rule_ids": [
+        "QD_TC_APT_DEPOSIT_CAP_MISSING",
+        "QD_TC_APT_DEPOSIT_CAP_SATISFIED",
+        "QD_TC_APT_DEPOSIT_CAP_UNKNOWN",
+        "QD_TC_APT_DEPOSIT_CAP_VIOLATED",
+        "QD_TC_APT_DEPOSIT_ELIGIBLE_MISSING",
+        "QD_TC_APT_DEPOSIT_ELIGIBLE_SATISFIED",
+        "QD_TC_APT_DEPOSIT_ELIGIBLE_UNKNOWN",
+        "QD_TC_APT_DEPOSIT_ELIGIBLE_VIOLATED",
+        "QD_TC_APT_DEPOSIT_PRICE_MISSING",
+        "QD_TC_APT_DEPOSIT_PRICE_SATISFIED",
+        "QD_TC_APT_DEPOSIT_PRICE_UNKNOWN",
+        "QD_TC_APT_DEPOSIT_PRICE_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_APT_DEPOSIT_CAP",
+        "TC_APT_DEPOSIT_ELIGIBLE",
+        "TC_APT_DEPOSIT_PRICE"
+      ],
+      "rule": {
+        "denominator": "sale_price",
+        "deposit_lte_ratio": "0.05",
+        "eligible_before_collection": true
+      },
+      "engine_kind": "deposit_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_APT_CERTIFICATE_50D_2024_01_MISSING",
+        "QD_TC_PV_APT_CERTIFICATE_50D_2024_01_SATISFIED",
+        "QD_TC_PV_APT_CERTIFICATE_50D_2024_01_UNKNOWN",
+        "QD_TC_PV_APT_CERTIFICATE_50D_2024_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_APT_CERTIFICATE_50D_2024_01"
+      ],
+      "rule": {
+        "application_submission_max_days": 50,
+        "exception": "BUYER_VOLUNTARILY_SELF_FILES",
+        "not_certificate_issuance_deadline": true,
+        "start": "HANDOVER"
+      },
+      "engine_kind": "application_submission_max_days",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_GYC062_01_MISSING",
+        "QD_TC_PV_GYC062_01_SATISFIED",
+        "QD_TC_PV_GYC062_01_UNKNOWN",
+        "QD_TC_PV_GYC062_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_GYC062_01"
+      ],
+      "rule": {
+        "denominator": "contract_price",
+        "first_payment_including_deposit_lte_ratio": "0.3",
+        "scope": "FUTURE_COMMERCIAL"
+      },
+      "engine_kind": "first_payment_including_deposit_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_GYC064_01_MISSING",
+        "QD_TC_PV_GYC064_01_SATISFIED",
+        "QD_TC_PV_GYC064_01_UNKNOWN",
+        "QD_TC_PV_GYC064_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_GYC064_01"
+      ],
+      "rule": {
+        "denominator": "contract_price",
+        "foreign_seller_art10_4_lte_ratio": "0.5",
+        "prehandover_cumulative_lte_ratio": "0.7",
+        "scope": "FUTURE_COMMERCIAL"
+      },
+      "engine_kind": "prehandover_cumulative_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_GYC065_01_MISSING",
+        "QD_TC_PV_GYC065_01_SATISFIED",
+        "QD_TC_PV_GYC065_01_UNKNOWN",
+        "QD_TC_PV_GYC065_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_GYC065_01"
+      ],
+      "rule": {
+        "before_certificate_cumulative_lte_ratio": "0.95",
+        "denominator": "contract_price",
+        "scope": "FUTURE_COMMERCIAL"
+      },
+      "engine_kind": "before_certificate_cumulative_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_GYC104_01_MISSING",
+        "QD_TC_PV_GYC104_01_SATISFIED",
+        "QD_TC_PV_GYC104_01_UNKNOWN",
+        "QD_TC_PV_GYC104_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_GYC104_01"
+      ],
+      "rule": {
+        "maintenance_ratio": "0.02",
+        "scope": "DEVELOPER_SALE_MULTIPLE_OWNERS_NEW_RULES",
+        "separate_from_sale_price": true
+      },
+      "engine_kind": "maintenance_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_GYC154_01_MISSING",
+        "QD_TC_PV_GYC154_01_SATISFIED",
+        "QD_TC_PV_GYC154_01_UNKNOWN",
+        "QD_TC_PV_GYC154_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_GYC154_01"
+      ],
+      "rule": {
+        "scope": "NEW_PROJECT",
+        "start": "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+        "warranty_min_months": 60
+      },
+      "engine_kind": "warranty_min_months",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_HYC034_01_MISSING",
+        "QD_TC_PV_HYC034_01_SATISFIED",
+        "QD_TC_PV_HYC034_01_UNKNOWN",
+        "QD_TC_PV_HYC034_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_HYC034_01"
+      ],
+      "rule": {
+        "denominator": "contract_price",
+        "deposit_inclusion": "EXPERT_REVIEW_REQUIRED",
+        "first_payment_lte_ratio": "0.3",
+        "scope": "FUTURE_FORMED_KDBDS_2014"
+      },
+      "engine_kind": "first_payment_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_HYC036_01_MISSING",
+        "QD_TC_PV_HYC036_01_SATISFIED",
+        "QD_TC_PV_HYC036_01_UNKNOWN",
+        "QD_TC_PV_HYC036_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_HYC036_01"
+      ],
+      "rule": {
+        "denominator": "contract_price",
+        "foreign_invested_seller_lte_ratio": "0.5",
+        "prehandover_cumulative_lte_ratio": "0.7",
+        "scope": "FUTURE_FORMED_KDBDS_2014",
+        "seller_fact": "ho_so_hop_dong.ben_ban_co_von_nuoc_ngoai",
+        "seller_fact_unresolved": "UNKNOWN"
+      },
+      "engine_kind": "prehandover_cumulative_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_HYC037_01_MISSING",
+        "QD_TC_PV_HYC037_01_SATISFIED",
+        "QD_TC_PV_HYC037_01_UNKNOWN",
+        "QD_TC_PV_HYC037_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_HYC037_01"
+      ],
+      "rule": {
+        "before_certificate_cumulative_lte_ratio": "0.95",
+        "denominator": "contract_price",
+        "scope": "FUTURE_FORMED_KDBDS_2014"
+      },
+      "engine_kind": "before_certificate_cumulative_lte_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_HYC049_02_MISSING",
+        "QD_TC_PV_HYC049_02_SATISFIED",
+        "QD_TC_PV_HYC049_02_UNKNOWN",
+        "QD_TC_PV_HYC049_02_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_HYC049_02"
+      ],
+      "rule": {
+        "denominator": "apartment_value",
+        "denominator_definition": "EXPERT_REVIEW_REQUIRED",
+        "included_in_sale_payment": true,
+        "maintenance_ratio": "0.02",
+        "scope": "DEVELOPER_SALE_MULTI_OWNER_NHAO_2014"
+      },
+      "engine_kind": "maintenance_ratio",
+      "supported": true
+    },
+    {
+      "rule_ids": [
+        "QD_TC_PV_HYC053_01_MISSING",
+        "QD_TC_PV_HYC053_01_SATISFIED",
+        "QD_TC_PV_HYC053_01_UNKNOWN",
+        "QD_TC_PV_HYC053_01_VIOLATED"
+      ],
+      "criterion_ids": [
+        "TC_PV_HYC053_01"
+      ],
+      "rule": {
+        "scope": "APARTMENT_NEW_BUILD_NHAO_2014",
+        "start": "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+        "warranty_min_months": 60
+      },
+      "engine_kind": "warranty_min_months",
+      "supported": true
+    }
+  ],
+  "invalid_policy_rows": [],
+  "interpretation": "Schema support is structural only. Facts, units, denominator, scope and target must independently pass backend verification; source knowledge is not approved."
+}

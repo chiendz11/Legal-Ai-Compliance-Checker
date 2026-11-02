@@ -93,18 +93,24 @@ class AssessmentRunner:
             # Already finished, owned by a live worker, or unknown: nothing to do.
             return self.runs.get(ca_id, run_id)
         context = record.context
+        running: set[str] = set()
+
+        def on_stage(stage, status):
+            (running.add if status == "RUNNING" else running.discard)(stage)
+            self.runs.mark_stage(ca_id, run_id, stage, status)
+
         try:
             case, modules, evaluator = self.source.prepare(context)
             draft = DraftAssessmentWorkflow(modules, self.knowledge, evaluator=evaluator).evaluate(
-                case,
-                context,
-                on_stage=lambda stage, status: self.runs.mark_stage(ca_id, run_id, stage, status),
+                case, context, on_stage=on_stage
             )
             report = build_run_report(draft, self.knowledge, record.module_source)
         except TRANSIENT_ERRORS as error:
             self.runs.release(ca_id, run_id)
             raise TransientRunError(str(error)) from error
         except Exception as error:  # every other failure is recorded on the run
+            for stage in sorted(running):  # the stage(s) in flight when it failed
+                self.runs.mark_stage(ca_id, run_id, stage, "FAILED")
             self.runs.fail(ca_id, run_id, failure_reason(error), str(error))
             return self.runs.get(ca_id, run_id)
         self.runs.complete(ca_id, run_id, draft)

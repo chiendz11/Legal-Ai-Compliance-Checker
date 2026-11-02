@@ -1,0 +1,50 @@
+{
+  "phase_1_status": "COMPLETE",
+  "phase_2_status": "NOT_IMPLEMENTED_THIS_TURN",
+  "phase_3_status": "NOT_IMPLEMENTED_THIS_TURN",
+  "verified_at": "2026-10-28T19:51:47.174015+07:00",
+  "interpreter": "C:\\demo\\Legal-Ai-Compliance-Checker\\.venv\\Scripts\\python.exe",
+  "tests": {
+    "tests": 849,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ruff_check": "PASSED_SCOPED",
+  "ruff_format": "PASSED_18_FILES",
+  "modified_code_and_test_sha256": {
+    "backend/src/legal_checker/modules/compliance/criterion_reasoner.py": "b5d252f093e24b5968d4fa19ed61d7c89c2f5fbd10d00c9c7748abe2377faf10",
+    "backend/src/legal_checker/modules/compliance/decision_rules.py": "0bd9aa51632a65e4d2525175950f4c507782e8574e82d026435c671ea7b546d0",
+    "backend/src/legal_checker/modules/compliance/requirement_aggregator.py": "f56878687ceca775ca6d731a4869b7080f390bc092a821dd4f96e51f7c7ee495",
+    "backend/src/legal_checker/modules/risks/aggregator.py": "9de1d27a00d2852f7c7ff568331f2ed56f69c9d1eb3958ccd9badf230cb17469",
+    "backend/src/legal_checker/modules/risks/citation_mapper.py": "ebaed3a633ec9fb4bc16267cafae0d93be2984acf6ef3923f4791ef768100337",
+    "backend/src/legal_checker/modules/risks/compliance_mapper.py": "15618e77d1d720755785bad3cba149343e0bfc34a7b351f46f1527e3c80c253d",
+    "backend/src/legal_checker/modules/risks/policy.py": "57d46396dfb61ba58ff3aebcdc3199d3083e2e22f6d970ad33a38bae0f4518c7",
+    "backend/src/legal_checker/modules/risks/service.py": "a9647e566731dcfdf90c0f10a8fc4da44b8b89e6318654e8360922cede0f311a",
+    "backend/src/legal_checker/modules/recommendations/generator.py": "0107d5ded5f9e403b6f1dc03738c1509a1672182d6c6cec18043659319414c28",
+    "backend/src/legal_checker/modules/recommendations/validator.py": "95a4565c8fca4e26f0facd408baf319ebdde36f14d8691c39a539031daea2632",
+    "backend/src/legal_checker/modules/recommendations/service.py": "0a4dd0331a6d393ec7ca8dff65a9312b38628c0f88b83daab72515ad14011832",
+    "backend/tests/unit/test_c07_hardening.py": "dd2847f48e423d251b763693d32bd4c621ba75fb3952b1a318d1ccf24775017d",
+    "backend/tests/unit/test_requirement_aggregator.py": "5b5218aa0342f5a7b60f1981ab08c89c5da6e0d4549fb9cd792a4aa327877d8f",
+    "backend/tests/unit/test_risks.py": "f5e0bc7515e1b765b28ba84702bcc73016c324db2bf352cfa99efcd6bcf45a03",
+    "backend/tests/unit/test_recommendations.py": "55be428bbe517519073fb5bb68b9b2562230db81430e646023f2599351733a99",
+    "backend/tests/unit/test_group_c_core.py": "dcfc934741d0dcadc61e6b5a39611260d7b067e19616cb76e771646becf59966",
+    "outputs/group_c_phase1_20261028_193924/verify_phase1.py": "0dff2bafea6e1b7e0ccb25fc3ec6bc22b9e41df98d8f2ffc22bfbe1445bcca05",
+    "outputs/group_c_phase1_20261028_193924/inventory_knowledge.py": "5e0b2446d936ca5cbca50576f62f08998eccd4f1ca2334bfda0ddb04ad665585"
+  },
+  "checklist_files": [
+    "outputs/group_c_20261028/checklist.md",
+    "outputs/group_c_phase1_20261028_193924/checklist.md"
+  ],
+  "checkpoint": "outputs/group_c_phase1_20261028_193924/checkpoint.md",
+  "exact_commands_and_exit_codes": "checks.json",
+  "preexisting_dirty_work_preserved": true,
+  "paid_api_called": false,
+  "postgresql_or_save_read_demo_verified": false,
+  "remaining": [
+    "Phase 2 workflow/DI and runner CLI tests",
+    "Phase 2 PostgreSQL isolated test DB and offline save/read demo",
+    "Phase 2 trusted upstream C09 provenance adapter and legacy source membership",
+    "Phase 3 full checks, JSON schemas, documentation and final handover package"
+  ]
+}

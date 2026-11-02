@@ -96,6 +96,23 @@ class CriterionResult(Model):
         return self
 
 
+class ExternalEvidenceRegistration(Context):
+    """Backend registry attestation, supplied separately from a provider proposal.
+
+    The loader must verify stored bytes/hash and source before setting verified.
+    These fields are an internal trust boundary, not a public LLM output schema.
+    """
+
+    hop_dong_id: str
+    yeu_cau_ca_id: str
+    tieu_chi_id: str
+    bang_chung_id: str
+    object_uri: str = Field(min_length=1)
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    verified: bool = Field(default=False, strict=True)
+    verification_reference: str = Field(min_length=1)
+
+
 class ReasoningPayload(Model):
     """C05 + C06 + evidence/observations. Citation validation is a separate branch."""
 
@@ -104,6 +121,7 @@ class ReasoningPayload(Model):
     chunks: list[Chunk] = Field(default_factory=list)
     retrieval: list[RetrievalEvidence] = Field(default_factory=list)
     observations: list[Observation] = Field(default_factory=list)
+    external_evidence_registry: list[ExternalEvidenceRegistration] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def unique_ids(self):

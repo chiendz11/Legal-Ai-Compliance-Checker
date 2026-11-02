@@ -15,6 +15,9 @@ local-server = ["celerp-postgres==17.10.0"]
 worker = ["celery[redis]>=5.5,<6"]
 export = ["python-docx>=1.1,<2", "fpdf2>=2.8,<3"]
 dataset = ["gdown>=6.4.2,<7"]
+# Semantic retrieval (step 4). Install a torch build for the machine first (CPU or CUDA).
+retrieval = ["sentence-transformers>=3,<6", "numpy>=1.26"]
+ai = ["httpx>=0.28,<1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

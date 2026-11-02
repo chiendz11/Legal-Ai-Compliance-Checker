@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "gen:api": "openapi-typescript ../docs/openapi.design.json -o src/shared/api/schema.d.ts"
+    "gen:api": "openapi-typescript ../docs/architecture/openapi.design.json -o src/shared/api/schema.d.ts"
   },
   "msw": {
     "workerDirectory": [

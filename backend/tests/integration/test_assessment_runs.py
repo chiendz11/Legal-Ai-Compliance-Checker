@@ -79,6 +79,9 @@ class FixtureSource:
 
         def bind(data):
             data.update(ca_id=context.ca_id, run_id=context.run_id, trace_id=context.trace_id)
+            # The workflow validates C06 run ownership against the run's envelope.
+            for item in data["payload"]["retrieval"]:
+                item["lan_chay_id"] = context.run_id
 
         request = self.request_factory(mutate=bind)
         case = AssessmentCase(

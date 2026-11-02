@@ -1,6 +1,7 @@
 """SQL inputs and seeded evidence for Retrieval module development."""
 
 from legal_checker.core.postgres import connect_postgres
+from legal_checker.modules.retrieval.fact_evidence import FactEvidence
 
 
 class RetrievalDatasetRepository:
@@ -10,11 +11,13 @@ class RetrievalDatasetRepository:
     def load_input_rows(self, ca_id: str) -> dict:
         """C05 source rows and this contract's chunks. DTO mapping remains explicit."""
         with connect_postgres(self.database_url) as connection:
+            # Ca đánh giá
             case = connection.execute(
                 "SELECT * FROM runtime.ca_danh_gia WHERE ca_id=%s", (ca_id,)
             ).fetchone()
             if case is None:
                 raise KeyError(f"Unknown assessment case {ca_id}")
+            # yêu cầu áp dụng nối với phiên bản yêu cầu (nếu có)
             requirements = connection.execute(
                 """
                 SELECT a.*, to_jsonb(v) AS requirement_version
@@ -24,6 +27,7 @@ class RetrievalDatasetRepository:
             """,
                 (ca_id,),
             ).fetchall()
+            # Các đoạn hợp đồng của ca đánh giá
             chunks = connection.execute(
                 """
                 SELECT * FROM runtime.doan_hop_dong
@@ -31,6 +35,7 @@ class RetrievalDatasetRepository:
             """,
                 (case["hop_dong_id"],),
             ).fetchall()
+            # tiêu chí đánh giá áp dụng cho các yêu cầu áp dụng của ca đánh giá
             criteria = connection.execute(
                 """
                 SELECT a.yeu_cau_ca_id, c.*
@@ -47,9 +52,41 @@ class RetrievalDatasetRepository:
                 "criteria": criteria,
             }
 
+    def section_paths(self, hop_dong_id: str) -> dict[str, str]:
+        """doan_id → section_path for one contract; C02 Chunk DTOs do not carry the path."""
+        with connect_postgres(self.database_url) as connection:
+            rows = connection.execute(
+                "SELECT doan_id, section_path FROM runtime.doan_hop_dong WHERE hop_dong_id=%s",
+                (hop_dong_id,),
+            ).fetchall()
+        return {row["doan_id"]: row["section_path"] for row in rows if row["section_path"]}
+
+    def fact_evidence(self, hop_dong_id: str) -> list[FactEvidence]:
+        """Extracted C02 fields (not profile.* aliases) with their evidence chunks."""
+        with connect_postgres(self.database_url) as connection:
+            rows = connection.execute(
+                """
+                SELECT tx.ten_truong, b.doan_id
+                FROM runtime.trich_xuat_truong tx
+                JOIN runtime.bang_chung_truong b USING (trich_xuat_id)
+                JOIN runtime.doan_hop_dong d
+                  ON d.doan_id=b.doan_id AND d.hop_dong_id=tx.hop_dong_id
+                WHERE tx.hop_dong_id=%s AND tx.ten_truong NOT LIKE 'profile.%%'
+                ORDER BY tx.trich_xuat_id, b.bang_chung_id
+            """,
+                (hop_dong_id,),
+            ).fetchall()
+        chunks: dict[str, list[str]] = {}
+        for row in rows:
+            ids = chunks.setdefault(row["ten_truong"], [])
+            if row["doan_id"] not in ids:
+                ids.append(row["doan_id"])
+        return [FactEvidence(name, tuple(ids)) for name, ids in chunks.items()]
+
     def load_seeded_evidence(self, ca_id: str, lan_chay_id: str) -> list[dict]:
         """Read a single run; never mix another case's chunks or retrieval run."""
         with connect_postgres(self.database_url) as connection:
+            # Lấy C06 theo case/run cùng nội dung và vị trí đoạn của đúng hợp đồng cho C07.
             return connection.execute(
                 """
                 SELECT r.*, d.noi_dung, d.hop_dong_id, d.section_path,

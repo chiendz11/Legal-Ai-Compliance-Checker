@@ -1,11 +1,11 @@
-"""Wiring skeleton for steps 1–7 with explicitly injected upstream implementations.
+"""Draft workflow for steps 1–7 with explicitly injected upstream implementations.
 
 There are no default OCR, scope, temporal, retrieval or LLM implementations.
-Steps 5–7 default to the group C skeleton, which stops with NotImplementedError at step 5;
-callers may inject another evaluator with the same signature.
+Steps 5–7 compute draft results; publication/review remain separate responsibilities.
+Callers may pass `on_stage` to observe progress and `evaluator` to swap steps 5–7.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from legal_checker.modules.applicable_law.scope_resolver import ScopeResolver
@@ -17,17 +17,23 @@ from legal_checker.modules.documents.service import DocumentIntelligenceService
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.modules.retrieval.service import RetrievalService
 from legal_checker.shared.contracts.assessment import AssessmentCase
+from legal_checker.shared.contracts.citation import CitationValidation
 from legal_checker.shared.contracts.common import Context
-from legal_checker.shared.contracts.handoffs import LegalOutput
+from legal_checker.shared.contracts.document_intelligence import DocumentIntelligenceResult
+from legal_checker.shared.contracts.handoffs import LegalOutput, RetrievalInput
 from legal_checker.shared.contracts.pipeline import (
     PipelinePayload,
     PipelineRequest,
     PipelineResponse,
 )
+from legal_checker.shared.contracts.reasoning import ExternalEvidenceRegistration, Observation
+from legal_checker.shared.contracts.retrieval import RetrievalEvidence
+from legal_checker.shared.contracts.scope import ScopeResolution
+from legal_checker.shared.contracts.temporal import ApplicableRequirement
 from legal_checker.shared.contracts.workflow import AssessmentDraft
 from legal_checker.shared.validation import validate_context, validate_requirements
-from legal_checker.workflows.handoffs import validate_document, validate_legal
-from legal_checker.workflows.states import Stage, StageCallback, no_progress
+from legal_checker.workflows.handoffs import validate_document, validate_legal, validate_retrieval
+from legal_checker.workflows.states import StageCallback, no_progress
 from legal_checker.workflows.steps_5_7 import evaluate
 
 Evaluator = Callable[[PipelineRequest, KnowledgeSnapshot], PipelineResponse]
@@ -39,26 +45,10 @@ class DraftModules:
     documents: DocumentIntelligenceService
     scope: ScopeResolver
     temporal: TemporalResolver
-    retrieval: RetrievalService
-    citations: CitationValidator
-    observations: ObservationProvider
-
-
-class _StageTracker:
-    """Reports RUNNING/COMPLETED around a stage and FAILED if it raises."""
-
-    def __init__(self, callback: StageCallback):
-        self.callback = callback
-
-    def __call__(self, stage: Stage, action):
-        self.callback(stage, "RUNNING")
-        try:
-            result = action()
-        except Exception:
-            self.callback(stage, "FAILED")
-            raise
-        self.callback(stage, "COMPLETED")
-        return result
+    retrieval: RetrievalService | None
+    citations: CitationValidator | None
+    observations: ObservationProvider | None
+    external_evidence_registry: Sequence[ExternalEvidenceRegistration] = ()
 
 
 class DraftAssessmentWorkflow:
@@ -76,119 +66,158 @@ class DraftAssessmentWorkflow:
     def evaluate(
         self, case: AssessmentCase, context: Context, on_stage: StageCallback = no_progress
     ) -> AssessmentDraft:
+        # on_stage only reports progress; a raised error leaves the RUNNING stage to the caller.
         validate_context(context, self.knowledge)
         if case.ca_id != context.ca_id:
             raise ValueError("Assessment case differs from workflow context")
         for key, value in case.deployment.model_dump().items():
             if getattr(context, key) != value:
                 raise ValueError("Assessment deployment differs from workflow context")
-        stage = _StageTracker(on_stage)
 
-        def intake():
-            registered = self.modules.intake.register(case.model_copy(deep=True))
-            if registered != case:
-                raise ValueError("Intake changed the pinned assessment case")
-            return registered
-
-        registered = stage("INTAKE", intake)
-
-        def extract():
-            document = self.modules.documents.extract(registered.model_copy(deep=True))
-            validate_document(registered, document)
-            return document
-
-        document = stage("DOCUMENT_INTELLIGENCE", extract)
+        on_stage("INTAKE", "RUNNING")
+        registered = AssessmentCase.model_validate(
+            self.modules.intake.register(case.model_copy(deep=True)).model_dump()
+        )
+        if registered != case:
+            raise ValueError("Intake changed the pinned assessment case")
+        on_stage("INTAKE", "COMPLETED")
+        on_stage("DOCUMENT_INTELLIGENCE", "RUNNING")
+        document = DocumentIntelligenceResult.model_validate(
+            self.modules.documents.extract(registered.model_copy(deep=True)).model_dump()
+        )
+        validate_document(registered, document)
+        on_stage("DOCUMENT_INTELLIGENCE", "COMPLETED")
 
         # Branch A receives profile/knowledge, never contract-authored citations.
-        def resolve_scope():
-            scope = self.modules.scope.resolve(context, document.contract_profile, self.knowledge)
-            if len({item.yeu_cau_ca_id for item in scope}) != len(scope) or any(
-                item.ca_id != context.ca_id for item in scope
-            ):
-                raise ValueError("Scope checklist contains duplicate IDs or a foreign case")
-            return scope
-
-        scope = stage("SCOPE_RESOLUTION", resolve_scope)
+        on_stage("SCOPE_RESOLUTION", "RUNNING")
+        scope = [
+            ScopeResolution.model_validate(item.model_dump())
+            for item in self.modules.scope.resolve(
+                context.model_copy(deep=True),
+                document.contract_profile.model_copy(deep=True),
+                self.knowledge,
+            )
+        ]
         scope_by_id = {item.yeu_cau_ca_id: item for item in scope}
-
-        def resolve_temporal():
-            requirements = self.modules.temporal.resolve(
-                context,
-                document.contract_profile,
+        if len(scope_by_id) != len(scope) or any(item.ca_id != context.ca_id for item in scope):
+            raise ValueError("Scope checklist contains duplicate IDs or a foreign case")
+        on_stage("SCOPE_RESOLUTION", "COMPLETED")
+        on_stage("TEMPORAL_RESOLUTION", "RUNNING")
+        requirements = [
+            ApplicableRequirement.model_validate(item.model_dump())
+            for item in self.modules.temporal.resolve(
+                context.model_copy(deep=True),
+                document.contract_profile.model_copy(deep=True),
                 [item.model_copy(deep=True) for item in scope],
                 self.knowledge,
             )
-            validate_requirements(context, requirements, self.knowledge)
-            if not requirements:
-                raise ValueError("An explicit checklist is required before assessment")
-            if set(scope_by_id) != {item.yeu_cau_ca_id for item in requirements}:
-                raise ValueError("Temporal resolution changed the scope checklist")
-            for item in requirements:
-                candidate = scope_by_id[item.yeu_cau_ca_id]
-                if (item.requirement_id, item.scope_status) != (
-                    candidate.requirement_id,
-                    candidate.scope_status,
-                ):
-                    raise ValueError("Temporal resolution changed scope-owned fields")
-            return requirements
-
-        requirements = stage("TEMPORAL_RESOLUTION", resolve_temporal)
+        ]
+        validate_requirements(context, requirements, self.knowledge)
+        if not requirements:
+            raise ValueError("An explicit checklist is required before assessment")
+        if set(scope_by_id) != {item.yeu_cau_ca_id for item in requirements}:
+            raise ValueError("Temporal resolution changed the scope checklist")
+        for item in requirements:
+            candidate = scope_by_id[item.yeu_cau_ca_id]
+            if (item.requirement_id, item.scope_status) != (
+                candidate.requirement_id,
+                candidate.scope_status,
+            ):
+                raise ValueError("Temporal resolution changed scope-owned fields")
+        on_stage("TEMPORAL_RESOLUTION", "COMPLETED")
+        diagnostics = []
+        retrieval = []
+        if self.modules.retrieval is None:
+            diagnostics.append({"module": "C06", "code": "RETRIEVAL_NOT_RUN"})
+            on_stage("RETRIEVAL", "SKIPPED")
+        else:
+            on_stage("RETRIEVAL", "RUNNING")
+            retrieval = [
+                RetrievalEvidence.model_validate(item.model_dump())
+                for item in self.modules.retrieval.retrieve(
+                    context.model_copy(deep=True),
+                    [item.model_copy(deep=True) for item in requirements],
+                    [item.model_copy(deep=True) for item in document.chunks],
+                    self.knowledge,
+                )
+            ]
+        validate_retrieval(
+            RetrievalInput(
+                context=context,
+                hop_dong_id=case.hop_dong_id,
+                requirements=requirements,
+                chunks=document.chunks,
+            ),
+            retrieval,
+            self.knowledge,
+        )
+        if self.modules.retrieval is not None:
+            on_stage("RETRIEVAL", "COMPLETED")
+        # Observations feed step 5, so the compliance stage starts here.
+        on_stage("COMPLIANCE", "RUNNING")
+        observations = []
+        if self.modules.observations is None:
+            diagnostics.append({"module": "C07", "code": "OBSERVATION_PROVIDER_NOT_RUN"})
+        else:
+            observations = [
+                Observation.model_validate(item.model_dump())
+                for item in self.modules.observations.observe(
+                    context.model_copy(deep=True),
+                    document.contract_profile.model_copy(deep=True),
+                    [item.model_copy(deep=True) for item in requirements],
+                    [item.model_copy(deep=True) for item in retrieval],
+                    [item.model_copy(deep=True) for item in document.chunks],
+                    self.knowledge,
+                )
+            ]
 
         # Branch B independently validates citations and joins A only at Risk/Report.
-        def validate_citations():
-            citations = self.modules.citations.validate(
-                context, document.contract_profile, document.citations, self.knowledge
-            )
-            validate_legal(
-                context,
-                document,
-                LegalOutput(scope=scope, requirements=requirements, citations=citations),
-                self.knowledge,
-            )
-            return citations
-
-        citations = stage("CITATION_VALIDATION", validate_citations)
-        retrieval = stage(
-            "RETRIEVAL",
-            lambda: self.modules.retrieval.retrieve(
-                context, requirements, document.chunks, self.knowledge
-            ),
+        citations = []
+        citation_status = "NOT_RUN" if self.modules.citations is None else "COMPLETED"
+        on_stage("CITATION_VALIDATION", "SKIPPED" if self.modules.citations is None else "RUNNING")
+        if self.modules.citations is not None:
+            citations = [
+                CitationValidation.model_validate(item.model_dump())
+                for item in self.modules.citations.validate(
+                    context.model_copy(deep=True),
+                    document.contract_profile.model_copy(deep=True),
+                    [item.model_copy(deep=True) for item in document.citations],
+                    self.knowledge,
+                )
+            ]
+        validate_legal(
+            context,
+            document,
+            LegalOutput(scope=scope, requirements=requirements, citations=citations),
+            self.knowledge,
+            citation_branch_status=citation_status,
         )
-
-        def assess():
-            observations = self.modules.observations.observe(
-                context,
-                document.contract_profile,
-                requirements,
-                retrieval,
-                document.chunks,
-                self.knowledge,
-            )
-            return self.evaluator(
-                PipelineRequest(
-                    **context.model_dump(),
-                    payload=PipelinePayload(
-                        hop_dong_id=case.hop_dong_id,
-                        requirements=requirements,
-                        chunks=document.chunks,
-                        retrieval=retrieval,
-                        observations=observations,
-                        citations=citations,
-                    ),
+        if self.modules.citations is not None:
+            on_stage("CITATION_VALIDATION", "COMPLETED")
+        on_stage("RISK_AGGREGATION", "RUNNING")
+        on_stage("RECOMMENDATION", "RUNNING")
+        evaluation = self.evaluator(
+            PipelineRequest(
+                **context.model_dump(),
+                payload=PipelinePayload(
+                    hop_dong_id=case.hop_dong_id,
+                    requirements=requirements,
+                    chunks=document.chunks,
+                    retrieval=retrieval,
+                    observations=observations,
+                    external_evidence_registry=[
+                        ExternalEvidenceRegistration.model_validate(item.model_dump())
+                        for item in self.modules.external_evidence_registry
+                    ],
+                    citations=citations,
+                    citation_branch_status=citation_status,
                 ),
-                self.knowledge,
-            )
-
-        # Steps 5–7 run as one group C call, so its three stages share one outcome.
-        on_stage("COMPLIANCE", "RUNNING")
-        try:
-            evaluation = assess()
-        except Exception:
-            for name in ("COMPLIANCE", "RISK_AGGREGATION", "RECOMMENDATION"):
-                on_stage(name, "FAILED")
-            raise
-        for name in ("COMPLIANCE", "RISK_AGGREGATION", "RECOMMENDATION"):
-            on_stage(name, "COMPLETED")
+            ),
+            self.knowledge,
+        )
+        evaluation.payload.diagnostics.extend(diagnostics)
+        for stage in ("COMPLIANCE", "RISK_AGGREGATION", "RECOMMENDATION"):
+            on_stage(stage, "COMPLETED")
         return AssessmentDraft(
             context=context,
             case=registered,

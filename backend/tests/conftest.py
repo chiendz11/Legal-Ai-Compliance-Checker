@@ -43,7 +43,9 @@ def isolated_database(*, initialize=True):
         if initialize:
             upgrade_database(url)
             with connect_postgres(url) as connection:
-                connection.execute((Path(__file__).parent / "seed_knowledge.sql").read_text())
+                connection.execute(
+                    (Path(__file__).parent / "seed_knowledge.sql").read_text(encoding="utf-8")
+                )
                 connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
         yield url
     finally:

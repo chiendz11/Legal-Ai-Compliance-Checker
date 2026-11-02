@@ -10,14 +10,20 @@ Knowledge, runtime và snapshot lịch sử nằm trong DB; repo không chứa b
 - `api/dependencies.py`: tạo Knowledge PostgreSQL + Store PostgreSQL.
 - `workflows/`: điều phối và kiểm tra các điểm bàn giao.
 
-Bước 5–7 hiện **chỉ còn skeleton**; các entrypoint phát sinh `NotImplementedError`.
-Các route HTTP chạy riêng bước 5–7 đã bỏ. Nhóm C tự triển khai C07/C08/C10/C11;
-contracts, DB, dữ liệu seed tham chiếu và chức năng đọc run vẫn được giữ.
-Bước 1–4, review, export/UI và worker cũng cần implementations thật.
+Luồng C07 có provider tạo Observation cho checklist, client OpenAI tùy chọn, bốn findings,
+grounding và 12 numeric schema có allowlist. Runner mặc định offline, không phát sinh phí API;
+xem [cách chạy và giới hạn](backend/src/legal_checker/modules/compliance/README.md).
+C07 → C08 → C10 → C11 đã có engines thuần, workflow/DI và runner offline/replay.
+C10 giữ hai nhánh compliance/citation độc lập; C11 dùng template đã pin và luôn chờ review.
+Runner hỗ trợ save/read/export với PostgreSQL, kiểm tra đúng case/run, snapshots,
+normalized rows và lineage. `--read-run` đọc output đã lưu, không chạy lại engines.
+Xem [bàn giao nhóm C](docs/group_c_handoff.md) và [hướng dẫn chạy](backend/src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57).
+Các route HTTP chạy riêng bước 5–7 đã bỏ. Bước 1–4, C12 review, API khởi chạy toàn bộ
+assessment, report export/UI và worker vẫn cần implementations thật.
 
 ## Bắt đầu
 
-[Hướng dẫn tạo môi trường ảo cho Linux/macOS/Windows](docs/dev_setup.md) có đầy đủ lệnh activate, cài dependencies, tải/seed và chạy API. [Danh sách scripts và trạng thái](scripts/README.md).
+[Hướng dẫn tạo môi trường ảo cho Linux/macOS/Windows](docs/guides/dev_setup.md) có đầy đủ lệnh activate, cài dependencies, tải/seed và chạy API. [Danh sách scripts và trạng thái](scripts/README.md).
 
 ```bash
 python -m venv .venv
@@ -41,7 +47,7 @@ local riêng và cùng workbook. Script tải không tự seed hoặc thay đổ
 
 Drive yêu cầu đăng nhập hoặc hết quota: tải ZIP trong trình duyệt rồi dùng
 `python -m scripts.dataset pull --archive /path/to/DEV_VALIDATION.zip`.
-Xem [hướng dẫn tải dataset](docs/dataset_download.md).
+Xem [hướng dẫn tải dataset](docs/database/dataset_and_corpus.md).
 
 Dataset nằm ngoài Git. `data/private/` và `.env` được bỏ qua bởi Git; thư mục private
 cũng được loại khỏi Docker build context. Các workbook chia nhỏ chỉ dùng để xem,
@@ -56,7 +62,7 @@ python -m scripts.local_db seed
 uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/local_database.md).
+Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/database/local_setup.md).
 Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_v750_r2_supabase`;
 Swagger: http://127.0.0.1:8000/docs.
 
@@ -88,7 +94,7 @@ API (`ASSESSMENT_QUEUE=inline`) hoặc Celery worker (`celery`). Khi chưa có m
 run kết thúc FAILED với lý do `MODULE_NOT_IMPLEMENTED`; `ASSESSMENT_MODULES=reference` phát lại
 tham chiếu QA để kiểm thử tích hợp và báo cáo được gắn nhãn `REFERENCE_REPLAY`.
 Chưa có xác thực/phân quyền tenant: các route này chỉ dùng cho môi trường local.
-[Kịch bản demo](docs/demo.md).
+[Kịch bản demo](docs/guides/demo.md).
 Input dùng contracts trong code và schema runtime tại `/openapi.json` khi chạy backend,
 cần đúng hash/case/run.
 Không có default payload dựa trên file mẫu cũ.
@@ -106,7 +112,13 @@ trong `runtime.assessment_runs`, pins trong `assessment_case_pins`, và DTO/run 
 trong `assessment_output_lineage`. Một transaction; cùng input/case/run trả output đã lưu,
 input khác bị Store từ chối bằng ConflictError. IDs/outputs đã dùng không được ghi đè bằng nội dung khác.
 Nguồn chứng từ ngoài/mốc DI phải được đăng ký trước; pipeline không giả tạo PDF/LLM log.
-API bước 5–7 hiện chưa triển khai nghiệp vụ; authentication/tenant authorization cũng cần triển khai.
+Nghiệp vụ bước 5–7 được gọi qua hàm Python hoặc runner; API khởi chạy assessment toàn bộ
+và authentication/tenant authorization vẫn cần triển khai.
+
+Store đọc đúng cặp case/run trong snapshot lịch sử và kiểm tra cả DTO checksum, case pin,
+knowledge đã pin, normalized rows và output lineage. Dữ liệu legacy thiếu provenance hoặc
+lineage không được ghép bằng “run mới nhất” hay thay bằng QA EXPECTED. Nhóm D đọc các
+outputs này để dựng báo cáo; không chạy lại reasoning/risk/recommendation.
 
 ## Kiểm tra
 
@@ -123,7 +135,7 @@ Downloads hoặc cloud DB. Thiếu `TEST_DATABASE_URL` thì nhóm test cần DB 
 CI luôn có PostgreSQL service và check **CI / required**.
 
 [Contracts máy đọc được](docs/contracts/README.md) có schema riêng C01–C13/X01/X02 và catalog module/DB.
-[OpenAPI thiết kế UI](docs/openapi.design.json) phục vụ frontend mock và backend triển khai;
+[OpenAPI thiết kế UI](docs/architecture/openapi.design.json) phục vụ frontend mock và backend triển khai;
 Backend đang chạy cung cấp `/openapi.json` để xem routes thực tế; không lưu thêm bản JSON runtime trong repo.
 Các endpoints dự kiến trong bản thiết kế được đánh dấu rõ,
 chưa tự hoạt động chỉ vì đã có đặc tả JSON.
@@ -137,14 +149,15 @@ tính hợp lệ và đối chiếu với models, không tự ghi đè đặc t�
 [Mục lục tài liệu](docs/README.md).
 
 - [Triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md)
-- [DB local, migration và seed](docs/local_database.md)
-- [Alembic: cập nhật schema và tiếp nhận DB cũ](docs/database_migrations.md)
-- [Bộ hiện tại: 360 PDF, structured r2](docs/v750_source_pdf360_r2_structured.md)
-- [Audit LLM dùng chung, client riêng từng module](docs/llm_audit.md)
-- [Khởi tạo dependencies](docs/startup.md)
-- [Ghép module](docs/module_integration.md)
-- [Contracts nghiệp vụ](docs/data_contracts_v7_3_2.md), [schemas module](docs/module_contracts.schema.json)
-- [Kiến trúc](docs/architecture.md), [trạng thái skeleton bước 5–7](docs/architecture.md#trạng-thái-skeleton-bước-57)
+- [DB local, migration và seed](docs/database/local_setup.md)
+- [Alembic: cập nhật schema và tiếp nhận DB cũ](docs/database/migrations.md)
+- [Bộ hiện tại: 360 PDF, structured r2](docs/database/dataset_and_corpus.md)
+- [Audit LLM dùng chung, client riêng từng module](docs/guides/llm_audit.md)
+- [Khởi tạo dependencies](docs/guides/startup.md)
+- [Ghép module](docs/modules/README.md)
+- [Contracts nghiệp vụ](docs/contracts/data_contracts_v7_3_2.md), [schemas module](docs/contracts/module_contracts.schema.json)
+- [Kiến trúc](docs/architecture/system_architecture.md), [trạng thái bước 5–7](docs/architecture/system_architecture.md#trạng-thái-triển-khai-bước-57)
+- [Bàn giao nhóm C và cách nhóm D đọc đúng run](docs/group_c_handoff.md)
 
 Ruleset `main`: PR bắt buộc, 0 approval, CI thành công và up-to-date, resolve discussions,
 chỉ squash, chặn xóa/force push, không bypass.

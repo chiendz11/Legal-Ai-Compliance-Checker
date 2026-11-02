@@ -30,6 +30,7 @@ def member_path(name: str) -> PurePosixPath:
         or path.is_absolute()
         or ".." in path.parts
         or "\\" in name
+        or "\x00" in name
         or ":" in name
         or path.as_posix() != name.rstrip("/")
     ):
@@ -140,6 +141,9 @@ def extract_dataset(manifest: dict, archive_path: Path, destination: Path) -> No
             if sum(item.file_size for item in members) > archive_spec["max_expanded_bytes"]:
                 raise DatasetError("ZIP expanded size exceeds the manifest limit")
             for item in members:
+                # ZipInfo normalizes backslashes (Windows) and truncates at NUL.
+                # Validate the name as stored, before that lossy normalization.
+                member_path(item.orig_filename)
                 member_path(item.filename)
                 if stat.S_ISLNK(item.external_attr >> 16):
                     raise DatasetError("ZIP contains symbolic links")

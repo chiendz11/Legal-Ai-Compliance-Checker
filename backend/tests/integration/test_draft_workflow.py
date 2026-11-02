@@ -96,10 +96,16 @@ def assemble(request, knowledge, citation_status=None):
     return DraftAssessmentWorkflow(modules, knowledge), case, context, document, scopes
 
 
-def test_upstream_adapters_stop_at_unimplemented_step_5(knowledge, request_factory):
+def test_upstream_adapters_complete_draft_steps_5_7(knowledge, request_factory):
     workflow, case, context, _, _ = assemble(request_factory(finding="MISSING"), knowledge)
-    with pytest.raises(NotImplementedError, match="skeletons"):
-        workflow.evaluate(case, context)
+    draft = workflow.evaluate(case, context)
+    assert draft.context == context
+    assert len(draft.evaluation.payload.criterion_results) == 3
+    assert len(draft.evaluation.payload.requirement_results) == 1
+    assert all(row.review_status == "PENDING" for row in draft.evaluation.payload.criterion_results)
+    assert {item["code"] for item in draft.evaluation.payload.diagnostics} >= {
+        "CITATION_BRANCH_COMPLETED"
+    }
 
 
 def test_intake_cannot_mutate_the_original_pin(knowledge, request_factory):

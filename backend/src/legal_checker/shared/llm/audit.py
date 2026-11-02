@@ -115,10 +115,12 @@ class LlmCall:
         output_tokens: int | None = None,
         cost: Decimal | None = None,
         currency: str | None = None,
+        model_version: str | None = None,
     ) -> None:
         """Record the actual returned payload and reported usage; no legal interpretation."""
         if self._completed:
             raise RuntimeError("Provider result already recorded for this attempt")
+        actual_model = self._event.model_version if model_version is None else model_version
         self._event = LlmAudit.model_validate(
             {
                 **self._event.model_dump(),
@@ -129,6 +131,7 @@ class LlmCall:
                 "output_tokens": output_tokens,
                 "chi_phi": cost,
                 "don_vi_tien": currency,
+                "model_version": actual_model,
             }
         )
         self._completed = True

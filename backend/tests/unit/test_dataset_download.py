@@ -26,7 +26,14 @@ def dataset_zip(tmp_path, extras=None):
             archive.writestr(name, value)
         archive.writestr("sources/pdf/HD001.pdf", b"%PDF-offline source")
         for name, value in (extras or {}).items():
-            archive.writestr(name, value)
+            if isinstance(name, str):
+                member = ZipInfo(name)
+                # Python 3.14 on Windows normalizes backslashes before writing.
+                # Restore the hostile raw name so this is really an unsafe ZIP.
+                member.filename = name
+            else:
+                member = name
+            archive.writestr(member, value)
     with ZipFile(path) as archive:
         expanded = sum(item.file_size for item in archive.infolist())
     manifest = {
@@ -108,7 +115,9 @@ def test_wrong_file_hash_never_publishes(tmp_path):
     assert not destination.exists()
 
 
-@pytest.mark.parametrize("name", ["../escape", "/absolute", "C:/windows", "a\\b", "a//b"])
+@pytest.mark.parametrize(
+    "name", ["../escape", "/absolute", "C:/windows", "a\\b", "a//b", "a\x00hidden"]
+)
 def test_zip_invalid_paths_never_escape_staging(tmp_path, name):
     manifest, archive = dataset_zip(tmp_path, {name: b"untrusted"})
     destination = tmp_path / "current"
@@ -116,6 +125,15 @@ def test_zip_invalid_paths_never_escape_staging(tmp_path, name):
         pull_dataset(manifest, destination, archive_path=archive)
     assert not destination.exists()
     assert not (tmp_path / "escape").exists()
+
+
+def test_zip_fixture_preserves_raw_backslash_before_zipinfo_normalization(tmp_path):
+    manifest, archive = dataset_zip(tmp_path, {"a\\b": b"untrusted"})
+    with ZipFile(archive) as stream:
+        assert any(item.orig_filename == "a\\b" for item in stream.infolist())
+    with pytest.raises(DatasetError, match="Invalid dataset member"):
+        pull_dataset(manifest, tmp_path / "current", archive_path=archive)
+    assert not (tmp_path / "current").exists()
 
 
 def test_zip_symlink_is_rejected(tmp_path):
