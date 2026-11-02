@@ -1,23 +1,28 @@
 # Kế hoạch Triển khai 10 Tuần — Legal Compliance Checker
 
-> **Giai đoạn**: Tuần 4 – Tuần 13  
-> **Quy mô**: 5 Thành viên · 5 Workstreams · 4 Modules AI/Rule · 1 Central Database
+> **File bảng tính gốc**: [`ke_hoach_10_tuan.csv`](ke_hoach_10_tuan.csv)  
+
+> **Thời gian**: Tuần 4 – Tuần 13 · **Quy mô**: 5 Thành viên · 5 Workstreams · 4 Module AI/Rule · 1 DB logic trung tâm
+
+> [!NOTE]
+> **Hiện trạng thực tế Tuần 4–13**: W4 chưa có dataset → W5 BRD → W6 Kiến trúc | W7 xây mới và đã báo cáo hoàn thành Knowledge + DEV Fixtures + FE | W8 đang hoàn thiện Modules + CI/CD | W9–13 Integration/Inference/QA.
 
 ---
 
-## 1. Phân công Vai trò & Ownership
+## 1. Phân công Vai trò & Ownership (5 Thành viên)
 
-| Thành viên | Vai trò | Ownership chính | Input chính | Output chính | Service / Component |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Người 1** | Data & DevOps Engineer | Gold Legal DB, sample runtime/gold labels, schema/migrations/seed, shared Compose, CI/CD, GitOps & hạ tầng k3d | Nguồn luật + hợp đồng mẫu + yêu cầu hạ tầng | Knowledge + Runtime seed + data contracts + shared development environment | `data-release`, `shared-devops` |
-| **Người 2** | Document Intelligence Engineer | PDF/DOCX OCR/parser, chunking, metadata/classification, citation extraction, document API | Hợp đồng PDF/DOCX + Runtime mẫu | `contract_profile` + chunks + extracted citations (C01, C02, C03) | `document-service` (module `documents`) |
-| **Người 3** | Legal Scope, Citation & Retrieval Engineer | Scope/Checklist, temporal/version resolver, citation validator; requirement→chunk retrieval, evaluation, serving | profile + citations + Gold DB + chunks | Applicable requirement versions (C04, C05) + citation findings (C09) + Top-K evidence (C06) | `legal-engine`, `retrieval-service` (modules `applicable_law`, `citation_validation`, `retrieval`) |
-| **Người 4** | Compliance Reasoning & Risk Engineer | Criterion/compliance reasoning, grounded explanation, substantive risk, recommendation và service API | Requirement version + evidence (C05, C06) | Compliance label + explanation (C07, C08) + substantive risk (C10) + recommendation (C11) | `reasoning-service` (modules `compliance`, `risks`, `recommendations`) |
-| **Người 5** | Integration, UI & Platform Engineer | Orchestrator, async workflow, frontend, report, application deployment/monitoring, E2E tests | Outputs các services + shared DevOps nền | End-to-end dashboard/report + application release (C12, C13) | `backend/orchestrator`, `frontend` (modules `assessments`, `reports`, `workflows`) |
+| Người | Vai trò | Ownership chính | Input chính | Output chính | Metric chính | Service | Tuần trọng tâm | Phụ thuộc | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Người 1 | Data (Knowledge + Runtime mẫu) & DevOps Engineer | Gold Legal DB, sample runtime/gold labels, schema/migrations/seed, shared Compose/CI/CD và môi trường phát triển | Nguồn luật + hợp đồng mẫu + yêu cầu hạ tầng | Knowledge + Runtime seed + data contracts + shared development environment | Coverage/integrity; reproducible seed; CI pass | data-release + shared-devops | W1–W10 | Các module cần shared schemas/fixtures | DevOps nền tảng; KHÔNG sở hữu OCR hoặc logic sản phẩm |
+| Người 2 | Document Intelligence Engineer | PDF/DOCX OCR/parser, chunking, metadata/classification, citation extraction, document API | Hợp đồng PDF/DOCX + Runtime mẫu | contract_profile + chunks + extracted citations | CER/WER; metadata/citation F1 | document-service | W1–W10 | Người 1: DB mẫu/Compose | Ghi dữ liệu runtime thật khi chạy; khác với Người 1 seed mẫu |
+| Người 3 | Legal Scope + Citation Validation + Retrieval Engineer | Scope/Checklist, temporal/version resolver, citation validator; requirement→chunk retrieval, evaluation, serving | profile + citations + Gold DB + chunks | applicable requirement versions + citation findings + Top-K evidence | Checklist Recall; version/citation accuracy; Recall@K/MRR | legal-engine + retrieval-service | W1–W10 | Người 1: legal seed; Người 2: profile/chunks | Ưu tiên rule+BM25/hybrid; reranker là nâng cao |
+| Người 4 | Compliance Reasoning + Risk Engineer | Criterion/compliance reasoning, grounded explanation, substantive risk, recommendation và service API | Requirement version + evidence | compliance label + explanation + substantive risk/recommendation | Macro-F1; groundedness; risk tests | reasoning-service | W1–W10 | Người 1: gold fixtures; Người 3: evidence | Citation warnings là output của Người 3 |
+| Người 5 | Integration + UI + Application Platform Engineer | Orchestrator, async workflow, frontend, report, application deployment/monitoring, E2E tests | Outputs các services + shared DevOps nền | End-to-end dashboard/report + application release | E2E success; latency; UI acceptance | backend/orchestrator + frontend | W1–W10 | Người 1: shared infra; Người 2–4: APIs | Không trùng: Người 1 DevOps nền, Người 5 vận hành/tích hợp ứng dụng |
+
 
 ---
 
-## 2. Luồng End-to-End
+## 2. Luồng End-to-End & Theo dõi Tiến độ
 
 ```text
 [1. Upload Hợp đồng] (Người 5)
@@ -42,37 +47,206 @@
 [7. Aggregation, Report & UI] (Người 5) ──► Review events (C12), Final Report (C13), UI Dashboard
 ```
 
+### Bảng Theo dõi Tiến độ Cá nhân
+
+| Người 3 | 10 | 0 | 1 | 0 | 0 |
+| --- | --- | --- | --- | --- | --- |
+| Người 4 | 10 | 0 | 1 | 0 | 0 |
+| Người 5 | 10 | 1 | 1 | 0.1 | 10 |
+| Số liệu tiến độ cập nhật theo báo cáo W7/W8: W7 N1 (Knowledge + Fixtures) và N5 (FE cơ bản) hoàn thành; W8 modules/CI-CD đang triển khai; các nhiệm vụ/tiến độ chưa xác nhận để trống, không mặc định 0%. |  |  |  |  |  |
+| KẾ HOẠCH TRIỂN KHAI 10 TUẦN |  |  |  |  |  |
+| Tuần | Người | Mục tiêu tuần | Công việc chi tiết | Deliverable | Metric/Gate |
+
+
 ---
 
-## 3. Lộ trình 3 Giai đoạn (Tuần 4 – Tuần 13)
+## 3. Kế hoạch Triển khai Chi tiết 10 Tuần (Tuần 4 – Tuần 13)
 
-### Giai đoạn 1: Nghiên cứu, BRD & Thiết kế Kiến trúc (Tuần 4 – Tuần 6)
-- **Tuần 4**: Khảo sát bài toán khi chưa có dataset; phân tích nghiệp vụ HĐMB căn hộ và hai nhánh kiểm tra pháp lý.
-- **Tuần 5**: Soạn thảo **BRD v1.1**; chốt ranh giới trách nhiệm 5 workstreams, use cases và tiêu chí nghiệm thu.
-- **Tuần 6**: Thiết kế kiến trúc tổng thể, hệ thống Data Contracts (C01–C13, X01–X02), PostgreSQL schema và kế hoạch tạo dữ liệu.
+|  | Người 4 | Tìm hiểu Reasoning, Risk và Recommendation | Khảo sát requirement/evidence/criterion/compliance label và risk/rec; phác họa tình huống đủ bằng chứng/thiếu bằng chứng, sai phạm và UNKNOWN để đưa vào BRD. | Tài liệu nghiệp vụ Reasoning + semantics nhãn | Có đầu vào/ra logic và trường hợp cần human review | Các ví dụ quy định/điều khoản | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|  | Người 5 | Tìm hiểu user flow & frontend | Khảo sát nhu cầu người dùng: upload → tiến độ → báo cáo, tra cứu lịch sử; xác định UX/UI tối thiểu và yêu cầu hệ thống. Chỉ khảo sát/đề xuất, chưa giả định dataset/backend đã tồn tại. | User journey + sơ đồ use cases sơ bộ | Nhóm thống nhất hành trình người dùng và phạm vi sản phẩm | Tài liệu nghiệp vụ | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+| Tuần 5 | Người 1 | Phần dữ liệu trong BRD | Viết yêu cầu tri thức pháp lý cần quản lý, nguồn luật/phạm vi/version/criteria, dữ liệu Runtime sản sinh khi inference, Development Fixtures cần tạo ở Tuần 7, quality gates và phân biệt gold labels. | BRD Data/Knowledge/Runtime section | Các loại dữ liệu, provenance và nhu cầu thẩm định pháp lý nêu rõ; chưa yêu cầu đã có dataset | Khảo sát Tuần 4 | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 2 | BRD Document Intelligence | Đặc tả chức năng upload, OCR/parser, profile/chunks/citation extraction, nguồn trang, fallback và acceptance test dựa trên hợp đồng ví dụ. | BRD DI section + acceptance scenarios | Không dùng thiếu evidence do OCR để kết luận thiếu điều khoản | Khảo sát Tuần 4 | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 3 | BRD Legal + Retrieval | Đặc tả lựa chọn luật áp dụng/checklist/version, kiểm tra citation riêng, truy xuất Top-K evidence; xác định thông tin cần từ Knowledge và Runtime cho Dev Fixtures W7. | BRD Legal/Ret section + acceptance scenarios | Yêu cầu pháp lý/temporal và dữ liệu được mô tả đủ để thiết kế contract | Khảo sát Tuần 4 | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 4 | BRD Reasoning + Risk | Đặc tả nhãn compliance, criterion statuses, grounded explanations, risk/rec, UNKNOWN/human-review; xác định expected outputs của fixtures sẽ cần review nghiệp vụ. | BRD Reasoning/Risk section + acceptance scenarios | Biết rõ expected decisions nào cần chuyên gia xác minh | Khảo sát Tuần 4 | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 5 | Tổng hợp BRD + tính năng sản phẩm | Tổng hợp 5 workstreams vào BRD v1.0, xác định MVP inference trước, chức năng lịch sử và export sau; thống nhất điều kiện nghiệm thu không yêu cầu dataset ở W5. | BRD v1.0 + prioritized backlog | 5 owner đồng thuận nghiệp vụ, scope và trách nhiệm | Bản nháp từ toàn nhóm | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+| Tuần 6 | Người 1 | Thiết kế kiến trúc + kế hoạch tạo Data W7 | Thiết kế Knowledge DB/Runtime DB và dataflow/owners; lên schema, migrations, seed, fixtures cần tạo Tuần 7. Chọn stack Shared PostgreSQL/pgvector, Compose, CI/CD định hướng; chưa yêu cầu dataset hoàn chỉnh. | Architecture/ADR + schema v1 + data creation plan W7 | Có data contracts và ranh giới quyền ghi, không hiểu nhầm thiết kế schema là có dataset | BRD v1.0 | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 2 | Thiết kế Document API | Chốt sơ đồ parser/OCR/extract, request/response schema cho contract_profile/chunks/citations, page refs/UNKNOWN; thống nhất ví dụ synthetic W7. | Document API contract + extraction design | Input/output/errors được review chéo bởi Legal và Integration | BRD + system architecture | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 3 | Thiết kế Legal + Retrieval APIs | Chốt rule/SQL scope/checklist/version, citation validation độc lập, BM25 baseline và schemas; gửi cho Người 1 danh sách knowledge/runtime fixtures cần xây từ W7. | Legal/Ret API specs + fixture requirements | Có requirement, version, citation, chunk/evidence contract nhất quán | Architecture + BRD | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 4 | Thiết kế Reasoning API | Chốt structured request/response, criterion aggregation, risk/rec outputs, provenance và expected test scenarios; bàn giao fixture requests cho Người 1 trước W7. | Reasoning API spec + fixture requirements | Có schema đủ phát triển độc lập khi chưa có Retrieval thật | Architecture + BRD | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+|  | Người 5 | Thiết kế Orchestrator & Frontend | Thiết kế workflow hai nhánh, upload/job/report API, UI wireframes, status/permissions; cung cấp dữ liệu màn hình mẫu cần có để Người 1 tạo fixtures W7. | Integration API specs + frontend wireframes | Các API contracts đủ thống nhất để bắt đầu dev ở W8 | Module contracts + architecture | Chưa cập nhật | GĐ1 • Nghiên cứu/BRD/Thiết kế |  | Chưa có cập nhật tiến độ cá nhân cho giai đoạn này; công việc đã được lập kế hoạch, không suy diễn tình trạng hoàn thành. |
+| Tuần 7 | Người 1 | Hoàn thành Knowledge Data + Development Fixtures | Theo báo cáo tiến độ Tuần 7: bắt đầu xây dựng và hoàn thành Knowledge Data (văn bản luật, yêu cầu pháp lý, tiêu chí...) cùng Development Fixtures (Runtime mẫu) phục vụ phát triển song song các module. Đây là giai đoạn TẠO dữ liệu nền tảng, không phải rà một dataset đã có từ Tuần 4. Việc kiểm chứng nhãn pháp lý và contract tests là công việc QA riêng, chưa mặc nhiên hoàn thành. | Knowledge Data + Development Fixtures (đã báo cáo hoàn thành) | Các module có input mẫu theo contracts; provenance/review status được lưu nếu có | Thiết kế BRD/Architecture/API W4–6 | Hoàn thành | GĐ2 • Xây Knowledge/Fixtures + Frontend | 100 | Theo báo cáo W7: Knowledge Data và Development Fixtures hoàn thành; cần xác nhận riêng legal review/migration CI nếu dùng làm gate. |
+|  | Người 2 | Xác định dữ liệu mẫu cho Document Intelligence | Phối hợp Người 1 đặc tả Development Fixtures đầu ra của Document Intelligence: contract_profile, chunks, citations và nguồn trang/đoạn. Cung cấp ví dụ JSON và tình huống kiểm thử để Người 1 xây dựng bộ mẫu phục vụ lập trình song song. Chưa có xác nhận hoàn thành đầu việc riêng của Người 2. | Bộ yêu cầu dữ liệu/JSON mẫu cho Document Intelligence | Fixture có cấu trúc theo API contract để module DI có thể phát triển độc lập; không coi JSON mẫu là kết quả inference thật | Kiến trúc/API contracts Tuần 6; dữ liệu bắt đầu xây dựng Tuần 7 | Chưa cập nhật | GĐ2 • Xây Knowledge/Fixtures + Frontend |  | Chưa có cập nhật cá nhân về mức độ review fixtures W7; đối chiếu khi integration. |
+|  | Người 3 | Xác định dữ liệu mẫu cho Legal Scope, Citation và Retrieval | Phối hợp Người 1 xác định các trường cần có trong Knowledge Data và Runtime Fixtures: hợp đồng/profile, requirements, phiên bản áp dụng, citations, chunks và evidence pairs. Đề xuất tình huống scope, temporal, viện dẫn và retrieval; không sử dụng synthetic outputs như nhãn pháp lý đã duyệt. Chưa có xác nhận hoàn thành đầu việc riêng của Người 3. | Đặc tả dữ liệu và tình huống mẫu Legal/Retrieval | Các input mẫu phục vụ Scope/Version, Citation Validation và Retrieval nhất quán với API contracts | Kiến trúc/API contracts Tuần 6; Knowledge/Fixtures Người 1 tạo Tuần 7 | Chưa cập nhật | GĐ2 • Xây Knowledge/Fixtures + Frontend |  | Chưa có cập nhật cá nhân về mức độ review Legal/Retrieval fixtures W7. |
+|  | Người 4 | Xác định dữ liệu mẫu cho Reasoning, Risk và Recommendation | Phối hợp Người 1 xác định fixtures requirement_version + evidence + criterion, các expected outcomes và risk/recommendation mẫu. Tách dữ liệu đầu vào khỏi expected labels; ghi rõ nhãn chưa được chuyên gia xác minh. Chưa có xác nhận hoàn thành đầu việc riêng của Người 4. | Đặc tả input/output mẫu và kịch bản kiểm thử Reasoning | Reasoning có thể phát triển độc lập trên JSON fixtures và kiểm tra schema; không mặc định legal gold | Kiến trúc/API contracts Tuần 6; Knowledge/Fixtures Người 1 tạo Tuần 7 | Chưa cập nhật | GĐ2 • Xây Knowledge/Fixtures + Frontend |  | Chưa có cập nhật cá nhân về mức độ review Reasoning fixtures W7. |
+|  | Người 5 | Hoàn thành Frontend cơ bản | Theo báo cáo Tuần 7: hoàn thành Frontend cơ bản, bao gồm khung giao diện ban đầu để tích hợp các chức năng upload, xử lý và xem báo cáo. Chưa khẳng định đã kết nối backend hoặc thực hiện inference. | Frontend cơ bản (đã báo cáo hoàn thành) | Có cấu trúc giao diện ban đầu phục vụ phát triển tiếp; acceptance chi tiết xác nhận qua demo | Wireframes + BRD/Architecture W4–6 | Hoàn thành | GĐ2 • Xây Knowledge/Fixtures + Frontend | 100 | Theo báo cáo W7: Frontend cơ bản đã hoàn thành; chưa đồng nghĩa frontend tích hợp inference. |
+| Tuần 8 | Người 1 | Đang thiết lập CI/CD và môi trường integration | Theo tiến độ Tuần 8: triển khai luồng CI/CD cho module repositories, build/test và bước chuẩn bị tích hợp. Kiểm tra schema/fixture version, Compose/config chung; chưa khẳng định pipeline đã chạy xanh hay deploy hoàn chỉnh. | CI/CD baseline đang triển khai + Dev environment contracts | Repo có workflow chạy build/test tối thiểu; khi xong có smoke/integration evidence | Knowledge/Fixtures W7 + repo/services | Đang làm | GĐ2 • Rà dữ liệu & Xây Inference |  | Theo báo cáo W8: đang thiết lập CI/CD; % chưa được cung cấp; cập nhật sau pipeline PR/test. |
+|  | Người 2 | Đang hoàn thiện Document Intelligence API | Hoàn thiện parser/OCR và extraction profile/chunks/citations, endpoint HTTP và contract tests, sử dụng fixtures W7; sửa mismatch trước khi nối integration baseline. | Document service cho integration baseline (đang triển khai) | API nhận đầu vào thật, output đúng schema, trace source; tiến độ xác thực qua PR/tests | API contract W6 + fixtures W7 | Đang làm | GĐ2 • Rà dữ liệu & Xây Inference |  | Theo báo cáo W8: module đang hoàn thiện để đi vào integration baseline; cần kết quả API/contract test. |
+|  | Người 3 | Đang hoàn thiện Legal + Citation + Retrieval APIs | Hoàn thiện Scope/Version/Citation Validation và Retrieval baseline (BM25/Top-K) nhận đúng input, thống nhất endpoints và contract tests; nếu quá tải ưu tiên Scope→Retrieval trước, Citation độc lập. | Legal/Ret services sẵn sàng ghép baseline (đang triển khai) | Có endpoints hoặc stubs đúng contract; evidence và citation findings tách biệt | Knowledge/Runtime fixtures W7 + Document contract | Đang làm | GĐ2 • Rà dữ liệu & Xây Inference |  | Theo báo cáo W8: module đang hoàn thiện để đi vào integration baseline; kiểm tra 2 nhánh Legal và Retrieval. |
+|  | Người 4 | Đang hoàn thiện Reasoning/Risk API | Hoàn thiện structured reasoning→findings→risk/recommendation dựa trên requirement/evidence fixtures; đảm bảo không dùng expected labels làm inference; bổ sung contract/smoke tests. | Reasoning/Risk service cho integration baseline (đang triển khai) | Endpoint có output có cấu trúc, IDs/grounding; test các case thiếu evidence | Fixtures W7 + Legal/Ret contract | Đang làm | GĐ2 • Rà dữ liệu & Xây Inference |  | Theo báo cáo W8: module đang hoàn thiện; chốt output contract/grounding trước tích hợp. |
+|  | Người 5 | Chuẩn bị Integration Baseline trên Frontend đã có | Dùng Frontend cơ bản W7, tiếp tục backend upload/job/orchestrator và mock/live API wiring để chuẩn bị integration baseline; họp contract review, phát hiện blockers. Chưa khẳng định baseline đã hoàn thành. | Frontend W7 + backend/integration baseline đang triển khai | Một happy-path mock-to-real chạy được khi modules sẵn sàng; log lỗi contract rõ | FE W7 + CI/CD và APIs W8 | Đang làm | GĐ2 • Rà dữ liệu & Xây Inference |  | Theo báo cáo W8: chuẩn bị integration baseline; Frontend cơ bản từ W7 tiếp tục được tích hợp với backend/services. |
+| Tuần 9 | Người 1 | Bổ sung dữ liệu để real E2E | Chọn 1–2 ca PDF phù hợp, fix seed FK/provenance, bổ sung dữ liệu Knowledge xác thực trong phạm vi đã chốt; CI smoke DB và contract versions. | Minimal real E2E data scenario | Không dùng gold expected labels làm input, có record source | W8 module outputs | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 2 | Document real-slice fixes | Sửa lỗi trích metadata/chunk/citation từ PDF thật; tạo traces page/chunk và xử lý scan/thiếu ngày ở mức tối thiểu. | document real vertical slice | 1 PDF cho output không mock, page trace đủ dùng | W8 Document API | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 3 | Legal/Ret real-slice fixes | Nối Document output thật vào Scope/Version/Top-K, citation check chạy riêng; kiểm tra lookup UNKNOWN và không chọn requirements theo citation list. | Legal+Retrieval real vertical slice | Applicable version/evidence query đúng trên case được review | W8 API + Document | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 4 | Reasoning từ evidence thật | Nhận evidence từ service Người 3, kiểm tra result grounding và risk logic; giữ UNKNOWN khi evidence không đủ/không thể xác minh. | Reasoning real vertical slice | 1 kết luận có provenance law/version/chunk | W8 API + Retrieval | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 5 | Integration baseline → First Working Inference | Sau W8, nối các API thật (có thể bắt đầu bằng mocks đúng contract) và xử lý lỗi schema. Khi module đủ điều kiện, chạy 1 hợp đồng PDF qua cả nhánh A Scope/Version/Retrieval/Reasoning và nhánh B Citation→Report; lưu run và chứng cứ. Nếu chưa kịp, chuyển phần live E2E sang W10, ghi carry-over. | Integration baseline + demo first live case (khi sẵn sàng) | Baseline HTTP/contract tests pass; live demo không dùng đáp án fixtures để giả kết luận | Modules/CI-CD W8 + Knowledge/fixtures W7 | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+| Tuần 10 | Người 1 | Dữ liệu test đa tình huống | Chọn 5–8 cases liên quan nhưng không giống nhau; kiểm tra stable IDs, knowledge effective windows và permission; bổ sung regression tests nguồn/provenance. | DEV regression fixtures v2 + integrity report | Những case chưa legal verified được đánh dấu rõ | W9 issues | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 2 | Document MVP coverage | Nâng độ phủ extraction trên nhiều DEV PDFs, bổ sung OCR error fallback và quality flags; report metrics tạm thời trên reviewed subset. | Document MVP + issues list | Không copy reference file as output; failure là rõ ràng | Real slice W9 | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 3 | Legal + Citation + Retrieval MVP | Hoàn thiện scope/date/version, citation statuses với nguồn, BM25 evidence và fallback UNKNOWN; thêm test luật ngoài citations; tránh hybrid khó nếu chưa cần. | Legal/Ret MVP | Các scenario chính pass + errors/unknown có lý do | Real slice W9 | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 4 | Reasoning/Risk/Rec MVP | Hoàn thiện aggregated labels, grounded explanation, substantive risk, recommendations và abstention; xử lý evidence thiếu/mâu thuẫn. | Reasoning/Risk MVP | Finding trace requirement→evidence, citation warning độc lập | Real slice W9 | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 5 | MVP inference E2E đầy đủ | Chạy pipeline thật trên tập DEV đại diện, report findings/citations riêng, persistence/job statuses và demo UI; kiểm thử smoke và ghi blockers. | MVP E2E + demo core | Nhiều file→report không mock; các case sai được ghi rõ và ưu tiên | Modules MVP | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+| Tuần 11 | Người 1 | Ổn định data/infra + release | Kiểm tra baseline seed, dataset split/source family leakage, migrations, CI, build repeatability; sửa P0/P1, freeze DEV pack và tài liệu hạn chế QA. | Data/devops release candidate + QA doc | Fresh checkout→migrate/seed/build/test reproducible | W10 MVP | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 2 | Document integration/QA | Sửa blockers OCR/layout/source refs; đo extraction/chunk/citation agreement so với validated technical refs; mô tả limitations. | Document stable release | Critical parse errors không bị che; source trace pass | W10 MVP | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 3 | Legal/Ret QA + guardrails | Chạy rules/temporal/citation tests, đo retrieval candidates/latency; chỉ tune nếu có lỗi quan trọng; không dùng validation labels để sửa thuật toán. | Legal/Ret stable release | Rules regression pass, no false legal certainty | W10 MVP | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 4 | Reasoning QA + uncertainty | Đo schema validity, source groundedness, guardrails và rule consistency; sửa case false certainty, thiếu bằng chứng và prompt changes có version. | Reasoning stable release | Unknown/insufficient behavior pass; no fabricated source | W10 MVP | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+|  | Người 5 | Inference STABLE + quyền truy cập | Thử retry/idempotency, timeout/error status, report storage, basic auth/ownership, log/traces; tag stable core. Chỉ mở features sau khi core gate pass. | Core stable + regression test report | 1–n PDFs end-to-end pass; no P0/P1 blocker | W10 MVP + QA | Chưa bắt đầu | GĐ2 • Rà dữ liệu & Xây Inference | 0 |  |
+| Tuần 12 | Người 1 | Support schema cho history/export | Kiểm tra các bảng hop_dong/ca_danh_gia/bao_cao_danh_gia và run_id để cung cấp read indexes, provenance; backup, storage retention notes; không thêm bảng khi không cần. | History/export DB support + run/version metadata | Có thể truy xuất đúng report cũ từ stored results | W11 stable | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 2 | Document preview/source detail | Cung cấp content snippet/page anchors/file URI mapping để trang report detail mở chứng cứ; fix privacy permissions trên file. | Document evidence-preview support | Từng finding tới đúng chunk/page nếu có source | W11 stable | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 3 | Legal explainability details | API trả requirement/version/effective date/why in scope, citation status/provenance và retrieved evidence metadata phục vụ report detail. | Legal/Ret detail-read endpoint | UI giải thích được vì sao luật được chọn | W11 stable | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 4 | Reasoning report detail | Chuẩn hóa explanation/risk/remediation và unknown message; export-friendly JSON; audit input/source trace. | Finding detail/explanations payload | Báo cáo có kết luận + hạn chế + nguồn | W11 stable | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 5 | History/search/report export MVP | Làm danh sách upload, lọc trạng thái/ngày/loại, xem report cũ & source, xuất JSON/PDF nếu kịp. Re-run đặt optional. | History/detail + report export | History không phải chạy inference lại; auth/ownership test pass | Core stable + read APIs | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+| Tuần 13 | Người 1 | Release data/DevOps và tài liệu | Chốt migrations, seed/data card, licensing/QA limitations, CI and runbook; chuẩn bị environment demo offline fallback. Không thêm synthetic cases tràn lan. | Data/devops final + README | Người ngoài nhóm dựng lại môi trường được | W12 UI+core | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 2 | Document final eval/demo | Test file PDF mới, OCR/profile/chunk/citation extraction, source provenance và error limits; đóng báo cáo module và fix blocker demo. | Document eval + demo | Có metrics trên tập độc lập đủ thẩm định, hạn chế nêu rõ | W11 QA | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 3 | Legal/Ret final eval/demo | Đo Scope/version accuracy, Citation statuses, retrieval Recall@K trên subset có reviewed labels; nếu chưa có gold ghi rõ provisional metrics. | Legal/Ret eval + source notes | Không claim legal accuracy khi nhãn chưa được duyệt | W11 QA | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 4 | Reasoning final eval/demo | Đo label F1/risk rule/grounding trên reviewed cases nếu có; nếu không nêu rõ technical checks vs legal accuracy; fix final risks. | Reasoning eval + risk/guardrail notes | Nói rõ không có approved legal gold | W11 QA | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+|  | Người 5 | E2E QA/report/presentation | Chạy smoke regression, access tests/history/export, backup demo, final BRD/architecture/demo script; nếu tất cả gate pass mới làm re-run/so sánh runs. | Final demo + slides/report + acceptance sign-off | Upload→finding→report→history, không dựa SQL thủ công | Modules + history | Chưa bắt đầu | GĐ3 • Sản phẩm/QA/Bàn giao | 0 |  |
+| PHÂN CÔNG CHI TIẾT THEO MODULE |  |  |  |  |  |  |  |  |  |  |
+| Người | Module | Trách nhiệm | Không phụ trách | Input | Output/API contract | Metrics | Tech gợi ý | Definition of Done |  |  |
+| Người 1 | Data + Shared DevOps | Xây Knowledge DB, Runtime mẫu, Gold labels/fixtures; schema/migrations/seed, DevOps nền, CI và phát hành môi trường dùng chung. Sau inference hỗ trợ index/metadata để lịch sử, quyền sở hữu và lưu run/version. | Không làm Document extraction, Legal/Ret logic, Reasoning, UI/Orchestrator. | Nguồn luật/hợp đồng + ràng buộc module | Schema + migrations/seed + Gold DB/dataset + Runtime sample + shared-devops templates | FK integrity; data coverage; reproducible seed; CI smoke | PostgreSQL, pgvector, Python/SQL, Alembic, Docker Compose, CI | W3 bàn giao shared DB/fixtures để dev song song; W7 Core Inference gate; W8–10 hỗ trợ read-model + repro/deploy. |  |  |
 
-### Giai đoạn 2: Tạo Dữ liệu, Xây dựng Modules & Inference (Tuần 7 – Tuần 11)
-- **Tuần 7** *(Đã hoàn thành)*:
-  - Người 1: Hoàn thành Knowledge Data (36 văn bản luật, 306 yêu cầu) và Development Fixtures (240 DEV / 60 VAL).
-  - Người 5: Hoàn thành cấu trúc Frontend cơ bản.
-  - Người 2–4: Đặc tả fixture inputs/expected outputs cho từng module.
-- **Tuần 8** *(Đã hoàn thành phần lớn)*:
-  - Người 1: CI/CD test baseline, GHCR Docker publish, GitOps Argo CD tự động và Terraform local k3d.
-  - Người 3: Hoàn thành và merge Nhóm B (Bước 3A, 3B, 4) vào `main` (PR #10).
-  - Người 4: Hoàn thành và merge Nhóm C (Bước 5, 6, 7) vào `main` (PR #11).
-  - Người 2: Đang hoàn thiện Document Intelligence API (parser/OCR).
-  - Người 5: Chuẩn bị Integration Baseline.
-- **Tuần 9** *(Mục tiêu trọng tâm)*:
-  - Hoàn thiện module `documents` (Người 2) để kết nối file PDF thật vào pipeline.
-  - Integration baseline $\rightarrow$ **First Working Inference**: Chạy thử nghiệm thành công 1 hợp đồng PDF thật từ đầu vào đến báo cáo cuối cùng.
-- **Tuần 10**:
-  - Mở rộng độ phủ trên nhiều file PDF DEV đại diện; hoàn thiện Inference MVP.
-- **Tuần 11**:
-  - Ổn định hệ thống, xử lý trường hợp bất định (`UNKNOWN`), benchmark hiệu năng và kiểm thử hồi quy (regression tests).
 
-### Giai đoạn 3: Tính năng Sản phẩm, QA & Bàn giao (Tuần 12 – Tuần 13)
-- **Tuần 12**:
-  - Hoàn thiện các tính năng mở rộng: Lịch sử upload, tìm kiếm/lọc hợp đồng, xem chi tiết nguồn trích dẫn, xuất báo cáo PDF/JSON.
-- **Tuần 13**:
-  - Đánh giá tổng thể độ chính xác trên tập kiểm chứng độc lập.
-  - Diễn tập demo, hoàn thiện tài liệu bàn giao và báo cáo tổng kết đồ án.
+---
+
+## 4. Phân công Chi tiết theo Module & Definition of Done (DoD)
+
+| Người 4 | Compliance Reasoning + Risk | Compliance Reasoning + substantive risk/recommendation gắn requirement/evidence; test grounding/uncertainty. Sau W7 cung cấp finding detail/comparison metadata và regression. | Không làm citation validation và không gộp warning viện dẫn thành vi phạm nội dung. | Requirement version + Top-K evidence + gold cases | label + explanation + substantive risk + recommendation | Macro-F1; grounding; risk/recommendation checks | LLM, structured output, rule aggregation, FastAPI | W7 Reasoning v1; W8–10 hỗ trợ chi tiết kết luận và truy vết giữa các lần phân tích. |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Người 5 | System Integration + UI + Platform ứng dụng | W3–7 điều phối inference E2E và UI báo cáo cơ bản; W8–10 xây lịch sử upload, tra cứu/lọc, trang chi tiết, PDF/JSON export, re-run; ứng dụng deployment/monitoring và test. | Không sở hữu schema/seed CI infrastructure nền và không sửa nội bộ module 2–4 thay owners. | Outputs Document, Legal/Ret, Reasoning + shared env | End-to-end workflow + application UI/report + deployed demo | E2E success/latency; UX/report acceptance | FastAPI/NestJS, React, Redis, Docker, OTel/Prometheus | W7 nghiệm thu Core Inference; W8 history/search/detail; W9 export/re-run; W10 hardening/demo. |
+| DATA FLOW & DB READ/WRITE |  |  |  |  |  |  |  |  |
+| Bước | Owner | Module | Input | Xử lý | Đọc DB | Ghi DB | Output | Failure/Guardrail |
+| 0 | Người 1 | Chuẩn bị data + shared DevOps | Nguồn luật, hợp đồng mẫu, config | Curate Knowledge; seed Runtime mẫu; Alembic migrations, fixtures, Docker Compose/CI; cung cấp cùng JSON contracts cho cả nhóm | Nguồn pháp lý; data source | legal.*; contract.* seed; setup infra | shared DB/fixtures + reproducible env | Expected labels chỉ dùng cho kiểm thử; không đưa vào input inference |
+
+
+---
+
+## 5. Data Flow & Quyền Đọc/Ghi Database (Bước 0 – 8, H1 – H3)
+
+| 3A | Người 3 | Applicable Law/Checklist | contract_profile + Gold Legal DB | Scope matching→checklist→requirement families→temporal/version resolution | legal.yeu_cau_phap_ly; phien_ban_yeu_cau; checklist; pham_vi_ap_dung | runtime applicable requirement selection | applicable_requirement_versions | Không dùng cited laws làm whitelist; transitional cases cần review | Người 3 Retrieval |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 3B | Người 3 | Citation Validation | citations + Gold Legal DB + mốc áp dụng | Đối chiếu văn bản được viện dẫn: VALID/STALE/INVALID/UNKNOWN; thông tin thay thế | legal.van_ban_phap_ly; contract.vien_dan_phap_ly_hop_dong | compliance.ket_qua_vien_dan | citation_findings | STALE không tự động NON_COMPLIANT | Người 5 aggregator |
+| 4 | Người 3 | Retrieval | applicable versions + contract_chunks | BM25/dense/hybrid (reranker tùy khả năng) → Top-K evidence | legal.phien_ban_yeu_cau; contract.doan_hop_dong; vector index | retrieval.ket_qua_truy_xuat | Top-K chunks + scores + evidence_ids | Không có evidence phù hợp → không tự suy ra vi phạm | Người 4 |
+| 5 | Người 4 | Compliance Reasoning + Risk | requirement_version + evidence | Structured reasoning→criteria/label→substantive risk→recommendation | legal.requirement/version + retrieval results | compliance.ket_qua_tuan_thu; danh_gia_rui_ro; khuyen_nghi | compliance findings + risks + recommendations | Grounded explanation; thiếu evidence là UNKNOWN/INSUFFICIENT theo rule | Người 5 |
+| 6 | Người 5 | Aggregation / Report | compliance findings + citation findings | Gộp hai nhánh, lưu báo cáo, bảo toàn tách biệt 2 loại finding | compliance.ket_qua_tuan_thu; ket_qua_vien_dan; danh_gia_rui_ro; khuyen_nghi | compliance.bao_cao_hop_dong | final report model | Không tự tạo kết luận pháp lý mới | Người 5 UI |
+| 7 | Người 5 | Frontend / Export | final report + run status | Dashboard upload/status, findings, evidence source, risk recommendation, PDF/report export | compliance.bao_cao_hop_dong; system.processing_job | system.audit_log | UI + báo cáo | Hiển thị uncertainty và thời điểm/nguồn áp dụng | Người dùng |
+| 8 | Người 1 & 5 | CI/CD và vận hành | Module images + tests + contracts | Người 1 duy trì shared CI/dev environments, migrations; Người 5 triển khai ứng dụng E2E, health/tracing/monitoring | config, migration history | build artifacts, runtime logs | Reproducible app release | Không phân quyền ghi bừa vào bảng của module khác | Cả nhóm |
+| H1 | Người 5 | Lịch sử upload + search | user_id + filters | Truy vấn hợp đồng thuộc user, các run và báo cáo; sort, filter, paginate; xem lại result | contract.hop_dong + system.processing_job + compliance.bao_cao_hop_dong | Không bắt buộc tạo bảng mới | history list + selected report | Scope theo user; không lộ nội dung người khác | History UI |
+| H2 | Người 5 | Export báo cáo | report_id + run_id | Render PDF/JSON gồm compliance + citation findings, sources, knowledge/model version và timestamp | compliance.bao_cao_hop_dong + compliance.ket_qua_tuan_thu + ket_qua_vien_dan | Chỉ tạo artifact export nếu cần | PDF/JSON | Export từ đúng run, ghi chú mức độ chắc chắn | Download |
+| H3 | Người 5 (+ 1–4) | Re-run inference | existing contract/file_uri + user action | Tạo pipeline_run mới; chạy lại 2 nhánh và report, giữ lịch sử cũ; ghi model/KB version và thời điểm | contract.hop_dong + previous runs | system.processing_job / pipeline_run; compliance.bao_cao_hop_dong | new run_id + new report | Không ghi đè, không chọn sai luật chỉ vì re-run sau này | History/detail UI |
+| POSTGRESQL TRUNG TÂM — CÁC SCHEMA/BẢNG PHỤC VỤ MODULE |  |  |  |  |  |  |  |  |  |
+| Schema | Bảng | Owner dữ liệu | Module đọc | Module ghi | Mục đích | Khóa/quan hệ chính | Ghi chú |  |  |
+| legal | van_ban_phap_ly | Người 1 | Người 3 | Người 1 seed/curate | Danh mục văn bản và hiệu lực | id, so_hieu, valid_from/to, replaced_by_id | Knowledge, không do model tự tạo |  |  |
+
+
+---
+
+## 6. PostgreSQL Trung tâm — Các Schema & Bảng phục vụ Module
+
+| legal | phien_ban_yeu_cau | Người 1 | Người 3,4 | Người 1 seed/curate | Requirement version theo thời gian | version_id, requirement_id, valid_from/to | Temporal resolver dùng để chọn |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| legal | pham_vi_ap_dung | Người 1 | Người 3 | Người 1 seed/curate | Phạm vi áp dụng theo loại HĐ/chủ thể | requirement_id; conditions | Scope engine query |
+| legal | checklist / checklist_yeu_cau | Người 1 | Người 3 | Người 1 seed/curate | Checklist mapping | checklist_id, requirement_id | Giữ dữ liệu checklist trong Knowledge |
+| contract | hop_dong | Người 1 schema/seed | Người 2,3,5 | Người 1 seed mẫu; Người 2/5 runtime | Hồ sơ hợp đồng và file URI | hop_dong_id, file_uri | Runtime thật cần user/owner reference để lọc lịch sử; seed mẫu thuộc Người 1 |
+| contract | metadata_hop_dong | Người 1 schema/seed | Người 3 | Người 1 seed mẫu; Người 2 runtime | Contract profile | hop_dong_id | Classification/extraction Người 2 |
+| contract | doan_hop_dong | Người 1 schema/seed | Người 3,4 | Người 1 seed mẫu; Người 2 runtime | Contract chunks, provenance | hop_dong_id, chunk_id, page | Retrieval index không thay gold seed |
+| contract | vien_dan_phap_ly_hop_dong | Người 1 schema/seed | Người 3 | Người 1 seed mẫu; Người 2 runtime | Các viện dẫn trích xuất | hop_dong_id, citation_id, matched_van_ban_id | Citation validation riêng |
+| retrieval | ket_qua_truy_xuat | Người 1 schema/seed | Người 4,5 | Người 1 seed mẫu; Người 3 runtime | Evidence candidates + scores | requirement_version_id, chunk_id, run_id | Top-K + model version |
+| compliance | ket_qua_vien_dan | Người 1 schema/seed | Người 5 | Người 1 seed mẫu; Người 3 runtime | VALID/STALE/INVALID/UNKNOWN | citation_id, status, replacement_id | Không phải compliance label |
+| compliance | ket_qua_tuan_thu | Người 1 schema/seed | Người 5 | Người 1 seed mẫu; Người 4 runtime | Compliance/criterion outcomes | requirement_version_id, evidence_ids | 4 labels và explanation |
+| compliance | danh_gia_rui_ro | Người 1 schema/seed | Người 5 | Người 1 seed mẫu; Người 4 runtime | Substantive risk findings | compliance_result_id | Khác citation warning |
+| compliance | khuyen_nghi | Người 1 schema/seed | Người 5 | Người 1 seed mẫu; Người 4 runtime | Recommendations | risk_id | Kèm rationale và nguồn |
+| compliance | bao_cao_hop_dong | Người 1 schema/seed | Frontend | Người 1 seed mẫu; Người 5 runtime | Tổng hợp findings hai nhánh | hop_dong_id, run_id | Một report ứng với một run_id; lưu knowledge/model version để export/re-run; giữ lịch sử cũ |
+| system | processing_job / pipeline_run | Người 1 schema/seed | Người 5 | Người 5 runtime | Async job/pipeline state | job_id, hop_dong_id, status | Lịch sử trạng thái + re-run dựa trên run_id, contract_id, user_id; không nhất thiết thêm bảng |
+| system | audit_log | Người 1 schema | Người 5/Ops | Người 5 runtime | Audit/trace sự kiện | run_id, event, actor | Trace export/re-run/review, tránh lưu secrets; hỗ trợ audit |
+| MỤC TIÊU CHUNG CỦA CẢ NHÓM THEO 10 TUẦN |  |  |  |  |  |  |  |
+| Mỗi tuần có một mục tiêu chung để cả 5 workstream cùng hướng tới; công việc chi tiết của từng người vẫn nằm trong sheet “Kế hoạch 10 tuần”. |  |  |  |  |  |  |  |
+| Tuần | Mục tiêu chung | Kết quả cả nhóm cần đạt | Điểm cần thống nhất | Tiêu chí hoàn thành | Phối hợp chính | Tiến độ ghi nhận (%) | Trạng thái Gate |
+
+
+---
+
+## 7. Mục tiêu Chung của Cả Nhóm theo 10 Tuần
+
+| Tuần 7 | ĐÃ BÁO CÁO: Xây dựng Knowledge Data + Development Fixtures + Frontend cơ bản | Trong Tuần 7, nhóm bắt đầu xây dựng dữ liệu nền tảng: Người 1 hoàn thành Knowledge Data (luật, yêu cầu, tiêu chí...) và Development Fixtures (Runtime mẫu). Người 5 hoàn thành Frontend cơ bản. Người 2–4 phối hợp xác định nhu cầu dữ liệu theo module; chưa có báo cáo nghiệm thu riêng cho từng người. | Tuần 4–6 chưa có dataset được xây dựng; Tuần 7 là giai đoạn tạo dữ liệu và UI nền tảng. Fixtures hỗ trợ DEV song song, không tự động là bộ nhãn pháp lý đã chuyên gia duyệt. | Ghi nhận hai deliverables đã báo cáo hoàn thành: Knowledge + Development Fixtures và Frontend cơ bản. Việc kiểm tra QA/schema/contracts và tính đúng pháp lý cần nghiệm thu riêng. | Người 1 xây Knowledge/Fixtures; Người 2–4 xác định I/O theo module; Người 5 phát triển Frontend. | 40 | Đã báo cáo | Tiếp tục đưa fixtures vào các module trong W8, đối chiếu API contracts; không báo cáo việc 'rà dữ liệu có sẵn' là đầu việc đã thực hiện ở W7. |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Tuần 8 | ĐANG LÀM: Hoàn thiện module, chuẩn bị integration baseline và CI/CD | Nhóm đang hoàn thiện Document, Legal/Ret, Reasoning, backend/orchestrator; đồng thời thiết lập CI/CD. Frontend W7 là nền để nối API thật. | Integration baseline là mục tiêu sắp đạt, CHƯA khẳng định hoàn thành; CI/CD đang thiết lập, chưa có báo cáo pipeline pass. | API contract tests, build/test pipeline và một luồng mock-to-real đi qua endpoint thật khi sẵn sàng. | Người 1 CI/CD/DevOps; Người 2–4 hoàn thiện module; Người 5 integration. |  | Đang triển khai | Tiếp tục PR module, contract tests và CI/CD; chưa xác nhận tích hợp baseline hoàn tất hoặc đạt gate. |
+| Tuần 9 | Integration baseline trước; hướng tới First Working Inference | Ghép các services vào orchestrator, kiểm tra contracts/CI; chạy file PDF thật qua Document→Scope/Version→Retrieval→Reasoning và nhánh Citation→Report khi modules sẵn sàng. | Nếu W8 còn module chưa xong, ưu tiên đóng integration baseline; việc thực E2E có thể carry-over, không gọi mock là inference thật. | Baseline: các endpoint kết nối đúng; nâng lên live vertical slice khi không còn hardcode expected output. | Người 5 dẫn tích hợp; mỗi owner sửa module blockers. | 0 | Chưa đánh giá | Ưu tiên baseline HTTP + contract tests; live end-to-end chỉ đánh dấu hoàn thành khi chạy PDF thật. |
+| Tuần 10 | Hoàn thành Inference MVP cho các tình huống chủ đạo | Chạy nhiều DEV PDFs; scope/version/citation/ranking, reasoning/risk/rec, report/persistence; tests cho unknown, uncited applicable, stale citation. | Không lẫn citation warnings với substantive compliance; không khẳng định legal gold khi chưa có legal review. | MVP chạy thật và giải thích được nguồn; prioritized defect list được công bố. | Cả nhóm cross-review E2E + tiêu chí nghiệm thu. | 0 | Chưa đánh giá |  |
+| Tuần 11 | Ổn định inference và kiểm thử dựa trên lỗi | Freeze interface, CI/seed, fix blocking defects, benchmark kỹ thuật và unknown/grounding, auth/job errors/retries. | Không dành riêng tuần để 'tối ưu v0.2'; chỉ cải thiện dựa trên lỗi/metrics thực. | Stable core release chạy smoke không mock và xử lý lỗi có kiểm soát. | Người 1 CI/seed; 2–4 sửa lỗi; 5 E2E gate. | 0 | Chưa đánh giá |  |
+| Tuần 12 | Chức năng sản phẩm ưu tiên: history/detail/export | History upload, search/filter, read stored report, evidence/source detail, PDF/JSON export theo khả năng; re-run optional. | Tận dụng bảng có sẵn; giữ privacy/ownership; không re-run để xem lại report. | User có thể tìm lại báo cáo cũ và xem nguồn; export đúng run. | Người 5 dẫn UI/API; Người 1–4 hỗ trợ DB/read payload. | 0 | Chưa đánh giá |  |
+| Tuần 13 | QA cuối, báo cáo, demo và buffer | Metrics Document/Legal/Ret/Reasoning theo chất lượng nhãn thực có; reproducible runbooks, test privacy, E2E report, presentation. | Không tuyên bố độ chính xác pháp lý độc lập nếu nhãn chưa human approved. | Demo PDF→findings→history/report, docs đầy đủ; critical defects = 0. | Tất cả owners chạy QA, kiểm thử và diễn tập. | 0 | Chưa đánh giá |  |
+| LỘ TRÌNH 3 GIAI ĐOẠN & BACKLOG TÍNH NĂNG |  |  |  |  |  |  |  |  |
+| 10 tuần học W4–W13 \| W4: tìm hiểu, CHƯA có dataset \| W5: BRD \| W6: kiến trúc/API \| W7: ĐÃ báo cáo hoàn thành Knowledge + DEV Fixtures + FE cơ bản \| W8: ĐANG hoàn thiện modules/CI-CD \| W9–13: integration, inference, product & QA |  |  |  |  |  |  |  |  |
+| Giai đoạn | Thời gian | Mục tiêu | Đầu ra nghiệm thu | Người chủ trì | Phụ thuộc | Quy tắc chốt |  |  |
+
+
+---
+
+## 8. Lộ trình 3 Giai đoạn & Backlog Tính năng
+
+### Lộ trình 3 Giai đoạn
+
+|  |
+|  |
+
+### Backlog Chức năng sau khi Core Inference Hoạt động
+
+| SHOULD | Phân tích lại (re-run) | Chọn hợp đồng cũ, tạo run mới, không ghi đè kết quả cũ. | Người 5 + 1–4 | Sau W12 nếu còn thời gian | hop_dong/file_uri + pipeline_run + report | Ngày re-run không tự thay thế ngày áp dụng luật; có provenance |
+| --- | --- | --- | --- | --- | --- | --- |
+| SHOULD | Xem tệp/nhảy đến nguồn | Từ finding mở đúng trang/chunk PDF khi nguồn có thể truy cập. | Người 2 + 5 | Tuần 12–13 nếu có thời gian | doan_hop_dong.page/section + file_uri | Nếu parser không xác định được page, hiển thị giới hạn |
+| OPTIONAL | So sánh hai lần phân tích | So sánh findings tăng/giảm/đổi nhãn khi re-run. | Người 4 + 5 | Nếu còn thời gian | run_id + stored findings + requirement_version | Chỉ so sánh kết quả có provenance; không suy diễn luật mới. |
+| OPTIONAL | Chuyên gia duyệt/chỉnh finding | Ghi ý kiến, trạng thái đã xem và căn cứ chỉnh sửa. | Người 4 + 5 | Nếu còn thời gian | audit_log + review state (xem xét schema) | Audit rõ ai duyệt; không ghi đè inference gốc. |
+| OPTIONAL | So sánh phiên bản hợp đồng | So sánh hai bản hợp đồng upload khác nhau theo điều khoản/finding. | Người 2–5 | Sau MVP | hợp đồng/file hashes + chunks + reports | Cần bổ sung UI và kiểm tra pairing an toàn. |
+| OPTIONAL | Quản trị retention/xóa dữ liệu | Quản lý thời gian lưu file và yêu cầu xóa hồ sơ theo quyền. | Người 1 + 5 | Sau MVP | object storage + DB ownership + audit | Không xóa nhầm hồ sơ/tài liệu người khác. |
+| QUY TẮC THỰC THI LINH HOẠT & XỬ LÝ CÔNG VIỆC CHƯA XONG |  |  |  |  |  |  |
+| Quy tắc | Thực hành | Dấu hiệu hoàn thành | Ai quyết định | Khi bị trễ | Theo dõi ở đâu | Không được làm |
+| 01 • Xuất phát đúng W4 | W4–W6 khảo sát/BRD/architecture khi CHƯA có dataset; chỉ xác định nhu cầu dữ liệu. | BRD, API/schema contracts | Cả 5 người | Thiếu dữ liệu thì mô tả yêu cầu trong BRD, không lùi tiến độ tìm hiểu | Sheet Kế hoạch W4–W6 | Không giả định Knowledge/Runtime đã tồn tại từ W4 |
+| 02 • Báo cáo W7 | Knowledge Data + Development Fixtures và Frontend cơ bản đã báo cáo hoàn thành W7. | Có artifacts/code/manifest bàn giao để review | Người 1 và Người 5 | QA kỹ thuật/duyệt pháp lý chưa có bằng chứng thì theo dõi riêng | H18–H22; K18–K22 | Không ghi FE đã tích hợp API thật hoặc nhãn đã legal verified |
+
+
+---
+
+## 9. 6 Quy tắc Thực thi Linh hoạt & Xử lý Công việc Chưa xong
+
+| 05 • Tiến độ theo bằng chứng | Dùng H = trạng thái; J = % chỉ khi được báo cáo; K = tình trạng, blocker và bước kế tiếp. | Progress có kiểm chứng; chưa báo % để trống | Mỗi owner | Chưa rõ tiến độ dùng Chưa cập nhật, không tự đoán % | Sheet Kế hoạch/Mục tiêu chung | Không tự gán 100% cho toàn đội từ 2 deliverables |
+| --- | --- | --- | --- | --- | --- | --- |
+| 06 • Inference mới quyết định Product | W10–11 MVP/hardening; nếu core trễ W12–13 tập trung core + QA. | Report thật, source trace, UNKNOWN đúng và release docs | Team review | Giảm history/export/re-run khi blockers P0/P1 | W10–W13 | Không suy từ Knowledge coverage rằng AI inference luôn đúng |
+| ĐÁNH GIÁ KNOWLEDGE + DEVELOPMENT FIXTURES — BẮT ĐẦU TẠO TỪ TUẦN 7 |  |  |  |  |  |  |
+| Nguồn tham chiếu kiểm tra: Workbook Runtime v7.5 (hình thành/bàn giao trong giai đoạn W7). W4–W6 CHƯA có dataset. Báo cáo W7 hoàn thành Knowledge + DEV Fixtures; nhãn pháp lý gold và QA chi tiết cần xác nhận riêng. |  |  |  |  |  |  |
+| Chỉ tiêu | Giá trị | Ý nghĩa DEV | Trạng thái kiểm chứng | Hành động W7 | Người phụ trách | Kết quả cần bàn giao |
+
+
+---
+
+## 10. Đánh giá Knowledge + Development Fixtures (Bắt đầu tạo từ Tuần 7)
+
+| Document chunks | 138733 | Runtime source-span references / DI target | OCR/layout QA pending | Map 1–2 PDFs → chunks/page refs, so sánh parser thật | Người 1 + Người 2 | Document fixtures / parser test | Không đưa chunk reference làm đầu vào DI E2E |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Citation occurrences | 8892 | DEV citation extraction/matching | Citation findings được thống kê UNKNOWN | Bảo đảm trích nguồn; thêm ca controlled đã kiểm chứng cho VALID/STALE nếu có | Người 3 + Người 1 | Citation contracts & cases | Không coi UNKNOWN là evidence validator đã đúng |
+| Applicable requirements | 3000 | DEV case input/output references | PARTIAL_CATALOG_REFERENCE (10 families) | Chọn 1 tập family có nguồn/mốc tương thích; test điều kiện áp dụng | Người 1 + Người 3 | Legal scope fixture pack | Không suy rằng luật đã bao quát 100% |
+| Retrieval candidates | 23239 | Thử ranking/IDs/Top-K read/write | Không phải relevance gold | Kiểm chứng một tập pairs tích cực/tiêu cực có người review | Người 3 + Người 4 | Retrieval test cases | Không report Recall@K từ nhãn chưa rà |
+| Compliance outcomes | 2681 | Structured output/report fixtures | Guarded reference; not expert legal gold | Tách engine references với expected gold; chọn UNKNOWN/satisfied/violated sanity tests | Người 4 + Người 1 | Reasoning input/expected pairs | Không dùng reference outputs làm inference input |
+| Report rows | 300 | Test lưu report và UI history | DRAFT/PENDING | Map report→case→finding→source/version; test truy hồi bằng run_id | Người 5 + Người 1 | Mock report/read-model fixtures | Không trình bày report như tư vấn luật được duyệt |
+| Knowledge corpus | 36 văn bản; 306 yêu cầu | Knowledge/reference cho rule/temporal | PENDING_HUMAN_REVIEW_NOT_APPROVED có tồn tại | Đóng băng subset và ghi review_status/provenance | Người 1 + Người 3 | Versioned Knowledge seed subset | Knowledge hiện có không mặc nhiên 100% chính xác |
+| TUẦN 7: ĐÃ BÁO CÁO XÂY DỰNG DATA/FRONTEND HOÀN THÀNH — CÁC MỤC DƯỚI ĐÂY LÀ QA/BÀN GIAO CẦN XÁC NHẬN, KHÔNG PHẢI VIỆC ĐÃ 'RÀ DATA' Ở TUẦN 7 |  |  |  |  |  |  |  |
+| Ưu tiên | Điều kiện bàn giao | Cách xác nhận | Kết quả cần có | Owner | Chưa chắc chắn | Bước tiếp theo | Trạng thái |
+| MUST | W6 đã định nghĩa Schema/API | Kiểm tra BRD/architecture, ví dụ request/response và owner ký nhận | Schema / data contracts hợp lệ | 5 người | Không có báo cáo nghiệm thu contracts | Review API contract trước W9 | Chưa xác nhận |
+
+
+---
+
+## 11. Tiêu chí Bàn giao & Nghiệm thu (Gates Tuần 7 – Tuần 8)
+
+| MUST | W8 modules chuẩn bị integration | Test Document, Legal/Ret, Reasoning API; lấy kết quả smoke/contracts | Module endpoints sẵn sàng baseline | Người 2–4 | Chưa có kết quả nghiệm thu module | Chốt endpoint/contract, tạo integration issue | Đang làm |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| MUST | W8 CI/CD đang thiết lập | Chạy pipeline build/lint/test; tạo artifacts và check logs | CI/CD baseline chạy xanh khi nghiệm thu | Người 1 | Chưa xác nhận pipeline green | Hoàn thiện workflow + logs | Đang làm |
+| SHOULD | W8–9 Integration Baseline | Ghép FE + backend + APIs, ban đầu mocks, chuyển sang thực | Một luồng module-integrated có trace | Người 5 | Đang chuẩn bị, chưa có báo cáo pass E2E | Review integration trong W9 | Chưa xác nhận |
