@@ -69,10 +69,12 @@ def _repeated_form_copies(page) -> int:
 
 def _drop_repeated_copies(text: str, copies: int) -> str:
     """Bỏ các bản lặp liền nhau ở đầu text: [T, T, ..., T, phần thêm] → [T, phần thêm]."""
-    if copies < 2 or len(text) < 50:
+    if copies < 2 or not text:
         return text
-        # Mẫu dò ngắn: trang ngắn thì một bản sao có thể ngắn hơn 200 ký tự.
-    probe = text[: min(64, len(text) // copies)]
+    # Mẫu dò phải ngắn hơn một bản sao (trang có thể rất ngắn); mỗi vị trí ứng viên
+    # đều được kiểm tra lại toàn bộ các bản sao nên mẫu ngắn không gây cắt nhầm.
+    probe = text[: min(16, len(text) // copies)]
+
     period = text.find(probe, 1)
     while period > 0:
         if all(text[i * period : (i + 1) * period] == text[:period] for i in range(copies)):
