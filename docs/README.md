@@ -20,6 +20,7 @@ Dành cho thành viên mới hoặc thiết lập môi trường phát triển t
 
 ### 1. Yêu cầu Nghiệp vụ (`business/`)
 * **[Kế hoạch Triển khai 10 Tuần (W4–W13)](business/roadmap_10_weeks.md)** ([Bản Excel XLSX](business/ke_hoach_10_tuan.xlsx) · [Bản CSV](business/ke_hoach_10_tuan.csv)): Phân công trách nhiệm 5 workstreams, lộ trình 3 giai đoạn và tiêu chuẩn hoàn thành (Definition of Done).
+* **[Báo cáo Tiến độ Tuần 9 (PPTX)](business/bao_cao_tien_do_tuan_9.pptx)** ([Thư mục Slides](business/slides/bao_cao_tien_do_tuan_9.pptx)): Bản trình chiếu 10 slide báo cáo tiến độ Tuần 9 đạt 100% kỳ vọng (Cột mốc First Working Inference E2E, Cụm K3d GitOps, Async Task Queue và Reviewer Workbench).
 * **[Business Requirements Document (BRD v1.1)](business/BRD_v1.1.pdf)**: Đặc tả yêu cầu nghiệp vụ gốc, quy tắc thẩm định pháp lý và xử lý trường hợp bất định.
 
 ### 2. Kiến trúc & Thiết kế Kỹ thuật (`architecture/`)
