@@ -19,7 +19,7 @@ Dành cho thành viên mới hoặc thiết lập môi trường phát triển t
 ## 📚 Bản đồ Tài liệu (Documentation Sitemap)
 
 ### 1. Yêu cầu Nghiệp vụ (`business/`)
-* **[Kế hoạch Triển khai 10 Tuần (W4–W13)](business/roadmap_10_weeks.md)**: Phân công trách nhiệm 5 workstreams, lộ trình 3 giai đoạn và tiêu chuẩn hoàn thành (Definition of Done).
+* **[Kế hoạch Triển khai 10 Tuần (W4–W13)](business/roadmap_10_weeks.md)** ([Bản Excel XLSX](business/ke_hoach_10_tuan.xlsx) · [Bản CSV](business/ke_hoach_10_tuan.csv)): Phân công trách nhiệm 5 workstreams, lộ trình 3 giai đoạn và tiêu chuẩn hoàn thành (Definition of Done).
 * **[Business Requirements Document (BRD v1.1)](business/BRD_v1.1.pdf)**: Đặc tả yêu cầu nghiệp vụ gốc, quy tắc thẩm định pháp lý và xử lý trường hợp bất định.
 
 ### 2. Kiến trúc & Thiết kế Kỹ thuật (`architecture/`)
