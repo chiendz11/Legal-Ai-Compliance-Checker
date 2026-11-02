@@ -4,6 +4,7 @@ Step implementations are synthetic fixtures (no legal quality is claimed); the t
 orchestration, persistence, idempotency, failure recording and report/run scoping.
 """
 
+import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -240,6 +241,20 @@ def test_run_completes_with_progress_results_and_one_report(env):
     case = env.client.get(f"/api/v1/cases/{CASE}").json()
     assert case["latest_run_id"] == run_id and case["latest_run_status"] == "COMPLETED"
     assert case["case"]["deployment"]["rule_version"] == "RULE_TEST"
+
+
+def test_progress_stream_sends_state_and_closes_when_run_ends(env):
+    run_id = start(env.client)["context"]["run_id"]
+    url = f"/api/v1/cases/{CASE}/runs/{run_id}/events"
+    with env.client.stream("GET", url) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        body = "".join(response.iter_text())  # returns because the run is already COMPLETED
+    events = [block for block in body.split("\n\n") if block.startswith("event: progress")]
+    assert len(events) == 1
+    data = json.loads(events[0].split("data: ", 1)[1])
+    assert data["status"] == "COMPLETED" and data["context"]["run_id"] == run_id
+    assert env.client.get(f"/api/v1/cases/{CASE}/runs/NOPE/events").status_code == 404
 
 
 def test_same_idempotency_key_returns_original_run_without_rerunning(env):

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 
-import { api, unwrap } from "./client";
+import { api, type RunProgress, unwrap } from "./client";
 
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 
@@ -18,17 +19,41 @@ export function useStartRun() {
   });
 }
 
-/** Polls while the run is queued/running; stops once it is COMPLETED or FAILED. */
+/**
+ * Live run progress: Server-Sent Events push each change; if the stream is unavailable or
+ * drops, the query polls /status while the run is queued/running. Both stop at COMPLETED/FAILED.
+ */
 export function useRunStatus(caId: string, runId: string) {
+  const client = useQueryClient();
+  const queryKey = useMemo(() => ["run-status", caId, runId], [caId, runId]);
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    if (typeof EventSource === "undefined") return;
+    const url = `/api/v1/cases/${encodeURIComponent(caId)}/runs/${encodeURIComponent(runId)}/events`;
+    const source = new EventSource(url);
+    source.addEventListener("progress", (event) => {
+      setLive(true);
+      client.setQueryData(queryKey, JSON.parse((event as MessageEvent<string>).data) as RunProgress);
+    });
+    // The server closes the stream when the run ends; the browser would then reconnect.
+    source.onerror = () => {
+      source.close();
+      setLive(false);
+    };
+    return () => source.close();
+  }, [caId, runId, client, queryKey]);
+
   return useQuery({
-    queryKey: ["run-status", caId, runId],
+    queryKey,
     queryFn: async () =>
       unwrap(
         await api.GET("/api/v1/cases/{ca_id}/runs/{run_id}/status", {
           params: { path: { ca_id: caId, run_id: runId } },
         }),
       ),
-    refetchInterval: (query) => (ACTIVE.has(query.state.data?.status ?? "QUEUED") ? 1500 : false),
+    refetchInterval: (query) =>
+      !live && ACTIVE.has(query.state.data?.status ?? "QUEUED") ? 1500 : false,
   });
 }
 

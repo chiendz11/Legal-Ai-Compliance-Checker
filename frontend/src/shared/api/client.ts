@@ -8,6 +8,7 @@ export const api = createClient<paths>({ baseUrl: "" });
 type Schemas = components["schemas"];
 export type CaseRecord = Schemas["Output_CaseRecord"];
 export type AssessmentCase = Schemas["Output_AssessmentCase"];
+export type RunProgress = Schemas["Output_RunProgress"];
 export type ReportRecord = Schemas["Output_ReportRecord"];
 export type FinalReport = Schemas["Output_FinalReport"];
 export type ReportContent = Schemas["Output_ReportContent"];
