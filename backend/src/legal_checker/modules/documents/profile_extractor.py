@@ -27,7 +27,7 @@ from legal_checker.shared.contracts.document_intelligence import (
     ProfileTimeMarker,
 )
 
-PROFILE_EXTRACTOR_VERSION = "rules-v1"
+PROFILE_EXTRACTOR_VERSION = "rules-v3"
 LITERAL = "LABEL_REGEX"
 DERIVED = "RULE_DERIVED"
 EXTRACTED = "EXTRACTED"
@@ -58,27 +58,13 @@ class Candidate:
 
 @dataclass
 class _Builder:
+    """Tạo fact và bằng chứng. Mỗi bằng chứng thuộc đúng một fact (bảng bang_chung_truong
+    có cột trich_xuat_id), nên cùng một câu làm bằng chứng cho hai fact sẽ có hai bản."""
+
     hop_dong_id: str
     version: str
     facts: list[ExtractedFact] = field(default_factory=list)
     evidence: list[ProfileEvidence] = field(default_factory=list)
-    _evidence_ids: dict[tuple[str, int, int], str] = field(default_factory=dict)
-
-    def evidence_id(self, span: Span) -> str:
-        key = (span.chunk.doan_id, span.start, span.end)
-        if key not in self._evidence_ids:
-            evidence_id = f"{self.hop_dong_id}_BC_{self.version}_{len(self._evidence_ids) + 1:04d}"
-            self._evidence_ids[key] = evidence_id
-            self.evidence.append(
-                ProfileEvidence(
-                    bang_chung_id=evidence_id,
-                    doan_id=span.chunk.doan_id,
-                    trich_dan=span.quote,
-                    ky_tu_bat_dau=span.start,
-                    ky_tu_ket_thuc=span.end,
-                )
-            )
-        return self._evidence_ids[key]
 
     def fact(
         self,
@@ -91,6 +77,19 @@ class _Builder:
         raw: str | None = None,
     ) -> str:
         fact_id = f"{self.hop_dong_id}_TX_{self.version}_{name}"
+        evidence_ids = []
+        for i, span in enumerate(spans, start=1):
+            evidence_id = f"{fact_id}_BC{i}"
+            evidence_ids.append(evidence_id)
+            self.evidence.append(
+                ProfileEvidence(
+                    bang_chung_id=evidence_id,
+                    doan_id=span.chunk.doan_id,
+                    trich_dan=span.quote,
+                    ky_tu_bat_dau=span.start,
+                    ky_tu_ket_thuc=span.end,
+                )
+            )
         self.facts.append(
             ExtractedFact(
                 trich_xuat_id=fact_id,
@@ -100,7 +99,7 @@ class _Builder:
                 trang_thai=status,
                 phuong_phap=method,
                 human_verified=False,
-                evidence_ids=[self.evidence_id(s) for s in spans],
+                evidence_ids=evidence_ids,
             )
         )
         return fact_id
@@ -249,27 +248,38 @@ _PURPOSE_HOME = re.compile(r"Mục đích sử dụng(?: Căn [Hh]ộ)?:\s*(?:[D
 _VN_LAW = re.compile(r"pháp luật Việt Nam|CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", re.I)
 _REAL_ESTATE_LAW = re.compile(r"Luật Kinh [Dd]oanh [Bb]ất [Đđ]ộng [Ss]ản")
 _SELLER_IS_INVESTOR = re.compile(r"“Chủ đầu tư”,\s*“Bên Bán”|“Bên Bán”,\s*“Chủ đầu tư”")
-_SELLER_HEADING = re.compile(r"^[ \t]*(?:\d+\.[ \t]*)?BÊN BÁN\b[^\n]*$", re.M)
-_ORG_LINE = re.compile(
-    r"^[ \t]*(?:Tên (?:Công ty|doanh nghiệp|tổ chức)[ \t]*:[ \t]*)?"
-    r"(?P<name>(?:TỔNG )?(?:CÔNG TY|Công ty|Tổng Công ty)[^\n]*?)[ \t]*$",
-    re.M,
+# Tiêu đề "BÊN BÁN" ở đầu dòng, có thể có số thứ tự thường/La Mã ("1.", "I.").
+# Tên công ty có thể nằm ngay sau trên cùng dòng ("BÊN BÁN: CÔNG TY ...").
+_SELLER_HEADING = re.compile(r"^[ \t]*(?:(?:\d+|[IVX]+)\.[ \t]*)?BÊN BÁN\b", re.M)
+# Dòng tiếp theo toàn chữ in hoa, ngắn: phần tên công ty bị xuống dòng.
+_NAME_CONTINUATION = re.compile(r"\n[ \t]*([A-ZÀ-Ỹ][A-ZÀ-Ỹ \t()&.-]{0,40}?)[ \t]*(?=\n|$)")
+# Tên tổ chức ở bất kỳ đâu trong dòng: "TỔNG CÔNG TY ...", "- Công ty: CÔNG TY CỔ PHẦN ...",
+# "Tên Công ty: Công ty Cổ phần HBI". "Công ty:" (nhãn) không khớp vì sau đó là dấu hai chấm.
+_ORG_NAME = re.compile(
+    r"(?P<name>(?:TỔNG[ \t]+)?CÔNG[ \t]+TY[^\n]*"
+    r"|(?:Tổng[ \t]+)?Công[ \t]+ty[ \t]+(?:[A-ZĐ]|cổ phần|trách nhiệm|TNHH)[^\n]*)"
 )
+_SELLER_WINDOW_LINES = 4
 
 
 def _find_seller(chunks: Sequence[ChunkRecord]) -> tuple[str, Span] | None:
-    """Tên tổ chức trong 3 dòng ngay sau tiêu đề "BÊN BÁN"."""
+    """Tên tổ chức ngay sau tiêu đề "BÊN BÁN" (cùng dòng hoặc vài dòng sau)."""
     for chunk in chunks:
-        for heading in _SELLER_HEADING.finditer(chunk.noi_dung):
+        text = chunk.noi_dung
+        for heading in _SELLER_HEADING.finditer(text):
             window_end = heading.end()
-            for _ in range(3):
-                nxt = chunk.noi_dung.find("\n", window_end + 1)
-                window_end = len(chunk.noi_dung) if nxt == -1 else nxt
-            m = _ORG_LINE.search(chunk.noi_dung, heading.end(), window_end)
-            if m:
-                name = m.group("name").rstrip(" :;,")
-                start = m.start("name")
-                return name, Span(chunk, start, start + len(name))
+            for _ in range(_SELLER_WINDOW_LINES):
+                nxt = text.find("\n", window_end + 1)
+                window_end = len(text) if nxt == -1 else nxt
+            m = _ORG_NAME.search(text, heading.end(), window_end)
+            if not m:
+                continue
+            start = m.start("name")
+            end = start + len(m.group("name").rstrip(" \t:;,"))
+            cont = _NAME_CONTINUATION.match(text, m.end())
+            if cont and m.group("name").isupper() and cont.group(1).isupper():
+                end = cont.end(1)  # "... CAO ỐC" + "THIÊN LONG"
+            return " ".join(text[start:end].split()), Span(chunk, start, end)
     return None
 
 

@@ -153,3 +153,32 @@ def test_wrapped_overlay_text_is_not_a_conflict():
 def test_land_use_purpose_is_not_apartment_purpose():
     _, result = _profile("6. Mục đích sử dụng:\nĐất ở (xây dựng chung cư): 8.368,5 m2\n")
     assert result.profile.muc_dich_su_dung_can_ho is None
+
+
+def test_seller_name_after_label_prefix_is_found():
+    _, result = _profile(
+        "BÊN BÁN NHÀ Ở (sau đây gọi tắt là Bên Bán)3:\n"
+        "- Công ty: CÔNG TY CỔ PHẦN PHÁT TRIỂN ĐÔ THỊ QUỐC TẾ VIỆT NAM  \n"
+        "(viết tắt là “VIDC”)\n",
+        "BÊN BÁN NHÀ Ở (BÊN BÁN)\nTên Công ty: Công ty Cổ phần HBI\n",
+    )
+    (seller,) = [s for s in result.subjects if s.vai_tro == "BEN_BAN"]
+    assert seller.ten_chu_the == "CÔNG TY CỔ PHẦN PHÁT TRIỂN ĐÔ THỊ QUỐC TẾ VIỆT NAM"
+    assert result.profile.ben_ban_la_ca_nhan is False
+
+
+def test_seller_heading_with_roman_numeral_or_name_on_same_line():
+    _, roman = _profile(
+        "I. BÊN BÁN CĂN HỘ CHUNG CƯ (sau đây gọi tắt là “Bên Bán”):\n"
+        "CÔNG TY CỔ PHẦN TRUNG THỦY LANCASTER \n"
+        "Giấy chứng nhận đăng ký doanh nghiệp số: 0312586710\n"
+    )
+    _, same_line = _profile(
+        "BÊN BÁN: CÔNG TY CỔ PHẦN BẤT ĐỘNG SẢN ĐẦU TƯ VÀ PHÁT TRIỂN CAO ỐC  \n"
+        "THIÊN LONG\n"
+        "Giấy chứng nhận ĐKDN : 3703021584\n"
+    )
+    assert [s.ten_chu_the for s in roman.subjects] == ["CÔNG TY CỔ PHẦN TRUNG THỦY LANCASTER"]
+    assert [s.ten_chu_the for s in same_line.subjects] == [
+        "CÔNG TY CỔ PHẦN BẤT ĐỘNG SẢN ĐẦU TƯ VÀ PHÁT TRIỂN CAO ỐC THIÊN LONG"
+    ]
