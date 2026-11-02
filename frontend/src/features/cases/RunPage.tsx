@@ -15,6 +15,17 @@ const STAGE_LABELS: Record<string, string> = {
   RECOMMENDATION: "Khuyến nghị",
 };
 
+/** Plain-language cause for each failure reason the runner records. */
+const FAILURE_HELP: Record<string, string> = {
+  DOCUMENT_INTELLIGENCE_UNAVAILABLE:
+    "Chưa có module đọc hợp đồng (nhóm A). Tệp đã được lưu an toàn; ca sẽ chạy được khi module được gộp.",
+  MODULE_NOT_IMPLEMENTED: "Máy chủ chưa bật module đánh giá cho bước này.",
+  REFERENCE_UNAVAILABLE: "Ca này không có dữ liệu tham chiếu để phát lại.",
+  HANDOFF_VALIDATION_FAILED:
+    "Dữ liệu bàn giao giữa hai bước không hợp lệ nên run dừng lại để không tạo kết luận sai.",
+  UNEXPECTED_ERROR: "Lỗi ngoài dự kiến trong một module; xem trace để báo cho nhóm phụ trách.",
+};
+
 const STAGE_TONE: Record<string, string> = {
   PENDING: "neutral",
   RUNNING: "info",
@@ -53,7 +64,13 @@ export function RunPage() {
       </p>
       {run.error && (
         <Notice tone="bad">
-          <strong>{run.error.message}</strong>
+          <strong>
+            {run.error.details
+              ?.map((d) => FAILURE_HELP[String(d.reason)])
+              .find(Boolean) ?? "Run dừng do lỗi."}
+          </strong>
+          <br />
+          <span className="small">{run.error.message}</span>
           <br />
           <span className="small">
             {run.error.details?.map((d) => String(d.reason ?? JSON.stringify(d))).join(", ")} ·

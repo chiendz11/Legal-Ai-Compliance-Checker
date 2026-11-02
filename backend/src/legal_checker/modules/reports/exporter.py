@@ -64,6 +64,12 @@ def report_document(report: FinalReport) -> Document:
             "chuyên viên xác nhận. Không dùng như kết luận pháp lý đã duyệt.",
             emphasis=True,
         )
+    if content.audit.get("module_source") == "MODULES_DI_REFERENCE":
+        doc.paragraph(
+            "MODULES_DI_REFERENCE: bước 3–7 do module đánh giá tính; hồ sơ và đoạn văn hợp đồng "
+            "(bước 1–2) lấy từ dataset tham chiếu vì module đọc hợp đồng chưa có.",
+            emphasis=True,
+        )
     if content.audit.get("module_source") == "REFERENCE_REPLAY":
         doc.paragraph(
             "REFERENCE_REPLAY: dữ liệu tham chiếu QA được phát lại để kiểm thử tích hợp, "

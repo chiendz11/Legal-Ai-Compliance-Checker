@@ -23,11 +23,23 @@ export function useReportNav() {
     (nextTab: TabId, nextFocus?: string) => {
       const next = new URLSearchParams({ tab: nextTab });
       if (nextFocus) next.set("focus", nextFocus);
+      const view = params.get("view");
+      if (view) next.set("view", view); // keep the split viewer open across tabs
       setParams(next);
     },
-    [setParams],
+    [params, setParams],
   );
-  return { tab, focus, go };
+  const split = params.get("view") === "split";
+  const setSplit = useCallback(
+    (on: boolean) => {
+      const next = new URLSearchParams(params);
+      if (on) next.set("view", "split");
+      else next.delete("view");
+      setParams(next, { replace: true });
+    },
+    [params, setParams],
+  );
+  return { tab, focus, go, split, setSplit };
 }
 
 export const focusDomId = (id: string) => `focus-${id}`;

@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, NavLink, Route, Routes } from "react-router-dom";
 
 import { CaseListPage } from "./features/cases/CaseListPage";
 import { RunPage } from "./features/cases/RunPage";
 import { ReportPage } from "./features/reports/ReportPage";
+import { UploadPage } from "./features/upload/UploadPage";
 import { useHealth } from "./shared/api/queries";
 import { Empty } from "./shared/components/ui";
 import { mockEnabled } from "./shared/env";
@@ -20,6 +21,7 @@ export function App() {
         <main className="page">
           <Routes>
             <Route path="/" element={<CaseListPage />} />
+            <Route path="/upload" element={<UploadPage />} />
             <Route path="/cases/:caId/runs/:runId" element={<RunPage />} />
             <Route path="/reports/:baoCaoId" element={<ReportPage />} />
             <Route path="*" element={<Empty>Không tìm thấy trang.</Empty>} />
@@ -38,6 +40,12 @@ function TopBar() {
       <Link to="/" className="brand">
         Legal Compliance Checker
       </Link>
+      <nav className="topnav" aria-label="Điều hướng chính">
+        <NavLink to="/" end>
+          Lịch sử
+        </NavLink>
+        <NavLink to="/upload">Tải hợp đồng</NavLink>
+      </nav>
       <div className="topbar-meta">
         {mockEnabled && <span className="badge tone-info">Mock API</span>}
         <span

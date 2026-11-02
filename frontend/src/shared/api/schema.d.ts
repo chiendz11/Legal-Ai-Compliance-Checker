@@ -131,7 +131,7 @@ export interface paths {
         };
         /**
          * List accessible cases
-         * @description List accessible cases
+         * @description History of the caller's tenant: cases with their latest run and report (title, requirement-status counts). Filter by text, run status, a requirement status present in the latest report, and assessment-date range; sort server-side. Reading history never re-runs inference.
          */
         get: operations["listAssessmentCases"];
         put?: never;
@@ -739,6 +739,20 @@ export interface components {
              * @default null
              */
             latest_run_status: ("QUEUED" | "RUNNING" | "COMPLETED" | "FAILED") | null;
+            /**
+             * Ten Tai Lieu
+             * @default null
+             */
+            ten_tai_lieu: string | null;
+            /**
+             * Latest Report Id
+             * @default null
+             */
+            latest_report_id: string | null;
+            /** Requirement Status Counts */
+            requirement_status_counts?: {
+                [key: string]: number;
+            };
         };
         /** Chunk */
         Output_Chunk: {
@@ -2512,6 +2526,17 @@ export interface operations {
             query?: {
                 page?: number;
                 page_size?: number;
+                /** @description Substring of case ID, contract ID or title */
+                q?: string;
+                /** @description Latest run status; NONE = never run */
+                run_status?: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "NONE";
+                /** @description Latest report contains a requirement with this status */
+                requirement_status?: "COMPLIANT" | "PARTIAL" | "NON_COMPLIANT" | "INSUFFICIENT";
+                /** @description Assessment date from (inclusive) */
+                date_from?: string;
+                /** @description Assessment date to (inclusive) */
+                date_to?: string;
+                sort?: "ca_id" | "-ngay_danh_gia" | "ngay_danh_gia" | "-latest_run";
             };
             header?: never;
             path?: never;

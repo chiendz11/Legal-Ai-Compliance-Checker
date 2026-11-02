@@ -30,14 +30,24 @@ function notFound(message: string) {
   );
 }
 
-/** Mocks only planned (NOT_IMPLEMENTED) routes; implemented ones pass through to the backend. */
+/** Offline mode (VITE_API_MOCK=true): serves case/report reads from exported fixtures. */
 export const handlers = [
   http.get("/api/v1/cases", async ({ request }) => {
-    const records: CaseRecord[] = (await fixtures()).map((record) => ({
-      case: record.report.report_json.case,
-      latest_run_id: record.run_id,
-      latest_run_status: "COMPLETED",
-    }));
+    const records: CaseRecord[] = (await fixtures()).map((record) => {
+      const statuses = record.report.report_json.compliance.requirement_results.map(
+        (r) => r.status,
+      );
+      return {
+        case: record.report.report_json.case,
+        latest_run_id: record.run_id,
+        latest_run_status: "COMPLETED",
+        ten_tai_lieu: record.report.report_json.case.hop_dong_id,
+        latest_report_id: record.report.bao_cao_id,
+        requirement_status_counts: Object.fromEntries(
+          [...new Set(statuses)].map((s) => [s, statuses.filter((x) => x === s).length]),
+        ),
+      };
+    });
     return HttpResponse.json(page(records, new URL(request.url)));
   }),
 

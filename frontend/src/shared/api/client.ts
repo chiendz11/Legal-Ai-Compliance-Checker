@@ -9,6 +9,14 @@ type Schemas = components["schemas"];
 export type CaseRecord = Schemas["Output_CaseRecord"];
 export type AssessmentCase = Schemas["Output_AssessmentCase"];
 export type RunProgress = Schemas["Output_RunProgress"];
+export type CaseCreate = Schemas["Input_CaseCreate"];
+export type ApiErrorBody = Schemas["Input_ApiError"];
+
+/** Human-readable message from the API error envelope, if the error carries one. */
+export function apiErrorMessage(error: unknown): string | null {
+  const body = (error as { body?: Partial<ApiErrorBody> } | null)?.body;
+  return body?.error?.message ?? null;
+}
 export type ReportRecord = Schemas["Output_ReportRecord"];
 export type FinalReport = Schemas["Output_FinalReport"];
 export type ReportContent = Schemas["Output_ReportContent"];

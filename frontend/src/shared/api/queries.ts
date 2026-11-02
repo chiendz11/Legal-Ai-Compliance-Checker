@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { api, type RunProgress, unwrap } from "./client";
+import { api, type CaseCreate, type RunProgress, unwrap } from "./client";
+import type { paths } from "./schema";
 
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 
@@ -66,10 +67,41 @@ export function useHealth() {
   });
 }
 
-export function useCases(page = 1) {
+export type CaseQuery = NonNullable<paths["/api/v1/cases"]["get"]["parameters"]["query"]>;
+
+/** History list; filters and sort run server-side, nothing is re-assessed. */
+export function useCases(query: CaseQuery = {}) {
   return useQuery({
-    queryKey: ["cases", page],
-    queryFn: async () => unwrap(await api.GET("/api/v1/cases", { params: { query: { page } } })),
+    queryKey: ["cases", query],
+    queryFn: async () => unwrap(await api.GET("/api/v1/cases", { params: { query } })),
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** Multipart upload; the server sniffs the type and answers 413/415 for bad files. */
+export function useUploadContract() {
+  return useMutation({
+    mutationFn: async ({ file, title }: { file: File; title?: string }) => {
+      const form = new FormData();
+      form.append("file", file);
+      if (title) form.append("ten_tai_lieu", title);
+      return unwrap(
+        await api.POST("/api/v1/contracts", {
+          // Typed as JSON by the generator; send the FormData as-is.
+          body: form as never,
+          bodySerializer: (body) => body as unknown as FormData,
+        }),
+      );
+    },
+  });
+}
+
+export function useCreateCase() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: CaseCreate) =>
+      unwrap(await api.POST("/api/v1/cases", { body })),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["cases"] }),
   });
 }
 

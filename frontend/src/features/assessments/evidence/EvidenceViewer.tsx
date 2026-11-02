@@ -5,6 +5,9 @@ import { useRunResults } from "../../../shared/api/queries";
 import { Notice } from "../../../shared/components/ui";
 import { displayText } from "../../../shared/text";
 
+export const contractSourceUrl = (hopDongId: string) =>
+  `/api/v1/contracts/${encodeURIComponent(hopDongId)}/source`;
+
 /** A span inside one contract chunk; offsets are absent for page-level citation positions. */
 export type EvidenceTarget = { doanId: string; start?: number; end?: number; quote?: string };
 
@@ -18,14 +21,17 @@ export function useOpenEvidence() {
 /**
  * Resolves C06/C07/C02 evidence to the exact chunk of the run's pinned document, with the
  * quoted span highlighted, its pages, and a link to the source PDF at that page.
+ * `onLocate` lets the split viewer jump its PDF to the evidence page.
  */
 export function EvidenceProvider({
   caseInfo,
   runId,
+  onLocate,
   children,
 }: {
   caseInfo: AssessmentCase;
   runId: string;
+  onLocate?: (page: number) => void;
   children: ReactNode;
 }) {
   const [target, setTarget] = useState<EvidenceTarget | null>(null);
@@ -45,11 +51,15 @@ export function EvidenceProvider({
   }, [target]);
 
   const chunk = results.data?.chunks.find((c) => c.doan_id === target?.doanId);
-  const source = caseInfo.source.object_uri ?? caseInfo.source.url_nguon;
+  // Same-origin source route: works for uploads and remote PDFs, and checks tenant access.
   const pdfLink =
-    chunk && source && /^https?:/.test(source) && caseInfo.source.mime_type === "application/pdf"
-      ? `${source}#page=${chunk.page_start}`
+    chunk && caseInfo.source.mime_type === "application/pdf"
+      ? `${contractSourceUrl(caseInfo.hop_dong_id)}#page=${chunk.page_start}`
       : null;
+  const page = chunk?.page_start;
+  useEffect(() => {
+    if (page !== undefined) onLocate?.(page);
+  }, [page, target, onLocate]);
 
   return (
     <EvidenceContext.Provider value={open}>
