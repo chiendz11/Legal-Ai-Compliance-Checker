@@ -20,15 +20,19 @@ DOCS = PROJECT_ROOT / "docs"
 
 @pytest.fixture(scope="module")
 def documents():
-    return {
+    doc_map = {
         path.relative_to(DOCS).as_posix(): json.loads(path.read_text(encoding="utf-8"))
-        for path in [
-            *sorted((DOCS / "contracts").glob("*.json")),
-            DOCS / "openapi.design.json",
-            DOCS / "module_contracts.schema.json",
-            DOCS / "llm_audit.schema.json",
-        ]
+        for path in sorted((DOCS / "contracts").glob("*.json"))
     }
+    openapi_path = DOCS / "architecture" / "openapi.design.json"
+    doc_map["architecture/openapi.design.json"] = json.loads(
+        openapi_path.read_text(encoding="utf-8")
+    )
+    # Aliases for compatibility
+    doc_map["openapi.design.json"] = doc_map["architecture/openapi.design.json"]
+    doc_map["module_contracts.schema.json"] = doc_map["contracts/module_contracts.schema.json"]
+    doc_map["llm_audit.schema.json"] = doc_map["contracts/llm_audit.schema.json"]
+    return doc_map
 
 
 def test_module_schemas_match_runtime_models(documents):

@@ -37,4 +37,4 @@ engines.
 
 Tests có mapping/binding, multi-template, required elements/facts, disabled/gaps,
 evidence/legal basis, priority, verification-only actions và provenance tampering.
-Xem [bàn giao nhóm C](../../../../../docs/group_c_handoff.md).
+Xem [bàn giao nhóm C](../../../../../docs/modules/group_c_compliance_and_risk.md).

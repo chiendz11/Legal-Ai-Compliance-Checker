@@ -253,7 +253,7 @@ C07/C08/C10/C11, diagnostics, hashes/counts và sidecars phản ánh kết quả
 
 Chạy từ root repo. DB phải có upstream rows và knowledge snapshot đúng case pin;
 runner không tự thay pin/review của case. Với run demo đã chuẩn bị và cách khởi động
-PostgreSQL test, xem [bàn giao nhóm C](../../../../../docs/group_c_handoff.md).
+PostgreSQL test, xem [bàn giao nhóm C](../../../../../docs/modules/group_c_compliance_and_risk.md).
 
 ```powershell
 # DATABASE_URL trỏ DB local đã chuẩn bị; không đưa mật khẩu thật vào repo.

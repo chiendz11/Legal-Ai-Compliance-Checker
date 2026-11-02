@@ -33,4 +33,4 @@ case/run, không gọi mapper lại khi dựng report.
 
 Tests nghiệp vụ bao phủ các findings, citation statuses/domain, ownership/pins,
 verification guards, severity, source XOR, rule/catalog gaps, dedup và hai nhánh độc lập.
-Xem [bàn giao nhóm C](../../../../../docs/group_c_handoff.md).
+Xem [bàn giao nhóm C](../../../../../docs/modules/group_c_compliance_and_risk.md).

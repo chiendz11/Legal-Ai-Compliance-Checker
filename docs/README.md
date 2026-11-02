@@ -1,27 +1,51 @@
-# Tài liệu cho nhóm phát triển
+# Tài liệu Dự án Legal AI Compliance Checker
 
-Bắt đầu theo thứ tự:
+> Trung tâm tài liệu kỹ thuật, kiến trúc, quy chuẩn dữ liệu và hướng dẫn triển khai hệ thống kiểm tra tuân thủ pháp lý hợp đồng mua bán căn hộ bằng AI.
 
-1. [Tạo/kích hoạt môi trường ảo và cài dependencies](dev_setup.md).
-2. [Tải dataset DEV_VALIDATION](dataset_download.md).
-3. [Tạo PostgreSQL local và seed](local_database.md).
-4. [Triển khai từng nhóm, query/JOIN và bàn giao](huong_dan_trien_khai_module_sau_seed.md).
-5. [Kiến trúc và trạng thái skeleton](architecture.md), [khởi tạo](startup.md), [ghép module](module_integration.md).
-6. [Các script, lệnh và trạng thái sử dụng](../scripts/README.md).
+---
 
-| Tài liệu | Mục đích |
-|---|---|
-| [BRD v1.1](BRD_v1.1.pdf) | Yêu cầu nghiệp vụ gốc |
-| [Contracts gốc](data_contracts_v7_3_2.md) | Baseline thiết kế C01–C13/X01/X02 |
-| [Giải thích contracts](contracts_va_muc_dich_vi.md) · [PDF](contracts_va_muc_dich_vi.pdf) | Mục đích, input/output, producer/consumer và hiện trạng code |
-| [Contracts máy đọc được](contracts/README.md) · [Catalog](contracts/catalog.json) | C01–C13/X01/X02 riêng, producer/consumer, quy tắc và mapping DB |
-| [OpenAPI thiết kế UI](openapi.design.json) | Contract để mock/triển khai UI, có phân biệt trạng thái; schema thực tế xem tại `/openapi.json` của backend đang chạy |
-| [Module schemas](module_contracts.schema.json) · [DB catalog](contracts/database_catalog.json) | Handoff input/output và tên/cột/khóa SQL cho repository/mapper |
-| [LLM audit dùng chung](llm_audit.md) · [schema X02](llm_audit.schema.json) | Quy ước ghi log DB cho các client LLM riêng của module |
-| [Đọc PDF và cache local](source_storage.md) | Nhóm A đọc nguồn HTTP(S), kiểm tra SHA-256 và đưa bytes vào parser/OCR |
-| [Alembic và schema DB](database_migrations.md) | Tiếp nhận DB cũ, tạo/chạy revisions và phân biệt migration với seed |
-| [Dataset structured r2](v750_source_pdf360_r2_structured.md) | Các gói, provenance/chunking, split và giới hạn của references |
+## 🚀 Hướng dẫn Bắt đầu Nhanh (Onboarding)
 
-Dataset hiện tại: v7.5.0-source-pdf360-r2-structured / supabase-public-v1, DEV_VALIDATION 240 DEV + 60 VALIDATION. Bước 5–7 chỉ còn skeleton nội bộ, không có HTTP POST riêng. PDF/Excel/DB được lưu ngoài Git; code tải/seed và tài liệu được versioned cùng repo.
+Dành cho thành viên mới hoặc thiết lập môi trường phát triển từ đầu:
 
-Các hướng dẫn release cũ đã xóa; không dùng run IDs hoặc seed paths của chúng cho bản hiện tại. BRD/contracts gốc được giữ nguyên. File khóa tạm của trình soạn thảo không phải tài liệu và không commit.
+1. **[Cài đặt Môi trường Phát triển](guides/dev_setup.md)**: Thiết lập Python virtualenv (`.venv`), công cụ linter (`ruff`), test suite (`pytest`).
+2. **[Tải & Chuẩn bị Dataset](database/dataset_and_corpus.md)**: Tải bộ dữ liệu mẫu DEV_VALIDATION (240 DEV / 60 VAL).
+3. **[Khởi tạo PostgreSQL & Seed Dữ liệu](database/local_setup.md)**: Dựng cơ sở dữ liệu PostgreSQL local và seed tri thức pháp luật.
+4. **[Khởi chạy Backend & CLI](guides/startup.md)**: Hướng dẫn chạy server FastAPI và các lệnh kiểm tra.
+5. **[Quy chuẩn & Hướng dẫn Module](modules/README.md)**: Quy tắc chia sẻ kết nối, khóa JOIN và ba lớp kiểm thử.
+
+---
+
+## 📚 Bản đồ Tài liệu (Documentation Sitemap)
+
+### 1. Yêu cầu Nghiệp vụ (`business/`)
+* **[Kế hoạch Triển khai 10 Tuần (W4–W13)](business/roadmap_10_weeks.md)**: Phân công trách nhiệm 5 workstreams, lộ trình 3 giai đoạn và tiêu chuẩn hoàn thành (Definition of Done).
+* **[Business Requirements Document (BRD v1.1)](business/BRD_v1.1.pdf)**: Đặc tả yêu cầu nghiệp vụ gốc, quy tắc thẩm định pháp lý và xử lý trường hợp bất định.
+
+### 2. Kiến trúc & Thiết kế Kỹ thuật (`architecture/`)
+* **[Kiến trúc Tổng thể Hệ thống](architecture/system_architecture.md)**: Mô hình thành phần, luồng xử lý hai nhánh (Legal Scope vs Citation Validation), quy chuẩn CI/CD và ranh giới hệ thống.
+* **[Luồng Dữ liệu & Lưu trữ PDF](architecture/data_flow_and_storage.md)**: Cơ chế đọc file PDF/DOCX từ HTTP(S), kiểm tra SHA-256 và cache cục bộ.
+* **[Bản Thiết kế OpenAPI](architecture/openapi.design.json)**: Đặc tả 20 operations API RESTful đề xuất cho frontend và backend.
+
+### 3. Quy chuẩn Hợp đồng Dữ liệu (`contracts/`)
+* **[Hướng dẫn Data Contracts C01–C13 & X01–X02](contracts/README.md)**: Giải thích chi tiết mục đích, producer, consumer và ngữ nghĩa từng hợp đồng.
+* **[Catalog Contracts](contracts/catalog.json)**: Danh mục máy đọc được (machine-readable) ánh xạ từng Contract ID sang Pydantic Model.
+* **[Database Catalog](contracts/database_catalog.json)**: Cấu trúc 56 bảng PostgreSQL và 78 khóa ngoại (Foreign Keys).
+* **[JSON Schemas](contracts/)**: Bộ schema JSON Schema Draft 2020-12 cho từng hợp đồng dữ liệu.
+
+### 4. Cơ sở Dữ liệu & Tri thức Pháp luật (`database/`)
+* **[Cài đặt & Seed PostgreSQL Local](database/local_setup.md)**: Dựng database phát triển, nạp tri thức pháp lý và dữ liệu mẫu.
+* **[Quản lý Migrations với Alembic](database/migrations.md)**: Hướng dẫn tạo và chạy Alembic migrations khi sửa đổi cấu trúc bảng.
+* **[Tải Dataset & Thông số Corpus](database/dataset_and_corpus.md)**: Cấu trúc tập dữ liệu v7.5.0, provenance và phân chia DEV / VALIDATION.
+
+### 5. Hướng dẫn Lập trình viên (`guides/`)
+* **[Thiết lập Môi trường Cục bộ](guides/dev_setup.md)**: Hướng dẫn cài đặt Python 3.11+, biến môi trường và dependencies.
+* **[Khởi chạy Dịch vụ & CLI](guides/startup.md)**: Lệnh chạy server uvicorn, CLI migration/seed và kiểm tra sức khỏe.
+* **[Tích hợp Audit LLM Dùng chung](guides/llm_audit.md)**: Quy chuẩn ghi log các lần gọi mô hình ngôn ngữ lớn (X02).
+
+### 6. Hướng dẫn Phát triển theo Module (`modules/`)
+* **[Quy chuẩn Tích hợp Chung](modules/README.md)**: Nguyên tắc handoff, kết nối database, khóa JOIN và kiểm thử.
+* **[Nhóm A (Bước 1–2: Document Intelligence)](modules/group_a_document_intelligence.md)**: Tiếp nhận hợp đồng, OCR/parser, trích xuất facts (C02) và citations (C03).
+* **[Nhóm B (Bước 3–4: Legal Scope, Citation & Retrieval)](modules/group_b_legal_and_retrieval.md)**: Xác định phạm vi áp dụng (C04), hiệu lực thời gian (C05), kiểm định viện dẫn (C09) và truy xuất Top-K (C06).
+* **[Nhóm C (Bước 5–7: Compliance, Risk & Recommendation)](modules/group_c_compliance_and_risk.md)**: Đánh giá tiêu chí (C07/C08), tổng hợp rủi ro (C10) và khuyến nghị xử lý (C11).
+* **[Nhóm D (Bước 8–9: Report Aggregation & UI/Frontend)](modules/group_d_report_and_frontend.md)**: Hợp nhất hai nhánh, ghi nhận sự kiện review (C12) và xuất báo cáo (C13).
