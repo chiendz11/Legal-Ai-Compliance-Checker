@@ -6,7 +6,7 @@
     "runtime": "Validate Pydantic models plus cross-record, grounding, authorization and run checks."
   },
   "shared_conventions": {
-    "context_schema": "../module_contracts.schema.json#/$defs/Context",
+    "context_schema": "module_contracts.schema.json#/$defs/Context",
     "unknown": "null/UNKNOWN is not false, zero, compliant or a proven violation.",
     "identity": "Separate contract ID, assessment case ID, run ID and knowledge snapshot hash.",
     "lineage": "Filter by case/run and immutable input/output lineage; do not mix seeded and live outputs.",
@@ -358,7 +358,7 @@
         "C03",
         "chunks"
       ],
-      "input_schema": "../module_contracts.schema.json#/$defs/DocumentInput"
+      "input_schema": "module_contracts.schema.json#/$defs/DocumentInput"
     },
     {
       "module": "applicable_law.scope",
@@ -369,7 +369,7 @@
       "output": [
         "C04"
       ],
-      "input_schema": "../module_contracts.schema.json#/$defs/ScopeInput"
+      "input_schema": "module_contracts.schema.json#/$defs/ScopeInput"
     },
     {
       "module": "applicable_law.temporal",
@@ -381,7 +381,7 @@
       "output": [
         "C05"
       ],
-      "input_schema": "../module_contracts.schema.json#/$defs/TemporalInput"
+      "input_schema": "module_contracts.schema.json#/$defs/TemporalInput"
     },
     {
       "module": "citation_validation",
@@ -394,7 +394,7 @@
       "output": [
         "C09"
       ],
-      "input_schema": "../module_contracts.schema.json#/$defs/CitationInput"
+      "input_schema": "module_contracts.schema.json#/$defs/CitationInput"
     },
     {
       "module": "retrieval",
@@ -406,7 +406,7 @@
       "output": [
         "C06"
       ],
-      "input_schema": "../module_contracts.schema.json#/$defs/RetrievalInput"
+      "input_schema": "module_contracts.schema.json#/$defs/RetrievalInput"
     },
     {
       "module": "compliance",
@@ -421,7 +421,7 @@
         "C07",
         "C08"
       ],
-      "input_schema": "../module_contracts.schema.json#/$defs/ReasoningRequest"
+      "input_schema": "module_contracts.schema.json#/$defs/ReasoningRequest"
     },
     {
       "module": "risks",
