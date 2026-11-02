@@ -804,3 +804,47 @@ blockquote.raw {
     height: 70vh;
   }
 }
+
+/* Login, user menu and reviewer workbench */
+.login {
+  max-width: 420px;
+  margin: 40px auto;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-panel {
+  margin-bottom: 12px;
+}
+
+.review-target.blocking {
+  border-left: 4px solid var(--bad-fg);
+}
+
+.review-form {
+  margin-top: 10px;
+  max-width: none;
+}
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.filters .button[aria-pressed="true"],
+.actions .button[aria-pressed="true"] {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+ins {
+  text-decoration: none;
+  background: var(--surface-2);
+  padding: 0 4px;
+  border-radius: 4px;
+}

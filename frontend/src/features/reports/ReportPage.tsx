@@ -13,6 +13,7 @@ import { contractSourceUrl, EvidenceProvider } from "../assessments/evidence/Evi
 import { ProfileSection } from "../assessments/profile/ProfileSection";
 import { RecommendationsSection } from "../assessments/recommendations/RecommendationsSection";
 import { RisksSection } from "../assessments/risks/RisksSection";
+import { ReviewWorkbench } from "../review/ReviewWorkbench";
 import { AuditSection } from "./AuditSection";
 import { LegalBasisContext } from "./legalBasis";
 import { focusDomId, TABS, useReportNav } from "./nav";
@@ -153,6 +154,12 @@ function ReportBody({ record }: { record: ReportRecord }) {
         {tab === "recommendations" && (
           <RecommendationsSection recommendations={content.recommendations} />
         )}
+        {tab === "review" &&
+          (mockEnabled ? (
+            <Notice tone="info">Rà soát cần backend thật; chế độ mock chỉ đọc.</Notice>
+          ) : (
+            <ReviewWorkbench record={record} />
+          ))}
         {tab === "audit" && <AuditSection record={record} />}
       </div>
     </>
@@ -204,9 +211,14 @@ function ReportHeader({ record }: { record: ReportRecord }) {
 function ReportBanners({ report }: { report: FinalReport }) {
   return (
     <>
-      {report.report_status !== "PUBLISHED" && (
+      {report.report_status === "PUBLISHED" ? (
+        <Notice tone="info">
+          <strong>Đã phát hành.</strong> Các mục chuyên viên chỉnh sửa nằm ở tab Rà soát và phần
+          audit.review; kết quả máy trong các tab khác được giữ nguyên để đối chiếu.
+        </Notice>
+      ) : (
         <Notice tone="warn">
-          <strong>Kết quả máy, chưa được chuyên viên xác nhận.</strong> Báo cáo đang ở trạng thái{" "}
+          <strong>Kết quả máy, chưa được phát hành.</strong> Báo cáo đang ở trạng thái{" "}
           {report.report_status} / review {report.review_status}; không dùng như kết luận pháp lý
           đã duyệt.
         </Notice>

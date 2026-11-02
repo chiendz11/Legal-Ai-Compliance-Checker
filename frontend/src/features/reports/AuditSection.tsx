@@ -1,19 +1,39 @@
 import type { ReportRecord } from "../../shared/api/client";
-import { Fields, JsonBlock, Notice, Section, Value } from "../../shared/components/ui";
+import { useReviews } from "../../shared/api/queries";
+import {
+  Empty,
+  Fields,
+  JsonBlock,
+  LoadState,
+  Notice,
+  Section,
+  StatusBadge,
+  Table,
+  Value,
+} from "../../shared/components/ui";
+import { mockEnabled } from "../../shared/env";
 
 export function AuditSection({ record }: { record: ReportRecord }) {
   const { report } = record;
   const content = report.report_json;
   const kase = content.case;
-  const context = (content.audit as { context?: Record<string, unknown> }).context ?? {};
+  const audit = content.audit as {
+    context?: Record<string, unknown>;
+    publication?: Record<string, unknown>;
+  };
+  const context = audit.context ?? {};
+  const publication = audit.publication;
   return (
     <Section
       title="Audit và phiên bản"
       description="Snapshot tri thức, rule và run đã dùng để tái hiện báo cáo."
     >
-      <Notice tone="info">
-        Chưa có lịch sử review (C12): bước review chưa được triển khai. Report chỉ ở dạng draft.
-      </Notice>
+      {publication && (
+        <>
+          <h3 className="subhead">Phát hành</h3>
+          <Fields rows={Object.entries(publication).map(([k, v]) => [k, <Value value={v} />])} />
+        </>
+      )}
       <h3 className="subhead">Báo cáo</h3>
       <Fields
         rows={[
@@ -41,8 +61,57 @@ export function AuditSection({ record }: { record: ReportRecord }) {
       />
       <h3 className="subhead">Ngữ cảnh run</h3>
       <Fields rows={Object.entries(context).map(([k, v]) => [k, <Value value={v} />])} />
+      <h3 className="subhead">Lịch sử review (C12)</h3>
+      {mockEnabled ? (
+        <Notice tone="info">Lịch sử review cần backend thật.</Notice>
+      ) : (
+        <ReviewHistory caId={report.ca_id} runId={record.run_id} />
+      )}
       <h3 className="subhead">Tổng hợp (overall_summary)</h3>
       <JsonBlock value={content.overall_summary} />
     </Section>
+  );
+}
+
+/** Append-only events of the whole run, including ones newer than this report version. */
+function ReviewHistory({ caId, runId }: { caId: string; runId: string }) {
+  const { data, error } = useReviews(caId, runId);
+  if (!data) return <LoadState error={error} />;
+  if (data.items.length === 0) return <Empty>Chưa có review nào cho run này.</Empty>;
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <th>Thời điểm</th>
+          <th>Người review</th>
+          <th>Đối tượng</th>
+          <th>Quyết định</th>
+          <th>Giá trị mới</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.items.map(({ review }) => (
+          <tr key={review.review_id}>
+            <td>{new Date(review.reviewed_at).toLocaleString("vi-VN")}</td>
+            <td>
+              <code>{review.actor_id}</code>
+            </td>
+            <td>
+              {review.target.doi_tuong_loai}
+              <br />
+              <code className="small">{review.target.doi_tuong_id}</code>
+            </td>
+            <td>
+              <StatusBadge kind="reviewAction" code={review.action} />
+            </td>
+            <td>
+              {Object.keys(review.after).length ? <JsonBlock value={review.after} /> : "—"}
+            </td>
+            <td>{review.reason}</td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
   );
 }

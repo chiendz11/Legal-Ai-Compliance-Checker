@@ -32,6 +32,16 @@ function notFound(message: string) {
 
 /** Offline mode (VITE_API_MOCK=true): serves case/report reads from exported fixtures. */
 export const handlers = [
+  http.get("/api/v1/auth/me", () =>
+    HttpResponse.json({
+      actor_id: "MOCK_USER",
+      tenant_id: "LOCAL_SOURCE_PDF360",
+      display_name: "Mock (chỉ xem)",
+      roles: ["viewer"],
+      auth_mode: "off",
+    }),
+  ),
+
   http.get("/api/v1/cases", async ({ request }) => {
     const records: CaseRecord[] = (await fixtures()).map((record) => {
       const statuses = record.report.report_json.compliance.requirement_results.map(

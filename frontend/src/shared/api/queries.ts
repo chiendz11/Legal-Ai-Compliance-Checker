@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { api, type CaseCreate, type RunProgress, unwrap } from "./client";
+import { api, type CaseCreate, type ReviewCreate, type RunProgress, unwrap } from "./client";
 import type { paths } from "./schema";
 
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
@@ -158,5 +158,117 @@ export function useReport(baoCaoId: string) {
           params: { path: { bao_cao_id: baoCaoId } },
         }),
       ),
+  });
+}
+
+/** Current session; 401 means AUTH_MODE=on and nobody is signed in. */
+export function useSession() {
+  return useQuery({
+    queryKey: ["session"],
+    queryFn: async () => unwrap(await api.GET("/api/v1/auth/me")),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useLogin() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { user_id: string; password: string }) =>
+      unwrap(await api.POST("/api/v1/auth/login", { body })),
+    onSuccess: (session) => {
+      client.removeQueries({ predicate: (query) => query.queryKey[0] !== "session" });
+      client.setQueryData(["session"], session);
+    },
+  });
+}
+
+export function useLogout() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await api.POST("/api/v1/auth/logout");
+    },
+    // Drop everything the previous user loaded; /auth/me then answers 401 → login page.
+    onSettled: () => {
+      client.removeQueries({ predicate: (query) => query.queryKey[0] !== "session" });
+      return client.invalidateQueries({ queryKey: ["session"] });
+    },
+  });
+}
+
+/** Each reviewable finding of a run with the hash the next review must quote. */
+export function useReviewState(caId: string, runId: string, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ["review-state", caId, runId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/cases/{ca_id}/runs/{run_id}/review-state", {
+          params: { path: { ca_id: caId, run_id: runId } },
+        }),
+      ),
+    staleTime: 0,
+  });
+}
+
+/** Append-only C12 history of a run (oldest first). */
+export function useReviews(caId: string, runId: string, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ["reviews", caId, runId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/cases/{ca_id}/runs/{run_id}/reviews", {
+          params: { path: { ca_id: caId, run_id: runId }, query: { page_size: 100 } },
+        }),
+      ),
+    staleTime: 0,
+  });
+}
+
+export function useAddReview(caId: string, runId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: ReviewCreate) =>
+      unwrap(
+        await api.POST("/api/v1/cases/{ca_id}/runs/{run_id}/reviews", {
+          params: { path: { ca_id: caId, run_id: runId } },
+          body,
+        }),
+      ),
+    // Success or a stale hash: either way the reviewer needs the latest state.
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["review-state", caId, runId] });
+      void client.invalidateQueries({ queryKey: ["reviews", caId, runId] });
+    },
+  });
+}
+
+/** New report version carrying the current review layer (same content → same version). */
+export function useRebuildReport(caId: string, runId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      unwrap(
+        await api.POST("/api/v1/cases/{ca_id}/runs/{run_id}/reports", {
+          params: { path: { ca_id: caId, run_id: runId } },
+        }),
+      ),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["run-reports", caId, runId] }),
+  });
+}
+
+export function usePublishReport() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ baoCaoId, revision }: { baoCaoId: string; revision: string }) =>
+      unwrap(
+        await api.POST("/api/v1/reports/{bao_cao_id}/publish", {
+          params: { path: { bao_cao_id: baoCaoId } },
+          body: { expected_review_revision: revision },
+        }),
+      ),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["cases"] }),
   });
 }

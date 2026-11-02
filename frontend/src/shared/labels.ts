@@ -50,6 +50,15 @@ const table: Record<string, Record<string, Label>> = {
   },
   review: {
     PENDING: { text: "Chưa review", tone: "unknown" },
+    IN_REVIEW: { text: "Đang review", tone: "warn" },
+    APPROVED: { text: "Đã duyệt", tone: "good" },
+  },
+  reviewAction: {
+    CONFIRM: { text: "Đã xác nhận", tone: "good" },
+    OVERRIDE: { text: "Đã chỉnh sửa", tone: "info" },
+    REQUEST_MORE_EVIDENCE: { text: "Yêu cầu bổ sung", tone: "warn" },
+    REJECT: { text: "Bác bỏ", tone: "bad" },
+    COMMENT: { text: "Ghi chú", tone: "neutral" },
   },
   scope: {
     MATCH: { text: "Thuộc phạm vi", tone: "good" },

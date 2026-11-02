@@ -8,6 +8,7 @@ export const TABS = [
   { id: "citations", title: "Viện dẫn" },
   { id: "risks", title: "Rủi ro" },
   { id: "recommendations", title: "Khuyến nghị" },
+  { id: "review", title: "Rà soát" },
   { id: "audit", title: "Audit" },
 ] as const;
 
