@@ -18,13 +18,15 @@ from legal_checker.shared.contracts.citation import (
     CitationPosition,
 )
 
-EXTRACTOR_VERSION = "regex-v2"
+EXTRACTOR_VERSION = "regex-v3"
 
 # Số hiệu văn bản pháp luật: chỉ nhận ký hiệu loại văn bản đã biết, để không bắt nhầm
 # số hợp đồng ("070/2017/HDMB"). Vd 91/2015/QH13, 99/2015/NĐ-CP, 02/2016/TT-BXD.
+# PDF có thể xuống dòng ngay sau dấu gạch ("99/2015/NĐ-\nCP"): số hiệu chuẩn hóa bỏ khoảng trắng.
 _SO_HIEU = re.compile(
     r"\b\d{1,4}/\d{4}/"
-    r"(?:QH\d{1,2}|UBTVQH\d{0,2}|(?:NĐ|ND|TTLT|TT|QĐ|QD|NQ|PL|CT)(?:-[A-Za-zĐđ0-9]+)*)"
+    r"(?:QH\d{1,2}|UBTVQH\d{0,2}|(?:NĐ|ND|TTLT|TT|QĐ|QD|NQ|PL|CT)"
+    r"(?:-[ \t]*\n?[ \t]*[A-Za-zĐđ0-9]+)*)"
     r"(?![A-Za-zĐđ0-9])"
 )
 _SUFFIX_LOAI = (
@@ -70,7 +72,12 @@ _NOT_A_NAME = frozenset({"sư", "này", "đó", "trên", "nêu", "hiện"})
 _MAX_NAME_WORDS = 8
 # Tên có thể bị xuống dòng trong PDF ("Luật Kinh\nDoanh Bất Động Sản"): cho phép 1 lần "\n".
 _WORD = re.compile(r"(?:[ \t]+|[ \t]*\n[ \t]*)(?P<word>[^\s,.;:()\[\]\"“”‘’]+)")
-_NAM_SAU_TEN = re.compile(r"[ \t]+(?:năm[ \t]+)?(?P<nam>(?:19|20)\d{2})(?!\d)")
+# Năm sau tên: "Luật Nhà ở 2014", "... năm 2014", "... ngày 25 tháng 11 năm 2014",
+# "... ngày 25/11/2014".
+_NAM_SAU_TEN = re.compile(
+    r"[ \t]+(?:năm[ \t]+|ngày[ \t]+\d{1,2}(?:[ \t]+tháng[ \t]+\d{1,2}[ \t]+năm[ \t]+|/\d{1,2}/))?"
+    r"(?P<nam>(?:19|20)\d{2})(?!\d)"
+)
 _GAP_TO_SO_HIEU = re.compile(r"[ \t]*(?:số[ \t]*)?")
 _LOAI_TRUOC_SO_HIEU = re.compile(
     r"(?P<loai>Bộ [Ll]uật|Luật|Nghị [Đđ]ịnh|Thông [Tt]ư liên tịch|Thông [Tt]ư|"
@@ -180,7 +187,7 @@ def _spans(text: str) -> list[dict]:
             {
                 "start": start,
                 "end": m.end(),
-                "so_hieu": m.group(0),
+                "so_hieu": re.sub(r"\s+", "", m.group(0)),
                 "loai": loai or _loai_tu_so_hieu(m.group(0)),
                 "ten": None,
                 "nam": int(m.group(0).split("/")[1]),
@@ -192,7 +199,8 @@ def _spans(text: str) -> list[dict]:
         if _GENERIC_BEFORE.search(text[max(0, m.start() - 10) : m.start()]):
             continue
         loai = _LOAI_CHUAN[m.group("loai").lower()]
-        name, name_end = _name_after(text, m.end(), first_lower_ok=loai == "Bộ luật")
+        # "Căn cứ Luật bảo vệ người tiêu dùng": tên luật hay viết thường sau chữ "Luật" hoa.
+        name, name_end = _name_after(text, m.end(), first_lower_ok=loai in ("Luật", "Bộ luật"))
         if not name:
             continue
         ten = f"{loai} {name}"

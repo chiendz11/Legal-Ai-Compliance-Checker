@@ -79,6 +79,23 @@ def test_name_wrapped_onto_next_line_is_kept_whole():
     assert record.ten_van_ban == "Luật Kinh Doanh Bất Động Sản"
 
 
+def test_lowercase_law_name_and_full_date_give_a_year():
+    _, records = _citations(
+        "Căn cứ Luật bảo vệ người tiêu dùng;\n"
+        "Căn cứ Luật Nhà ở ngày 25 tháng 11 năm 2014 và các văn bản hướng dẫn thi hành;\n"
+    )
+    by_name = {r.ten_van_ban: r for r in records}
+    assert by_name["Luật bảo vệ người tiêu dùng"].status == "AMBIGUOUS"
+    assert (by_name["Luật Nhà ở"].nam, by_name["Luật Nhà ở"].status) == (2014, "EXTRACTED")
+
+
+def test_number_broken_after_hyphen_is_joined():
+    _, records = _citations("Theo Điều 35 của Nghị định số 99/2015/NĐ-\nCP ngày 20/10/2015.\n")
+    (record,) = records
+    assert (record.so_hieu, record.dieu) == ("99/2015/NĐ-CP", "35")
+    assert record.raw_text.endswith("NĐ-\nCP")
+
+
 def test_repeated_mentions_are_grouped_with_exact_quotes():
     chunks, records = _citations(
         "ĐIỀU 1. CĂN CỨ\nTheo Luật Nhà ở.\nĐIỀU 2. BẢO TRÌ\nTheo Luật Nhà ở.\n"
