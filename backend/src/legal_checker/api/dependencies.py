@@ -7,6 +7,8 @@ from functools import lru_cache
 from fastapi import Request
 
 from legal_checker.core.config import Settings
+from legal_checker.modules.accounts.repository import UserRepository
+from legal_checker.modules.accounts.security import SessionSigner
 from legal_checker.modules.assessments.cases import CaseRepository, DeploymentCatalog
 from legal_checker.modules.assessments.contracts import ContractRepository
 from legal_checker.modules.assessments.interfaces import AssessmentStore
@@ -46,6 +48,18 @@ class Services:
     # Reads uploaded (upload://) and HTTP(S) sources; source_storage stays HTTP-only.
     document_sources: SourceStorage | None = None
     deployments: DeploymentCatalog | None = None
+    users: UserRepository | None = None
+    sessions: SessionSigner | None = None  # None when AUTH_MODE=off
+
+
+def session_signer(settings: Settings) -> SessionSigner | None:
+    if settings.auth_mode == "off":
+        return None
+    if settings.auth_mode != "on":
+        raise ValueError(f"Unknown AUTH_MODE={settings.auth_mode!r}")
+    if not settings.auth_secret:
+        raise ValueError("AUTH_MODE=on needs AUTH_SECRET (at least 32 random characters)")
+    return SessionSigner(settings.auth_secret, settings.auth_session_hours * 3600)
 
 
 def llm_client_factory(settings: Settings):
@@ -140,6 +154,8 @@ def build_services(settings: Settings) -> Services:
             rule_version=settings.deployment_rule_version,
             legal_knowledge_version=settings.deployment_legal_knowledge_version,
         ),
+        users=UserRepository(settings.database_url),
+        sessions=session_signer(settings),
     )
 
 

@@ -2315,6 +2315,222 @@
           }
         ]
       }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign in with a local account",
+        "description": "AUTH_MODE=on only (409 otherwise). Sets an HttpOnly SameSite=Strict session cookie; the same token is accepted as Authorization: Bearer. Repeated failures per user/client are throttled (403).",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "X01"
+        ],
+        "security": [],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_SessionInfo"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Input_LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign out (clears the session cookie)",
+        "description": "Stateless sessions: the cookie is removed; tokens expire after AUTH_SESSION_HOURS.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "X01"
+        ],
+        "security": [],
+        "responses": {
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Signed out"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "currentUser",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Current user, tenant and roles",
+        "description": "With AUTH_MODE=off returns the local development identity (auth_mode=off).",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_SessionInfo"
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
     }
   },
   "components": {
@@ -6587,6 +6803,66 @@
           "items"
         ],
         "title": "LegalBasisList",
+        "type": "object"
+      },
+      "Output_SessionInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "auth_mode": {
+            "title": "Auth Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actor_id",
+          "tenant_id",
+          "display_name",
+          "roles",
+          "auth_mode"
+        ],
+        "title": "SessionInfo",
+        "type": "object"
+      },
+      "Input_LoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "password"
+        ],
+        "title": "LoginRequest",
         "type": "object"
       }
     }

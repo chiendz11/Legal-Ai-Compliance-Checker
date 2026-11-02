@@ -164,6 +164,14 @@ class CaseRepository:
             row = connection.execute(query, {"ca_id": ca_id, "tenant": tenant_id}).fetchone()
         return _case(row) if row else None
 
+    def tenant_of(self, ca_id: str) -> str | None:
+        """Owning tenant of a case row (None if absent or created without a tenant)."""
+        with connect_postgres(self.database_url) as connection:
+            row = connection.execute(
+                "SELECT tenant_id FROM runtime.ca_danh_gia WHERE ca_id=%s", (ca_id,)
+            ).fetchone()
+        return row["tenant_id"] if row else None
+
     def create(
         self,
         hop_dong_id: str,

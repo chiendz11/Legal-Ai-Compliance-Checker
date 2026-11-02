@@ -11,7 +11,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from legal_checker.api.auth import ActorDependency, ServicesDependency
+from legal_checker.api.auth import ActorDependency, ServicesDependency, require_role
 from legal_checker.api.errors import ApiProblem
 from legal_checker.api.v1.schemas import (
     ApiErrorDetail,
@@ -110,8 +110,7 @@ def list_cases(
 
 @router.post("/cases", response_model=CaseRecord, status_code=201, tags=["cases"])
 def create_case(body: CaseCreate, services: ServicesDependency, actor: ActorDependency):
-    if not actor.has("uploader"):
-        raise ApiProblem("FORBIDDEN", "Creating cases requires the uploader role")
+    require_role(actor, "uploader", "Creating cases")
     if services.contracts.get(body.hop_dong_id, actor.tenant_id) is None:
         raise ApiProblem("NOT_FOUND", f"Contract {body.hop_dong_id} not found")
     try:
@@ -145,6 +144,7 @@ def start_run(
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1)],
 ):
     accessible_case(services, actor, ca_id)
+    require_role(actor, "uploader", "Starting an assessment")
     record = services.assessment_service.start_run(ca_id, idempotency_key)
     base = f"/api/v1/cases/{ca_id}/runs/{record.run_id}"
     response.headers["X-Module-Source"] = record.module_source
@@ -254,4 +254,5 @@ def list_run_reports(
 )
 def build_run_report(ca_id: str, run_id: str, services: ServicesDependency, actor: ActorDependency):
     _run(services, actor, ca_id, run_id)
+    require_role(actor, "uploader", "Rebuilding a report")
     return report_record(services.assessment_service.build_report(ca_id, run_id))

@@ -42,6 +42,10 @@ class Settings:
     # Caller identity when auth is off (local development only).
     dev_actor_id: str = "LOCAL_DEV"
     dev_tenant_id: str = "LOCAL_SOURCE_PDF360"
+    # "on": login required (local accounts, signed session cookie); "off": dev identity above.
+    auth_mode: str = "off"
+    auth_secret: str | None = None
+    auth_session_hours: int = 8
 
     @classmethod
     def from_env(cls):
@@ -72,4 +76,7 @@ class Settings:
             ),
             dev_actor_id=os.getenv("DEV_ACTOR_ID", "LOCAL_DEV"),
             dev_tenant_id=os.getenv("DEV_TENANT_ID", "LOCAL_SOURCE_PDF360"),
+            auth_mode=os.getenv("AUTH_MODE", "off"),
+            auth_secret=os.getenv("AUTH_SECRET") or None,
+            auth_session_hours=int(os.getenv("AUTH_SESSION_HOURS", "8")),
         )

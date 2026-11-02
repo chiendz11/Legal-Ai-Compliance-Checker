@@ -25,13 +25,17 @@ from sqlalchemy import text
 
 ROOT = files("legal_checker.migrations")
 BASELINES = json.loads(ROOT.joinpath("legacy_baselines.json").read_text(encoding="utf-8"))
-HEAD = "0005_contract_uploads"
+HEAD = "0006_users_and_reviews"
 # Objects added after the frozen legacy baseline 3 (revisions 0004+).
 POST_BASELINE = {
     "runtime.workflow_runs",
     "runtime.report_versions",
     "function:runtime.reject_report_change()",
     "runtime.contract_uploads",
+    "runtime.app_users",
+    "runtime.review_events",
+    "function:runtime.reject_review_change()",
+    "runtime.review_events_seq_seq",
 }
 
 

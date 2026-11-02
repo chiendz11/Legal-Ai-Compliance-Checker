@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Query, Response, UploadFile
 
-from legal_checker.api.auth import ActorDependency, ServicesDependency
+from legal_checker.api.auth import ActorDependency, ServicesDependency, require_role
 from legal_checker.api.errors import ApiProblem
 from legal_checker.api.v1.schemas import ContractRecord, Page
 from legal_checker.modules.assessments.contracts import ContractRow
@@ -36,8 +36,7 @@ async def upload_contract(
     file: Annotated[UploadFile, File()],
     ten_tai_lieu: Annotated[str | None, Form(min_length=1)] = None,
 ):
-    if not actor.has("uploader"):
-        raise ApiProblem("FORBIDDEN", "Uploading contracts requires the uploader role")
+    require_role(actor, "uploader", "Uploading contracts")
     limit = services.uploads.max_bytes
     payload = await file.read(limit + 1)
     try:

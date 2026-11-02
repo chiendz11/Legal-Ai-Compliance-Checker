@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from legal_checker.api.v1 import (
     assessments,
+    auth,
     cases,
     contracts,
     legal_knowledge,
@@ -12,6 +13,7 @@ from legal_checker.api.v1 import (
 
 router = APIRouter()
 router.include_router(system.router, tags=["system"])
+router.include_router(auth.router)
 router.include_router(legal_knowledge.router, tags=["system"])
 router.include_router(assessments.router, tags=["assessments"])
 router.include_router(cases.router)
