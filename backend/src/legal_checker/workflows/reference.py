@@ -40,6 +40,8 @@ _CONTRACTS = (
 class ReferenceUnavailable(LookupError):
     """The case has no complete QA reference to replay."""
 
+    reason = "REFERENCE_UNAVAILABLE"
+
 
 def load_reference_payloads(database_url: str, ca_id: str) -> dict[tuple[str, str], Any]:
     with connect_postgres(database_url) as connection:

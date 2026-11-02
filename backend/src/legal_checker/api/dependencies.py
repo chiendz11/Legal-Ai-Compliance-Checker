@@ -41,7 +41,34 @@ class Services:
     assessment_service: AssessmentService | None = None
 
 
-def module_source(settings: Settings) -> ModuleSource:
+def llm_client_factory(settings: Settings):
+    """Paid C07 calls are opt-in: ASSESSMENT_LLM=openai plus OPENAI_API_KEY/OPENAI_MODEL."""
+    if settings.assessment_llm == "offline":
+        return None
+    if settings.assessment_llm != "openai":
+        raise ValueError(f"Unknown ASSESSMENT_LLM={settings.assessment_llm!r}")
+
+    def build():
+        from legal_checker.shared.llm.client import OpenAIResponsesClient
+        from legal_checker.shared.llm.config import OpenAISettings
+
+        return OpenAIResponsesClient(
+            OpenAISettings.from_env(), PostgresLlmAuditSink(settings.database_url)
+        )
+
+    return build
+
+
+def module_source(settings: Settings, cases: CaseRepository) -> ModuleSource:
+    if settings.assessment_modules == "modules":
+        from legal_checker.workflows.integrated import IntegratedModulesSource
+
+        return IntegratedModulesSource(
+            settings.database_url,
+            cases,
+            llm_client_factory=llm_client_factory(settings),
+            llm_max_calls=settings.assessment_llm_max_calls,
+        )
     if settings.assessment_modules == "reference":
         return ReferenceReplaySource(settings.database_url)
     if settings.assessment_modules == "none":
@@ -56,7 +83,7 @@ def build_services(settings: Settings) -> Services:
     cases = CaseRepository(settings.database_url)
     runs = RunRepository(settings.database_url)
     reports = PostgresReportStore(settings.database_url)
-    source = module_source(settings)
+    source = module_source(settings, cases)
     runner = AssessmentRunner(
         runs=runs,
         reports=reports,

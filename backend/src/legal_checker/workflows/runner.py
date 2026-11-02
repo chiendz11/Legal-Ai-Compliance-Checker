@@ -70,10 +70,10 @@ class ReferenceReplaySource:
 
 
 def failure_reason(error: Exception) -> str:
+    if isinstance(getattr(error, "reason", None), str):  # errors that name their own cause
+        return error.reason
     if isinstance(error, (NotImplementedError, ModulesUnavailable)):
         return "MODULE_NOT_IMPLEMENTED"
-    if isinstance(error, LookupError):
-        return "REFERENCE_UNAVAILABLE"
     if isinstance(error, ValueError):
         return "HANDOFF_VALIDATION_FAILED"
     return "UNEXPECTED_ERROR"

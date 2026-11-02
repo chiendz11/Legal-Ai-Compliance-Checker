@@ -284,6 +284,18 @@ def test_unconfigured_modules_fail_clearly_without_report(env):
     assert rebuild.status_code == 409
 
 
+def test_real_modules_stop_at_document_intelligence_without_group_a(env):
+    from legal_checker.modules.assessments.cases import CaseRepository
+    from legal_checker.workflows.integrated import IntegratedModulesSource
+
+    env.runner.source = IntegratedModulesSource(env.database_url, CaseRepository(env.database_url))
+    status = env.client.get(start(env.client)["status_url"]).json()
+    stages = {s["stage"]: s["status"] for s in status["stages"]}
+    assert status["status"] == "FAILED"
+    assert status["error"]["details"] == [{"reason": "DOCUMENT_INTELLIGENCE_UNAVAILABLE"}]
+    assert stages["INTAKE"] == "COMPLETED" and stages["DOCUMENT_INTELLIGENCE"] == "FAILED"
+
+
 def test_handoff_violation_marks_the_failing_stage(env):
     env.source.foreign_profile = True
     status = env.client.get(start(env.client)["status_url"]).json()

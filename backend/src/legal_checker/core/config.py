@@ -23,8 +23,12 @@ class Settings:
     source_cache_dir: Path = PROJECT_ROOT / "data/private/source_cache"
     source_download_timeout_seconds: float = 30
     source_max_bytes: int = 100 * 1024 * 1024
-    # "reference" replays QA references (integration only); "none" until A/B/C deliver.
+    # "modules": real B/C modules (DI from dataset reference until group A merges);
+    # "reference": replay QA references end to end (integration only); "none": fail clearly.
     assessment_modules: str = "none"
+    # C07 observations: "offline" (no paid calls, UNKNOWN per criterion) or "openai".
+    assessment_llm: str = "offline"
+    assessment_llm_max_calls: int = 20
     # "inline" runs jobs in the API process; "celery" sends them to the Redis-backed worker.
     assessment_queue: str = "inline"
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -45,6 +49,8 @@ class Settings:
             ),
             source_max_bytes=int(os.getenv("SOURCE_MAX_BYTES", str(100 * 1024 * 1024))),
             assessment_modules=os.getenv("ASSESSMENT_MODULES", "none"),
+            assessment_llm=os.getenv("ASSESSMENT_LLM", "offline"),
+            assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "20")),
             assessment_queue=os.getenv("ASSESSMENT_QUEUE", "inline"),
             redis_url=os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             run_lease_seconds=int(os.getenv("RUN_LEASE_SECONDS", "600")),
