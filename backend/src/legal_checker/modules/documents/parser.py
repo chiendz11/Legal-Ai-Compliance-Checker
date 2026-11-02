@@ -44,6 +44,42 @@ def _normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text.replace("\r\n", "\n").replace("\r", "\n"))
 
 
+def _repeated_form_copies(page) -> int:
+    """Số Form XObject trên trang cùng vẽ lại một nội dung con.
+
+    Một số PDF (vd bộ dataset khi chèn thông tin giữa trang) chia trang thành nhiều
+    khung; mỗi khung chứa *toàn bộ* trang gốc nhưng chỉ hiện phần trong ranh giới (BBox).
+    pypdf bỏ qua BBox nên đọc text của trang gốc một lần cho mỗi khung.
+    """
+    resources = page.get("/Resources")
+    xobjects = resources.get_object().get("/XObject") if resources else None
+    if not xobjects:
+        return 1
+    targets: list[int] = []
+    for ref in xobjects.get_object().values():
+        form = ref.get_object()
+        if form.get("/Subtype") != "/Form" or "/Resources" not in form:
+            continue
+        inner = form["/Resources"].get_object().get("/XObject")
+        if inner and len(inner.get_object()) == 1:
+            (target,) = inner.get_object().values()
+            targets.append(getattr(target, "idnum", id(target)))
+    return max((targets.count(t) for t in set(targets)), default=1)
+
+
+def _drop_repeated_copies(text: str, copies: int) -> str:
+    """Bỏ các bản lặp liền nhau ở đầu text: [T, T, ..., T, phần thêm] → [T, phần thêm]."""
+    if copies < 2 or len(text) < 50:
+        return text
+    probe = text[: min(200, len(text) // copies)]
+    period = text.find(probe, 1)
+    while period > 0:
+        if all(text[i * period : (i + 1) * period] == text[:period] for i in range(copies)):
+            return text[:period] + text[copies * period :]
+        period = text.find(probe, period + 1)
+    return text  # không khớp mẫu lặp: giữ nguyên, không đoán
+
+
 def _raw_pdf_pages(content: bytes) -> tuple[str, list[str]]:
     """Trả (tên parser + version, text thô từng trang)."""
     from pypdf import PdfReader
@@ -56,7 +92,10 @@ def _raw_pdf_pages(content: bytes) -> tuple[str, list[str]]:
     logger.setLevel(logging.ERROR)
     try:
         reader = PdfReader(io.BytesIO(content))
-        pages = [page.extract_text() or "" for page in reader.pages]
+        pages = [
+            _drop_repeated_copies(page.extract_text() or "", _repeated_form_copies(page))
+            for page in reader.pages
+        ]
     finally:
         logger.setLevel(previous_level)
     return f"pypdf-{pypdf_version}", pages
