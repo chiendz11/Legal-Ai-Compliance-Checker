@@ -323,7 +323,7 @@ export interface paths {
         };
         /**
          * Export the exact report version
-         * @description Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings.
+         * @description Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings. Every export carries a verification stamp (report ID/version/status, run, review revision, SHA-256 of the stored report JSON with sorted keys, source SHA-256, knowledge snapshot, rule/knowledge versions, publication and export actor/time); the digest is also sent as X-Report-SHA256. format=json returns {verification, report} with the exact stored report.
          */
         get: operations["exportReport"];
         put?: never;
@@ -3565,7 +3565,7 @@ export interface operations {
     exportReport: {
         parameters: {
             query?: {
-                format?: "pdf" | "docx";
+                format?: "pdf" | "docx" | "json";
             };
             header?: never;
             path: {
@@ -3583,6 +3583,9 @@ export interface operations {
                 content: {
                     "application/pdf": string;
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Unauthenticated */

@@ -1992,7 +1992,7 @@
           "reports"
         ],
         "summary": "Export the exact report version",
-        "description": "Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings.",
+        "description": "Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings. Every export carries a verification stamp (report ID/version/status, run, review revision, SHA-256 of the stored report JSON with sorted keys, source SHA-256, knowledge snapshot, rule/knowledge versions, publication and export actor/time); the digest is also sent as X-Report-SHA256. format=json returns {verification, report} with the exact stored report.",
         "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
@@ -2004,23 +2004,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Exported report file",
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthenticated",
             "content": {
@@ -2080,6 +2063,29 @@
                 }
               }
             }
+          },
+          "200": {
+            "description": "Exported report file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -2102,7 +2108,8 @@
               "type": "string",
               "enum": [
                 "pdf",
-                "docx"
+                "docx",
+                "json"
               ],
               "default": "pdf"
             }

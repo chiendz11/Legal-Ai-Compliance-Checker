@@ -193,7 +193,7 @@ function ReportHeader({ record }: { record: ReportRecord }) {
       {!mockEnabled && (
         <div className="actions">
           <SplitToggle />
-          {(["pdf", "docx"] as const).map((format) => (
+          {(["pdf", "docx", "json"] as const).map((format) => (
             <a
               key={format}
               className="button"

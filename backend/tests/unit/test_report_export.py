@@ -114,3 +114,41 @@ def test_exported_docx_has_no_undrawable_glyphs():
 def test_unknown_format_is_rejected():
     with pytest.raises(ValueError):
         exporter.export_report(minimal_report(), "html")
+
+
+def stamp(report):
+    return exporter.verification_stamp(
+        report,
+        run_id="RUN_TEST",
+        review_revision="r1-abc",
+        report_sha256="b" * 64,
+        exported_at="2026-11-03T00:00:00+00:00",
+        exported_by="USER",
+    )
+
+
+def test_every_rendered_export_ends_with_the_verification_stamp():
+    report = minimal_report()
+    blocks = exporter.report_document(report, stamp(report)).blocks
+    assert ("heading", 2, "Dấu xác thực") in blocks
+    rows = blocks[-1][2]
+    assert ["SHA-256 báo cáo", "b" * 64] in rows and ["Review revision", "r1-abc"] in rows
+    assert ["Phát hành bởi", "chưa có"] in rows
+
+
+def test_json_export_embeds_the_exact_report_and_stamp():
+    import json
+
+    report = minimal_report()
+    body = json.loads(exporter.export_report(report, "json", stamp(report)))
+    assert body["report"] == report.model_dump(mode="json")
+    assert body["verification"]["stamp_version"] == exporter.STAMP_VERSION
+
+
+def test_reviewer_overrides_are_listed_without_touching_machine_sections():
+    report = minimal_report()
+    report.report_json.audit["review"] = {
+        "effective": {"ket_qua_tieu_chi": {"KQ_1": {"finding": "VIOLATED"}}}
+    }
+    tables = [b for b in exporter.report_document(report).blocks if b[0] == "table"]
+    assert ["ket_qua_tieu_chi", "KQ_1", "finding = VIOLATED"] in tables[-1][2]

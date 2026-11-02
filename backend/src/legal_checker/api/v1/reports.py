@@ -1,6 +1,7 @@
 """Read and export exact report versions. Export never changes the stored report."""
 
 import hashlib
+from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, Response
@@ -11,8 +12,14 @@ from legal_checker.api.errors import ApiProblem
 from legal_checker.api.v1.cases import accessible_case, report_record
 from legal_checker.api.v1.schemas import LegalBasisList, ReportRecord
 from legal_checker.core.security import Actor
-from legal_checker.modules.reports.exporter import MEDIA_TYPES, ExportUnavailable, export_report
+from legal_checker.modules.reports.exporter import (
+    MEDIA_TYPES,
+    ExportUnavailable,
+    export_report,
+    verification_stamp,
+)
 from legal_checker.modules.reports.legal_basis import legal_basis_for
+from legal_checker.modules.reports.repository import report_digest
 
 router = APIRouter(prefix="/api/v1")
 
@@ -55,11 +62,19 @@ def export(
     bao_cao_id: str,
     services: ServicesDependency,
     actor: ActorDependency,
-    format: Annotated[Literal["pdf", "docx"], Query()] = "pdf",
+    format: Annotated[Literal["pdf", "docx", "json"], Query()] = "pdf",
 ):
     stored = _stored(services, actor, bao_cao_id)
+    stamp = verification_stamp(
+        stored.report,
+        run_id=stored.run_id,
+        review_revision=stored.review_revision,
+        report_sha256=report_digest(stored.report),
+        exported_at=datetime.now(timezone.utc).isoformat(),
+        exported_by=actor.actor_id,
+    )
     try:
-        content = export_report(stored.report, format)
+        content = export_report(stored.report, format, stamp)
     except ExportUnavailable as error:
         raise ApiProblem("INTERNAL_ERROR", str(error)) from error
     # Keep a copy under the export dir and record it, so the file is traceable to the version.
@@ -74,5 +89,8 @@ def export(
     return Response(
         content,
         media_type=MEDIA_TYPES[format],
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Report-SHA256": stamp["report_sha256"],
+        },
     )

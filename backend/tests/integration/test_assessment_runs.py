@@ -4,6 +4,7 @@ Step implementations are synthetic fixtures (no legal quality is claimed); the t
 orchestration, persistence, idempotency, failure recording and report/run scoping.
 """
 
+import hashlib
 import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -445,3 +446,25 @@ def test_export_returns_the_exact_version_and_records_it(env):
     assert report_id in docx.headers["content-disposition"]
     assert "docx" in env.reports.get(report_id).exports
     assert env.client.get(f"/api/v1/reports/{report_id}/export?format=html").status_code == 422
+
+
+def test_json_export_carries_a_stamp_that_verifies_against_the_stored_version(env):
+    accepted = start(env.client)
+    run_id = accepted["context"]["run_id"]
+    report_id = env.client.get(f"/api/v1/cases/{CASE}/runs/{run_id}/reports").json()["items"][0][
+        "report"
+    ]["bao_cao_id"]
+    exported = env.client.get(f"/api/v1/reports/{report_id}/export", params={"format": "json"})
+    assert exported.status_code == 200
+    assert exported.headers["content-type"].startswith("application/json")
+    body = exported.json()
+    stamp = body["verification"]
+    assert stamp["bao_cao_id"] == report_id and stamp["run_id"] == run_id
+    assert stamp["review_revision"] == "none" and stamp["exported_by"] == "USER_TEST"
+    # Anyone holding the file can recompute the digest of the stored version.
+    stored = env.client.get(f"/api/v1/reports/{report_id}").json()["report"]
+    digest = hashlib.sha256(
+        json.dumps(stored, sort_keys=True, ensure_ascii=False).encode()
+    ).hexdigest()
+    assert body["report"] == stored
+    assert stamp["report_sha256"] == digest == exported.headers["x-report-sha256"]

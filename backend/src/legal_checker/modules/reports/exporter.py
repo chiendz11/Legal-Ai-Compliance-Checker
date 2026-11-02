@@ -1,23 +1,27 @@
-"""Export one exact C13 version to DOCX or PDF.
+"""Export one exact C13 version to DOCX, PDF or JSON.
 
-Both formats render the same block list, built only from the stored report: no statuses
-are recomputed. Unpublished reports carry a visible DRAFT/REVIEW marking on every export.
+All formats render only the stored report: no statuses are recomputed. Unpublished reports
+carry a visible DRAFT/REVIEW marking on every export, and every export carries a verification
+stamp tying the file to the stored version (report SHA-256, run, review revision, pins).
 """
 
 import io
+import json
 import os
 import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from legal_checker.shared.contracts.report import FinalReport
 
 MEDIA_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "json": "application/json",
 }
+STAMP_VERSION = "lc-export-stamp/1"
 
 
 class ReportExporter(Protocol):
@@ -53,7 +57,67 @@ def _v(value) -> str:
     return str(value)
 
 
-def report_document(report: FinalReport) -> Document:
+def verification_stamp(
+    report: FinalReport,
+    *,
+    run_id: str,
+    review_revision: str,
+    report_sha256: str,
+    exported_at: str,
+    exported_by: str,
+) -> dict[str, Any]:
+    """What a reader needs to check a file against the stored version.
+
+    `report_sha256` is the SHA-256 of the report JSON (keys sorted, UTF-8, ensure_ascii off),
+    the same digest stored with the version; the JSON export embeds that exact object.
+    """
+    case = report.report_json.case
+    context = report.report_json.audit.get("context", {})
+    publication = report.report_json.audit.get("publication") or {}
+    return {
+        "stamp_version": STAMP_VERSION,
+        "bao_cao_id": report.bao_cao_id,
+        "phien_ban_bao_cao": report.phien_ban_bao_cao,
+        "report_status": report.report_status,
+        "review_status": report.review_status,
+        "ca_id": report.ca_id,
+        "run_id": run_id,
+        "review_revision": review_revision,
+        "report_sha256": report_sha256,
+        "source_sha256": case.source.sha256,
+        "knowledge_snapshot_sha256": context.get("knowledge_snapshot_sha256"),
+        "phien_ban_id": case.deployment.phien_ban_id,
+        "rule_version": case.deployment.rule_version,
+        "legal_knowledge_version": case.deployment.legal_knowledge_version,
+        "module_source": report.report_json.audit.get("module_source"),
+        "published_by": publication.get("published_by"),
+        "published_at": publication.get("published_at"),
+        "exported_by": exported_by,
+        "exported_at": exported_at,
+        "verify": f"GET /api/v1/reports/{report.bao_cao_id} → SHA-256 of report == report_sha256",
+    }
+
+
+STAMP_ROWS = [
+    ("Mã báo cáo", "bao_cao_id"),
+    ("Phiên bản", "phien_ban_bao_cao"),
+    ("Trạng thái", "report_status"),
+    ("Review", "review_status"),
+    ("Run", "run_id"),
+    ("Review revision", "review_revision"),
+    ("SHA-256 báo cáo", "report_sha256"),
+    ("SHA-256 hợp đồng gốc", "source_sha256"),
+    ("Snapshot tri thức", "knowledge_snapshot_sha256"),
+    ("Rule", "rule_version"),
+    ("Tri thức pháp lý", "legal_knowledge_version"),
+    ("Phát hành bởi", "published_by"),
+    ("Phát hành lúc", "published_at"),
+    ("Xuất bởi", "exported_by"),
+    ("Xuất lúc", "exported_at"),
+]
+
+
+def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) -> Document:
     content = report.report_json
     case = content.case
     doc = Document()
@@ -216,6 +280,31 @@ def report_document(report: FinalReport) -> Document:
             f"• [{recommendation.uu_tien}] {recommendation.loai_hanh_dong}: "
             f"{recommendation.noi_dung} (review {recommendation.review_status})"
         )
+
+    review = content.audit.get("review")
+    if review:
+        doc.heading("Rà soát của chuyên viên (C12)", 2)
+        doc.paragraph(
+            "Giá trị chuyên viên chỉnh sửa (lớp hiệu lực; kết quả máy ở trên được giữ nguyên):"
+        )
+        rows = [
+            [kind, target_id, ", ".join(f"{k} = {v}" for k, v in values.items())]
+            for kind, targets in review.get("effective", {}).items()
+            for target_id, values in targets.items()
+        ]
+        if rows:
+            doc.table(["Đối tượng", "Mã", "Giá trị hiệu lực"], rows)
+        else:
+            doc.paragraph("Không có chỉnh sửa; chỉ có xác nhận/ghi chú.")
+
+    if stamp:
+        doc.heading("Dấu xác thực", 2)
+        doc.paragraph(
+            "Đối chiếu tệp này với phiên bản đã lưu: tải báo cáo theo mã, tính SHA-256 của JSON "
+            "báo cáo (khóa sắp xếp, UTF-8) và so với SHA-256 bên dưới. Tệp xuất JSON chứa đúng "
+            "đối tượng đó."
+        )
+        doc.table(["Mục", "Giá trị"], [[title, _v(stamp.get(key))] for title, key in STAMP_ROWS])
     return doc
 
 
@@ -352,9 +441,12 @@ def _pdf(document: Document) -> bytes:
     return bytes(pdf.output())
 
 
-def export_report(report: FinalReport, fmt: str) -> bytes:
+def export_report(report: FinalReport, fmt: str, stamp: dict[str, Any] | None = None) -> bytes:
     if fmt not in MEDIA_TYPES:
         raise ValueError(f"Unsupported export format {fmt}")
-    document = report_document(report)
+    if fmt == "json":
+        body = {"verification": stamp, "report": report.model_dump(mode="json")}
+        return json.dumps(body, ensure_ascii=False, indent=2).encode()
+    document = report_document(report, stamp)
     document.blocks = [tuple(_clean(part) for part in block) for block in document.blocks]
     return _docx(document) if fmt == "docx" else _pdf(document)
