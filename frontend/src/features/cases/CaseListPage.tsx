@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useCases, useStartRun, type CaseQuery } from "../../shared/api/queries";
+import { useCan } from "../../shared/auth";
 import { DateField } from "../../shared/components/DateField";
+import { Icon } from "../../shared/components/icons";
 import { Empty, LoadState, Notice, Section, StatusBadge, Table } from "../../shared/components/ui";
 import { label } from "../../shared/labels";
 
@@ -39,14 +41,18 @@ export function CaseListPage() {
     });
 
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
+  const can = useCan();
   return (
     <Section
       title="Lịch sử đánh giá"
-      description={
-        <>
-          {data ? `${data.total} ca` : "…"} của tổ chức bạn. Xem lại báo cáo không chạy lại đánh giá.{" "}
-          <Link to="/upload">Tải hợp đồng mới</Link>
-        </>
+      description={`${data ? `${data.total} ca` : "…"} của tổ chức bạn. Xem lại báo cáo không chạy lại đánh giá.`}
+      actions={
+        can("uploader") && (
+          <Link className="button primary" to="/upload">
+            <Icon name="upload" />
+            Tải hợp đồng mới
+          </Link>
+        )
       }
     >
       <Filters params={params} update={update} />

@@ -15,17 +15,23 @@ export function StatusBadge({ kind, code }: { kind: LabelKind; code: string | nu
 export function Section({
   title,
   description,
+  actions,
   children,
 }: {
   title: string;
   description?: ReactNode;
+  /** Page-level buttons shown at the right of the title. */
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="section">
       <header className="section-head">
-        <h2>{title}</h2>
-        {description && <p className="muted">{description}</p>}
+        <div className="section-title">
+          <h2>{title}</h2>
+          {description && <p className="muted">{description}</p>}
+        </div>
+        {actions && <div className="section-actions">{actions}</div>}
       </header>
       {children}
     </section>

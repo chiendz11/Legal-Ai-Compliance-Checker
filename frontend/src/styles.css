@@ -2122,3 +2122,28 @@ ins {
     animation-duration: 2.4s !important;
   }
 }
+
+/* Page header: title block on the left, page actions on the right */
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  min-width: 0;
+  flex: 1 1 360px;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.section-actions .button svg.i {
+  width: 16px;
+  height: 16px;
+}
