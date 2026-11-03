@@ -76,14 +76,24 @@ class OpenAISettings:
         )
         # Determine provider and mode dynamically
         base = self.base_url.rstrip("/")
-        if "groq.com" in base.lower() or self.api_key.startswith("gsk_") or self.provider.upper() == "GROQ":
+        if (
+            "groq.com" in base.lower()
+            or self.api_key.startswith("gsk_")
+            or self.provider.upper() == "GROQ"
+        ):
             object.__setattr__(self, "provider", "GROQ")
             if base == "https://api.openai.com/v1" or not base:
                 base = "https://api.groq.com/openai/v1"
             if self.api_mode == "auto":
                 object.__setattr__(self, "api_mode", "chat_completions")
         elif self.api_mode == "auto":
-            object.__setattr__(self, "api_mode", "responses" if base.endswith("/responses") or "openai.com" in base else "chat_completions")
+            object.__setattr__(
+                self,
+                "api_mode",
+                "responses"
+                if base.endswith("/responses") or "openai.com" in base
+                else "chat_completions",
+            )
         object.__setattr__(self, "base_url", base)
 
     @classmethod
@@ -103,9 +113,7 @@ class OpenAISettings:
             or environ.get("LLM_BASE_URL", "")
         )
         model = (
-            environ.get("OPENAI_MODEL")
-            or environ.get("GROQ_MODEL")
-            or environ.get("LLM_MODEL", "")
+            environ.get("OPENAI_MODEL") or environ.get("GROQ_MODEL") or environ.get("LLM_MODEL", "")
         )
         is_groq = api_key.startswith("gsk_") or environ.get("ASSESSMENT_LLM") == "groq"
         if is_groq:

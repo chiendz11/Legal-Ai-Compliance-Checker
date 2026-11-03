@@ -32,8 +32,16 @@ def _usage(data):
     usage = data.get("usage") if isinstance(data, dict) else None
     if not isinstance(usage, dict):
         return None, None
-    input_tokens = _token_count(usage.get("input_tokens") if usage.get("input_tokens") is not None else usage.get("prompt_tokens"))
-    output_tokens = _token_count(usage.get("output_tokens") if usage.get("output_tokens") is not None else usage.get("completion_tokens"))
+    input_tokens = _token_count(
+        usage.get("input_tokens")
+        if usage.get("input_tokens") is not None
+        else usage.get("prompt_tokens")
+    )
+    output_tokens = _token_count(
+        usage.get("output_tokens")
+        if usage.get("output_tokens") is not None
+        else usage.get("completion_tokens")
+    )
     return input_tokens, output_tokens
 
 
@@ -208,7 +216,8 @@ class OpenAIResponsesClient:
                             "role": "system",
                             "content": (
                                 f"{instructions}\n\n"
-                                "You MUST return ONLY a valid JSON object matching the requested schema. "
+                                "You MUST return ONLY a valid JSON object matching "
+                                "the requested schema. "
                                 "Do not include any explanation or markdown formatting."
                             ),
                         },
