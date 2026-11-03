@@ -2054,3 +2054,57 @@ ins {
   font-size: 13px;
   color: var(--blue-ink);
 }
+
+/* Stepper: the step a run stopped at (or is running) pings, with its reason underneath */
+.stage-note {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--muted);
+  margin-top: -2px;
+}
+
+.stages .stage.tone-bad .stage-note {
+  color: var(--red-ink);
+}
+
+.stages .stage.tone-bad::before {
+  box-shadow: 0 0 0 5px var(--red-50);
+}
+
+.stage-ping {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 99px;
+  background: var(--blue);
+  opacity: 0.25;
+  z-index: 0;
+  animation: stage-ping 2s infinite;
+  pointer-events: none;
+}
+
+.stage.tone-bad .stage-ping {
+  background: var(--red);
+}
+
+@keyframes stage-ping {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.35;
+  }
+  80%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-ping {
+    display: none;
+  }
+}

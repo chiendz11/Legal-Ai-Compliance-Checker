@@ -26,6 +26,23 @@ const FAILURE_HELP: Record<string, string> = {
   UNEXPECTED_ERROR: "Lỗi ngoài dự kiến trong một module; xem trace để báo cho nhóm phụ trách.",
 };
 
+/** One-line cause shown under the failed step. */
+const FAILURE_SHORT: Record<string, string> = {
+  DOCUMENT_INTELLIGENCE_UNAVAILABLE: "Chưa có module đọc hợp đồng (nhóm A)",
+  MODULE_NOT_IMPLEMENTED: "Bước này chưa được bật trên máy chủ",
+  REFERENCE_UNAVAILABLE: "Ca này không có dữ liệu tham chiếu",
+  HANDOFF_VALIDATION_FAILED: "Dữ liệu bàn giao giữa hai bước không hợp lệ",
+  UNEXPECTED_ERROR: "Lỗi ngoài dự kiến · xem trace bên trên",
+};
+
+const STAGE_STATUS: Record<string, string> = {
+  PENDING: "Chờ",
+  RUNNING: "Đang chạy",
+  COMPLETED: "Hoàn tất",
+  FAILED: "Lỗi",
+  SKIPPED: "Bỏ qua",
+};
+
 const STAGE_TONE: Record<string, string> = {
   PENDING: "neutral",
   RUNNING: "info",
@@ -47,6 +64,8 @@ export function RunPage() {
     return <Navigate replace to={`/reports/${latest.report.bao_cao_id}`} />;
   }
   const done = run.stages.filter((s) => s.status === "COMPLETED").length;
+  const reason = run.error?.details?.map((d) => String(d.reason)).find((r) => r in FAILURE_SHORT);
+  const failed = run.status === "FAILED";
   return (
     <Section
       title="Tiến độ đánh giá"
@@ -74,12 +93,30 @@ export function RunPage() {
       )}
       <div className="run-grid">
         <ol className="stages">
-          {run.stages.map((s) => (
-            <li key={s.stage} className={`stage tone-${STAGE_TONE[s.status] ?? "neutral"}`}>
-              <span className="stage-name">{STAGE_LABELS[s.stage] ?? s.stage}</span>
-              <span className="stage-status">{s.status}</span>
-            </li>
-          ))}
+          {run.stages.map((s) => {
+            // Steps after a failure never ran; say so instead of "waiting".
+            const skipped = failed && s.status === "PENDING";
+            const note =
+              s.status === "FAILED"
+                ? (reason && FAILURE_SHORT[reason]) || "Run dừng tại bước này"
+                : s.status === "RUNNING"
+                  ? "Đang xử lý…"
+                  : null;
+            return (
+              <li key={s.stage} className={`stage tone-${STAGE_TONE[s.status] ?? "neutral"}`}>
+                {(s.status === "FAILED" || s.status === "RUNNING") && (
+                  <span className="stage-ping" aria-hidden="true" />
+                )}
+                <span className="stage-name">
+                  {STAGE_LABELS[s.stage] ?? s.stage}
+                  {note && <small className="stage-note">{note}</small>}
+                </span>
+                <span className="stage-status" title={s.status}>
+                  {skipped ? "Không chạy" : (STAGE_STATUS[s.status] ?? s.status)}
+                </span>
+              </li>
+            );
+          })}
         </ol>
         <aside className="card-flat run-side">
           <div className="run-side-head">
