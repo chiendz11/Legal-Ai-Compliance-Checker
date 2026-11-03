@@ -1,5 +1,6 @@
 import type { Recommendation, ReportContent, RiskResult } from "../../../shared/api/client";
 import { Empty, Section, StatusBadge } from "../../../shared/components/ui";
+import { RiskDistribution } from "../../reports/distributions";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { criterionText, riskTitle, useReportIndex } from "../../reports/reportIndex";
@@ -31,6 +32,7 @@ export function RisksSection({
       title="Rủi ro"
       description="C10 tách theo nguồn. Mức độ do Risk Engine cung cấp; mỗi rủi ro trỏ về finding gốc."
     >
+      <RiskDistribution risks={risks} />
       {GROUPS.map((group) => {
         const items = risks[group.key];
         const containsFocus = items.some((r) => r.ket_qua_rui_ro_id === focus);

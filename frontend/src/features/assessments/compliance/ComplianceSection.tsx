@@ -11,6 +11,7 @@ import {
   Section,
   StatusBadge,
 } from "../../../shared/components/ui";
+import { RequirementDistribution } from "../../reports/distributions";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { useOpenEvidence } from "../evidence/EvidenceViewer";
@@ -48,6 +49,7 @@ export function ComplianceSection({ content }: { content: ReportContent }) {
       description="C08 theo yêu cầu, mở từng yêu cầu để xem C07 theo tiêu chí, bằng chứng và căn cứ. Trạng thái do backend tổng hợp."
     >
       {results.length === 0 && <Empty>Chưa có kết quả tuân thủ cho run này.</Empty>}
+      {results.length > 0 && <RequirementDistribution results={results} />}
       <div className="stack">
         {results.map((r) => (
           <RequirementCard key={r.tuan_thu_id} requirement={r} />

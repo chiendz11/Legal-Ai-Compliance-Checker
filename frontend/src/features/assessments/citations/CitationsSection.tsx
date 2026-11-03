@@ -5,6 +5,7 @@ import type {
 } from "../../../shared/api/client";
 import { Empty, Fields, Section, StatusBadge, Value } from "../../../shared/components/ui";
 import { displayText } from "../../../shared/text";
+import { CitationDistribution } from "../../reports/distributions";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { riskTitle, useReportIndex } from "../../reports/reportIndex";
 import { useOpenEvidence } from "../evidence/EvidenceViewer";
@@ -27,6 +28,7 @@ export function CitationsSection({
       description="C03 viện dẫn hợp đồng tự nêu và C09 kết quả xác minh tại ngày liên quan. Nhánh này không quyết định luật áp dụng; trạng thái hiện tại hiển thị riêng."
     >
       {citations.citations.length === 0 && <Empty>Hợp đồng không có viện dẫn được trích xuất.</Empty>}
+      {citations.findings.length > 0 && <CitationDistribution findings={citations.findings} />}
       <div className="stack">
         {citations.citations.map((c) => (
           <CitationCard

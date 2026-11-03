@@ -1528,3 +1528,218 @@ ins {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Distribution charts (columns + donut + legend) ---------- */
+.dist {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--r-xl);
+  padding: 20px 22px 18px;
+  margin-bottom: 16px;
+}
+
+.dist-head h3 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin: 0;
+}
+
+.dist-head p {
+  margin: 4px 0 0;
+}
+
+.dist-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.dist-cols,
+.dist-side {
+  background: var(--frame);
+  border-radius: var(--r-lg);
+  padding: 18px 18px 12px;
+  min-width: 0;
+}
+
+.dist-plot {
+  position: relative;
+  height: 200px;
+  margin-left: 28px;
+  border-bottom: 1px solid var(--muted-2);
+}
+
+.dist-plot .gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--line);
+}
+
+.dist-plot .gridline span {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: -8px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dist-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px;
+}
+
+.dist-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: default;
+  transition: opacity 0.15s;
+}
+
+.dist-col.dim,
+.dist-legend tr.dim {
+  opacity: 0.4;
+}
+
+.dist-bar {
+  width: 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.dist-bar i {
+  display: block;
+  height: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.dist-val {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dist-xlabels {
+  display: flex;
+  gap: 2px;
+  margin-left: 28px;
+  padding-top: 8px;
+}
+
+.dist-xlabels span {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dist-side {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dist-donut {
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+}
+
+.dist-donut circle {
+  transition:
+    opacity 0.15s,
+    stroke-width 0.15s;
+  cursor: default;
+}
+
+.dist-total {
+  fill: var(--ink);
+  font-size: 30px;
+  font-weight: 300;
+  font-family: var(--font);
+}
+
+.dist-unit {
+  fill: var(--muted);
+  font-size: 12px;
+  font-family: var(--font);
+}
+
+.dist-legend {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 170px;
+}
+
+.dist-legend td {
+  padding: 4px 6px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.dist-legend td.n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dist-legend td.n.muted {
+  color: var(--muted);
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+
+.dist-tip {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 12px));
+  background: var(--ink);
+  color: var(--frame);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.dist-tip b {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .dist-grid {
+    grid-template-columns: 1fr;
+  }
+}
