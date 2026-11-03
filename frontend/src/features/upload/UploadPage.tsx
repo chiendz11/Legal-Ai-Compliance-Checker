@@ -95,7 +95,7 @@ export function UploadPage() {
   return (
     <Section
       title="Tải hợp đồng lên"
-      description="Chỉ nhận PDF hoặc DOCX gốc. Hệ thống lưu tệp kèm SHA-256 rồi tạo ca đánh giá; phiên bản tri thức và quy tắc do backend chọn."
+      description="Nhận PDF hoặc DOCX gốc, lưu kèm SHA-256 rồi tạo ca đánh giá; phiên bản tri thức và quy tắc do backend chọn. Hiện module đọc hợp đồng chỉ đánh giá được PDF có lớp chữ (DOCX được lưu nhưng chưa đánh giá)."
     >
       <form className="form" onSubmit={submit}>
         <div className="field">
@@ -129,7 +129,9 @@ export function UploadPage() {
             ) : (
               <span className="dz-text">
                 <b>Kéo thả hợp đồng vào đây hoặc bấm để chọn</b>
-                <span className="muted small">PDF hoặc DOCX gốc, tối đa {MAX_MB} MB</span>
+                <span className="muted small">
+                  PDF có lớp chữ (đánh giá được) hoặc DOCX, tối đa {MAX_MB} MB
+                </span>
               </span>
             )}
           </label>

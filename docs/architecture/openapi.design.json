@@ -828,16 +828,17 @@
             "name": "sort",
             "in": "query",
             "required": false,
-            "description": "",
+            "description": "-recent: latest activity (newest run or upload) first",
             "schema": {
               "type": "string",
               "enum": [
+                "-recent",
                 "ca_id",
                 "-ngay_danh_gia",
                 "ngay_danh_gia",
                 "-latest_run"
               ],
-              "default": "ca_id"
+              "default": "-recent"
             }
           }
         ]

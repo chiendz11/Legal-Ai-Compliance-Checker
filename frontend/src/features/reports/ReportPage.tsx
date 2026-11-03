@@ -253,11 +253,19 @@ function ReportBanners({ report }: { report: FinalReport }) {
           của một lần chạy dev.
         </Notice>
       )}
+      {report.report_json.audit.module_source === "MODULES" && (
+        <Notice tone="info">
+          <strong>Module thật (bước 1–7):</strong> đọc hợp đồng và trích hồ sơ (nhóm A), phạm vi,
+          phiên bản, viện dẫn, truy xuất (nhóm B), tuân thủ, rủi ro và khuyến nghị (nhóm C) đều do
+          module tính trên chính tệp đã tải lên.
+        </Notice>
+      )}
       {report.report_json.audit.module_source === "MODULES_DI_REFERENCE" && (
         <Notice tone="info">
           <strong>Module thật (bước 3–7):</strong> phạm vi, phiên bản, viện dẫn, truy xuất, tuân
           thủ, rủi ro và khuyến nghị do các module của nhóm B/C tính. Riêng hồ sơ hợp đồng và đoạn
-          văn (bước 1–2) lấy từ dataset tham chiếu vì module đọc hợp đồng (nhóm A) chưa gộp.
+          văn (bước 1–2) lấy từ dataset tham chiếu vì tệp PDF gốc của ca này không có trên máy
+          chủ.
         </Notice>
       )}
       {report.report_json.audit.module_source === "REFERENCE_REPLAY" && (

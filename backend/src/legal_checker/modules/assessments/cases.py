@@ -30,6 +30,7 @@ SELECT c.ca_id, c.hop_dong_id, c.ngay_danh_gia, c.moc_ap_dung, c.loai_moc_ap_dun
 FROM runtime.ca_danh_gia c
 JOIN runtime.hop_dong h ON h.hop_dong_id = c.hop_dong_id
 JOIN runtime.tep_nguon t ON t.tep_id = h.tep_nguon_id
+LEFT JOIN runtime.contract_uploads u ON u.hop_dong_id = c.hop_dong_id
 LEFT JOIN LATERAL (
     SELECT run_id, status, created_at FROM runtime.workflow_runs w
     WHERE w.ca_id = c.ca_id ORDER BY w.created_at DESC, w.run_id DESC LIMIT 1
@@ -40,8 +41,11 @@ LEFT JOIN LATERAL (
 ) rep ON TRUE
 """
 
-Sort = Literal["ca_id", "-ngay_danh_gia", "ngay_danh_gia", "-latest_run"]
+Sort = Literal["-recent", "ca_id", "-ngay_danh_gia", "ngay_danh_gia", "-latest_run"]
 _ORDER = {
+    # Latest activity: the newest of its last run and, for uploaded contracts, the upload.
+    # ca_danh_gia has no creation time, so seeded cases that never ran come last.
+    "-recent": "GREATEST(r.created_at, u.uploaded_at) DESC NULLS LAST, c.ca_id",
     "ca_id": "c.ca_id",
     "ngay_danh_gia": "c.ngay_danh_gia, c.ca_id",
     "-ngay_danh_gia": "c.ngay_danh_gia DESC, c.ca_id",
@@ -57,7 +61,7 @@ class CaseFilter:
     requirement_status: str | None = None  # latest report has a requirement with this status
     date_from: date | None = None
     date_to: date | None = None
-    sort: Sort = "ca_id"
+    sort: Sort = "-recent"
 
 
 @dataclass(frozen=True)
