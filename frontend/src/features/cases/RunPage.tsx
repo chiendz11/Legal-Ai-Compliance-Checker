@@ -58,9 +58,11 @@ export function RunPage() {
     >
       <p>
         <StatusBadge kind="runStatus" code={run.status} />{" "}
-        <span className="muted small">
-          Hoàn tất nghĩa là đã có kết quả máy, chưa phải đã review hay phát hành.
-        </span>
+        {run.status !== "FAILED" && (
+          <span className="muted small">
+            Hoàn tất nghĩa là đã có kết quả máy, chưa phải đã review hay phát hành.
+          </span>
+        )}
       </p>
       {run.error && (
         <Notice tone="bad">
@@ -101,7 +103,11 @@ export function RunPage() {
               ))}
             </ul>
           ) : (
-            <Empty>Run đã hoàn tất nhưng chưa có báo cáo.</Empty>
+            <Empty>
+              {reports.isFetching
+                ? "Đang lấy báo cáo của run…"
+                : "Run đã hoàn tất nhưng chưa có báo cáo."}
+            </Empty>
           )}
         </>
       )}

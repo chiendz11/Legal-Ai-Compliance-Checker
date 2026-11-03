@@ -105,10 +105,14 @@ export function useCreateCase() {
   });
 }
 
+/** A run turns COMPLETED a moment before its report is stored, so an empty list is re-asked
+ * for a short while instead of being cached as "no report". */
 export function useRunReports(caId: string, runId: string, enabled = true) {
   return useQuery({
     enabled,
     queryKey: ["run-reports", caId, runId],
+    refetchInterval: (query) =>
+      query.state.data?.total === 0 && query.state.dataUpdateCount < 20 ? 1000 : false,
     queryFn: async () =>
       unwrap(
         await api.GET("/api/v1/cases/{ca_id}/runs/{run_id}/reports", {
