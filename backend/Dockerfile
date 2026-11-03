@@ -9,7 +9,7 @@ WORKDIR /workspace
 COPY backend/ backend/
 COPY constraints.txt ./constraints.txt
 
-RUN python -m pip install --no-cache-dir "./backend[worker,export]" -c constraints.txt \
+RUN python -m pip install --no-cache-dir "./backend[worker,export,ai]" -c constraints.txt \
     && groupadd --gid 10001 legal \
     && useradd --uid 10001 --gid 10001 --no-create-home legal \
     && mkdir -p /data \

@@ -64,10 +64,10 @@ def session_signer(settings: Settings) -> SessionSigner | None:
 
 
 def llm_client_factory(settings: Settings):
-    """Paid C07 calls are opt-in: ASSESSMENT_LLM=openai plus OPENAI_API_KEY/OPENAI_MODEL."""
+    """Paid C07 calls are opt-in: ASSESSMENT_LLM=openai or groq plus API_KEY/MODEL."""
     if settings.assessment_llm == "offline":
         return None
-    if settings.assessment_llm != "openai":
+    if settings.assessment_llm not in {"openai", "groq"}:
         raise ValueError(f"Unknown ASSESSMENT_LLM={settings.assessment_llm!r}")
 
     def build():

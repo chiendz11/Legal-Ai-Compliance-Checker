@@ -40,6 +40,9 @@ class OpenAISettings:
 
     api_key: str = field(repr=False)
     model: str
+    base_url: str = "https://api.openai.com/v1"
+    provider: str = "OPENAI"
+    api_mode: str = "auto"
     timeout_seconds: float = 45.0
     max_output_tokens: int = 3000
     max_attempts: int = 2
@@ -71,6 +74,27 @@ class OpenAISettings:
         object.__setattr__(
             self, "max_attempts", _int(self.max_attempts, "C07_LLM_MAX_ATTEMPTS", 1, 5)
         )
+        # Determine provider and mode dynamically
+        base = self.base_url.rstrip("/")
+        if (
+            "groq.com" in base.lower()
+            or self.api_key.startswith("gsk_")
+            or self.provider.upper() == "GROQ"
+        ):
+            object.__setattr__(self, "provider", "GROQ")
+            if base == "https://api.openai.com/v1" or not base:
+                base = "https://api.groq.com/openai/v1"
+            if self.api_mode == "auto":
+                object.__setattr__(self, "api_mode", "chat_completions")
+        elif self.api_mode == "auto":
+            object.__setattr__(
+                self,
+                "api_mode",
+                "responses"
+                if base.endswith("/responses") or "openai.com" in base
+                else "chat_completions",
+            )
+        object.__setattr__(self, "base_url", base)
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None):
@@ -78,9 +102,33 @@ class OpenAISettings:
         if environ is None:
             load_dotenv(PROJECT_ROOT / ".env", override=False)
             environ = os.environ
+        api_key = (
+            environ.get("OPENAI_API_KEY")
+            or environ.get("GROQ_API_KEY")
+            or environ.get("LLM_API_KEY", "")
+        )
+        base_url = (
+            environ.get("OPENAI_BASE_URL")
+            or environ.get("GROQ_BASE_URL")
+            or environ.get("LLM_BASE_URL", "")
+        )
+        model = (
+            environ.get("OPENAI_MODEL") or environ.get("GROQ_MODEL") or environ.get("LLM_MODEL", "")
+        )
+        is_groq = api_key.startswith("gsk_") or environ.get("ASSESSMENT_LLM") == "groq"
+        if is_groq:
+            if not base_url:
+                base_url = "https://api.groq.com/openai/v1"
+            if not model:
+                model = environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
+        if not base_url:
+            base_url = "https://api.openai.com/v1"
+        provider = "GROQ" if is_groq else "OPENAI"
         return cls(
-            api_key=environ.get("OPENAI_API_KEY", ""),
-            model=environ.get("OPENAI_MODEL", ""),
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            provider=provider,
             timeout_seconds=environ.get("C07_LLM_TIMEOUT_SECONDS", "45"),
             max_output_tokens=environ.get("C07_LLM_MAX_OUTPUT_TOKENS", "3000"),
             max_attempts=environ.get("C07_LLM_MAX_ATTEMPTS", "2"),

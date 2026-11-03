@@ -47,7 +47,7 @@ class CriterionAnalysis(Model):
 
     tieu_chi_id: str
     input_sha256: str
-    origin: Literal["OPENAI", "REPLAY", "NO_CALL"]
+    origin: Literal["OPENAI", "GROQ", "REPLAY", "NO_CALL"]
     model_version: str
     prompt_version: str
     proposal: SemanticProposal | None = None

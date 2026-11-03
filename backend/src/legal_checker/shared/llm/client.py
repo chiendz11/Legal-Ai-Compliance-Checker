@@ -32,7 +32,17 @@ def _usage(data):
     usage = data.get("usage") if isinstance(data, dict) else None
     if not isinstance(usage, dict):
         return None, None
-    return _token_count(usage.get("input_tokens")), _token_count(usage.get("output_tokens"))
+    input_tokens = _token_count(
+        usage.get("input_tokens")
+        if usage.get("input_tokens") is not None
+        else usage.get("prompt_tokens")
+    )
+    output_tokens = _token_count(
+        usage.get("output_tokens")
+        if usage.get("output_tokens") is not None
+        else usage.get("completion_tokens")
+    )
+    return input_tokens, output_tokens
 
 
 def _model_version(value) -> str | None:
@@ -97,30 +107,47 @@ def _parse_response(response: httpx.Response, data) -> LlmResponse:
     """Inspect protocol outcome after the completed HTTP attempt has been audited."""
     if not isinstance(data, dict):
         raise LlmClientError("INVALID_RESPONSE_JSON")
-    if data.get("status") == "incomplete":
-        raise LlmClientError("INCOMPLETE_RESPONSE")
-    if data.get("status") != "completed":
-        raise LlmClientError("FAILED_RESPONSE")
-    output = data.get("output")
-    if not isinstance(output, list):
-        raise LlmClientError("INVALID_RESPONSE_JSON")
     texts = []
-    for item in output:
-        if not isinstance(item, dict) or item.get("type") != "message":
-            continue
-        content = item.get("content")
-        if not isinstance(content, list):
+    if "choices" in data:
+        choices = data.get("choices")
+        if not isinstance(choices, list) or not choices:
             raise LlmClientError("INVALID_RESPONSE_JSON")
-        for part in content:
-            if not isinstance(part, dict):
+        first = choices[0]
+        if not isinstance(first, dict):
+            raise LlmClientError("INVALID_RESPONSE_JSON")
+        msg = first.get("message", {})
+        if not isinstance(msg, dict):
+            raise LlmClientError("INVALID_RESPONSE_JSON")
+        if msg.get("refusal"):
+            raise LlmClientError("REFUSAL")
+        content = msg.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise LlmClientError("INVALID_RESPONSE_JSON")
+        texts.append(content)
+    else:
+        if data.get("status") == "incomplete":
+            raise LlmClientError("INCOMPLETE_RESPONSE")
+        if data.get("status") != "completed":
+            raise LlmClientError("FAILED_RESPONSE")
+        output = data.get("output")
+        if not isinstance(output, list):
+            raise LlmClientError("INVALID_RESPONSE_JSON")
+        for item in output:
+            if not isinstance(item, dict) or item.get("type") != "message":
+                continue
+            content = item.get("content")
+            if not isinstance(content, list):
                 raise LlmClientError("INVALID_RESPONSE_JSON")
-            if part.get("type") == "refusal":
-                raise LlmClientError("REFUSAL")
-            if part.get("type") == "output_text":
-                text = part.get("text")
-                if not isinstance(text, str):
+            for part in content:
+                if not isinstance(part, dict):
                     raise LlmClientError("INVALID_RESPONSE_JSON")
-                texts.append(text)
+                if part.get("type") == "refusal":
+                    raise LlmClientError("REFUSAL")
+                if part.get("type") == "output_text":
+                    text = part.get("text")
+                    if not isinstance(text, str):
+                        raise LlmClientError("INVALID_RESPONSE_JSON")
+                    texts.append(text)
     model = _model_version(data.get("model"))
     if not texts or not "".join(texts).strip() or model is None:
         raise LlmClientError("INVALID_RESPONSE_JSON")
@@ -179,27 +206,51 @@ class OpenAIResponsesClient:
     ) -> LlmResponse:
         """Call Responses with strict JSON schema and no server-side response storage."""
         context = Context.model_validate(context.model_dump())
+        is_chat = self.settings.api_mode == "chat_completions"
         try:
-            body = {
-                "model": self.settings.model,
-                "input": [
-                    {"role": "system", "content": instructions},
-                    {
-                        "role": "user",
-                        "content": json.dumps(payload, ensure_ascii=False, allow_nan=False),
+            if is_chat:
+                body = {
+                    "model": self.settings.model,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                f"{instructions}\n\n"
+                                "You MUST return ONLY a valid JSON object matching "
+                                "the requested schema. "
+                                "Do not include any explanation or markdown formatting."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": json.dumps(payload, ensure_ascii=False, allow_nan=False),
+                        },
+                    ],
+                    "response_format": {"type": "json_object"},
+                    "max_tokens": self.settings.max_output_tokens,
+                    "temperature": 0.0,
+                }
+            else:
+                body = {
+                    "model": self.settings.model,
+                    "input": [
+                        {"role": "system", "content": instructions},
+                        {
+                            "role": "user",
+                            "content": json.dumps(payload, ensure_ascii=False, allow_nan=False),
+                        },
+                    ],
+                    "text": {
+                        "format": {
+                            "type": "json_schema",
+                            "name": "criterion_proposal",
+                            "strict": True,
+                            "schema": schema,
+                        }
                     },
-                ],
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "criterion_proposal",
-                        "strict": True,
-                        "schema": schema,
-                    }
-                },
-                "max_output_tokens": self.settings.max_output_tokens,
-                "store": False,
-            }
+                    "max_output_tokens": self.settings.max_output_tokens,
+                    "store": False,
+                }
             json.dumps(body, allow_nan=False)
         except (TypeError, ValueError):
             raise LlmClientError("INVALID_INPUT") from None
@@ -239,11 +290,16 @@ class OpenAIResponsesClient:
 
     def _attempt(self, context, body, prompt_version, schema_version, attempt, timeout):
         """Audit precisely one HTTP call; semantic parsing never replays a paid call."""
+        base = self.settings.base_url.rstrip("/")
+        if self.settings.api_mode == "chat_completions":
+            url = base if base.endswith("/chat/completions") else f"{base}/chat/completions"
+        else:
+            url = base if base.endswith("/responses") else f"{base}/responses"
         with audit_llm_call(
             self.audit_sink,
             context=context,
             module="COMPLIANCE",
-            provider="OPENAI",
+            provider=self.settings.provider,
             model_version=self.settings.model,
             prompt_version=prompt_version,
             schema_version=schema_version,
@@ -252,9 +308,12 @@ class OpenAIResponsesClient:
         ) as call:
             try:
                 response = self._http.post(
-                    OPENAI_RESPONSES_URL,
+                    url,
                     json=body,
-                    headers={"Authorization": f"Bearer {self.settings.api_key}"},
+                    headers={
+                        "Authorization": f"Bearer {self.settings.api_key}",
+                        "User-Agent": "legal-checker-backend/1.0",
+                    },
                     timeout=timeout,
                     follow_redirects=False,
                 )
