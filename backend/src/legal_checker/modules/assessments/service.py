@@ -5,6 +5,7 @@ service pins the context, persists the run, records reviews and versions the rep
 """
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -27,6 +28,7 @@ from legal_checker.modules.reviews.service import (
     review_revision,
     target_states,
 )
+from legal_checker.shared.contracts.assessment import AssessmentCase
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.report import FinalReport
 from legal_checker.shared.contracts.review import HumanReview, ReviewTarget
@@ -67,7 +69,8 @@ class AssessmentService:
     reports: ReportStore
     knowledge: KnowledgeSnapshot
     queue: RunQueue
-    module_source: str
+    # Fixed name, or a function of the case when the step implementations depend on it.
+    module_source: str | Callable[[AssessmentCase], str]
     reviews: ReviewRepository | None = None
 
     def start_run(self, ca_id: str, idempotency_key: str) -> RunRecord:
@@ -83,7 +86,10 @@ class AssessmentService:
             run_id=f"RUN_{token}",
             trace_id=f"TRACE_{token}",
         )
-        record = self.runs.create(context, idempotency_key, self.module_source)
+        label = self.module_source
+        if callable(label):
+            label = label(row.case)
+        record = self.runs.create(context, idempotency_key, label)
         if record.status == "QUEUED":
             # Re-enqueueing an accepted run is safe: only one worker can claim it.
             self.queue.enqueue(record.ca_id, record.run_id)

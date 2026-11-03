@@ -131,7 +131,7 @@ def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) ->
     if content.audit.get("module_source") == "MODULES_DI_REFERENCE":
         doc.paragraph(
             "MODULES_DI_REFERENCE: bước 3–7 do module đánh giá tính; hồ sơ và đoạn văn hợp đồng "
-            "(bước 1–2) lấy từ dataset tham chiếu vì module đọc hợp đồng chưa có.",
+            "(bước 1–2) lấy từ dataset tham chiếu vì tệp PDF gốc không có trên máy chủ.",
             emphasis=True,
         )
     if content.audit.get("module_source") == "REFERENCE_REPLAY":

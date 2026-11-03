@@ -60,10 +60,10 @@ def test_reference_run_reproduces_frozen_c13(knowledge, ca_id):
 
 @pytest.mark.parametrize("ca_id", CASES)
 def test_real_group_b_c_modules_complete_a_seeded_case(knowledge, ca_id):
-    """Steps 3–7 run the merged modules; only DI uses the case's reference document."""
+    """Steps 3–7 run the merged modules; DI uses the reference (no local source PDF)."""
     from legal_checker.modules.assessments.cases import CaseRepository
     from legal_checker.workflows.integrated import (
-        MODULE_SOURCE as INTEGRATED,
+        REFERENCE_DI_SOURCE as INTEGRATED,
     )
     from legal_checker.workflows.integrated import (
         IntegratedModulesSource,

@@ -18,7 +18,13 @@ const STAGE_LABELS: Record<string, string> = {
 /** Plain-language cause for each failure reason the runner records. */
 const FAILURE_HELP: Record<string, string> = {
   DOCUMENT_INTELLIGENCE_UNAVAILABLE:
-    "Chưa có module đọc hợp đồng (nhóm A). Tệp đã được lưu an toàn; ca sẽ chạy được khi module được gộp.",
+    "Không đọc được tệp hợp đồng gốc: tệp không có trên máy chủ và ca này không có dữ liệu tham chiếu.",
+  DOCUMENT_FORMAT_UNSUPPORTED:
+    "Module đọc hợp đồng (nhóm A) hiện chỉ đọc PDF có lớp chữ. Hãy tải bản PDF của hợp đồng này.",
+  DOCUMENT_NOT_READABLE:
+    "Không đọc được chữ nào trong tệp: đây là bản scan (ảnh) và module đọc hợp đồng chưa có OCR. Hãy tải bản PDF xuất từ Word hoặc có lớp chữ.",
+  SOURCE_INTEGRITY_FAILED:
+    "Tệp đọc được không khớp SHA-256 đã lưu, nên run dừng để không đánh giá nhầm tài liệu.",
   MODULE_NOT_IMPLEMENTED: "Máy chủ chưa bật module đánh giá cho bước này.",
   REFERENCE_UNAVAILABLE: "Ca này không có dữ liệu tham chiếu để phát lại.",
   HANDOFF_VALIDATION_FAILED:
@@ -28,7 +34,10 @@ const FAILURE_HELP: Record<string, string> = {
 
 /** One-line cause shown under the failed step. */
 const FAILURE_SHORT: Record<string, string> = {
-  DOCUMENT_INTELLIGENCE_UNAVAILABLE: "Chưa có module đọc hợp đồng (nhóm A)",
+  DOCUMENT_INTELLIGENCE_UNAVAILABLE: "Không đọc được tệp hợp đồng gốc",
+  DOCUMENT_FORMAT_UNSUPPORTED: "Chỉ đọc được PDF, chưa đọc DOCX",
+  DOCUMENT_NOT_READABLE: "Bản scan không có lớp chữ (chưa có OCR)",
+  SOURCE_INTEGRITY_FAILED: "Tệp không khớp SHA-256 đã lưu",
   MODULE_NOT_IMPLEMENTED: "Bước này chưa được bật trên máy chủ",
   REFERENCE_UNAVAILABLE: "Ca này không có dữ liệu tham chiếu",
   HANDOFF_VALIDATION_FAILED: "Dữ liệu bàn giao giữa hai bước không hợp lệ",

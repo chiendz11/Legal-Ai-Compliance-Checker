@@ -5,9 +5,11 @@ Demo đi qua luồng thật của nhóm D: tải hợp đồng → API → hàng
 
 Chọn nguồn module bằng `ASSESSMENT_MODULES`:
 
-- `modules`: module thật của nhóm B/C cho bước 3–7. Hồ sơ hợp đồng và đoạn văn (bước 1–2) tạm
-  lấy từ dataset tham chiếu vì module đọc hợp đồng (nhóm A) chưa gộp; báo cáo ghi
-  `MODULES_DI_REFERENCE`. Với `ASSESSMENT_LLM=offline` (mặc định) tiêu chí C07 là UNKNOWN.
+- `modules`: module thật của cả ba nhóm. Hợp đồng có tệp gốc trên máy chủ (tải lên qua UI, hoặc
+  PDF đã nạp vào cache bằng `python -m scripts.seed_source_cache <thư mục PDF>`) được đọc bằng
+  module nhóm A, báo cáo ghi `MODULES`. Ca dataset chỉ có PDF trên máy chủ lưu trữ ngoài thì
+  bước 1–2 lấy từ dataset tham chiếu, báo cáo ghi `MODULES_DI_REFERENCE`. Với
+  `ASSESSMENT_LLM=offline` (mặc định) tiêu chí C07 là UNKNOWN.
 - `reference`: **phát lại tham chiếu QA** qua luồng điều phối thật; báo cáo ghi `REFERENCE_REPLAY`.
 - `none`: run thất bại với `MODULE_NOT_IMPLEMENTED` (minh họa xử lý lỗi).
 
@@ -60,8 +62,9 @@ Mở http://localhost:5173. Windows: nếu test/seed báo lỗi giải mã ký t
 
 1. (AUTH_MODE=on) **Đăng nhập** bằng tài khoản trưởng nhóm; góc phải hiện tên và vai trò.
 2. **Lịch sử**: 300 ca DEV/VALIDATION; lọc theo trạng thái run/kết luận, tìm theo mã, sắp xếp.
-3. **Tải hợp đồng**: chọn PDF/DOCX → tạo ca → chạy. Với hợp đồng mới, run dừng ở bước đọc hợp
-   đồng (`DOCUMENT_INTELLIGENCE_UNAVAILABLE`) vì module nhóm A chưa gộp; trang run giải thích lý do.
+3. **Tải hợp đồng**: kéo thả một PDF có lớp chữ → tạo ca → chạy. Cả 9 bước chạy bằng module
+   thật và báo cáo ghi `MODULES`. Tải DOCX thì run dừng ở bước đọc hợp đồng với lý do
+   `DOCUMENT_FORMAT_UNSUPPORTED` (nhóm A chưa có parser DOCX).
 4. Bấm **Chạy đánh giá** ở `CA360_051`. Trang run hiện 9 stage chuyển PENDING → RUNNING →
    COMPLETED (cập nhật qua SSE). Nói rõ: COMPLETED là có kết quả máy, chưa phải đã review.
 5. Trang tự mở **báo cáo**. Chỉ vào nhãn DRAFT/chưa review và nhãn nguồn module.
@@ -109,8 +112,8 @@ api (`ASSESSMENT_QUEUE=celery`), worker (Celery + beat khôi phục run bị m�
 
 ## Giới hạn hiện tại
 
-- Bước 1–2 (đọc hợp đồng, nhóm A) chưa gộp: ca seed dùng hồ sơ/đoạn văn tham chiếu, hợp đồng tải
-  lên mới dừng ở bước đọc hợp đồng.
+- Module đọc hợp đồng (nhóm A) chỉ đọc PDF có lớp chữ: chưa có OCR cho bản scan và chưa đọc DOCX.
+- Ca dataset có sẵn dùng hồ sơ/đoạn văn tham chiếu khi PDF gốc không có trên máy chủ.
 - C09 có chẩn đoán `C09_PROVENANCE_UNAVAILABLE` (khoảng trống tích hợp nhóm B/C).
 - PDF gốc của các ca seed nằm trên host lưu trữ của dataset; khi host đó không truy cập được,
   khung xem song song báo lỗi rõ ràng (báo cáo vẫn dùng được). Hợp đồng tải lên thì xem được.

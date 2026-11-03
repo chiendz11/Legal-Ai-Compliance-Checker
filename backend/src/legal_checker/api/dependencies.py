@@ -81,13 +81,18 @@ def llm_client_factory(settings: Settings):
     return build
 
 
-def module_source(settings: Settings, cases: CaseRepository) -> ModuleSource:
+def module_source(
+    settings: Settings, cases: CaseRepository, documents: SourceStorage | None = None
+) -> ModuleSource:
     if settings.assessment_modules == "modules":
         from legal_checker.workflows.integrated import IntegratedModulesSource
 
         return IntegratedModulesSource(
             settings.database_url,
             cases,
+            storage=documents,
+            upload_dir=settings.upload_dir,
+            source_cache_dir=settings.source_cache_dir,
             llm_client_factory=llm_client_factory(settings),
             llm_max_calls=settings.assessment_llm_max_calls,
         )
@@ -105,7 +110,14 @@ def build_services(settings: Settings) -> Services:
     cases = CaseRepository(settings.database_url)
     runs = RunRepository(settings.database_url)
     reports = PostgresReportStore(settings.database_url)
-    source = module_source(settings, cases)
+    remote_sources = CachedHttpSourceStorage(
+        settings.source_cache_dir,
+        timeout_seconds=settings.source_download_timeout_seconds,
+        max_bytes=settings.source_max_bytes,
+    )
+    uploads = LocalUploadStorage(settings.upload_dir, max_bytes=settings.source_max_bytes)
+    document_sources = RoutingSourceStorage(uploads, remote_sources)
+    source = module_source(settings, cases, document_sources)
     runner = AssessmentRunner(
         runs=runs,
         reports=reports,
@@ -124,12 +136,6 @@ def build_services(settings: Settings) -> Services:
     else:
         raise ValueError(f"Unknown ASSESSMENT_QUEUE={settings.assessment_queue!r}")
 
-    remote_sources = CachedHttpSourceStorage(
-        settings.source_cache_dir,
-        timeout_seconds=settings.source_download_timeout_seconds,
-        max_bytes=settings.source_max_bytes,
-    )
-    uploads = LocalUploadStorage(settings.upload_dir, max_bytes=settings.source_max_bytes)
     return Services(
         knowledge=knowledge,
         assessments=assessment_store,
@@ -145,12 +151,13 @@ def build_services(settings: Settings) -> Services:
             reports=reports,
             knowledge=knowledge,
             queue=queue,
-            module_source=source.name,
+            # Per-case label when the source decides it (group A vs dataset reference).
+            module_source=getattr(source, "label", source.name),
             reviews=ReviewRepository(settings.database_url),
         ),
         contracts=ContractRepository(settings.database_url),
         uploads=uploads,
-        document_sources=RoutingSourceStorage(uploads, remote_sources),
+        document_sources=document_sources,
         deployments=DeploymentCatalog(
             settings.database_url,
             rule_version=settings.deployment_rule_version,

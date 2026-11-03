@@ -189,6 +189,7 @@ def env(database_url, request_factory, tmp_path):
         dev_actor_id="USER_TEST",
     )
     uploads = LocalUploadStorage(tmp_path / "uploads", max_bytes=4096)
+    document_sources = RoutingSourceStorage(uploads, SimpleNamespace(read=None))
     services = Services(
         knowledge=knowledge,
         assessments=None,
@@ -199,7 +200,7 @@ def env(database_url, request_factory, tmp_path):
         assessment_service=service,
         contracts=ContractRepository(database_url),
         uploads=uploads,
-        document_sources=RoutingSourceStorage(uploads, SimpleNamespace(read=None)),
+        document_sources=document_sources,
         deployments=DeploymentCatalog(database_url),
     )
     from legal_checker.main import create_app
@@ -216,6 +217,8 @@ def env(database_url, request_factory, tmp_path):
         queue=queue,
         service=service,
         database_url=database_url,
+        upload_dir=tmp_path / "uploads",
+        document_sources=document_sources,
     )
 
 
@@ -301,7 +304,7 @@ def test_unconfigured_modules_fail_clearly_without_report(env):
     assert rebuild.status_code == 409
 
 
-def test_real_modules_stop_at_document_intelligence_without_group_a(env):
+def test_real_modules_stop_at_document_intelligence_without_source_or_reference(env):
     from legal_checker.modules.assessments.cases import CaseRepository
     from legal_checker.workflows.integrated import IntegratedModulesSource
 
