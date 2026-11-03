@@ -12,8 +12,6 @@ from typing import Any
 
 from legal_checker.core.postgres import connect_postgres
 from legal_checker.migrations.manager import upgrade_database
-from openpyxl import load_workbook
-from openpyxl.utils.datetime import from_excel
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
@@ -81,6 +79,8 @@ def convert_cell(value: Any, kind: str, epoch: datetime) -> Any:
         if isinstance(value, (float, int)) and not isinstance(value, bool):
             if not math.isfinite(value):
                 raise ValueError("Invalid Excel date")
+            from openpyxl.utils.datetime import from_excel
+
             value = from_excel(value, epoch)
         if isinstance(value, str):
             # Excel contains leading apostrophes used to preserve ISO timestamps as text.
@@ -118,6 +118,8 @@ def validate_references(seed: WorkbookSeed) -> None:
 
 
 def read_workbook(path: Path) -> WorkbookSeed:
+    from openpyxl import load_workbook
+
     content = path.read_bytes()
     content_sha = hashlib.sha256(content).hexdigest()
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=False)

@@ -64,6 +64,8 @@ services:
     profiles: ["app"]
     build:
       context: frontend
+    environment:
+      - BACKEND_HOST=api
     ports:
       - "127.0.0.1:8080:80"
     depends_on:
