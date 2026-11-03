@@ -668,6 +668,9 @@ button.link {
 
 .stages .stage::before {
   content: counter(stage);
+  /* pseudo-elements are not matched by `*`; without this the border makes the dot 26px
+     and the ping ring and the connecting line sit 1px off its center */
+  box-sizing: border-box;
   width: 24px;
   height: 24px;
   border-radius: 99px;
@@ -685,7 +688,7 @@ button.link {
 .stages .stage::after {
   content: "";
   position: absolute;
-  left: 11.5px;
+  left: 11.25px; /* centers the 1.5px line on the 24px dot */
   top: 26px;
   bottom: 2px;
   width: 1.5px;
