@@ -27,27 +27,51 @@ def update_gitops_images(
     backend_res = "../../../workloads/backend"
     if backend_res not in resources:
         resources.append(backend_res)
+    frontend_res = "../../../workloads/frontend"
+    if frontend_res not in resources:
+        resources.append(frontend_res)
     data["resources"] = resources
 
-    target_image = f"{registry}/legal-ai-compliance-checker-backend"
+    target_backend_image = f"{registry}/legal-ai-compliance-checker-backend"
+    target_frontend_image = f"{registry}/legal-ai-compliance-checker-frontend"
     images = data.get("images", [])
-    match_names = ("registry.invalid/legal-checker/backend", "legal-backend", target_image)
-    found = False
+
+    # Update backend image
+    backend_match = ("registry.invalid/legal-checker/backend", "legal-backend", target_backend_image)
+    found_backend = False
     for entry in images:
-        if entry.get("name") in match_names:
-            entry["name"] = "registry.invalid/legal-checker/backend"
-            entry["newName"] = target_image
+        if entry.get("name") in backend_match:
+            entry["name"] = target_backend_image
             entry["newTag"] = tag
-            found = True
+            entry.pop("newName", None)
+            found_backend = True
             break
-    if not found:
+    if not found_backend:
         images.append(
             {
-                "name": "registry.invalid/legal-checker/backend",
-                "newName": target_image,
+                "name": target_backend_image,
                 "newTag": tag,
             }
         )
+
+    # Update frontend image
+    frontend_match = ("registry.invalid/legal-checker/frontend", "legal-frontend", target_frontend_image)
+    found_frontend = False
+    for entry in images:
+        if entry.get("name") in frontend_match:
+            entry["name"] = target_frontend_image
+            entry["newTag"] = tag
+            entry.pop("newName", None)
+            found_frontend = True
+            break
+    if not found_frontend:
+        images.append(
+            {
+                "name": target_frontend_image,
+                "newTag": tag,
+            }
+        )
+
     data["images"] = images
 
     # Ensure configMapGenerator is present
@@ -66,7 +90,7 @@ def update_gitops_images(
 
     with open(kustomize_path, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
-    print(f"Updated {kustomize_path} with {target_image}:{tag}")
+    print(f"Updated {kustomize_path} with {target_backend_image}:{tag} and {target_frontend_image}:{tag}")
 
     # Also update release.json if present
     release_path = gitops_dir / "environments/local/apps/release.json"
@@ -75,7 +99,9 @@ def update_gitops_images(
             with open(release_path) as f:
                 rel = json.load(f)
             rel["backend_enabled"] = True
-            rel["image"] = f"{target_image}:{tag}"
+            rel["image"] = f"{target_backend_image}:{tag}"
+            rel["frontend_enabled"] = True
+            rel["frontend_image"] = f"{target_frontend_image}:{tag}"
             with open(release_path, "w") as f:
                 json.dump(rel, f, indent=2)
                 f.write("\n")
