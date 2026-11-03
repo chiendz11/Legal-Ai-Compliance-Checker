@@ -209,6 +209,7 @@ class OpenAIResponsesClient:
         is_chat = self.settings.api_mode == "chat_completions"
         try:
             if is_chat:
+                schema_str = json.dumps(schema, ensure_ascii=False)
                 body = {
                     "model": self.settings.model,
                     "messages": [
@@ -216,8 +217,8 @@ class OpenAIResponsesClient:
                             "role": "system",
                             "content": (
                                 f"{instructions}\n\n"
-                                "You MUST return ONLY a valid JSON object matching "
-                                "the requested schema. "
+                                "You MUST return ONLY a valid JSON object strictly matching "
+                                f"the requested schema:\n{schema_str}\n"
                                 "Do not include any explanation or markdown formatting."
                             ),
                         },
