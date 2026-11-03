@@ -164,7 +164,7 @@
         ],
         "summary": "Upload a source PDF/DOCX",
         "description": "Store original bytes, compute SHA-256 and source metadata. This does not run extraction or return a completed assessment.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01"
@@ -284,7 +284,7 @@
         ],
         "summary": "List accessible contracts",
         "description": "List accessible contracts",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -379,7 +379,7 @@
         ],
         "summary": "Get source metadata",
         "description": "Get source metadata",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01"
@@ -473,7 +473,7 @@
         ],
         "summary": "Read original source bytes",
         "description": "Return pinned original bytes for the evidence viewer; authorize access first.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -572,7 +572,7 @@
         ],
         "summary": "Create a pinned case",
         "description": "Backend derives actor/tenant and pins; client does not submit C05/C06 or computed statuses. A missing relevant date remains unknown, not today's date.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01",
@@ -678,8 +678,8 @@
           "assessments"
         ],
         "summary": "List accessible cases",
-        "description": "List accessible cases",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "description": "History of the caller's tenant: cases with their latest run and report (title, requirement-status counts). Filter by text, run status, a requirement status present in the latest report, and assessment-date range; sort server-side. Reading history never re-runs inference.",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -762,6 +762,83 @@
               "maximum": 100,
               "default": 20
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Substring of case ID, contract ID or title",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "run_status",
+            "in": "query",
+            "required": false,
+            "description": "Latest run status; NONE = never run",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "QUEUED",
+                "RUNNING",
+                "COMPLETED",
+                "FAILED",
+                "NONE"
+              ]
+            }
+          },
+          {
+            "name": "requirement_status",
+            "in": "query",
+            "required": false,
+            "description": "Latest report contains a requirement with this status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "COMPLIANT",
+                "PARTIAL",
+                "NON_COMPLIANT",
+                "INSUFFICIENT"
+              ]
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "description": "Assessment date from (inclusive)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "description": "Assessment date to (inclusive)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ca_id",
+                "-ngay_danh_gia",
+                "ngay_danh_gia",
+                "-latest_run"
+              ],
+              "default": "ca_id"
+            }
           }
         ]
       }
@@ -774,7 +851,7 @@
         ],
         "summary": "Read a case",
         "description": "Read a case",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01"
@@ -868,7 +945,7 @@
         ],
         "summary": "Queue the complete machine assessment",
         "description": "Server creates run/trace IDs and immutable input/knowledge pins. No request body; frontend does not orchestrate steps 5–7. Same actor/case/idempotency key returns the original acceptance record.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01",
@@ -983,7 +1060,7 @@
         ],
         "summary": "Poll machine processing progress",
         "description": "Law and citation stages may run in parallel. COMPLETED means machine outputs are ready, not human-reviewed/published. Do not fabricate percentage progress.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [],
         "security": [
@@ -1085,7 +1162,7 @@
         ],
         "summary": "Read pinned full machine results",
         "description": "Return pinned run inputs/results through step 7; no fallback to QA answers. 409 RESULT_NOT_READY until completed. Human decisions are separate review events.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C01",
@@ -1208,8 +1285,8 @@
           "reviews"
         ],
         "summary": "Append a review decision",
-        "description": "Authorize actor; validate target case/run membership and expected hash. Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid after data; never overwrite machine output.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "description": "Authorize actor (role reviewer); validate target case/run membership and expected hash under a per-run lock (409 STALE_REVIEW when another review changed the target). Backend supplies review ID, actor, before state, time and deployment. OVERRIDE requires schema-valid values for the target's editable fields; machine output is never overwritten. Events are append-only and mirrored to runtime.nhat_ky_review.",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C12"
@@ -1341,7 +1418,7 @@
         ],
         "summary": "Read append-only review history for this run",
         "description": "Read append-only review history for this run",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C12"
@@ -1468,7 +1545,7 @@
         ],
         "summary": "Build and persist a new report version",
         "description": "Build DRAFT from exact completed run and review revision. Backend gathers sections; client does not submit report_json or legal conclusions. Pin all upstream document/profile/checklist versions. Does not publish.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1580,7 +1657,7 @@
         ],
         "summary": "List report versions belonging to this run",
         "description": "List report versions belonging to this run",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1707,7 +1784,7 @@
         ],
         "summary": "Read a specific report version",
         "description": "Render profile, compliance, citations, risks, recommendations and review. This is not a raw LLM response. UI must display draft/review status and uncertainty.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1800,8 +1877,8 @@
           "reports"
         ],
         "summary": "Publish an authorized reviewed report",
-        "description": "Require publish permission and expected_review_revision. Reject stale or incomplete required review. A review of an older run cannot approve this report.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "description": "Require publish permission and expected_review_revision matching both the run's current reviews and this report version (rebuild the report after new reviews). Reject with 409 REVIEW_REQUIRED when there is no review, a REQUEST_MORE_EVIDENCE/REJECT decision is open, or a NON_COMPLIANT/PARTIAL requirement or HIGH/CRITICAL risk is not confirmed. Publication is a new immutable PUBLISHED version; repeating the call returns it. A review of an older run cannot approve this report.",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C12",
@@ -1915,8 +1992,8 @@
           "reports"
         ],
         "summary": "Export the exact report version",
-        "description": "Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings.",
-        "x-implementation-status": "NOT_IMPLEMENTED",
+        "description": "Require export permission; preserve report ID/version and provenance. Unpublished exports visibly retain DRAFT/REVIEW_REQUIRED markings. Every export carries a verification stamp (report ID/version/status, run, review revision, SHA-256 of the stored report JSON with sorted keys, source SHA-256, knowledge snapshot, rule/knowledge versions, publication and export actor/time); the digest is also sent as X-Report-SHA256. format=json returns {verification, report} with the exact stored report.",
+        "x-implementation-status": "IMPLEMENTED",
         "x-contract-status": "PROPOSED",
         "x-module-contracts": [
           "C13"
@@ -1927,23 +2004,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Exported report file",
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
           "401": {
             "description": "Unauthenticated",
             "content": {
@@ -2003,6 +2063,29 @@
                 }
               }
             }
+          },
+          "200": {
+            "description": "Exported report file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -2025,9 +2108,536 @@
               "type": "string",
               "enum": [
                 "pdf",
-                "docx"
+                "docx",
+                "json"
               ],
               "default": "pdf"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reports/{bao_cao_id}/legal-basis": {
+      "get": {
+        "operationId": "getReportLegalBasis",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Describe the legal basis a report cites",
+        "description": "Names, numbers, effective ranges and verification flags for every legal-basis ID in the report, read from the knowledge snapshot pinned in audit.context. Unknown IDs are returned as UNKNOWN. Verification flags are shown as stored, never upgraded.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_LegalBasisList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Pinned knowledge snapshot is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bao_cao_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/events": {
+      "get": {
+        "operationId": "streamRunProgress",
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Stream run progress (Server-Sent Events)",
+        "description": "text/event-stream with one `progress` event (RunProgress JSON) per change; the stream ends when the run is COMPLETED or FAILED. Clients fall back to polling the status route if the stream drops. COMPLETED means machine outputs are ready, not reviewed.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Progress events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign in with a local account",
+        "description": "AUTH_MODE=on only (409 otherwise). Sets an HttpOnly SameSite=Strict session cookie; the same token is accepted as Authorization: Bearer. Repeated failures per user/client are throttled (403).",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "X01"
+        ],
+        "security": [],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State/revision conflict or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_SessionInfo"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Input_LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign out (clears the session cookie)",
+        "description": "Stateless sessions: the cookie is removed; tokens expire after AUTH_SESSION_HOURS.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01",
+          "X01"
+        ],
+        "security": [],
+        "responses": {
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Signed out"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "currentUser",
+        "tags": [
+          "auth"
+        ],
+        "summary": "Current user, tenant and roles",
+        "description": "With AUTH_MODE=off returns the local development identity (auth_mode=off).",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C01"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_SessionInfo"
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/api/v1/cases/{ca_id}/runs/{run_id}/review-state": {
+      "get": {
+        "operationId": "getRunReviewState",
+        "tags": [
+          "reviews"
+        ],
+        "summary": "Reviewable findings of a run with their current hash",
+        "description": "One entry per reviewable machine finding (criterion, requirement status, citation, risk, recommendation) with its target_sha256 for optimistic concurrency, effective reviewer overrides, latest decision, the run's review_revision and the findings that still block publication.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C12"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_RunReviewState"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "ca_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
             }
           }
         ]
@@ -2892,6 +3502,37 @@
             ],
             "default": null,
             "title": "Latest Run Status"
+          },
+          "ten_tai_lieu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ten Tai Lieu"
+          },
+          "latest_report_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Latest Report Id"
+          },
+          "requirement_status_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Requirement Status Counts",
+            "type": "object"
           }
         },
         "required": [
@@ -6042,6 +6683,382 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Output_LegalBasisItem": {
+        "additionalProperties": false,
+        "description": "Display record for one cited ID; verification flags are shown, never upgraded.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "DOCUMENT",
+              "ARTICLE",
+              "REQUIREMENT_VERSION",
+              "UNKNOWN"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Number"
+          },
+          "excerpt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Excerpt"
+          },
+          "requirement_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Requirement Id"
+          },
+          "article_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Article Id"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effective To"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pages"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Verification"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Output_LegalDocumentRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title"
+        ],
+        "title": "LegalBasisItem",
+        "type": "object"
+      },
+      "Output_LegalDocumentRef": {
+        "additionalProperties": false,
+        "properties": {
+          "van_ban_id": {
+            "title": "Van Ban Id",
+            "type": "string"
+          },
+          "so_hieu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "So Hieu"
+          },
+          "ten_van_ban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ten Van Ban"
+          }
+        },
+        "required": [
+          "van_ban_id"
+        ],
+        "title": "LegalDocumentRef",
+        "type": "object"
+      },
+      "Output_LegalBasisList": {
+        "additionalProperties": false,
+        "properties": {
+          "knowledge_snapshot_sha256": {
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_LegalBasisItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "knowledge_snapshot_sha256",
+          "items"
+        ],
+        "title": "LegalBasisList",
+        "type": "object"
+      },
+      "Output_SessionInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "actor_id": {
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "auth_mode": {
+            "title": "Auth Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "actor_id",
+          "tenant_id",
+          "display_name",
+          "roles",
+          "auth_mode"
+        ],
+        "title": "SessionInfo",
+        "type": "object"
+      },
+      "Input_LoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "Output_TargetReviewState": {
+        "additionalProperties": false,
+        "properties": {
+          "doi_tuong_loai": {
+            "title": "Doi Tuong Loai",
+            "type": "string"
+          },
+          "doi_tuong_id": {
+            "title": "Doi Tuong Id",
+            "type": "string"
+          },
+          "target_sha256": {
+            "title": "Target Sha256",
+            "type": "string"
+          },
+          "overrides": {
+            "additionalProperties": true,
+            "title": "Overrides",
+            "type": "object"
+          },
+          "latest_decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Latest Decision"
+          },
+          "review_count": {
+            "default": 0,
+            "title": "Review Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doi_tuong_loai",
+          "doi_tuong_id",
+          "target_sha256"
+        ],
+        "title": "TargetReviewState",
+        "type": "object"
+      },
+      "Output_RunReviewState": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "review_revision": {
+            "title": "Review Revision",
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/Output_TargetReviewState"
+            },
+            "title": "Targets",
+            "type": "array"
+          },
+          "blockers": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Blockers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "run_id",
+          "review_revision",
+          "targets",
+          "blockers"
+        ],
+        "title": "RunReviewState",
+        "type": "object"
       }
     }
   }

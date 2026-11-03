@@ -2,9 +2,10 @@
 
 There are no default OCR, scope, temporal, retrieval or LLM implementations.
 Steps 5–7 compute draft results; publication/review remain separate responsibilities.
+Callers may pass `on_stage` to observe progress and `evaluator` to swap steps 5–7.
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from legal_checker.modules.applicable_law.scope_resolver import ScopeResolver
@@ -20,7 +21,11 @@ from legal_checker.shared.contracts.citation import CitationValidation
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.document_intelligence import DocumentIntelligenceResult
 from legal_checker.shared.contracts.handoffs import LegalOutput, RetrievalInput
-from legal_checker.shared.contracts.pipeline import PipelinePayload, PipelineRequest
+from legal_checker.shared.contracts.pipeline import (
+    PipelinePayload,
+    PipelineRequest,
+    PipelineResponse,
+)
 from legal_checker.shared.contracts.reasoning import ExternalEvidenceRegistration, Observation
 from legal_checker.shared.contracts.retrieval import RetrievalEvidence
 from legal_checker.shared.contracts.scope import ScopeResolution
@@ -28,7 +33,10 @@ from legal_checker.shared.contracts.temporal import ApplicableRequirement
 from legal_checker.shared.contracts.workflow import AssessmentDraft
 from legal_checker.shared.validation import validate_context, validate_requirements
 from legal_checker.workflows.handoffs import validate_document, validate_legal, validate_retrieval
+from legal_checker.workflows.states import StageCallback, no_progress
 from legal_checker.workflows.steps_5_7 import evaluate
+
+Evaluator = Callable[[PipelineRequest, KnowledgeSnapshot], PipelineResponse]
 
 
 @dataclass(frozen=True)
@@ -44,11 +52,21 @@ class DraftModules:
 
 
 class DraftAssessmentWorkflow:
-    def __init__(self, modules: DraftModules, knowledge: KnowledgeSnapshot):
+    def __init__(
+        self,
+        modules: DraftModules,
+        knowledge: KnowledgeSnapshot,
+        *,
+        evaluator: Evaluator | None = None,
+    ):
         self.modules = modules
         self.knowledge = knowledge
+        self.evaluator = evaluator or evaluate
 
-    def evaluate(self, case: AssessmentCase, context: Context) -> AssessmentDraft:
+    def evaluate(
+        self, case: AssessmentCase, context: Context, on_stage: StageCallback = no_progress
+    ) -> AssessmentDraft:
+        # on_stage only reports progress; a raised error leaves the RUNNING stage to the caller.
         validate_context(context, self.knowledge)
         if case.ca_id != context.ca_id:
             raise ValueError("Assessment case differs from workflow context")
@@ -56,17 +74,22 @@ class DraftAssessmentWorkflow:
             if getattr(context, key) != value:
                 raise ValueError("Assessment deployment differs from workflow context")
 
+        on_stage("INTAKE", "RUNNING")
         registered = AssessmentCase.model_validate(
             self.modules.intake.register(case.model_copy(deep=True)).model_dump()
         )
         if registered != case:
             raise ValueError("Intake changed the pinned assessment case")
+        on_stage("INTAKE", "COMPLETED")
+        on_stage("DOCUMENT_INTELLIGENCE", "RUNNING")
         document = DocumentIntelligenceResult.model_validate(
             self.modules.documents.extract(registered.model_copy(deep=True)).model_dump()
         )
         validate_document(registered, document)
+        on_stage("DOCUMENT_INTELLIGENCE", "COMPLETED")
 
         # Branch A receives profile/knowledge, never contract-authored citations.
+        on_stage("SCOPE_RESOLUTION", "RUNNING")
         scope = [
             ScopeResolution.model_validate(item.model_dump())
             for item in self.modules.scope.resolve(
@@ -78,6 +101,8 @@ class DraftAssessmentWorkflow:
         scope_by_id = {item.yeu_cau_ca_id: item for item in scope}
         if len(scope_by_id) != len(scope) or any(item.ca_id != context.ca_id for item in scope):
             raise ValueError("Scope checklist contains duplicate IDs or a foreign case")
+        on_stage("SCOPE_RESOLUTION", "COMPLETED")
+        on_stage("TEMPORAL_RESOLUTION", "RUNNING")
         requirements = [
             ApplicableRequirement.model_validate(item.model_dump())
             for item in self.modules.temporal.resolve(
@@ -99,11 +124,14 @@ class DraftAssessmentWorkflow:
                 candidate.scope_status,
             ):
                 raise ValueError("Temporal resolution changed scope-owned fields")
+        on_stage("TEMPORAL_RESOLUTION", "COMPLETED")
         diagnostics = []
         retrieval = []
         if self.modules.retrieval is None:
             diagnostics.append({"module": "C06", "code": "RETRIEVAL_NOT_RUN"})
+            on_stage("RETRIEVAL", "SKIPPED")
         else:
+            on_stage("RETRIEVAL", "RUNNING")
             retrieval = [
                 RetrievalEvidence.model_validate(item.model_dump())
                 for item in self.modules.retrieval.retrieve(
@@ -123,6 +151,10 @@ class DraftAssessmentWorkflow:
             retrieval,
             self.knowledge,
         )
+        if self.modules.retrieval is not None:
+            on_stage("RETRIEVAL", "COMPLETED")
+        # Observations feed step 5, so the compliance stage starts here.
+        on_stage("COMPLIANCE", "RUNNING")
         observations = []
         if self.modules.observations is None:
             diagnostics.append({"module": "C07", "code": "OBSERVATION_PROVIDER_NOT_RUN"})
@@ -142,6 +174,7 @@ class DraftAssessmentWorkflow:
         # Branch B independently validates citations and joins A only at Risk/Report.
         citations = []
         citation_status = "NOT_RUN" if self.modules.citations is None else "COMPLETED"
+        on_stage("CITATION_VALIDATION", "SKIPPED" if self.modules.citations is None else "RUNNING")
         if self.modules.citations is not None:
             citations = [
                 CitationValidation.model_validate(item.model_dump())
@@ -159,7 +192,11 @@ class DraftAssessmentWorkflow:
             self.knowledge,
             citation_branch_status=citation_status,
         )
-        evaluation = evaluate(
+        if self.modules.citations is not None:
+            on_stage("CITATION_VALIDATION", "COMPLETED")
+        on_stage("RISK_AGGREGATION", "RUNNING")
+        on_stage("RECOMMENDATION", "RUNNING")
+        evaluation = self.evaluator(
             PipelineRequest(
                 **context.model_dump(),
                 payload=PipelinePayload(
@@ -179,6 +216,8 @@ class DraftAssessmentWorkflow:
             self.knowledge,
         )
         evaluation.payload.diagnostics.extend(diagnostics)
+        for stage in ("COMPLIANCE", "RISK_AGGREGATION", "RECOMMENDATION"):
+            on_stage(stage, "COMPLETED")
         return AssessmentDraft(
             context=context,
             case=registered,

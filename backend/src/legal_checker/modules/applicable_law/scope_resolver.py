@@ -183,6 +183,25 @@ def evaluate_check(
     contract_types: dict[str, dict],
     require_evidence: bool,
 ) -> Check:
+    if "any" in condition:
+        # Nested disjunction inside a clause's `all`, evaluated with three-valued OR.
+        options = [
+            evaluate_check(item, profile, contract_types, require_evidence)
+            for item in condition["any"]
+        ]
+        status = kleene_or(
+            "UNKNOWN" if c.result is None else ("MATCH" if c.result else "NO_MATCH")
+            for c in options
+        )
+        return Check(
+            "any(" + ",".join(dict.fromkeys(c.field for c in options)) + ")",
+            "ANY",
+            [c.expected for c in options],
+            [c.actual for c in options],
+            None if status == "UNKNOWN" else status == "MATCH",
+            tuple(dict.fromkeys(e for c in options for e in c.evidence)),
+            "; ".join(c.note for c in options if c.note) or None,
+        )
     name, op = condition["field"], condition["op"]
     expected = normalize(condition["value"])
     found = get_field(profile, name)

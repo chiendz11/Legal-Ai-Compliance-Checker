@@ -15,5 +15,60 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
+
+  # Full stack (profile "app"): migrate + seed the DB from the host first, see docs/demo.md.
+  redis:
+    profiles: ["app"]
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: legal-checker-backend:local
+    environment: &backend-env
+      DATABASE_URL: postgresql://legal_checker:${POSTGRES_PASSWORD:-legal_checker_local_only}@postgres:5432/${POSTGRES_APP_DB:-legal_checker_dev_v750_r2_supabase}
+      ASSESSMENT_MODULES: ${ASSESSMENT_MODULES:-none}
+      ASSESSMENT_QUEUE: celery
+      REDIS_URL: redis://redis:6379/0
+      REPORT_EXPORT_DIR: /data/report_exports
+      SOURCE_CACHE_DIR: /data/source_cache
+    volumes:
+      - app_data:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    profiles: ["app"]
+    image: legal-checker-backend:local
+    command: ["celery", "-A", "legal_checker.worker.celery_app", "worker", "--beat", "--loglevel=INFO"]
+    environment: *backend-env
+    volumes:
+      - app_data:/data
+    depends_on:
+      api:
+        condition: service_started
+
+  frontend:
+    profiles: ["app"]
+    build:
+      context: frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
+  app_data:

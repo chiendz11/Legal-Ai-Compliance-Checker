@@ -11,3 +11,4 @@ outputs
 **/dist
 data/private
 .env
+frontend

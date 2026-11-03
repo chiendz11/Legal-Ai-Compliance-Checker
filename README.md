@@ -23,7 +23,7 @@ assessment, report export/UI và worker vẫn cần implementations thật.
 
 ## Bắt đầu
 
-[Hướng dẫn tạo môi trường ảo cho Linux/macOS/Windows](docs/dev_setup.md) có đầy đủ lệnh activate, cài dependencies, tải/seed và chạy API. [Danh sách scripts và trạng thái](scripts/README.md).
+[Hướng dẫn tạo môi trường ảo cho Linux/macOS/Windows](docs/guides/dev_setup.md) có đầy đủ lệnh activate, cài dependencies, tải/seed và chạy API. [Danh sách scripts và trạng thái](scripts/README.md).
 
 ```bash
 python -m venv .venv
@@ -47,7 +47,7 @@ local riêng và cùng workbook. Script tải không tự seed hoặc thay đổ
 
 Drive yêu cầu đăng nhập hoặc hết quota: tải ZIP trong trình duyệt rồi dùng
 `python -m scripts.dataset pull --archive /path/to/DEV_VALIDATION.zip`.
-Xem [hướng dẫn tải dataset](docs/dataset_download.md).
+Xem [hướng dẫn tải dataset](docs/database/dataset_and_corpus.md).
 
 Dataset nằm ngoài Git. `data/private/` và `.env` được bỏ qua bởi Git; thư mục private
 cũng được loại khỏi Docker build context. Các workbook chia nhỏ chỉ dùng để xem,
@@ -62,7 +62,7 @@ python -m scripts.local_db seed
 uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/local_database.md).
+Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/database/local_setup.md).
 Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_v750_r2_supabase`;
 Swagger: http://127.0.0.1:8000/docs.
 
@@ -82,9 +82,19 @@ Retrieval vẫn cần tìm/rank evidence thật và đánh giá relevance độc
 | `GET /health` | Kiểm tra ứng dụng đang chạy |
 | `GET /api/v1/cases/{ca_id}/runs/{run_id}` | Đọc output bất biến của một lần chạy |
 | `GET /api/v1/knowledge` | Hash/schema/counts của snapshot knowledge đang dùng |
+| `GET /api/v1/cases`, `GET /api/v1/cases/{ca_id}` | Danh sách/chi tiết ca (C01) và run gần nhất |
+| `POST /api/v1/cases/{ca_id}/runs` | Xếp hàng một lần đánh giá toàn bộ (header `Idempotency-Key`) |
+| `GET …/runs/{run_id}/status`, `GET …/runs/{run_id}/results` | Tiến độ theo stage; draft bước 1–7 đã pin |
+| `GET`/`POST …/runs/{run_id}/reports` | Phiên bản C13 của run; POST dựng lại draft (cùng nội dung → cùng phiên bản) |
+| `GET /api/v1/reports/{bao_cao_id}`, `GET …/export?format=pdf\|docx` | Đọc/xuất đúng một phiên bản báo cáo |
 
 Các module bước 5–7 giao tiếp qua hàm Python/contracts nội bộ, không có POST riêng.
-API bắt đầu đánh giá toàn bộ ca vẫn cần triển khai; GET run đọc dữ liệu đã lưu.
+Run đi qua `workflows/runner.py` → `DraftAssessmentWorkflow` → `build_draft_report`, chạy trong
+API (`ASSESSMENT_QUEUE=inline`) hoặc Celery worker (`celery`). Khi chưa có module bước 1–7,
+run kết thúc FAILED với lý do `MODULE_NOT_IMPLEMENTED`; `ASSESSMENT_MODULES=reference` phát lại
+tham chiếu QA để kiểm thử tích hợp và báo cáo được gắn nhãn `REFERENCE_REPLAY`.
+Chưa có xác thực/phân quyền tenant: các route này chỉ dùng cho môi trường local.
+[Kịch bản demo](docs/guides/demo.md).
 Input dùng contracts trong code và schema runtime tại `/openapi.json` khi chạy backend,
 cần đúng hash/case/run.
 Không có default payload dựa trên file mẫu cũ.
@@ -125,7 +135,7 @@ Downloads hoặc cloud DB. Thiếu `TEST_DATABASE_URL` thì nhóm test cần DB 
 CI luôn có PostgreSQL service và check **CI / required**.
 
 [Contracts máy đọc được](docs/contracts/README.md) có schema riêng C01–C13/X01/X02 và catalog module/DB.
-[OpenAPI thiết kế UI](docs/openapi.design.json) phục vụ frontend mock và backend triển khai;
+[OpenAPI thiết kế UI](docs/architecture/openapi.design.json) phục vụ frontend mock và backend triển khai;
 Backend đang chạy cung cấp `/openapi.json` để xem routes thực tế; không lưu thêm bản JSON runtime trong repo.
 Các endpoints dự kiến trong bản thiết kế được đánh dấu rõ,
 chưa tự hoạt động chỉ vì đã có đặc tả JSON.
@@ -139,14 +149,14 @@ tính hợp lệ và đối chiếu với models, không tự ghi đè đặc t�
 [Mục lục tài liệu](docs/README.md).
 
 - [Triển khai theo nhóm bước 1–2, 3–4, 5–7 và 9](docs/huong_dan_trien_khai_module_sau_seed.md)
-- [DB local, migration và seed](docs/local_database.md)
-- [Alembic: cập nhật schema và tiếp nhận DB cũ](docs/database_migrations.md)
-- [Bộ hiện tại: 360 PDF, structured r2](docs/v750_source_pdf360_r2_structured.md)
-- [Audit LLM dùng chung, client riêng từng module](docs/llm_audit.md)
-- [Khởi tạo dependencies](docs/startup.md)
-- [Ghép module](docs/module_integration.md)
-- [Contracts nghiệp vụ](docs/data_contracts_v7_3_2.md), [schemas module](docs/module_contracts.schema.json)
-- [Kiến trúc](docs/architecture.md), [trạng thái bước 5–7](docs/architecture.md#trạng-thái-triển-khai-bước-57)
+- [DB local, migration và seed](docs/database/local_setup.md)
+- [Alembic: cập nhật schema và tiếp nhận DB cũ](docs/database/migrations.md)
+- [Bộ hiện tại: 360 PDF, structured r2](docs/database/dataset_and_corpus.md)
+- [Audit LLM dùng chung, client riêng từng module](docs/guides/llm_audit.md)
+- [Khởi tạo dependencies](docs/guides/startup.md)
+- [Ghép module](docs/modules/README.md)
+- [Contracts nghiệp vụ](docs/contracts/data_contracts_v7_3_2.md), [schemas module](docs/contracts/module_contracts.schema.json)
+- [Kiến trúc](docs/architecture/system_architecture.md), [trạng thái bước 5–7](docs/architecture/system_architecture.md#trạng-thái-triển-khai-bước-57)
 - [Bàn giao nhóm C và cách nhóm D đọc đúng run](docs/group_c_handoff.md)
 
 Ruleset `main`: PR bắt buộc, 0 approval, CI thành công và up-to-date, resolve discussions,

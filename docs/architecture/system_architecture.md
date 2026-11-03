@@ -24,7 +24,7 @@ backend/
 │   │   │   ├── reviews/
 │   │   │   └── reports/
 │   │   ├── workflows/              # assessment_workflow, steps_5_7, handoffs, states
-│   │   └── worker/                 # celery_app và tasks, chưa cấu hình queue
+│   │   └── worker/                 # celery_app, task chạy run và khôi phục run bị mất
 │   └── devtools/                   # Tải dataset, seed SQL và kiểm tra QA
 ├── tests/{unit,integration,contract,e2e}/
 ├── alembic.ini
@@ -133,7 +133,7 @@ VERIFICATION khi policy cho phép. C11 bind đúng risk instance, render mọi m
 theo ALL, kiểm tra facts/required elements/constraints và giữ PENDING/NO_LLM metadata.
 
 Các routes POST chạy riêng reasoning/aggregation/risks/recommendations/pipeline đã xóa.
-Contracts dùng để bàn giao nội bộ; API khởi chạy assessment toàn bộ chưa triển khai.
+Contracts dùng để bàn giao nội bộ. API khởi chạy assessment toàn bộ là `POST /api/v1/cases/{ca_id}/runs` (nhóm D, `workflows/runner.py`); xem [kịch bản demo](../guides/demo.md).
 
 Giữ nguyên contracts C01–C13, Knowledge PostgreSQL reader, Store, migrations, scripts tải dataset/seed và dữ liệu tham chiếu đã khóa phiên bản. GET knowledge/run vẫn dùng được. Dữ liệu EXPECTED trong QA là kết quả tham chiếu của phiên bản dựng dataset trước đây; không chứng minh module hiện tại đã triển khai hoặc đã pass eval.
 
