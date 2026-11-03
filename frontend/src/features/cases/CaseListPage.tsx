@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useCases, useStartRun, type CaseQuery } from "../../shared/api/queries";
+import { DateField } from "../../shared/components/DateField";
 import { Empty, LoadState, Notice, Section, StatusBadge, Table } from "../../shared/components/ui";
 import { label } from "../../shared/labels";
 
@@ -203,18 +204,18 @@ function Filters({
       </label>
       <label className="field">
         <span>Từ ngày</span>
-        <input
-          type="date"
+        <DateField
           value={params.get("date_from") ?? ""}
-          onChange={(e) => update({ date_from: e.target.value || null })}
+          placeholder="Bất kỳ"
+          onChange={(value) => update({ date_from: value || null })}
         />
       </label>
       <label className="field">
         <span>Đến ngày</span>
-        <input
-          type="date"
+        <DateField
           value={params.get("date_to") ?? ""}
-          onChange={(e) => update({ date_to: e.target.value || null })}
+          placeholder="Bất kỳ"
+          onChange={(value) => update({ date_to: value || null })}
         />
       </label>
       <label className="field">

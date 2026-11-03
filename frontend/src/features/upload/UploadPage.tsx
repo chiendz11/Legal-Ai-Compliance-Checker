@@ -1,19 +1,32 @@
-import { useState, type FormEvent } from "react";
+import { useState, type DragEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiErrorMessage } from "../../shared/api/client";
 import { useCreateCase, useStartRun, useUploadContract } from "../../shared/api/queries";
+import { DateField } from "../../shared/components/DateField";
+import { Icon } from "../../shared/components/icons";
 import { Notice, Section } from "../../shared/components/ui";
 
 const MAX_MB = 100;
 const MARKER_TYPES = [
-  ["", "Chưa rõ (để hệ thống xác định)"],
+  ["", "Tự động"],
   ["NGAY_GIAO_KET", "Ngày giao kết hợp đồng"],
   ["NGAY_HIEU_LUC", "Ngày hợp đồng có hiệu lực"],
   ["NGAY_SU_KIEN", "Ngày phát sinh sự kiện"],
 ] as const;
 
-const today = () => new Date().toISOString().slice(0, 10);
+const ACCEPT =
+  ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPTED = /\.(pdf|docx)$/i;
+
+// Local calendar date (toISOString would give yesterday before 07:00 in Vietnam).
+const today = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
+const size = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
 
 /**
  * C01 intake: upload the original PDF/DOCX, create a case with server-side pins, then
@@ -32,9 +45,23 @@ export function UploadPage() {
   const [runNow, setRunNow] = useState(true);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   const busy = step !== null;
   const tooLarge = !!file && file.size > MAX_MB * 1024 * 1024;
+
+  function drop(event: DragEvent) {
+    event.preventDefault();
+    setDragging(false);
+    const dropped = event.dataTransfer.files[0];
+    if (!dropped || busy) return;
+    if (!ACCEPTED.test(dropped.name)) {
+      setError("Chỉ nhận tệp PDF hoặc DOCX.");
+      return;
+    }
+    setError(null);
+    setFile(dropped);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -71,17 +98,43 @@ export function UploadPage() {
       description="Chỉ nhận PDF hoặc DOCX gốc. Hệ thống lưu tệp kèm SHA-256 rồi tạo ca đánh giá; phiên bản tri thức và quy tắc do backend chọn."
     >
       <form className="form" onSubmit={submit}>
-        <label className="field">
-          <span>Tệp hợp đồng (PDF/DOCX, tối đa {MAX_MB} MB)</span>
-          <input
-            type="file"
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            required
-            disabled={busy}
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
+        <div className="field">
+          <span>Tệp hợp đồng</span>
+          <label
+            className={`dropzone${dragging ? " drag" : ""}${file ? " has-file" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={drop}
+          >
+            <input
+              type="file"
+              className="sr-only"
+              accept={ACCEPT}
+              disabled={busy}
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            <span className="dz-ico">
+              <Icon name={file ? "file" : "upload"} />
+            </span>
+            {file ? (
+              <span className="dz-text">
+                <b>{file.name}</b>
+                <span className="muted small">
+                  {size(file.size)} · bấm hoặc kéo tệp khác vào để đổi
+                </span>
+              </span>
+            ) : (
+              <span className="dz-text">
+                <b>Kéo thả hợp đồng vào đây hoặc bấm để chọn</b>
+                <span className="muted small">PDF hoặc DOCX gốc, tối đa {MAX_MB} MB</span>
+              </span>
+            )}
+          </label>
           {tooLarge && <small className="uncertain">Tệp vượt quá {MAX_MB} MB.</small>}
-        </label>
+        </div>
         <label className="field">
           <span>Tên tài liệu (tùy chọn)</span>
           <input
@@ -96,21 +149,20 @@ export function UploadPage() {
         <div className="field-row">
           <label className="field">
             <span>Ngày đánh giá</span>
-            <input
-              type="date"
+            <DateField
               value={assessedOn}
-              required
+              clearable={false}
               disabled={busy}
-              onChange={(e) => setAssessedOn(e.target.value)}
+              onChange={setAssessedOn}
             />
           </label>
           <label className="field">
             <span>Mốc áp dụng luật (nếu biết)</span>
-            <input
-              type="date"
+            <DateField
               value={relevantDate}
+              placeholder="Chưa rõ"
               disabled={busy}
-              onChange={(e) => setRelevantDate(e.target.value)}
+              onChange={setRelevantDate}
             />
           </label>
           <label className="field">

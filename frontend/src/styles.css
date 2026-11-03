@@ -169,7 +169,7 @@ svg.i {
   background: var(--frame);
   border-radius: var(--r-xl);
   box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
-  overflow: hidden;
+  /* no overflow clipping: popovers (date picker) may extend past the window */
   min-height: calc(100vh - 44px);
   display: flex;
   flex-direction: column;
@@ -182,6 +182,7 @@ svg.i {
   gap: 10px;
   padding: 0 20px;
   background: var(--frame);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
 }
 
 .wbar > * {
@@ -418,6 +419,7 @@ svg.i {
 
 .surface {
   background: var(--surface);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1437,8 +1439,12 @@ ins {
   body {
     padding: 0;
   }
-  .window {
+  .window,
+  .wbar,
+  .surface {
     border-radius: 0;
+  }
+  .window {
     min-height: 100vh;
   }
   .wbar {
@@ -1742,4 +1748,309 @@ ins {
   .dist-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------- Dropdowns ----------
+   Native <select> stays (keyboard, screen readers, mobile pickers). Where the browser supports
+   customizable selects the list is styled to match; elsewhere only its colors are themed. */
+.field select option {
+  background: var(--card);
+  color: var(--ink);
+}
+
+@supports (appearance: base-select) {
+  .field select,
+  .field select::picker(select) {
+    appearance: base-select;
+  }
+
+  .field select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .field select::picker-icon {
+    color: var(--muted);
+    transition: rotate 0.2s var(--ease, ease);
+  }
+
+  .field select:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  .field select:open {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-50);
+  }
+
+  .field select::picker(select) {
+    margin-top: 6px;
+    padding: 6px;
+    min-width: anchor-size(width);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+  }
+
+  .field select option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 13.5px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .field select option:hover,
+  .field select option:focus-visible {
+    background: var(--row);
+    color: var(--ink);
+    outline: none;
+  }
+
+  .field select option:checked {
+    background: var(--blue-50);
+    color: var(--blue-ink);
+    font-weight: 500;
+  }
+
+  .field select option::checkmark {
+    order: 1;
+    margin-left: auto;
+    color: var(--blue-ink);
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Contract dropzone ---------- */
+.dropzone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1.5px dashed var(--muted-2);
+  border-radius: var(--r-lg);
+  background: var(--row);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.dropzone:hover,
+.dropzone.drag,
+.dropzone:focus-within {
+  border-color: var(--blue);
+  background: var(--blue-50);
+}
+
+.dropzone.has-file {
+  border-style: solid;
+  border-color: var(--line);
+}
+
+.dz-ico {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--blue-ink);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: transform 0.3s var(--ease, ease);
+}
+
+.dropzone:hover .dz-ico {
+  transform: translateY(-2px);
+}
+
+.dz-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dz-text b {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Date picker ---------- */
+.datefield {
+  position: relative;
+}
+
+.date-trigger {
+  width: 100%;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--frame);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.date-trigger:hover:not(:disabled) {
+  border-color: var(--muted-2);
+}
+
+.date-trigger[aria-expanded="true"],
+.date-trigger:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-50);
+}
+
+.date-trigger svg.i {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.filters .date-trigger {
+  height: 36px;
+  border-radius: 999px;
+  font-size: 13px;
+  min-width: 150px;
+}
+
+.date-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: 288px;
+  padding: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.5);
+  cursor: default;
+}
+
+.date-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.date-head strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.date-nav {
+  width: 30px;
+  height: 30px;
+  border-radius: 99px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.date-nav:hover {
+  background: var(--row);
+  color: var(--ink);
+}
+
+.date-nav svg.i {
+  width: 16px;
+  height: 16px;
+}
+
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-wd {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.date-day {
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.date-day:hover,
+.date-day:focus-visible {
+  background: var(--row);
+  color: var(--ink);
+  outline: none;
+}
+
+.date-day.out {
+  color: var(--muted-2);
+}
+
+.date-day.today {
+  box-shadow: inset 0 0 0 1px var(--blue-100);
+  color: var(--blue-ink);
+}
+
+.date-day.on {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.date-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.date-foot .button {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--blue-ink);
 }
