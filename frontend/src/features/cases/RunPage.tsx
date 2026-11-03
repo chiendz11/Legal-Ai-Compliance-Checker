@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { useRunReports, useRunStatus } from "../../shared/api/queries";
-import { Empty, LoadState, Notice, Section, StatusBadge } from "../../shared/components/ui";
+import { Empty, Fields, LoadState, Notice, Section, StatusBadge } from "../../shared/components/ui";
 
 const STAGE_LABELS: Record<string, string> = {
   INTAKE: "Tiếp nhận hồ sơ",
@@ -46,24 +46,16 @@ export function RunPage() {
   if (completed && latest && reports.data?.total === 1) {
     return <Navigate replace to={`/reports/${latest.report.bao_cao_id}`} />;
   }
+  const done = run.stages.filter((s) => s.status === "COMPLETED").length;
   return (
     <Section
-      title={`Run ${runId}`}
+      title="Tiến độ đánh giá"
       description={
         <>
-          Ca <Link to="/">{caId}</Link> · cập nhật{" "}
-          {new Date(run.updated_at).toLocaleTimeString("vi-VN")}
+          Ca <Link to={`/?q=${encodeURIComponent(caId)}`}>{caId}</Link> · run <code>{runId}</code>
         </>
       }
     >
-      <p>
-        <StatusBadge kind="runStatus" code={run.status} />{" "}
-        {run.status !== "FAILED" && (
-          <span className="muted small">
-            Hoàn tất nghĩa là đã có kết quả máy, chưa phải đã review hay phát hành.
-          </span>
-        )}
-      </p>
       {run.error && (
         <Notice tone="bad">
           <strong>
@@ -80,37 +72,65 @@ export function RunPage() {
           </span>
         </Notice>
       )}
-      <ol className="stages">
-        {run.stages.map((s) => (
-          <li key={s.stage} className={`stage tone-${STAGE_TONE[s.status] ?? "neutral"}`}>
-            <span className="stage-name">{STAGE_LABELS[s.stage] ?? s.stage}</span>
-            <span className="stage-status">{s.status}</span>
-          </li>
-        ))}
-      </ol>
-      {completed && (
-        <>
-          <h3 className="subhead">Phiên bản báo cáo</h3>
-          {reports.data?.items.length ? (
-            <ul>
-              {reports.data.items.map(({ report, review_revision }) => (
-                <li key={report.bao_cao_id}>
-                  <Link to={`/reports/${report.bao_cao_id}`}>
-                    {report.phien_ban_bao_cao} · review {review_revision}
-                  </Link>{" "}
-                  <StatusBadge kind="reportStatus" code={report.report_status} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Empty>
-              {reports.isFetching
-                ? "Đang lấy báo cáo của run…"
-                : "Run đã hoàn tất nhưng chưa có báo cáo."}
-            </Empty>
+      <div className="run-grid">
+        <ol className="stages">
+          {run.stages.map((s) => (
+            <li key={s.stage} className={`stage tone-${STAGE_TONE[s.status] ?? "neutral"}`}>
+              <span className="stage-name">{STAGE_LABELS[s.stage] ?? s.stage}</span>
+              <span className="stage-status">{s.status}</span>
+            </li>
+          ))}
+        </ol>
+        <aside className="card-flat run-side">
+          <div className="run-side-head">
+            <StatusBadge kind="runStatus" code={run.status} />
+            <span className="muted small">
+              {done}/{run.stages.length} bước xong
+            </span>
+          </div>
+          <Fields
+            rows={[
+              ["Cập nhật", new Date(run.updated_at).toLocaleString("vi-VN")],
+              ["Phiên bản triển khai", <code>{run.context.phien_ban_id}</code>],
+              ["Rule", <code>{run.context.rule_version}</code>],
+              ["Tri thức pháp lý", <code>{run.context.legal_knowledge_version}</code>],
+            ]}
+          />
+          {run.status !== "FAILED" && (
+            <p className="muted small">
+              Hoàn tất nghĩa là đã có kết quả máy, chưa phải đã review hay phát hành.
+            </p>
           )}
-        </>
-      )}
+          {completed && (
+            <>
+              <h3 className="subhead">Phiên bản báo cáo</h3>
+              {reports.data?.items.length ? (
+                <div className="stack">
+                  {reports.data.items.map(({ report, review_revision }) => (
+                    <Link
+                      key={report.bao_cao_id}
+                      className="version-row"
+                      to={`/reports/${report.bao_cao_id}`}
+                    >
+                      <span>
+                        {report.phien_ban_bao_cao}
+                        <span className="muted small"> · review {review_revision}</span>
+                      </span>
+                      <StatusBadge kind="reportStatus" code={report.report_status} />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <Empty>
+                  {reports.isFetching
+                    ? "Đang lấy báo cáo của run…"
+                    : "Run đã hoàn tất nhưng chưa có báo cáo."}
+                </Empty>
+              )}
+            </>
+          )}
+        </aside>
+      </div>
     </Section>
   );
 }

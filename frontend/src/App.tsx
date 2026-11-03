@@ -1,13 +1,13 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
-import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import type { ReactNode } from "react";
+import { BrowserRouter, Link, NavLink, Route, Routes, useMatch } from "react-router-dom";
 
 import { LoginPage } from "./features/auth/LoginPage";
 import { CaseListPage } from "./features/cases/CaseListPage";
 import { RunPage } from "./features/cases/RunPage";
 import { ReportPage } from "./features/reports/ReportPage";
 import { UploadPage } from "./features/upload/UploadPage";
-import { useHealth, useLogout, useSession } from "./shared/api/queries";
+import { useHealth, useLogout, useReport, useSession } from "./shared/api/queries";
 import { isUnauthenticated, signedIn, useCan, useCurrentSession } from "./shared/auth";
 import { Icon } from "./shared/components/icons";
 import { Empty } from "./shared/components/ui";
@@ -26,7 +26,10 @@ const queryClient = new QueryClient({
   }),
   mutationCache: new MutationCache({ onError: recheckSession }),
   defaultOptions: {
-    queries: { staleTime: 60_000, retry: (count, error) => !isUnauthenticated(error) && count < 1 },
+    queries: {
+      staleTime: 60_000,
+      retry: (count, error) => !isUnauthenticated(error) && count < 1,
+    },
   },
 });
 
@@ -58,85 +61,82 @@ function AuthGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function pageTitle(path: string) {
-  if (path === "/upload") return "Tải hợp đồng";
-  if (path.startsWith("/cases/")) return "Tiến độ đánh giá";
-  if (path.startsWith("/reports/")) return "Báo cáo đánh giá";
-  return "Lịch sử đánh giá";
+/**
+ * The object being viewed (a run or a report) opens as its own tab next to the fixed ones,
+ * named after the case/contract, and closes back to the history like a browser tab.
+ */
+function ContextTab() {
+  const run = useMatch("/cases/:caId/runs/:runId");
+  const report = useMatch("/reports/:baoCaoId");
+  const reportId = report?.params.baoCaoId ?? "";
+  const { data } = useReport(reportId, !!report);
+  if (!run && !report) return null;
+  const label = run
+    ? `Run · ${run.params.caId}`
+    : `Báo cáo · ${data?.report.report_json.case.hop_dong_id ?? "…"}`;
+  return (
+    <span className="wtab on" aria-current="page">
+      <Icon name={run ? "activity" : "book"} />
+      <span className="wtab-label">{label}</span>
+      <Link to="/" className="x" aria-label="Đóng, về lịch sử" title="Đóng">
+        <Icon name="x" />
+      </Link>
+    </span>
+  );
 }
 
-/** Fixed sidebar (off-canvas under 1024px), sticky top bar, centered page content. */
+/** Rounded window on a canvas: top bar with browser-like tabs, then the content surface. */
 function Shell({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation();
-  const [open, setOpen] = useState(false);
-  useEffect(() => setOpen(false), [pathname]);
+  const can = useCan();
+  const tabClass = ({ isActive }: { isActive: boolean }) => (isActive ? "wtab on" : "wtab");
   return (
-    <div className="app">
-      <Sidebar open={open} />
-      <div className={`scrim${open ? " show" : ""}`} onClick={() => setOpen(false)} />
-      <div className="main">
-        <TopBar title={pageTitle(pathname)} onMenu={() => setOpen(!open)} />
-        <main className="page">{children}</main>
+    <div className="window">
+      <header className="wbar">
+        <Link to="/" className="logo" aria-label="Legal Checker">
+          <span className="logo-mark">
+            <i />
+          </span>
+          <span>Legal Checker</span>
+        </Link>
+        <nav className="wtabs" aria-label="Điều hướng chính">
+          <NavLink to="/" end className={tabClass}>
+            <Icon name="history" />
+            Lịch sử
+          </NavLink>
+          {can("uploader") && (
+            <NavLink to="/upload" className={tabClass}>
+              <Icon name="upload" />
+              Tải hợp đồng
+            </NavLink>
+          )}
+          <ContextTab />
+        </nav>
+        <div className="wspacer" />
+        <div className="wmeta">
+          <BackendStatus />
+          <UserMenu />
+        </div>
+      </header>
+      <div className="surface">
+        <main className="view">{children}</main>
       </div>
     </div>
   );
 }
 
-function Sidebar({ open }: { open: boolean }) {
-  const can = useCan();
-  return (
-    <aside className={`sidebar${open ? " open" : ""}`} aria-label="Điều hướng chính">
-      <Link to="/" className="brand">
-        <span className="brand-mark">
-          <Icon name="scale" />
-        </span>
-        <span>
-          <div className="brand-name">Legal Checker</div>
-          <div className="brand-sub">Kiểm tra tuân thủ hợp đồng</div>
-        </span>
-      </Link>
-      <nav className="nav">
-        <div className="nav-label">Đánh giá</div>
-        <NavLink to="/" end>
-          <Icon name="history" />
-          Lịch sử
-        </NavLink>
-        {can("uploader") && (
-          <NavLink to="/upload">
-            <Icon name="upload" />
-            Tải hợp đồng
-          </NavLink>
-        )}
-      </nav>
-      <UserMenu />
-    </aside>
-  );
-}
-
-function TopBar({ title, onMenu }: { title: string; onMenu: () => void }) {
+function BackendStatus() {
   const health = useHealth();
   const online = health.data?.status === "ok";
   return (
-    <header className="topbar">
-      <button
-        type="button"
-        className="button ghost icon menu-btn"
-        aria-label="Mở menu"
-        onClick={onMenu}
+    <>
+      {mockEnabled && <span className="badge tone-info">Mock API</span>}
+      <span
+        className={`badge tone-${online ? "good" : health.isPending ? "neutral" : "bad"}`}
+        title={health.data ? `schema ${health.data.schema_version}` : undefined}
       >
-        <Icon name="menu" />
-      </button>
-      <span className="topbar-title">{title}</span>
-      <div className="topbar-meta">
-        {mockEnabled && <span className="badge tone-info">Mock API</span>}
-        <span
-          className={`badge tone-${online ? "good" : health.isPending ? "neutral" : "bad"}`}
-          title={health.data ? `schema ${health.data.schema_version}` : undefined}
-        >
-          Backend {online ? "online" : health.isPending ? "…" : "offline"}
-        </span>
-      </div>
-    </header>
+        Backend {online ? "online" : health.isPending ? "…" : "offline"}
+      </span>
+    </>
   );
 }
 
@@ -151,18 +151,21 @@ function UserMenu() {
     .join("")
     .toUpperCase();
   return (
-    <div className="side-foot">
-      <span className="avatar" aria-hidden="true">
+    <>
+      <span
+        className="who"
+        title={`${data.actor_id} · ${data.tenant_id} · ${data.roles.join(", ") || "không có quyền"}`}
+      >
+        <b>{data.display_name}</b>
+        <span>{signedIn(data) ? `${data.roles.length} vai trò` : "Chế độ dev · đủ quyền"}</span>
+      </span>
+      <span className="av" aria-hidden="true">
         {initials}
       </span>
-      <div className="side-user" title={`${data.actor_id} · ${data.tenant_id}`}>
-        <div className="n">{data.display_name}</div>
-        <div className="e">{data.roles.join(", ") || "không có quyền"}</div>
-      </div>
-      {signedIn(data) ? (
+      {signedIn(data) && (
         <button
           type="button"
-          className="button ghost icon"
+          className="circle-btn solid"
           aria-label="Đăng xuất"
           title="Đăng xuất"
           disabled={logout.isPending}
@@ -170,11 +173,7 @@ function UserMenu() {
         >
           <Icon name="logout" />
         </button>
-      ) : (
-        <span className="badge tone-neutral" title="AUTH_MODE=off: tài khoản dev, đủ mọi quyền">
-          dev
-        </span>
       )}
-    </div>
+    </>
   );
 }

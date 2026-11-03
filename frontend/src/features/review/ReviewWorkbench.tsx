@@ -141,6 +141,7 @@ const keyOf = (t: { doi_tuong_loai: string; doi_tuong_id: string }) =>
   `${t.doi_tuong_loai}/${t.doi_tuong_id}`;
 
 type Filter = "all" | "open" | "blocking";
+const PAGE = 50;
 
 /**
  * Reviewer workbench (C12): each machine finding gets a decision with a reason. Edits are an
@@ -152,6 +153,8 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
   const state = useReviewState(caId, record.run_id);
   const machine = useMemo(() => machineIndex(record.report.report_json), [record]);
   const [filter, setFilter] = useState<Filter>("all");
+  // A run can have hundreds of findings; render them a page at a time.
+  const [limit, setLimit] = useState(PAGE);
   if (!state.data) return <LoadState error={state.error} />;
   const { targets, blockers, review_revision: revision } = state.data;
   const blocking = new Set(blockers.map((b) => `${b.doi_tuong_loai}/${b.doi_tuong_id}`));
@@ -189,7 +192,10 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
             type="button"
             className="button"
             aria-pressed={filter === id}
-            onClick={() => setFilter(id)}
+            onClick={() => {
+              setFilter(id);
+              setLimit(PAGE);
+            }}
           >
             {text}
           </button>
@@ -199,7 +205,7 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
         <Empty>Không có mục nào trong bộ lọc này.</Empty>
       ) : (
         <div className="stack">
-          {shown.map((target) => (
+          {shown.slice(0, limit).map((target) => (
             <TargetCard
               key={keyOf(target)}
               caId={caId}
@@ -210,6 +216,13 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
               locked={record.report.report_status === "PUBLISHED"}
             />
           ))}
+          {shown.length > limit && (
+            <div className="actions">
+              <button type="button" className="button" onClick={() => setLimit(limit + PAGE)}>
+                Xem thêm {Math.min(PAGE, shown.length - limit)} mục ({limit}/{shown.length})
+              </button>
+            </div>
+          )}
         </div>
       )}
     </Section>

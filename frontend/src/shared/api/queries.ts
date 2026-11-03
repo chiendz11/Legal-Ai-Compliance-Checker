@@ -153,8 +153,9 @@ export function useRunResults(caId: string, runId: string, enabled: boolean) {
   });
 }
 
-export function useReport(baoCaoId: string) {
+export function useReport(baoCaoId: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["report", baoCaoId],
     queryFn: async () =>
       unwrap(
