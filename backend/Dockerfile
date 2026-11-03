@@ -9,7 +9,11 @@ WORKDIR /workspace
 COPY backend/ backend/
 COPY constraints.txt ./constraints.txt
 
-RUN python -m pip install --no-cache-dir "./backend[worker,export]" -c constraints.txt \n    && groupadd --gid 10001 legal \n    && useradd --uid 10001 --gid 10001 --no-create-home legal \n    && mkdir -p /data \n    && chown 10001:10001 /data
+RUN python -m pip install --no-cache-dir "./backend[worker,export]" -c constraints.txt \
+    && groupadd --gid 10001 legal \
+    && useradd --uid 10001 --gid 10001 --no-create-home legal \
+    && mkdir -p /data \
+    && chown 10001:10001 /data
 
 # Named volumes mounted at /data (exports, source cache) inherit this ownership.
 USER 10001:10001
