@@ -37,7 +37,11 @@ def update_gitops_images(
     images = data.get("images", [])
 
     # Update backend image
-    backend_match = ("registry.invalid/legal-checker/backend", "legal-backend", target_backend_image)
+    backend_match = (
+        "registry.invalid/legal-checker/backend",
+        "legal-backend",
+        target_backend_image,
+    )
     found_backend = False
     for entry in images:
         if entry.get("name") in backend_match:
@@ -55,7 +59,11 @@ def update_gitops_images(
         )
 
     # Update frontend image
-    frontend_match = ("registry.invalid/legal-checker/frontend", "legal-frontend", target_frontend_image)
+    frontend_match = (
+        "registry.invalid/legal-checker/frontend",
+        "legal-frontend",
+        target_frontend_image,
+    )
     found_frontend = False
     for entry in images:
         if entry.get("name") in frontend_match:
@@ -90,7 +98,10 @@ def update_gitops_images(
 
     with open(kustomize_path, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
-    print(f"Updated {kustomize_path} with {target_backend_image}:{tag} and {target_frontend_image}:{tag}")
+    print(
+        f"Updated {kustomize_path} with {target_backend_image}:{tag} "
+        f"and {target_frontend_image}:{tag}"
+    )
 
     # Also update release.json if present
     release_path = gitops_dir / "environments/local/apps/release.json"

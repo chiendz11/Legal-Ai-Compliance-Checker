@@ -10,13 +10,13 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+from legal_checker.core.postgres import connect_postgres
+from legal_checker.migrations.manager import upgrade_database
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from devtools.database_schema import BY_NAME, FOREIGN_KEYS, GUIDE_SHEETS, TABLES, Table
 from devtools.qa_schema import QA_GUIDES, QA_SHEETS, QA_TABLES
-from legal_checker.core.postgres import connect_postgres
-from legal_checker.migrations.manager import upgrade_database
 
 
 class SeedError(ValueError):
