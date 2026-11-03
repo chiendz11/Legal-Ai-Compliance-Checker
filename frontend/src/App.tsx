@@ -7,7 +7,7 @@ import { CaseListPage } from "./features/cases/CaseListPage";
 import { RunPage } from "./features/cases/RunPage";
 import { ReportPage } from "./features/reports/ReportPage";
 import { UploadPage } from "./features/upload/UploadPage";
-import { useHealth, useLogout, useReport, useSession } from "./shared/api/queries";
+import { useCases, useHealth, useLogout, useReport, useSession } from "./shared/api/queries";
 import { isUnauthenticated, signedIn, useCan, useCurrentSession } from "./shared/auth";
 import { Icon } from "./shared/components/icons";
 import { Empty } from "./shared/components/ui";
@@ -76,7 +76,6 @@ function ContextTab() {
     : `Báo cáo · ${data?.report.report_json.case.hop_dong_id ?? "…"}`;
   return (
     <span className="wtab on" aria-current="page">
-      <Icon name={run ? "activity" : "book"} />
       <span className="wtab-label">{label}</span>
       <Link to="/" className="x" aria-label="Đóng, về lịch sử" title="Đóng">
         <Icon name="x" />
@@ -88,6 +87,7 @@ function ContextTab() {
 /** Rounded window on a canvas: top bar with browser-like tabs, then the content surface. */
 function Shell({ children }: { children: ReactNode }) {
   const can = useCan();
+  const cases = useCases({ page_size: 1 }); // only the total, for the tab count
   const tabClass = ({ isActive }: { isActive: boolean }) => (isActive ? "wtab on" : "wtab");
   return (
     <div className="window">
@@ -100,12 +100,11 @@ function Shell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="wtabs" aria-label="Điều hướng chính">
           <NavLink to="/" end className={tabClass}>
-            <Icon name="history" />
             Lịch sử
+            {cases.data && <span className="wtab-count">{cases.data.total}</span>}
           </NavLink>
           {can("uploader") && (
             <NavLink to="/upload" className={tabClass}>
-              <Icon name="upload" />
               Tải hợp đồng
             </NavLink>
           )}

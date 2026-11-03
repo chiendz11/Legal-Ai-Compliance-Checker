@@ -91,20 +91,23 @@ export function CaseListPage() {
                   <td>
                     <StatusCounts counts={item.requirement_status_counts ?? {}} />
                   </td>
-                  <td className="row-actions">
-                    {item.latest_report_id && (
-                      <Link className="button" to={`/reports/${item.latest_report_id}`}>
-                        Báo cáo
-                      </Link>
-                    )}
-                    <button
-                      type="button"
-                      className="button"
-                      disabled={startRun.isPending}
-                      onClick={() => run(c.ca_id)}
-                    >
-                      {item.latest_run_id ? "Chạy lại" : "Chạy đánh giá"}
-                    </button>
+                  <td>
+                    {/* flex lives on an inner box: a flex <td> stops being a table cell */}
+                    <div className="row-actions">
+                      {item.latest_report_id && (
+                        <Link className="button" to={`/reports/${item.latest_report_id}`}>
+                          Báo cáo
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        className="button"
+                        disabled={startRun.isPending}
+                        onClick={() => run(c.ca_id)}
+                      >
+                        {item.latest_run_id ? "Chạy lại" : "Chạy đánh giá"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

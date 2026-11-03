@@ -2,12 +2,12 @@
    on a canvas, browser-like tabs in the top bar, light large titles, pill buttons and tabs,
    rounded row tables, dot chips and a dotted stepper. Solid colors only; orange marks warnings. */
 :root {
-  --canvas: #07090c;
-  --frame: #0f1318;
-  --surface: #141920;
-  --card: #1b212a;
-  --row: #212832;
-  --row-hover: #1f2b3d;
+  --canvas: #050608;
+  --frame: #0a0d11;
+  --surface: #171d26;
+  --card: #1f2631;
+  --row: #262e3a;
+  --row-hover: #243249;
   --ink: #eef1f5;
   --ink-2: #c3c9d2;
   --muted: #8b929d;
@@ -239,12 +239,12 @@ svg.i {
 .wtabs {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 0;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
   height: 66px;
-  padding: 0 14px;
+  padding: 0 40px;
   margin-bottom: 0 !important;
 }
 
@@ -252,62 +252,68 @@ svg.i {
   display: none;
 }
 
+/* Folder tabs: inactive tabs are plain labels on the frame; the open tab is a piece of the
+   content surface whose sides flow down in a soft S-curve (an SVG mask on the flares). */
 .wtab {
-  height: 34px;
-  margin-bottom: 14px;
+  --flare: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 48' preserveAspectRatio='none'%3E%3Cpath d='M0 0C8 0 12 3 15 9L25 39C28 45 32 48 40 48H0Z'/%3E%3C/svg%3E");
+  height: 48px;
+  min-width: 150px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: var(--card);
-  color: var(--ink-2);
-  font-size: 13.5px;
+  padding: 0 30px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
-  transition:
-    background 0.2s,
-    color 0.2s;
+  position: relative;
+  transition: color 0.2s;
 }
 
 .wtab:hover {
-  background: var(--row);
   color: var(--ink);
   text-decoration: none;
 }
 
-/* The active tab grows into the content surface, with inverted corners. */
+.wtab-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
 .wtab.on {
-  height: 48px;
-  margin-bottom: 0;
-  border-radius: 14px 14px 0 0;
   background: var(--surface);
-  color: var(--ink);
-  position: relative;
-  padding: 0 18px;
-  font-weight: 500;
+  color: var(--blue-ink);
+  font-weight: 600;
+  z-index: 1;
+}
+
+.wtab.on .wtab-count {
+  color: var(--muted);
 }
 
 .wtab.on::before,
 .wtab.on::after {
   content: "";
   position: absolute;
+  top: 0;
   bottom: 0;
-  width: 14px;
-  height: 14px;
-  background: transparent;
-}
-
-.wtab.on::before {
-  left: -14px;
-  border-bottom-right-radius: 14px;
-  box-shadow: 5px 5px 0 5px var(--surface);
+  width: 40px;
+  background: var(--surface);
+  -webkit-mask: var(--flare) no-repeat center / 100% 100%;
+  mask: var(--flare) no-repeat center / 100% 100%;
 }
 
 .wtab.on::after {
-  right: -14px;
-  border-bottom-left-radius: 14px;
-  box-shadow: -5px 5px 0 5px var(--surface);
+  left: 100%;
+}
+
+.wtab.on::before {
+  right: 100%;
+  transform: scaleX(-1);
 }
 
 .wtab-label {
@@ -1441,11 +1447,13 @@ ins {
     display: none;
   }
   .wtabs {
-    padding: 0 4px;
+    padding: 0 40px 0 36px;
     flex: 1;
   }
   .wtab {
-    padding: 0 12px;
+    min-width: 0;
+    padding: 0 14px;
+    font-size: 13px;
   }
   .wtab-label {
     max-width: 120px;
