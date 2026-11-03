@@ -147,6 +147,7 @@ h2 {
 .null {
   color: var(--violet);
   font-style: italic;
+  padding-right: 0.15em; /* italic overhang must not touch the next chip */
 }
 
 .uncertain {
@@ -1173,6 +1174,8 @@ tbody.loading {
 blockquote.raw {
   margin: 0;
   white-space: pre-wrap;
+  /* contract blanks like "______" have no break opportunity */
+  overflow-wrap: anywhere;
 }
 
 blockquote.raw {
@@ -1571,7 +1574,7 @@ ins {
 .dist-side {
   background: var(--frame);
   border-radius: var(--r-lg);
-  padding: 18px 18px 12px;
+  padding: 26px 18px 12px; /* room above the top tick for the tallest bar's value */
   min-width: 0;
 }
 
@@ -2146,4 +2149,35 @@ ins {
 .section-actions .button svg.i {
   width: 16px;
   height: 16px;
+}
+
+/* Module explanations in English: kept but folded under the Vietnamese status */
+.machine-note {
+  margin: 8px 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.machine-note summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.machine-note summary:hover {
+  color: var(--ink-2);
+}
+
+.machine-note p {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--frame);
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.null + .tag,
+.null + .badge {
+  margin-left: 6px;
 }

@@ -4,8 +4,9 @@ import { Link, useParams } from "react-router-dom";
 
 import type { AssessmentCase, FinalReport, ReportRecord } from "../../shared/api/client";
 import { useLegalBasis, useReport } from "../../shared/api/queries";
-import { LoadState, Notice, StatusBadge } from "../../shared/components/ui";
+import { LoadState, MachineText, Notice, StatusBadge } from "../../shared/components/ui";
 import { mockEnabled } from "../../shared/env";
+import { label } from "../../shared/labels";
 import { CitationsSection } from "../assessments/citations/CitationsSection";
 import { ChecklistSection } from "../assessments/checklist/ChecklistSection";
 import { ComplianceSection } from "../assessments/compliance/ComplianceSection";
@@ -103,18 +104,37 @@ function SourcePane({ caseInfo, page }: { caseInfo: AssessmentCase; page: number
         <span>
           Hợp đồng gốc · trang {page} · SHA-256 <code>{caseInfo.source.sha256.slice(0, 12)}…</code>
         </span>
-        <a href={`${url}#page=${page}`} target="_blank" rel="noreferrer">
-          Mở tab mới
-        </a>
+        {!source.error && (
+          <a href={`${url}#page=${page}`} target="_blank" rel="noreferrer">
+            Mở tab mới
+          </a>
+        )}
       </div>
       {pdf ? (
         source.data ? (
           // Re-keyed per page so the browser PDF viewer opens at the cited page.
           <iframe key={page} title="Hợp đồng gốc" src={`${source.data}#page=${page}`} />
         ) : source.error ? (
-          <Notice tone="bad">
-            Không tải được tệp hợp đồng gốc: {source.error.message}. Báo cáo và trích dẫn vẫn
-            dùng được; tệp gốc cần nguồn lưu trữ còn truy cập được.
+          <Notice tone="warn">
+            <strong>Chưa xem được tệp gốc ở đây.</strong> Tệp PDF của ca này nằm trên máy chủ lưu
+            trữ của dataset, hiện không truy cập được. Báo cáo, trích dẫn và vị trí trang vẫn dùng
+            bình thường; hợp đồng tải lên hệ thống thì xem được trực tiếp.
+            {caseInfo.source.url_nguon && (
+              <div className="actions">
+                <a
+                  className="button"
+                  href={caseInfo.source.url_nguon}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Mở bản công khai tại nguồn
+                </a>
+                <span className="small muted">
+                  Có thể khác bản đã băm SHA-256 trong báo cáo.
+                </span>
+              </div>
+            )}
+            <MachineText text={source.error.message} />
           </Notice>
         ) : (
           <p className="muted small">Đang tải tệp gốc…</p>
@@ -187,7 +207,10 @@ function ReportHeader({ record }: { record: ReportRecord }) {
         <span>Ngày đánh giá {kase.assessment_context.ngay_danh_gia}</span>
         <span>
           Mốc áp dụng {kase.assessment_context.moc_ap_dung ?? "chưa rõ"} (
-          {kase.assessment_context.loai_moc_ap_dung ?? "chưa rõ loại mốc"})
+          {kase.assessment_context.loai_moc_ap_dung
+            ? label("anchor", kase.assessment_context.loai_moc_ap_dung).text
+            : "chưa rõ loại mốc"}
+          )
         </span>
       </div>
       {!mockEnabled && (
@@ -218,9 +241,10 @@ function ReportBanners({ report }: { report: FinalReport }) {
         </Notice>
       ) : (
         <Notice tone="warn">
-          <strong>Kết quả máy, chưa được phát hành.</strong> Báo cáo đang ở trạng thái{" "}
-          {report.report_status} / review {report.review_status}; không dùng như kết luận pháp lý
-          đã duyệt.
+          <strong>Kết quả máy, chưa được phát hành.</strong> Báo cáo đang ở trạng thái “
+          {label("reportStatus", report.report_status).text} /{" "}
+          {label("review", report.review_status).text}
+          ”; không dùng như kết luận pháp lý đã duyệt.
         </Notice>
       )}
       {mockEnabled && (

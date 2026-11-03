@@ -6,6 +6,7 @@ import type {
 import {
   Empty,
   Ids,
+  MachineText,
   Notice,
   Quote,
   Section,
@@ -97,7 +98,7 @@ function RequirementCard({ requirement }: { requirement: RequirementResult }) {
         </span>
       </summary>
       <div className="card-body">
-        <p>{requirement.giai_thich}</p>
+        <MachineText text={requirement.giai_thich} />
         <dl className="fields compact">
           <div>
             <dt>Yêu cầu</dt>
@@ -167,7 +168,7 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
         {criterion.mandatory && <span className="tag">bắt buộc</span>}
         {criterion.excluded && <span className="tag">loại trừ: {criterion.exclusion_reason}</span>}
       </header>
-      <p>{criterion.giai_thich}</p>
+      <MachineText text={criterion.giai_thich} />
       {criterion.uncertainty_reason && (
         <p className="uncertain">Chưa chắc chắn: {criterion.uncertainty_reason}</p>
       )}
@@ -207,7 +208,7 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
           />
         ))
       ) : (
-        <Empty>Chưa có bằng chứng được chọn (truy xuất rỗng, không đồng nghĩa với MISSING).</Empty>
+        <Empty>Chưa có bằng chứng được chọn (truy xuất rỗng, không đồng nghĩa với “Thiếu nội dung”).</Empty>
       )}
       {criterion.external_evidence?.map((e) => (
         <p key={e.bang_chung_id} className="small">

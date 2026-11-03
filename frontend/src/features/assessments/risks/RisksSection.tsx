@@ -1,5 +1,5 @@
 import type { Recommendation, ReportContent, RiskResult } from "../../../shared/api/client";
-import { Empty, Section, StatusBadge } from "../../../shared/components/ui";
+import { Empty, MachineText, Section, StatusBadge } from "../../../shared/components/ui";
 import { RiskDistribution } from "../../reports/distributions";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
@@ -91,7 +91,7 @@ function RiskCard({
         <StatusBadge kind="riskType" code={risk.risk_type} />
         <strong>{riskTitle(risk)}</strong>
       </header>
-      <p>{risk.giai_thich}</p>
+      <MachineText text={risk.giai_thich} />
       <div className="links">
         Nguồn:{" "}
         {criterion && (

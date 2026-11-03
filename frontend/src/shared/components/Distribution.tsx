@@ -92,13 +92,18 @@ export function Distribution({
   );
 }
 
-/** Ticks at 1/2/5 × 10^k so the axis stays at ≤ 5 clean steps. */
+/**
+ * Ticks at 1/2/5 × 10^k so the axis stays at ≤ 5 clean steps, with headroom: when the
+ * tallest bar would touch the top tick, add one more step so it never hits the ceiling.
+ */
 function niceScale(max: number) {
   const raw = Math.max(max, 1) / 4;
   const power = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 5, 10].map((m) => m * power).find((s) => s >= raw) ?? power;
-  const top = Math.ceil(Math.max(max, 1) / step) * step;
-  return { top, ticks: Array.from({ length: top / step + 1 }, (_, i) => i * step) };
+  // Counts are whole numbers: never a fractional step.
+  const step = Math.max(1, [1, 2, 5, 10].map((m) => m * power).find((s) => s >= raw) ?? power);
+  let top = Math.ceil(Math.max(max, 1) / step) * step;
+  if (top - max < step * 0.25) top += step;
+  return { top, ticks: Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step) };
 }
 
 type Track = (key: string) => {

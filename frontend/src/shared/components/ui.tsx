@@ -75,6 +75,12 @@ export function Fields({ rows }: { rows: [string, ReactNode][] }) {
 
 export function Value({ value }: { value: unknown }) {
   if (value === null || value === undefined) return <span className="null">chưa có</span>;
+  if (value === "UNKNOWN")
+    return (
+      <span className="null" title="UNKNOWN">
+        chưa xác định
+      </span>
+    );
   if (typeof value === "boolean") return <>{value ? "Có" : "Không"}</>;
   if (typeof value === "object") return <code>{JSON.stringify(value)}</code>;
   return <>{displayText(String(value))}</>;
@@ -152,4 +158,22 @@ export function LoadState({ error, children }: { error: unknown; children?: Reac
     );
   }
   return <p className="muted">{children ?? "Đang tải…"}</p>;
+}
+
+const VIETNAMESE = /[ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọỏõùúụủũỳýỵỷỹ]/i;
+
+/**
+ * Explanations written by the reasoning modules. Vietnamese text reads as prose; English
+ * technical traces (e.g. "INSUFFICIENT: mandatory criterion findings=[...]") are kept intact but
+ * folded away, since the status badge and counts already say the same thing in Vietnamese.
+ */
+export function MachineText({ text }: { text: string | null | undefined }) {
+  if (!text) return null;
+  if (VIETNAMESE.test(text)) return <p>{text}</p>;
+  return (
+    <details className="machine-note">
+      <summary>Diễn giải kỹ thuật của module</summary>
+      <p>{text}</p>
+    </details>
+  );
 }

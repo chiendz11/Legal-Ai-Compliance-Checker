@@ -74,6 +74,29 @@ const table: Record<string, Record<string, Label>> = {
     NOT_APPLICABLE: { text: "Không áp dụng", tone: "neutral" },
     UNKNOWN: { text: "Chưa xác nhận áp dụng", tone: "unknown" },
   },
+  anchor: {
+    NGAY_GIAO_KET: { text: "ngày giao kết", tone: "neutral" },
+    NGAY_HIEU_LUC: { text: "ngày hiệu lực", tone: "neutral" },
+    NGAY_SU_KIEN: { text: "ngày phát sinh sự kiện", tone: "neutral" },
+  },
+  markerType: {
+    SIGNING: { text: "Ký kết", tone: "neutral" },
+    EXPECTED_HANDOVER: { text: "Dự kiến bàn giao", tone: "neutral" },
+    COLLECTION: { text: "Thu tiền", tone: "neutral" },
+    PRE_HANDOVER_COLLECTION: { text: "Thu tiền trước bàn giao", tone: "neutral" },
+    PRE_CERTIFICATE_COLLECTION: { text: "Thu tiền trước khi cấp giấy chứng nhận", tone: "neutral" },
+  },
+  precision: {
+    DAY: { text: "Theo ngày", tone: "neutral" },
+    MONTH: { text: "Theo tháng", tone: "neutral" },
+    YEAR: { text: "Theo năm", tone: "neutral" },
+    UNKNOWN: { text: "Chưa rõ", tone: "unknown" },
+  },
+  markerStatus: {
+    EXTRACTED: { text: "Đã trích xuất", tone: "neutral" },
+    SYNTHETIC_SOURCE_EXTRACTED: { text: "Trích từ nguồn (dữ liệu tổng hợp)", tone: "neutral" },
+    UNKNOWN: { text: "Chưa xác định", tone: "unknown" },
+  },
   runStatus: {
     QUEUED: { text: "Đang chờ", tone: "info" },
     RUNNING: { text: "Đang chạy", tone: "info" },

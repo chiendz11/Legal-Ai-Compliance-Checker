@@ -40,8 +40,8 @@ export function AuditSection({ record }: { record: ReportRecord }) {
           ["Mã báo cáo", <code>{report.bao_cao_id}</code>],
           ["Phiên bản", <code>{report.phien_ban_bao_cao}</code>],
           ["Review revision", <code>{record.review_revision}</code>],
-          ["Trạng thái", report.report_status],
-          ["Review", report.review_status],
+          ["Trạng thái", <StatusBadge kind="reportStatus" code={report.report_status} />],
+          ["Review", <StatusBadge kind="review" code={report.review_status} />],
           ["File xuất", <Value value={report.report_uri} />],
         ]}
       />

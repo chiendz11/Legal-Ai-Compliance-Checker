@@ -1,5 +1,6 @@
 import type { ApplicableRequirement, ScopeResolution } from "../../../shared/api/client";
-import { Empty, Section, StatusBadge, Table } from "../../../shared/components/ui";
+import { Empty, MachineText, Section, StatusBadge, Table } from "../../../shared/components/ui";
+import { label } from "../../../shared/labels";
 import { useReportNav } from "../../reports/nav";
 import { useReportIndex } from "../../reports/reportIndex";
 
@@ -60,10 +61,12 @@ export function ChecklistSection({
                 <td>
                   <StatusBadge kind="applicability" code={a.applicability_status} />
                 </td>
-                <td className="small">
-                  {a.loai_moc ?? "—"} {a.moc_ap_dung ?? ""}
+                <td className="small" title={a.loai_moc ?? undefined}>
+                  {a.loai_moc ? label("anchor", a.loai_moc).text : "—"} {a.moc_ap_dung ?? ""}
                 </td>
-                <td className="small">{Object.values(a.reason ?? {}).join(" · ") || "—"}</td>
+                <td className="small">
+                  <MachineText text={Object.values(a.reason ?? {}).join(" · ") || "—"} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -93,7 +96,9 @@ export function ChecklistSection({
                 <td>
                   <StatusBadge kind="scope" code={c.scope_status} />
                 </td>
-                <td className="small">{c.scope_reason}</td>
+                <td className="small">
+                  <MachineText text={c.scope_reason} />
+                </td>
               </tr>
             ))}
           </tbody>

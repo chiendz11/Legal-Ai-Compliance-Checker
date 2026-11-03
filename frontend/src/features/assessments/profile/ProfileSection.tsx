@@ -8,6 +8,7 @@ import {
   Table,
   Value,
 } from "../../../shared/components/ui";
+import { label } from "../../../shared/labels";
 import { useReportIndex } from "../../reports/reportIndex";
 import { useOpenEvidence } from "../evidence/EvidenceViewer";
 
@@ -107,20 +108,26 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
           <tbody>
             {profile.time_markers.map((m) => (
               <tr key={m.moc_id}>
-                <td>{m.loai_moc}</td>
+                <td title={m.loai_moc}>{label("markerType", m.loai_moc).text}</td>
                 <td>
                   <Value value={m.ngay} />
                 </td>
                 <td>
                   <Value value={m.gia_tri_raw} />
                 </td>
-                <td>
-                  <Value value={m.do_chinh_xac} />
+                <td title={m.do_chinh_xac ?? undefined}>
+                  {m.do_chinh_xac ? (
+                    label("precision", m.do_chinh_xac).text
+                  ) : (
+                    <Value value={null} />
+                  )}
                 </td>
                 <td>
                   <Value value={m.duoc_dung_phan_giai} />
                 </td>
-                <td className="small">{m.trang_thai}</td>
+                <td className="small" title={m.trang_thai}>
+                  {label("markerStatus", m.trang_thai).text}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -136,13 +143,14 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
             key={f.trich_xuat_id}
             summary={
               <>
-                <code>{f.ten_truong}</code> <Value value={f.gia_tri_chuan_json} />
+                <code>{f.ten_truong}</code> <Value value={f.gia_tri_chuan_json} />{" "}
                 {!f.human_verified && <span className="tag">chưa xác minh</span>}
               </>
             }
           >
             <p className="small muted">
-              {f.phuong_phap} · {f.trang_thai}
+              Phương pháp <code>{f.phuong_phap}</code> · trạng thái{" "}
+              <span title={f.trang_thai}>{label("markerStatus", f.trang_thai).text}</span>
             </p>
             {(f.evidence_ids ?? []).map((id) => {
               const e = index.profileEvidenceById.get(id);
