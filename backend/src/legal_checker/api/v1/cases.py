@@ -90,7 +90,7 @@ def list_cases(
     | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    sort: Literal["ca_id", "-ngay_danh_gia", "ngay_danh_gia", "-latest_run"] = "ca_id",
+    sort: Literal["-recent", "ca_id", "-ngay_danh_gia", "ngay_danh_gia", "-latest_run"] = "-recent",
 ):
     """History: the tenant's cases with their latest run/report; filter and sort server-side."""
     filters = CaseFilter(

@@ -112,6 +112,14 @@ def test_history_filters_and_sorting(env):  # noqa: F811
     assert ids(date_from="2026-11-01") == [created]
     assert ids(date_to="2026-10-31") == [CASE]
     assert ids(sort="-ngay_danh_gia")[0] == created
+    assert ids(sort="ca_id") == sorted([CASE, created])
+    # Default: latest activity first. CA_TEST ran after the upload; a newer upload overtakes it.
+    assert ids()[0] == CASE
+    newer = upload(env.client, PDF + b" ", title="Căn hộ C3").json()["hop_dong_id"]
+    newest = env.client.post(
+        "/api/v1/cases", json={"hop_dong_id": newer, "ngay_danh_gia": "2026-11-03"}
+    ).json()["case"]["ca_id"]
+    assert ids()[0] == newest
     completed = env.client.get("/api/v1/cases", params={"run_status": "COMPLETED"}).json()["items"][
         0
     ]

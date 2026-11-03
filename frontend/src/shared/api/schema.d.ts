@@ -2672,7 +2672,8 @@ export interface operations {
                 date_from?: string;
                 /** @description Assessment date to (inclusive) */
                 date_to?: string;
-                sort?: "ca_id" | "-ngay_danh_gia" | "ngay_danh_gia" | "-latest_run";
+                /** @description -recent: latest activity (newest run or upload) first */
+                sort?: "-recent" | "ca_id" | "-ngay_danh_gia" | "ngay_danh_gia" | "-latest_run";
             };
             header?: never;
             path?: never;

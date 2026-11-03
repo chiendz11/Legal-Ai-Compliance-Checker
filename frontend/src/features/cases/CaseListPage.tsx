@@ -227,7 +227,8 @@ function Filters({
       <label className="field">
         <span>Sắp xếp</span>
         {select("sort", [
-          ["", "Mã ca"],
+          ["", "Hoạt động gần nhất"],
+          ["ca_id", "Mã ca"],
           ["-latest_run", "Run mới nhất"],
           ["-ngay_danh_gia", "Ngày đánh giá mới nhất"],
           ["ngay_danh_gia", "Ngày đánh giá cũ nhất"],
