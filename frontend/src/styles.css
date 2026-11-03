@@ -257,9 +257,11 @@ svg.i {
 .wtab {
   --flare: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 48' preserveAspectRatio='none'%3E%3Cpath d='M0 0C8 0 12 3 15 9L25 39C28 45 32 48 40 48H0Z'/%3E%3C/svg%3E");
   height: 48px;
+  line-height: 48px;
   min-width: 150px;
   display: flex;
-  align-items: center;
+  /* label and count share one baseline, like running text */
+  align-items: baseline;
   justify-content: center;
   gap: 8px;
   padding: 0 30px;
@@ -278,7 +280,6 @@ svg.i {
 }
 
 .wtab-count {
-  font-size: 13px;
   font-weight: 600;
   color: var(--muted-2);
   font-variant-numeric: tabular-nums;
@@ -323,6 +324,7 @@ svg.i {
 }
 
 .wtab .x {
+  align-self: center;
   width: 20px;
   height: 20px;
   border-radius: 99px;
