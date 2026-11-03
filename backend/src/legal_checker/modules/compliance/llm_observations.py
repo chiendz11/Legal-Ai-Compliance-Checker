@@ -428,7 +428,8 @@ class LLMObservationProvider:
                 )
             else:
                 calls += 1
-                origin = "OPENAI"
+                provider = getattr(getattr(self.client, "settings", None), "provider", "OPENAI")
+                origin = "GROQ" if str(provider).upper() == "GROQ" else "OPENAI"
                 model = "UNAVAILABLE_PROVIDER_MODEL"
                 try:
                     response = self.client.complete(

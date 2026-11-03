@@ -21,13 +21,32 @@ Làm theo [dev_setup.md](dev_setup.md) tới khi DB đã seed, rồi cập nhậ
 python -m scripts.local_db init
 ```
 
-Trong `.env` của bạn:
+Trong `.env` của bạn (hoặc cấu hình K8s ConfigMap/Secret):
 
-```bash
-ASSESSMENT_MODULES=modules
-ASSESSMENT_QUEUE=inline
-ASSESSMENT_LLM=offline
-```
+- **Chế độ Offline (mặc định, không tốn phí API):**
+  ```bash
+  ASSESSMENT_MODULES=modules
+  ASSESSMENT_QUEUE=inline
+  ASSESSMENT_LLM=offline
+  ```
+
+- **Chế độ Live AI với Groq (siêu nhanh, miễn phí):**
+  ```bash
+  ASSESSMENT_MODULES=modules
+  ASSESSMENT_QUEUE=inline
+  ASSESSMENT_LLM=groq
+  GROQ_API_KEY=<gsk_your_groq_api_key>
+  OPENAI_MODEL=openai/gpt-oss-20b
+  ```
+
+- **Chế độ Live AI với OpenAI:**
+  ```bash
+  ASSESSMENT_MODULES=modules
+  ASSESSMENT_QUEUE=inline
+  ASSESSMENT_LLM=openai
+  OPENAI_API_KEY=<sk_your_openai_api_key>
+  OPENAI_MODEL=gpt-4o-mini
+  ```
 
 Muốn demo phân quyền: đặt `AUTH_MODE=on`, `AUTH_SECRET=<≥32 ký tự ngẫu nhiên>` và tạo tài
 khoản (mật khẩu nhập ẩn):
