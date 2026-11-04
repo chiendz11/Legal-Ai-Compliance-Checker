@@ -21,5 +21,6 @@ USER 10001:10001
 EXPOSE 8000
 
 # The same image runs the worker with:
-#   celery -A legal_checker.worker.celery_app worker --beat --loglevel=INFO
+#   celery -A legal_checker.worker.celery_app worker --loglevel=INFO
+# Run exactly one separate scheduler: celery -A legal_checker.worker.celery_app beat -s /tmp/beat
 CMD ["uvicorn", "legal_checker.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

@@ -234,8 +234,8 @@ class LLMObservationProvider:
     """One checked Observation per resolved criterion, with optional injected AI client.
 
     Reviews are independent trusted backend records. Replay applies new reviews to
-    the same saved proposal/context without another API request. No automatic review
-    is fabricated from AI outputs, C05 confirmations, or extraction confidence.
+    the same saved proposal/context without another API request. An optional backend
+    policy admits grounded machine drafts; it never invents missing legal verification.
     """
 
     def __init__(
@@ -244,6 +244,7 @@ class LLMObservationProvider:
         *,
         reviews: Sequence[BackendReview] = (),
         verifications: Sequence[CriterionVerification] = (),
+        automatic_draft_review: bool = False,
         max_calls: int = 1,
         criterion_ids: Sequence[str] | None = None,
         max_context_chars: int = 60000,
@@ -252,6 +253,7 @@ class LLMObservationProvider:
             raise ValueError("max_calls must be a nonnegative integer")
         if type(max_context_chars) is not int or max_context_chars < 1:
             raise ValueError("max_context_chars must be positive")
+        self.automatic_draft_review = automatic_draft_review
         self.client = client
         self.reviews = [BackendReview.model_validate(row.model_dump()) for row in reviews]
         self.verifications = [
@@ -483,9 +485,25 @@ class LLMObservationProvider:
                     criterion_id, message or "Chưa có nhận định hợp lệ.", model=model
                 )
             else:
+                review = reviews.get(criterion_id)
+                if review is None and self.automatic_draft_review:
+                    from legal_checker.modules.compliance.automatic_review import automatic_review
+
+                    review = automatic_review(
+                        proposed_observation,
+                        request,
+                        knowledge,
+                        verification=verification,
+                        unresolved_provider_conditions=bool(
+                            proposal.verification_requirements
+                            or (proposal.candidate_facts and verification is None)
+                        ),
+                    )
                 observation = build_verified_observation(
-                    proposed_observation, reviews.get(criterion_id), request, knowledge
+                    proposed_observation, review, request, knowledge
                 )
+                if review and review.verification_reference.startswith("C07_GROUNDED_DRAFT_V1:"):
+                    observation.giai_thich = "[MACHINE_DRAFT_REVIEW] " + observation.giai_thich
             analyses.append(
                 CriterionAnalysis(
                     tieu_chi_id=criterion_id,

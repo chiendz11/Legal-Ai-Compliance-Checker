@@ -86,6 +86,43 @@ def requirement_exclusion_reason(
     requirement: ApplicableRequirement, knowledge: KnowledgeSnapshot
 ) -> str | None:
     """C05 exclusion needs resolved ownership, usable knowledge and a stated reason."""
+    explanation = "; ".join(value for value in requirement.reason.values() if value.strip())
+    if (
+        requirement.applicability_status == "NOT_APPLICABLE"
+        and explanation
+        and requirement.resolution_method == "CATALOG_MARKER_VERSION_INTERVAL"
+        and requirement.nguon_snapshot_json.get("knowledge_sha256") == knowledge.sha256
+        and requirement.requirement_version_id is None
+    ):
+        if requirement.scope_status == "NO_MATCH":
+            groups = requirement.dieu_kien_snapshot_json.get("group_status", {})
+            if groups and set(groups.values()) == {"NO_MATCH"}:
+                return "C05 scope exclusion: " + explanation
+            exclusion = requirement.dieu_kien_snapshot_json.get("exclusion")
+            if (
+                isinstance(exclusion, dict)
+                and exclusion.get("policy") == "SOCIAL_HOUSING_EXCLUDED_FROM_COMMERCIAL_REQUIREMENT"
+                and exclusion.get("value") == "CO"
+                and exclusion.get("evidence")
+            ):
+                return "C05 scope exclusion: " + explanation
+        # The temporal resolver only excludes a family before its introduction
+        # when that family has ONE version. A missing older catalog chain is UNKNOWN.
+        family = [
+            v
+            for v in knowledge.versions.values()
+            if v.get("requirement_id") == requirement.requirement_id
+        ]
+        if (
+            requirement.scope_status == "MATCH"
+            and requirement.moc_ap_dung
+            and len(family) == 1
+            and family[0].get("hieu_luc_tu")
+        ):
+            from legal_checker.modules.applicable_law.temporal_resolver import as_date
+
+            if requirement.moc_ap_dung < as_date(family[0]["hieu_luc_tu"]):
+                return "C05 before requirement introduction: " + explanation
     version = knowledge.versions.get(requirement.requirement_version_id)
     if (
         requirement.applicability_status != "NOT_APPLICABLE"

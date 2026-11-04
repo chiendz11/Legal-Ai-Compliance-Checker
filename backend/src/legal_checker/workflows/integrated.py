@@ -142,7 +142,9 @@ class IntegratedModulesSource:
             ),
             citations=CatalogCitationValidator(),
             observations=LLMObservationProvider(
-                client=client, max_calls=self.llm_max_calls if client else 0
+                client=client,
+                max_calls=self.llm_max_calls if client else 0,
+                automatic_draft_review=True,
             ),
         )
         # None keeps the workflow's default steps 5–7 (group C's evaluate).
