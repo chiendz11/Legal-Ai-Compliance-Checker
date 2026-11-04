@@ -68,12 +68,14 @@ def test_unresolved_date_does_not_become_nonapplicable(reasoning_case):
     )
 
 
-def test_real_temporal_shape_excludes_pre_introduction_family(reasoning_case):
+@pytest.mark.parametrize("scope", ["MATCH", "UNKNOWN"])
+def test_real_temporal_shape_excludes_pre_introduction_family(reasoning_case, scope):
     knowledge, data = reasoning_case
     knowledge.versions["VERSION_1"]["hieu_luc_tu"] = "2024-08-01"
     row = data["payload"]["requirements"][0]
     row.update(
         requirement_version_id=None,
+        scope_status=scope,
         version_status="UNKNOWN",
         applicability_status="NOT_APPLICABLE",
         moc_ap_dung="2017-01-01",

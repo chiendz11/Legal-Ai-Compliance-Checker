@@ -114,7 +114,7 @@ def requirement_exclusion_reason(
             if v.get("requirement_id") == requirement.requirement_id
         ]
         if (
-            requirement.scope_status == "MATCH"
+            requirement.scope_status in {"MATCH", "UNKNOWN"}
             and requirement.moc_ap_dung
             and len(family) == 1
             and family[0].get("hieu_luc_tu")
