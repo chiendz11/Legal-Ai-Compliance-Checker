@@ -25,6 +25,8 @@ assessment, report export/UI và worker vẫn cần implementations thật.
 
 [Hướng dẫn tạo môi trường ảo cho Linux/macOS/Windows](docs/guides/dev_setup.md) có đầy đủ lệnh activate, cài dependencies, tải/seed và chạy API. [Danh sách scripts và trạng thái](scripts/README.md).
 
+[Bàn giao main và việc tiếp theo cho 5 người](docs/guides/team_onboarding_and_next_steps.md) hướng dẫn đồng bộ code/dataset/DB và các điểm tích hợp cần hoàn thiện.
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate

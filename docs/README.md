@@ -8,6 +8,8 @@
 
 Dành cho thành viên mới hoặc thiết lập môi trường phát triển từ đầu:
 
+**[Bàn giao main và việc cần làm cho 5 người](guides/team_onboarding_and_next_steps.md)**: lấy code, tải ZIP reviewed, phân biệt seed/update và backlog tích hợp có owner.
+
 1. **[Cài đặt Môi trường Phát triển](guides/dev_setup.md)**: Thiết lập Python virtualenv (`.venv`), công cụ linter (`ruff`), test suite (`pytest`).
 2. **[Tải & Chuẩn bị Dataset](database/dataset_and_corpus.md)**: Tải bộ dữ liệu mẫu DEV_VALIDATION (240 DEV / 60 VAL).
 3. **[Khởi tạo PostgreSQL & Seed Dữ liệu](database/local_setup.md)**: Dựng cơ sở dữ liệu PostgreSQL local và seed tri thức pháp luật.

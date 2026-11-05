@@ -14,6 +14,30 @@ workbook hoặc bộ PDF nguồn.
 | ZIP bytes | `143454238` |
 | ZIP SHA-256 | `51fd0c109a1f77688af549cc08973ac7a1eb5ffea72a7c2505242340f1efd57d` |
 
+## 0. Lấy code từ main trước khi cập nhật dữ liệu
+
+Sau khi PR phase-two được merge, dùng `main` làm baseline chung của app repo.
+Commit hoặc stash phần đang làm của mình trước khi đổi nhánh/ghép code; không reset
+hoặc ghi đè nhánh dev để lấy dataset.
+
+```bash
+git fetch origin
+git switch main
+git pull --ff-only origin main
+```
+
+Người tiếp tục làm trên nhánh riêng có thể ghép `origin/main` vào nhánh đó thay vì
+đổi nơi làm việc lâu dài sang main. Kích hoạt `.venv`, cập nhật dependencies từ root:
+
+```bash
+source .venv/bin/activate
+python -m pip install -e './backend[dev,dataset]' -c constraints.txt
+```
+
+Chỉ tải tự động khi ZIP mới đã được chủ dataset thay trên Drive. Upload một file
+`.xlsx` riêng không thay archive mà manifest chỉ tới. Nếu dùng file ID mới, maintainer
+phải cập nhật `archive.url` trong manifest trước khi các thành viên tải.
+
 ## 1. Máy mới, DB chưa seed
 
 Làm theo [cài môi trường](../guides/dev_setup.md), sao chép `.env.example` khi chưa
@@ -52,15 +76,19 @@ Tải revision mới vào folder riêng để giữ nguyên bộ cũ:
 
 ```bash
 python -m scripts.dataset pull \
-  --destination data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105 \
-  --archive '/path/to/legal_compliance_v750_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.zip'
+  --destination data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105
 ```
+
+Nếu không tải tự động được, thêm `--archive /path/to/ZIP_moi.zip` vào lệnh trên.
 
 Đổi **chỉ `SEED_WORKBOOK_PATH`** trong `.env` thành:
 
 ```dotenv
 SEED_WORKBOOK_PATH=data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx
 ```
+
+Chạy `python -m scripts.dataset check` để xác nhận 337 file đúng hash.
+Giữ `DATABASE_URL` trỏ đúng DB local của chính mình.
 
 Nâng schema, rồi chạy thử cập nhật trong transaction sẽ rollback:
 
