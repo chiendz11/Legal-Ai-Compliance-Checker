@@ -63,12 +63,14 @@ class Knowledge:
         with connect_postgres(database_url) as connection:
             if snapshot_sha256:
                 row = connection.execute(
-                    "SELECT content FROM knowledge.knowledge_snapshots WHERE sha256=%s",
+                    "SELECT content, review_status FROM knowledge.knowledge_snapshots "
+                    "WHERE sha256=%s",
                     (snapshot_sha256,),
                 ).fetchone()
                 if row is None:
                     raise ValueError("Unknown knowledge snapshot SHA256")
                 snapshot = row["content"]
+                review_status = row["review_status"]
             else:
                 connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
                 tables = {
@@ -93,10 +95,15 @@ class Knowledge:
                     "VALUES (%s, %s, %s) ON CONFLICT (sha256) DO NOTHING",
                     (sha, snapshot["schema_version"], Jsonb(snapshot)),
                 )
+                review_status = connection.execute(
+                    "SELECT review_status FROM knowledge.knowledge_snapshots WHERE sha256=%s",
+                    (sha,),
+                ).fetchone()["review_status"]
         self.sha256 = hashlib.sha256(canonical(snapshot).encode()).hexdigest()
         if snapshot_sha256 and self.sha256 != snapshot_sha256:
             raise ValueError("Stored knowledge snapshot checksum is invalid")
         self.schema_version = snapshot["schema_version"]
+        self.review_status = review_status
         self.tables = snapshot["tables"]
         # Existing rule engines consume JSON text. Normalize these cells at the adapter
         # boundary; source tables and immutable content retain JSONB and verification flags.

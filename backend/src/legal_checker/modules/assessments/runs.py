@@ -107,6 +107,14 @@ class RunRepository:
             ).fetchone()
         return _record(row) if row else None
 
+    def heartbeat(self, ca_id: str, run_id: str) -> None:
+        with connect_postgres(self.database_url) as connection:
+            connection.execute(
+                "UPDATE runtime.workflow_runs SET heartbeat_at=now() "
+                "WHERE ca_id=%s AND run_id=%s AND status='RUNNING'",
+                (ca_id, run_id),
+            )
+
     def mark_stage(self, ca_id: str, run_id: str, stage: Stage, status: StageStatus) -> None:
         now = datetime.now(timezone.utc).isoformat()
         stamp = "started_at" if status == "RUNNING" else "finished_at"

@@ -5,7 +5,7 @@ Chạy từ root repo, dùng Python trong `.venv` đã cài `backend[dev,dataset
 | Script | Mục đích | Lệnh ví dụ | Hiện trạng |
 |---|---|---|---|
 | `dataset.py` | Tải/kiểm tra dataset DEV_VALIDATION theo manifest/hash | `python -m scripts.dataset pull` hoặc `check` | Đang dùng |
-| `local_db.py` | Tạo DB, Alembic upgrade, preview/seed/check workbook | `python -m scripts.local_db init` / `preview` / `seed` / `check` | Đang dùng |
+| `local_db.py` | Tạo DB, Alembic upgrade, preview/seed/update/check workbook | `python -m scripts.local_db init` / `preview` / `seed` / `update` / `check` | Đang dùng |
 | `local_postgres.py` | Bật/tắt/kiểm tra PostgreSQL native trên Linux/macOS | `python -m scripts.local_postgres start` / `status` / `stop` | Tùy chọn cho người không dùng Docker; cần extra `[local-server]` |
 | `ui_fixtures.py` | Xuất report C13 tham chiếu (QA EXPECTED, split DEV) làm mock cho frontend | `python -m scripts.ui_fixtures` hoặc `--case CA360_051` | Đang dùng; ghi vào `frontend/src/mocks/fixtures/` (Git bỏ qua) |
 
@@ -23,3 +23,5 @@ Xem [hướng dẫn contracts máy đọc được](../docs/contracts/README.md)
 
 `docs/architecture/openapi.design.json` là đặc tả API được commit cùng tài liệu. Backend không đọc
 file này để chạy handlers. Công cụ sinh contracts/OpenAPI đã được xóa sau khi xuất đặc tả.
+
+`local_db update` áp dụng revision workbook mới lên baseline đúng checksum trong một transaction; giữ hợp đồng upload, lịch sử run/report và snapshot cũ. Xem [cách cập nhật DB đã seed](../docs/database/reviewed_dataset_update.md).

@@ -155,7 +155,7 @@ def test_failed_seed_rolls_back_all_rows_but_keeps_alembic_schema(database_url, 
             connection.execute("SELECT version_num FROM dev_meta.alembic_version").fetchone()[
                 "version_num"
             ]
-            == "0006_users_and_reviews"
+            == "0007_dataset_updates"
         )
 
 

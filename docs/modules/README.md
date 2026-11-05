@@ -22,16 +22,18 @@ Tên bảng/kiểu cột lấy từ migrations PostgreSQL đang có trong repo. 
 Contract thực thi hiện tại lấy từ `backend/src/legal_checker/shared/contracts/`.
 Phụ lục BRD có các API/kiến trúc đề xuất; những đề xuất đó chưa tự trở thành code đã chạy.
 
-Dataset đang dùng: **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**. Nhóm dev tải gói DEV_VALIDATION theo [hướng dẫn dataset](dataset_download.md), rồi seed vào DB riêng. Bộ chunks/citations tham chiếu được giải thích tại [r2 structured](v750_source_pdf360_r2_structured.md).
+Dataset đang dùng: **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**. Nhóm dev tải gói DEV_VALIDATION theo [hướng dẫn dataset](../database/dataset_and_corpus.md), rồi seed vào DB riêng. Bộ chunks/citations tham chiếu được giải thích tại [quy trình cập nhật reviewed](../database/reviewed_dataset_update.md).
 
 Các JOIN bên dưới dùng case/run r2: ví dụ `CA360_001` và `CA360_001_PDF360_LS2_REFERENCE`. Chọn IDs thực tế từ DB đã seed, giữ cùng knowledge hash và không trộn với IDs của dataset cũ.
 
-**Trạng thái code:** C07/C08/C10/C11, service/workflow, runner offline/replay/save/read
-và PostgreSQL persistence đã triển khai. Các POST chạy riêng module đã xóa; API khởi
-chạy assessment toàn bộ, upstream thật bước 1–4, review/report export/UI và worker vẫn
-cần implementations. Dữ liệu seed/QA là references của release, không phải đáp án cho
-engines mới. [Trạng thái đầy đủ](architecture.md#trạng-thái-triển-khai-bước-57),
-[bàn giao nhóm C](group_c_handoff.md).
+**Cập nhật ngày 05/11/2026:** đã có code cho intake/upload, parser PDF có text,
+scope/temporal/citation, BM25, C07–C11, orchestrator Celery, review/report và frontend.
+Các điểm nối và nghiệm thu còn thiếu được ghi trong
+[bàn giao cho 5 người](../guides/team_onboarding_and_next_steps.md).
+Có implementation không đồng nghĩa mọi nhánh đã đạt chất lượng nghiệm thu.
+Dataset đã có revision `user-reviewed-20261105`; DB cũ dùng `local_db update`,
+DB mới dùng `seed`. Giữ các recipe JOIN bên dưới để phát triển độc lập, sau đó
+đối chiếu với output thật và cùng case/run/hash khi tích hợp.
 
 ## Mục lục
 
@@ -83,34 +85,31 @@ Khi ghép hệ thống, input đó được thay bằng output thật của các
 
 ### 1.2 Những phần code nào đã có?
 
-| Phần | Hiện trạng | Dev tiếp tục làm gì? |
+| Phần | Hiện trạng trong code | Cần hoàn thiện / nghiệm thu |
 |---|---|---|
-| PostgreSQL local | Có server setup, migration 50 bảng, seed và integration tests | Dùng DB riêng; bổ sung query của module |
-| Knowledge SQL | Có full `Knowledge` SQL reader/snapshots và helper `WorkbookKnowledgeRepository` | Dùng reader đã chọn snapshot; mở rộng policies cần thiết |
-| Retrieval SQL | Có `RetrievalDatasetRepository` lấy source rows theo case/run | Map DTO; triển khai index/search/rerank và writer |
-| Bước 1–4 | Có interfaces/DTOs và skeleton files | Triển khai intake, parser/OCR, extraction, scope, temporal, citation, retrieval |
-| Bước 5–7 | C07/C08/C10/C11, workflow, offline/replay/save/read runner và Store đã triển khai | Ghép upstream thật, nguồn/provenance và review đáng tin; đọc outputs đúng run theo bàn giao nhóm C |
-| Workflow | Có `DraftAssessmentWorkflow` để nối implementations được inject | Ghép implementations thật; bổ sung orchestration/persistence/recovery |
-| Bước 9 | Có `build_draft_report` tạo C13 draft từ handoffs cũ | Đọc DB, ghép report, lưu version, export, API và UI |
-| Bước 8 | Có C12 và interfaces review | Bổ sung review thật hoặc giữ báo cáo draft khi chưa có review |
+| PostgreSQL và dataset | Alembic, tải/seed/update, receipt và snapshot bất biến | Phân phối ZIP reviewed; kiểm tra restore và cùng release trên từng máy |
+| Bước 1–2 | Upload, PDF text parser, chunks, profile/facts và citation extractor; có DocumentRepository | OCR/DOCX còn thiếu; nối lưu extraction đầy đủ trước Retrieval; đo chất lượng extraction |
+| Bước 3–4 | Catalog Scope/Temporal/Citation và BM25; có các tùy chọn embedding/reranking | Marker catalog còn thiếu/chồng lấn, profile không đủ, nối metadata evidence và C09 provenance |
+| Bước 5–7 | LLM proposals, grounding, rules/aggregation, risks/recommendations và persistence | Tạo/truyền CriterionVerification, xử lý quote/rate limit/budget, phân biệt lỗi kỹ thuật với thiếu nội dung |
+| Workflow | API khởi tạo run, Celery/Redis/Beat, lease/recovery, SSE/polling | Đóng các điểm nối Documents → Retrieval → verification; nghiệm thu nhiều PDF |
+| Bước 8–9 | Review events, report versions, UI/history và export | Nghiệm thu quyền truy cập, review/publish/export và nguồn/provenance xuyên suốt |
 
-**Không có API POST chạy riêng bước 5–7.** Snapshot knowledge và run lịch sử nằm trong DB.
-Cấu hình bằng `DATABASE_URL`, optional `KNOWLEDGE_SNAPSHOT_SHA256` để pin snapshot cũ.
-Mapper các bước upstream, OCR/search/LLM/review/export vẫn cần implementations thật.
+Snapshot knowledge và lịch sử run nằm trong PostgreSQL. Cấu hình bằng `DATABASE_URL`,
+optional `KNOWLEDGE_SNAPSHOT_SHA256` để pin snapshot cũ. Runtime mới trích xuất từ PDF
+cần kiểm tra riêng; flags reviewed trong workbook không tự duyệt output mới của parser.
 
-### 1.3 Phân công theo phần bạn yêu cầu
+### 1.3 Phân công 5 người theo kế hoạch hiện tại
 
-| Nhóm | Phần BRD | Folder nghiệp vụ chính | Bàn giao |
+| Người | Nhóm / BRD | Folder chính | Bàn giao |
 |---|---|---|---|
-| A | 1–2 | `modules/documents/` | C01; C02 + chunks; C03 |
-| B | 3A, 3B, 4 | `modules/applicable_law/`, `citation_validation/`, `retrieval/` | C04; C05; C09; C06 |
-| C | 5–7 | `modules/compliance/`, `risks/`, `recommendations/` | C07; C08; C10; C11 |
-| D | 9 và ghép hệ thống | `modules/reports/`, `assessments/`, `api/`, `workflows/`, `frontend/` | C13; API/UI/report export |
+| 1 | Data, DB, CI/CD, hạ tầng | `devtools/`, migrations, `scripts/`, ba repo app/infra/GitOps | Dataset/version, schema, môi trường, CI và runbook |
+| 2 | A — bước 1–2 | `modules/documents/` | C01, C02 + chunks, C03, source evidence và extraction được lưu |
+| 3 | B — bước 3A/3B/4 | `applicable_law/`, `citation_validation/`, `retrieval/` | C04, C05, C09, C06 |
+| 4 | C — bước 5–7 | `compliance/`, `risks/`, `recommendations/` | C07/C08, C10/C11 và verification logic |
+| 5 | D — bước 8–9 và ghép hệ thống | `assessments/`, `reports/`, `reviews/`, API/workflows/frontend | Run orchestration, review, C13 và UI |
 
-Nếu vẫn phân công **5 người như trước**, tách nhóm B thành:
-người 2 làm 3A/3B; người 3 làm Retrieval bước 4.
-Nhóm A tương ứng người 1, C tương ứng người 4, D tương ứng người 5.
-Hướng dẫn này nhóm theo bước; nếu chia 5 người thì giữ ranh giới trên.
+Đây là ownership theo kế hoạch, không khẳng định cá nhân nào đã viết từng commit.
+Chi tiết việc ưu tiên và tiêu chí bàn giao ở [hướng dẫn cả nhóm](../guides/team_onboarding_and_next_steps.md).
 
 ### 1.4 Luồng ghép module
 
@@ -151,7 +150,7 @@ Báo cáo đã xác nhận cần review thật; không dùng một review seed �
 
 ### 2.1 Mở DB của mình
 
-Làm theo [hướng dẫn DB local](local_database.md). Sau khi seed:
+Làm theo [hướng dẫn DB local](../database/local_setup.md). Sau khi seed:
 
 ```bash
 source .venv/bin/activate
@@ -161,7 +160,7 @@ python -m scripts.local_db check
 Cấu hình local đã dùng: host `127.0.0.1`, port `5433`, user `legal_checker`,
 password local `legal_checker_local_only`. Chọn đúng DB bằng `DATABASE_URL`; tên mặc định
 `legal_checker_dev_v750_r2_supabase` được đặt trong `.env.example`. Cách seed bộ hiện tại xem
-[hướng dẫn DB](local_database.md#3-tạo-bảng-kiểm-tra-và-seed).
+[hướng dẫn DB](../database/local_setup.md#3-tạo-bảng-kiểm-tra-và-seed).
 Dùng DBeaver/pgAdmin để xem bảng nếu chưa quen query trong Python.
 
 ### 2.2 Chọn một ca để bắt đầu
@@ -771,8 +770,8 @@ full pipeline draft trên hợp đồng mới → review và report đã xác nh
 
 Tài liệu liên quan:
 
-- [DB local, seed và cấu hình](local_database.md)
-- [Contracts gốc v7.3.2](data_contracts_v7_3_2.md)
-- [Cách nối interfaces/workflow hiện có](module_integration.md)
-- [Module schemas](module_contracts.schema.json)
-- [Kiến trúc folder hiện tại](architecture.md)
+- [DB local, seed và cấu hình](../database/local_setup.md)
+- [Contracts gốc v7.3.2](../contracts/data_contracts_v7_3_2.md)
+- [Cách nối interfaces/workflow hiện có](../guides/team_onboarding_and_next_steps.md)
+- [Module schemas](../contracts/module_contracts.schema.json)
+- [Kiến trúc folder hiện tại](../architecture/system_architecture.md)

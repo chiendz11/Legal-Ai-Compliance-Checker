@@ -1,6 +1,6 @@
 # Tải dataset cho mỗi thành viên
 
-Nếu chưa có môi trường Python của repo, làm theo [hướng dẫn tạo/kích hoạt `.venv`](dev_setup.md) trước.
+Nếu chưa có môi trường Python của repo, làm theo [hướng dẫn tạo/kích hoạt `.venv`](../guides/dev_setup.md) trước.
 
 Repo giữ script và manifest chứa link/phiên bản/hash; dataset ở Drive và Supabase.
 Mỗi thành viên tải về thư mục local được Git bỏ qua, rồi seed DB riêng như hiện tại.
@@ -26,15 +26,15 @@ Không dùng các workbook chia nhỏ để seed.
 ## Lệnh tải làm gì?
 
 1. Đọc `configs/dataset_dev_validation.json` và chọn folder từ SEED_WORKBOOK_PATH.
-2. Nếu đủ 335 file và tất cả hash đúng: trả `already_present`, không tải lại.
+2. Nếu đủ 337 file và tất cả hash đúng: trả `already_present`, không tải lại.
 3. Tải ZIP đúng link Drive vào thư mục tạm dưới `data/private/`.
 4. Kiểm tra kích thước/SHA-256 ZIP, rồi kiểm tra các đường dẫn và file required.
-5. Cài workbook, 300 text references, 32 controlled sources, README và CSV URL PDF.
+5. Cài workbook, 300 text references, 32 controlled sources, README, CSV URL PDF và hai báo cáo review/validation.
 6. Kiểm tra SHA-256 từng file và chuyển thư mục tạm thành folder dataset hoàn chỉnh.
 7. Xóa ZIP/thư mục tạm; không ghi đè folder cũ hoặc thay đổi DB.
 
 PDF không được giải nén bởi lệnh này. Nhóm A query `tep_nguon.object_uri` để tải PDF
-public từ Supabase và kiểm tra `sha256`; bản PDF offline vẫn nằm trong ZIP trên Drive.
+public từ Supabase và kiểm tra `sha256`; gói DEV_VALIDATION không đóng kèm PDF để giảm dung lượng.
 Text `dataset://` ánh xạ theo thư mục dataset local như hướng dẫn hiện tại.
 
 ## Drive private/quota hoặc dùng file đã tải

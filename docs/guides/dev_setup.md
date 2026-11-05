@@ -110,7 +110,7 @@ python -m scripts.dataset pull
 python -m scripts.dataset check
 ```
 
-Script tạo `data/private/v750_source_pdf360_r2_supabase/`. Dataset hiện tại có 240 DEV + 60 VALIDATION; workbook đầy đủ được dùng để seed, các workbook chia nhỏ chỉ dùng để xem. `.env`, `.venv` và `data/private/` đều được Git bỏ qua.
+Script tạo `data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/`. Dataset hiện tại có 240 DEV + 60 VALIDATION; workbook đầy đủ được dùng để seed, các workbook chia nhỏ chỉ dùng để xem. `.env`, `.venv` và `data/private/` đều được Git bỏ qua.
 
 Drive private/hết quota hoặc đã tải ZIP bằng trình duyệt: xem [hướng dẫn dataset](dataset_download.md).
 

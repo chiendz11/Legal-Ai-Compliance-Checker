@@ -8,6 +8,8 @@
 
 Dành cho thành viên mới hoặc thiết lập môi trường phát triển từ đầu:
 
+**[Bàn giao main và việc cần làm cho 5 người](guides/team_onboarding_and_next_steps.md)**: lấy code, tải ZIP reviewed, phân biệt seed/update và backlog tích hợp có owner.
+
 1. **[Cài đặt Môi trường Phát triển](guides/dev_setup.md)**: Thiết lập Python virtualenv (`.venv`), công cụ linter (`ruff`), test suite (`pytest`).
 2. **[Tải & Chuẩn bị Dataset](database/dataset_and_corpus.md)**: Tải bộ dữ liệu mẫu DEV_VALIDATION (240 DEV / 60 VAL).
 3. **[Khởi tạo PostgreSQL & Seed Dữ liệu](database/local_setup.md)**: Dựng cơ sở dữ liệu PostgreSQL local và seed tri thức pháp luật.
@@ -37,6 +39,7 @@ Dành cho thành viên mới hoặc thiết lập môi trường phát triển t
 ### 4. Cơ sở Dữ liệu & Tri thức Pháp luật (`database/`)
 * **[Cài đặt & Seed PostgreSQL Local](database/local_setup.md)**: Dựng database phát triển, nạp tri thức pháp lý và dữ liệu mẫu.
 * **[Quản lý Migrations với Alembic](database/migrations.md)**: Hướng dẫn tạo và chạy Alembic migrations khi sửa đổi cấu trúc bảng.
+* **[Cập nhật Workbook Reviewed vào DB đang có](database/reviewed_dataset_update.md)**: Lệnh dry-run/update, giữ hợp đồng upload, snapshot, run/report và hướng dẫn thay ZIP trên Drive.
 * **[Tải Dataset & Thông số Corpus](database/dataset_and_corpus.md)**: Cấu trúc tập dữ liệu v7.5.0, provenance và phân chia DEV / VALIDATION.
 
 ### 5. Hướng dẫn Lập trình viên (`guides/`)

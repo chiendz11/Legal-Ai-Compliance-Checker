@@ -15,5 +15,9 @@ def snapshot(services: ServicesDependency):
         "schema_version": knowledge.schema_version,
         "knowledge_snapshot_sha256": knowledge.sha256,
         "counts": {k: len(v) for k, v in knowledge.tables.items()},
-        "review_status": "PENDING_HUMAN_REVIEW",
+        "review_status": (
+            "HUMAN_VERIFIED"
+            if getattr(knowledge, "review_status", None) == "HUMAN_VERIFIED"
+            else "PENDING_HUMAN_REVIEW"
+        ),
     }

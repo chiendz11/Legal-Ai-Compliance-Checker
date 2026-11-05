@@ -5,9 +5,10 @@ the run is released back to QUEUED, so the caller (Celery) retries with backoff;
 else ends the run FAILED with a reason. A failure is processing state, never a legal label.
 """
 
+import logging
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Protocol
+from typing import Callable, Protocol
 
 import psycopg
 
@@ -87,17 +88,25 @@ class AssessmentRunner:
     source: ModuleSource
     lease: timedelta = timedelta(minutes=10)
 
-    def execute(self, ca_id: str, run_id: str) -> RunRecord | None:
+    def execute(
+        self, ca_id: str, run_id: str, *, on_claim: Callable[[], None] | None = None
+    ) -> RunRecord | None:
         record = self.runs.claim(ca_id, run_id, self.lease)
         if record is None:
             # Already finished, owned by a live worker, or unknown: nothing to do.
             return self.runs.get(ca_id, run_id)
+        if on_claim:
+            on_claim()
         context = record.context
         running: set[str] = set()
+        log = logging.getLogger(__name__)
+        log_context = {"ca_id": ca_id, "run_id": run_id, "trace_id": context.trace_id}
+        log.info("assessment_started", extra=log_context)
 
         def on_stage(stage, status):
             (running.add if status == "RUNNING" else running.discard)(stage)
             self.runs.mark_stage(ca_id, run_id, stage, status)
+            log.info("assessment_stage", extra={**log_context, "stage": stage, "status": status})
 
         try:
             case, modules, evaluator = self.source.prepare(context)
@@ -115,4 +124,5 @@ class AssessmentRunner:
             return self.runs.get(ca_id, run_id)
         self.runs.complete(ca_id, run_id, draft)
         self.reports.save_version(run_id, report)
+        log.info("assessment_completed", extra=log_context)
         return self.runs.get(ca_id, run_id)

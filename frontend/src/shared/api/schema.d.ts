@@ -1277,9 +1277,10 @@ export interface components {
             };
             /**
              * Review Status
-             * @constant
+             * @description Stored knowledge snapshot review status. Loading/capturing a snapshot does not approve it.
+             * @enum {string}
              */
-            review_status: "PENDING_HUMAN_REVIEW";
+            review_status: "PENDING_HUMAN_REVIEW" | "HUMAN_VERIFIED";
         };
         /** Page[CaseRecord] */
         Output_Page_CaseRecord_: {

@@ -200,7 +200,44 @@ def insert_table(connection, table: Table, rows: list[dict[str, Any]]) -> int:
         return cursor.rowcount
 
 
-def seed_database(database_url: str, seed: WorkbookSeed) -> dict:
+def _reviewed_snapshot(connection, expected_sha256: str) -> None:
+    from legal_checker.modules.legal_knowledge.repository import TABLE_KEYS, canonical
+
+    tables = {
+        name: connection.execute(
+            sql.SQL("SELECT * FROM {} ORDER BY {}").format(
+                sql.Identifier("knowledge", name), sql.Identifier(key)
+            )
+        ).fetchall()
+        for name, key in TABLE_KEYS.items()
+    }
+    for name, key in TABLE_KEYS.items():
+        tables[name].sort(key=lambda row, pk=key: row[pk])
+    content = json.loads(canonical({"schema_version": "v7.4.9", "tables": tables}))
+    actual = hashlib.sha256(canonical(content).encode()).hexdigest()
+    if actual != expected_sha256:
+        raise SeedError("Seeded knowledge differs from the pinned reviewed release hash")
+    for name in ("tieu_chi_danh_gia", "quy_tac_quyet_dinh", "ngoai_le_ap_dung"):
+        if any(row.get("human_verified") is not True for row in tables[name]):
+            raise SeedError("The pinned reviewed release contains unverified knowledge")
+    connection.execute(
+        """INSERT INTO knowledge.knowledge_snapshots
+            (sha256,schema_version,content,review_status)
+            VALUES (%s,'v7.4.9',%s,'HUMAN_VERIFIED') ON CONFLICT DO NOTHING""",
+        (actual, Jsonb(content)),
+    )
+    if (
+        connection.execute(
+            "SELECT review_status FROM knowledge.knowledge_snapshots WHERE sha256=%s", (actual,)
+        ).fetchone()["review_status"]
+        != "HUMAN_VERIFIED"
+    ):
+        raise SeedError("Existing immutable snapshot lacks reviewed release metadata")
+
+
+def seed_database(
+    database_url: str, seed: WorkbookSeed, *, reviewed_knowledge_sha256: str | None = None
+) -> dict:
     validate_references(seed)
     if seed.qa_tables:
         from devtools.qa_validation import validate_qa
@@ -210,6 +247,18 @@ def seed_database(database_url: str, seed: WorkbookSeed) -> dict:
     with connect_postgres(database_url) as connection:
         # Alembic schema changes already committed; seed data has a separate atomic transaction.
         connection.execute("SELECT pg_advisory_xact_lock(743249)")
+        release = connection.execute(
+            "SELECT source_sha256 FROM dev_meta.dataset_updates ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        if release:
+            if release["source_sha256"] != seed.source_sha256:
+                raise SeedError("Database has a newer dataset release; use local_db update")
+            return {
+                "status": "already_seeded",
+                "inserted": 0,
+                "source_rows": sum(seed.counts.values()),
+                "updated_release": True,
+            }
         prior = connection.execute("SELECT source_sha256 FROM dev_meta.seed_imports").fetchall()
         if prior:
             if any(row["source_sha256"] != seed.source_sha256 for row in prior):
@@ -225,6 +274,8 @@ def seed_database(database_url: str, seed: WorkbookSeed) -> dict:
             for table in QA_TABLES
         )
         connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        if reviewed_knowledge_sha256:
+            _reviewed_snapshot(connection, reviewed_knowledge_sha256)
         connection.execute(
             "INSERT INTO dev_meta.seed_imports VALUES (%s, %s, now())",
             (
