@@ -126,6 +126,12 @@ Chưa thể suy ra chất lượng inference từ cờ review. Một ca upload k
 05/11 đã đọc profile, tạo chunks và chạy đến report, nhưng còn các điểm nối/điều kiện
 thiếu. Các số liệu bên dưới là chẩn đoán một run, không phải metric toàn corpus.
 
+Một khác biệt cần chốt trước khi so metric: C05 tham chiếu trong DB có **10 family
+mỗi ca**, trong khi `CatalogScopeResolver()` của luồng upload đang xét **306 family**
+vì chưa truyền `requirement_ids`. Thống nhất assessment profile/phạm vi checklist và
+báo cáo coverage giữa người 1, 3, 5; không dùng expected của 10 family để chấm trực
+tiếp toàn bộ 306, cũng không tự bỏ yêu cầu chỉ để tăng tỷ lệ kết luận.
+
 ### Người 1 — Dataset, DB, CI/CD và hạ tầng
 
 | Ưu tiên | Việc cần làm | Vì sao / đầu ra bàn giao |
@@ -141,7 +147,7 @@ thiếu. Các số liệu bên dưới là chẩn đoán một run, không phả
 |---|---|---|
 | P0 | Cùng người 5 lưu đầy đủ DocumentExtraction trước Retrieval | Run có profile/chunks trong JSON nhưng DB normalized của hợp đồng upload chưa có extraction. Repository đã có; giữ chunk/fact/evidence IDs cùng version |
 | P0 | Bàn giao nguồn, trạng thái, time markers và facts đủ để người 3/4 kiểm tra | 32 facts mới trích xuất đều chưa human-verified; fixture đã review không tự duyệt PDF upload |
-| P1 | Đánh giá citation có năm, Điều/Khoản và câu qua trang cùng người 3 | Có viện dẫn kèm năm vẫn chưa định danh duy nhất; cần xác định lỗi extraction, alias hay identity matching |
+| P1 | Đánh giá citation có năm, Điều/Khoản và câu qua trang cùng người 3 | C03 đã trích năm ở một số viện dẫn; validator hiện yêu cầu số hiệu. Bàn giao đủ field và thống nhất policy tên+năm với người 3 |
 | P1 | OCR và DOCX theo phạm vi đã chốt; đo extraction/chunk quality | OCR chưa có implementation, đường chạy hiện nhận PDF text layer; công bố các loại tài liệu được hỗ trợ |
 
 Tiêu chí bàn giao P0: cùng một run có DTO hợp lệ và DB rows tương ứng; Retrieval đọc
