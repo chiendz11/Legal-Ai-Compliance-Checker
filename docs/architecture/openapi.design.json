@@ -4537,9 +4537,13 @@
             "type": "object"
           },
           "review_status": {
-            "const": "PENDING_HUMAN_REVIEW",
             "title": "Review Status",
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "PENDING_HUMAN_REVIEW",
+              "HUMAN_VERIFIED"
+            ],
+            "description": "Stored knowledge snapshot review status. Loading/capturing a snapshot does not approve it."
           }
         },
         "required": [

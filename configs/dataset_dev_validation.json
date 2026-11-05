@@ -8,21 +8,23 @@
     "VALIDATION": 60
   },
   "regression_cases": 32,
-  "destination": "data/private/v750_source_pdf360_r2_supabase",
+  "destination": "data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105",
   "archive": {
     "filename": "legal_compliance_v750_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.zip",
     "url": "https://drive.google.com/file/d/1hfaKo5uFtDFhDtvfPrTqTBbyDPNmdUDb/view?usp=drive_link",
-    "bytes": 380804027,
-    "sha256": "d429b8a454f347df3a8d90c01d71fba28cac1ec97d0c5b8a804c8787d7ea6920",
-    "max_expanded_bytes": 457022956
+    "bytes": 143454238,
+    "sha256": "51fd0c109a1f77688af549cc08973ac7a1eb5ffea72a7c2505242340f1efd57d",
+    "max_expanded_bytes": 200637397
   },
-  "workbook": "bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.xlsx",
-  "knowledge_snapshot_sha256": "c47aa957127751775c850ea63b9ae1d0a57d6a05bfc7f65452738f243eaefdc4",
+  "workbook": "bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx",
+  "knowledge_snapshot_sha256": "df6ed7aa9f5100bfe68430b950d55542db752e7255c324e18be171ce0d0d3ade",
   "pdf_base_url": "https://agqjzspmvtrvyoftoabz.supabase.co/storage/v1/object/public/Hop_dong_raw/raw/",
   "required_files": {
     "PDF_URLS_DEV_VALIDATION.csv": "5b08fefc5fdce09e3fea2a085906e76ad60731dae4bf6ad7f1e46b054db5e870",
-    "README_SU_DUNG.md": "130c94c9e2c4972eb067e3b49372edbdfaea78d8c89ff7aeca4820f8244d12f7",
-    "bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.xlsx": "e1f15b658d6ef511efa784eb09896adcda67befadbc51ae7411a90c1a4b29e61",
+    "README_SU_DUNG.md": "4118cbe524390d992767ce80a53d94cbdd47457446252abdcf4b49eefb64f4e4",
+    "REVIEW_UPDATE_MANIFEST.json": "3c5081618ad54860362b6369d654f8cfaa2da1d0ca19fa1e3ebc3b754ca754dc",
+    "VALIDATION.json": "e231d60c3c0f7c00917cc7a4bd02475418556dc63d7027f974dc199e3f9a8efd",
+    "bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx": "c77b43613918a95acb0845153218f52ec0edef855314397ccb670eaac0643f7f",
     "sources/controlled/QA_CERTIFICATE_95_BOUNDARY.txt": "2f71e69e5023ca14d1aef764f1707611b4a70e275e1f6052ead19066c6315c76",
     "sources/controlled/QA_CERTIFICATE_95_EXCEEDED.txt": "2f71e69e5023ca14d1aef764f1707611b4a70e275e1f6052ead19066c6315c76",
     "sources/controlled/QA_CITATION_INVALID_MATCH.txt": "2f71e69e5023ca14d1aef764f1707611b4a70e275e1f6052ead19066c6315c76",
@@ -355,5 +357,7 @@
     "sources/text/HD360_354.txt": "8a7936fe9db223ca4543c15ccab944340a8d7b3f3078f942437d165885ebea90",
     "sources/text/HD360_355.txt": "0920ad55d39ad883ce6989b28966bcb9a449fcc522c67dc0152c68d9d2fa2e75",
     "sources/text/HD360_356.txt": "3b256b86b44d54d97e03cea708f4f602f8e0bed6597b04dd492d3b5326c3b247"
-  }
+  },
+  "review_revision": "user-reviewed-20261105",
+  "legal_knowledge_version": "V750_LEGAL_KNOWLEDGE_USER_REVIEWED_20261105"
 }

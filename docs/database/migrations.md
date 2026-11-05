@@ -25,11 +25,14 @@ Ba revision nền hiện tại:
 | `0002_snapshots` | Knowledge snapshots, case/run pins và output lineage |
 | `0003_qa` | Sáu bảng QA, indexes và bảo vệ dữ liệu QA bất biến |
 
-Revision tiếp theo:
+Các revision bổ sung:
 
 | Revision | Nội dung |
 |---|---|
 | `0004_workflow_runs` | `runtime.workflow_runs` (trạng thái run, tiến độ stage, draft) và `runtime.report_versions` (C13 bất biến, file export) của nhóm D |
+| `0005_contract_uploads` | Quyền sở hữu và nguồn hợp đồng upload |
+| `0006_users_and_reviews` | Tài khoản và C12 review events append-only |
+| `0007_dataset_updates` | Receipt cập nhật workbook có kiểm soát, giữ lịch sử seed và run/report |
 
 Xem lịch sử bằng:
 
@@ -62,7 +65,7 @@ Việc đối chiếu này dành cho lần chuyển từ runner cũ. Sau khi chu
 
 ## 3. Seed dữ liệu vẫn dùng lệnh hiện tại
 
-Trên DB mới, sau khi [tải dataset](dataset_download.md):
+Trên DB mới, sau khi [tải dataset](dataset_and_corpus.md):
 
 ```bash
 python -m scripts.local_db preview
@@ -70,7 +73,7 @@ python -m scripts.local_db seed
 python -m scripts.local_db check
 ```
 
-`seed` validate workbook, đảm bảo schema tới Alembic head, rồi nhập dữ liệu trong transaction riêng. Nếu nhập lỗi, rows và marker của lần seed đó rollback; schema đã nâng cấp vẫn giữ. Seed lại cùng checksum trả `already_seeded`, giữ các thay đổi dữ liệu dev. Workbook khác checksum cần DB riêng như trước.
+`seed` validate workbook, đảm bảo schema tới Alembic head, rồi nhập dữ liệu trong transaction riêng. Nếu nhập lỗi, rows và marker của lần seed đó rollback; schema đã nâng cấp vẫn giữ. Seed lại cùng checksum trả `already_seeded`, giữ các thay đổi dữ liệu dev. Workbook khác checksum không được seed đè. Revision reviewed cùng baseline dùng [quy trình update](reviewed_dataset_update.md); các dataset độc lập dùng DB riêng.
 
 Alembic không tự tải PDF hoặc workbook và không thay thế seed. Pull code có migration mới chỉ cần chạy `init`, không cần nhập lại toàn bộ dataset.
 

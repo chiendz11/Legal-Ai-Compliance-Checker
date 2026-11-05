@@ -94,7 +94,7 @@ terraform apply -auto-approve
 cd ../..
 .venv/bin/python -m legal_infra migrate
 .venv/bin/python -m legal_infra seed \
-  --workbook ../Legal-Ai-Compliance-Checker/data/private/v750_source_pdf360_r2_supabase/bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.xlsx
+  --workbook ../Legal-Ai-Compliance-Checker/data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx
 ```
 
 ### 2.3. Cài Đặt Các Thành Phần Mở Rộng AWS Parity (Kiến Trúc Giai Đoạn 2)

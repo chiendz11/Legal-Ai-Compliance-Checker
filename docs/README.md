@@ -37,6 +37,7 @@ Dành cho thành viên mới hoặc thiết lập môi trường phát triển t
 ### 4. Cơ sở Dữ liệu & Tri thức Pháp luật (`database/`)
 * **[Cài đặt & Seed PostgreSQL Local](database/local_setup.md)**: Dựng database phát triển, nạp tri thức pháp lý và dữ liệu mẫu.
 * **[Quản lý Migrations với Alembic](database/migrations.md)**: Hướng dẫn tạo và chạy Alembic migrations khi sửa đổi cấu trúc bảng.
+* **[Cập nhật Workbook Reviewed vào DB đang có](database/reviewed_dataset_update.md)**: Lệnh dry-run/update, giữ hợp đồng upload, snapshot, run/report và hướng dẫn thay ZIP trên Drive.
 * **[Tải Dataset & Thông số Corpus](database/dataset_and_corpus.md)**: Cấu trúc tập dữ liệu v7.5.0, provenance và phân chia DEV / VALIDATION.
 
 ### 5. Hướng dẫn Lập trình viên (`guides/`)

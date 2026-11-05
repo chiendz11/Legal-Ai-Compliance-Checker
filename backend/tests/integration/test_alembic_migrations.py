@@ -25,7 +25,7 @@ from sqlalchemy import text
 
 ROOT = files("legal_checker.migrations")
 BASELINES = json.loads(ROOT.joinpath("legacy_baselines.json").read_text(encoding="utf-8"))
-HEAD = "0006_users_and_reviews"
+HEAD = "0007_dataset_updates"
 # Objects added after the frozen legacy baseline 3 (revisions 0004+).
 POST_BASELINE = {
     "runtime.workflow_runs",
@@ -97,6 +97,9 @@ def test_fresh_upgrade_matches_frozen_schema_and_is_idempotent(empty_database_ur
     finally:
         engine.dispose()
     with connect_postgres(empty_database_url) as connection:
+        assert connection.execute("SELECT to_regclass('dev_meta.dataset_updates') name").fetchone()[
+            "name"
+        ]
         connection.execute("INSERT INTO runtime.hop_dong (hop_dong_id) VALUES ('KEEP_ME')")
     upgrade_database(empty_database_url)
     with connect_postgres(empty_database_url) as connection:

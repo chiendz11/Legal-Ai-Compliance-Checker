@@ -33,25 +33,25 @@ cp .env.example .env
 ```
 
 Tải gói DEV_VALIDATION bằng một lệnh; manifest trong repo pin link Drive, phiên bản
-và SHA-256 của **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**:
+và SHA-256 của **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**, review revision **user-reviewed-20261105**:
 
 ```bash
 python -m scripts.dataset pull
 python -m scripts.dataset check
 ```
 
-Script tự tạo `data/private/v750_source_pdf360_r2_supabase/`, cài 335 file gồm workbook
+Script tự tạo `data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/`, cài 337 file gồm workbook
 đầy đủ và các references, bỏ qua nếu đã đúng bản và giữ nguyên folder hiện có
 nếu phát hiện file khác hash. Gói chứa **240 DEV + 60 VALIDATION**; mỗi dev dùng DB
 local riêng và cùng workbook. Script tải không tự seed hoặc thay đổi DB.
 
 Drive yêu cầu đăng nhập hoặc hết quota: tải ZIP trong trình duyệt rồi dùng
 `python -m scripts.dataset pull --archive /path/to/DEV_VALIDATION.zip`.
-Xem [hướng dẫn tải dataset](docs/database/dataset_and_corpus.md).
+Xem [hướng dẫn tải dataset](docs/database/dataset_and_corpus.md). DB đã seed bản cũ dùng [quy trình update](docs/database/reviewed_dataset_update.md) để giữ lịch sử, không seed đè.
 
 Dataset nằm ngoài Git. `data/private/` và `.env` được bỏ qua bởi Git; thư mục private
 cũng được loại khỏi Docker build context. Các workbook chia nhỏ chỉ dùng để xem,
-seed DB vẫn dùng `bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.xlsx`.
+seed DB vẫn dùng `bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx`.
 PDF có URL public trong `tep_nguon.object_uri`; text/controlled references đọc từ
 `sources/` của gói local. Xem [cách tổ chức data local](data/README.md).
 
