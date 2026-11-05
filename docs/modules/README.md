@@ -150,7 +150,7 @@ Báo cáo đã xác nhận cần review thật; không dùng một review seed �
 
 ### 2.1 Mở DB của mình
 
-Làm theo [hướng dẫn DB local](local_database.md). Sau khi seed:
+Làm theo [hướng dẫn DB local](../database/local_setup.md). Sau khi seed:
 
 ```bash
 source .venv/bin/activate
@@ -160,7 +160,7 @@ python -m scripts.local_db check
 Cấu hình local đã dùng: host `127.0.0.1`, port `5433`, user `legal_checker`,
 password local `legal_checker_local_only`. Chọn đúng DB bằng `DATABASE_URL`; tên mặc định
 `legal_checker_dev_v750_r2_supabase` được đặt trong `.env.example`. Cách seed bộ hiện tại xem
-[hướng dẫn DB](local_database.md#3-tạo-bảng-kiểm-tra-và-seed).
+[hướng dẫn DB](../database/local_setup.md#3-tạo-bảng-kiểm-tra-và-seed).
 Dùng DBeaver/pgAdmin để xem bảng nếu chưa quen query trong Python.
 
 ### 2.2 Chọn một ca để bắt đầu
@@ -770,8 +770,8 @@ full pipeline draft trên hợp đồng mới → review và report đã xác nh
 
 Tài liệu liên quan:
 
-- [DB local, seed và cấu hình](local_database.md)
-- [Contracts gốc v7.3.2](data_contracts_v7_3_2.md)
-- [Cách nối interfaces/workflow hiện có](module_integration.md)
-- [Module schemas](module_contracts.schema.json)
-- [Kiến trúc folder hiện tại](architecture.md)
+- [DB local, seed và cấu hình](../database/local_setup.md)
+- [Contracts gốc v7.3.2](../contracts/data_contracts_v7_3_2.md)
+- [Cách nối interfaces/workflow hiện có](../guides/team_onboarding_and_next_steps.md)
+- [Module schemas](../contracts/module_contracts.schema.json)
+- [Kiến trúc folder hiện tại](../architecture/system_architecture.md)
