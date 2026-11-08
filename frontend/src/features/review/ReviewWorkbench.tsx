@@ -16,8 +16,16 @@ import {
   useReviewState,
 } from "../../shared/api/queries";
 import { useCan } from "../../shared/auth";
-import { Empty, LoadState, Notice, Section, StatusBadge } from "../../shared/components/ui";
+import {
+  Disclosure,
+  Empty,
+  LoadState,
+  Notice,
+  Section,
+  StatusBadge,
+} from "../../shared/components/ui";
 import { label, type LabelKind } from "../../shared/labels";
+import { readableReason } from "../reports/explain";
 import { type TabTarget, useReportNav } from "../reports/nav";
 import { criterionText, requirementText, riskTitle } from "../reports/reportIndex";
 
@@ -179,11 +187,11 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
         reviewed={reviewed}
         total={targets.length}
       />
-      <div className="filters" role="group" aria-label="Lọc mục review">
+      <div className="filters" role="group" aria-label="Lọc mục rà soát">
         {(
           [
             ["all", `Tất cả (${targets.length})`],
-            ["open", `Chưa review (${targets.length - reviewed})`],
+            ["open", `Chưa rà soát (${targets.length - reviewed})`],
             ["blocking", `Chặn phát hành (${blockers.length})`],
           ] as const
         ).map(([id, text]) => (
@@ -255,15 +263,15 @@ function PublishPanel({
   return (
     <div className="card-flat review-panel">
       <p>
-        Đã review <strong>{reviewed}</strong>/{total} mục · revision hiện tại{" "}
-        <code>{revision}</code> · phiên bản đang xem dựa trên <code>{record.review_revision}</code>
+        Đã rà soát <strong>{reviewed}</strong>/{total} mục
+        {reviewed > 0 && !current && " · có rà soát mới chưa đưa vào báo cáo"}
       </p>
       {published ? (
         <Notice tone="info">Phiên bản này đã phát hành và không thay đổi được nữa.</Notice>
       ) : !current ? (
         <Notice tone="warn">
-          Có review mới hơn phiên bản báo cáo đang xem. Tạo phiên bản mới để đưa các review vào
-          báo cáo trước khi phát hành.
+          Có rà soát mới hơn phiên bản báo cáo đang xem. Tạo phiên bản mới để đưa các rà soát
+          vào báo cáo trước khi phát hành.
         </Notice>
       ) : blockers > 0 ? (
         <Notice tone="warn">
@@ -271,7 +279,7 @@ function PublishPanel({
           cao chưa xác nhận, hoặc đang yêu cầu bổ sung / bị bác bỏ.
         </Notice>
       ) : revision === "none" ? (
-        <Notice tone="info">Cần ít nhất một review trước khi phát hành.</Notice>
+        <Notice tone="info">Cần rà soát ít nhất một mục trước khi phát hành.</Notice>
       ) : null}
       {error && (
         <Notice tone="bad">{apiErrorMessage(error) ?? "Không thực hiện được thao tác."}</Notice>
@@ -286,7 +294,7 @@ function PublishPanel({
               rebuild.mutate(undefined, { onSuccess: (next) => open(next.report.bao_cao_id) })
             }
           >
-            {rebuild.isPending ? "Đang tạo…" : "Tạo phiên bản báo cáo từ review"}
+            {rebuild.isPending ? "Đang tạo…" : "Tạo phiên bản báo cáo từ các rà soát"}
           </button>
         )}
         {!published && can("publisher") && (
@@ -330,6 +338,8 @@ function TargetCard({
   const can = useCan();
   const [editing, setEditing] = useState(false);
   const overrides = target.overrides ?? {};
+  const explained = typeof machine?.values.giai_thich === "string";
+  const raw = explained ? String(machine?.values.giai_thich) : "";
   return (
     <article className={`card-flat review-target${blocking ? " blocking" : ""}`}>
       <div className="criterion-head">
@@ -338,7 +348,7 @@ function TargetCard({
         {target.latest_decision ? (
           <StatusBadge kind="reviewAction" code={target.latest_decision} />
         ) : (
-          <span className="badge tone-unknown">Chưa review</span>
+          <span className="badge tone-unknown">Chưa rà soát</span>
         )}
         {blocking && <span className="badge tone-bad">Chặn phát hành</span>}
       </div>
@@ -365,8 +375,16 @@ function TargetCard({
           );
         })}
       </dl>
-      <p className="small muted">
-        <code>{target.doi_tuong_id}</code> · {target.review_count} review ·{" "}
+      {raw && raw !== readableReason(raw) && (
+        <Disclosure summary="Chi tiết kỹ thuật">
+          <p className="small muted">{raw}</p>
+          <p className="small muted">
+            Mã mục: <code>{target.doi_tuong_id}</code>
+          </p>
+        </Disclosure>
+      )}
+      <p className="small muted" title={target.doi_tuong_id}>
+        {target.review_count > 0 ? `${target.review_count} lần rà soát · ` : ""}
         {machine && kind && (
           <button type="button" className="link" onClick={() => go(kind.tab, machine.focus)}>
             Xem trong báo cáo
@@ -386,7 +404,7 @@ function TargetCard({
           />
         ) : (
           <button type="button" className="button" onClick={() => setEditing(true)}>
-            Review mục này
+            Rà soát mục này
           </button>
         ))}
     </article>
@@ -396,6 +414,8 @@ function TargetCard({
 function FieldValue({ field, value }: { field: Field; value: unknown }) {
   if (value == null || value === "") return <span className="muted">—</span>;
   if (field.labels) return <>{label(field.labels, String(value)).text}</>;
+  // Machine explanations are engine traces; show the plain reason (raw text is below).
+  if (field.name === "giai_thich") return <>{readableReason(String(value))}</>;
   return <>{String(value)}</>;
 }
 

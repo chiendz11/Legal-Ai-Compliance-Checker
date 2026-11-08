@@ -53,8 +53,8 @@ export const CAUSES: Record<Cause, { title: string; hint: string }> = {
     hint: "Lần chạy này không gọi AI (hoặc đã hết lượt gọi), nên các điểm kiểm tra còn “chưa xác định”. Bật AI rồi chạy lại.",
   },
   AI_PENDING: {
-    title: "AI đã đề xuất, chờ xác minh và duyệt",
-    hint: "Kết luận của AI chỉ được chấp nhận sau khi dữ kiện được xác minh và người duyệt đồng ý.",
+    title: "AI đã đọc nhưng chưa đủ căn cứ kết luận",
+    hint: "AI đã đọc các đoạn hợp đồng liên quan nhưng chưa kết luận được, hoặc kết luận cần một dữ kiện chưa được xác minh. Lý do ghi ở từng quy định; chuyên viên có thể xác nhận ở mục Rà soát.",
   },
   NO_EVIDENCE: {
     title: "Không tìm thấy đoạn hợp đồng liên quan",
@@ -181,10 +181,11 @@ export function explainRequirement(
   }
   if (criteria.length === 0)
     return { cause: "OTHER", text: "Chưa có điểm kiểm tra nào cho quy định này." };
-  if (criteria.some((c) => c.model_version !== AI_NOT_CALLED))
+  const read = criteria.find((c) => c.model_version !== AI_NOT_CALLED);
+  if (read)
     return {
       cause: "AI_PENDING",
-      text: "AI đã đề xuất kết luận; cần xác minh dữ kiện và người duyệt trước khi chấp nhận.",
+      text: explainCriterion(read) ?? "AI đã đọc hợp đồng nhưng chưa đủ căn cứ để kết luận.",
     };
   if (noted(criteria, /offline/i))
     return { cause: "NO_AI", text: "Chưa chạy AI để đọc và đánh giá nội dung hợp đồng." };
@@ -195,18 +196,43 @@ export function explainRequirement(
   return { cause: "OTHER", text: "Chưa đủ bằng chứng để kết luận." };
 }
 
+// Sentences written by the engine for engineers, not for readers.
+const ENGINE_TRACE =
+  /Cannot accept a finding|Unresolved gate|Provider uncertainty|Requirement applicability|Criterion (?:local_applicability|requires)|^(?:INSUFFICIENT|UNKNOWN):|\b[a-z]+_[a-z_]+=/;
+const DRAFT_MARK = /^\s*\[MACHINE_DRAFT_REVIEW\]\s*/;
+
+/**
+ * One Vietnamese sentence for a stored machine explanation (criterion result, review card).
+ * Text a person or the AI wrote in Vietnamese is kept; engine traces are translated by their
+ * first, most basic cause. The raw text stays available under "chi tiết kỹ thuật".
+ */
+export function readableReason(text: string | null | undefined): string | null {
+  const raw = (text ?? "").trim();
+  if (!raw) return null;
+  if (!ENGINE_TRACE.test(raw)) return raw.replace(DRAFT_MARK, "");
+  if (/applicability\/scope\/version is not confirmed/i.test(raw))
+    return "Chưa kết luận vì chưa xác nhận quy định này áp dụng cho hợp đồng (hợp đồng chưa cho biết đủ thông tin về các bên hoặc loại giao dịch). Lý do cụ thể ghi ở quy định.";
+  if (/offline|NO_LLM_CALL/i.test(raw)) return "Chưa chạy AI để đọc nội dung hợp đồng.";
+  if (/giới hạn số criterion|CALL_LIMIT/i.test(raw)) return "Đã hết lượt gọi AI trong lần chạy này.";
+  if (/selected FINAL/i.test(raw)) return "Không tìm thấy đoạn hợp đồng liên quan để kiểm tra.";
+  if (/QUOTE_(?:OFFSET_)?MISMATCH|AMBIGUOUS_QUOTE/.test(raw))
+    return "AI đưa trích dẫn không khớp nguyên văn hợp đồng nên kết luận bị loại.";
+  const ai = raw.match(/Semantic predicate has not been reviewed:\s*([^;]+)/);
+  if (ai?.[1]) return `AI chưa kết luận được: ${ai[1].trim().replace(/\.?$/, ".")}`;
+  if (/AI còn liệt kê điều kiện chưa rõ/.test(raw))
+    return "AI còn nêu điều kiện chưa rõ nên chưa kết luận.";
+  if (/case facts|local_applicability/i.test(raw))
+    return "Điểm kiểm tra này chỉ áp dụng khi có điều kiện phát sinh cụ thể; điều kiện đó chưa được xác minh nên kết luận của AI chưa được chấp nhận.";
+  if (/^INSUFFICIENT/.test(raw)) return "Chưa đủ căn cứ: các điểm kiểm tra bắt buộc chưa có kết luận.";
+  return "Chưa đủ căn cứ để kết luận.";
+}
+
 /** Short reason under one criterion, instead of the raw module trace. */
 export function explainCriterion(c: CriterionResult): string | null {
   if (c.finding !== "UNKNOWN") return null;
   const reason = c.uncertainty_reason ?? "";
-  if (/MACHINE_DRAFT_REVIEW/.test(reason)) return "AI đã đề xuất, đang chờ người duyệt.";
   if (c.model_version === AI_NOT_CALLED && /offline/i.test(reason)) return "Chưa chạy AI.";
-  if (/giới hạn|CALL_LIMIT/i.test(reason)) return "Đã hết lượt gọi AI trong lần chạy này.";
-  if (/selected FINAL/i.test(reason)) return "Không tìm thấy đoạn hợp đồng liên quan.";
-  if (/applicability\/scope\/version is not confirmed/i.test(reason))
-    return "Chưa xác nhận quy định có áp dụng cho hợp đồng.";
-  if (/QUOTE_MISMATCH/i.test(reason)) return "Trích dẫn của AI không khớp nguyên văn hợp đồng nên bị loại.";
-  return "Chưa đủ căn cứ để kết luận.";
+  return readableReason(reason) ?? "Chưa đủ căn cứ để kết luận.";
 }
 
 /** How many criteria actually went to the AI in this run. */
