@@ -165,7 +165,6 @@ def test_bad_json_becomes_explicit_unknown(reasoning_case, raw):
     "change,code",
     [
         ({"trich_dan": "a fabricated quote"}, "QUOTE_MISMATCH"),
-        ({"ky_tu_bat_dau": 0}, "QUOTE_OFFSET_MISMATCH"),
         ({"doan_id": "FOREIGN_CHUNK"}, "FOREIGN_EVIDENCE"),
         ({"trich_dan": ""}, "EMPTY_QUOTE"),
     ],
@@ -219,6 +218,74 @@ def test_repeated_quote_requires_explicit_occurrence(reasoning_case):
     proposal["evidence"][0]["ky_tu_bat_dau"] = len(quote) + 1
     resolved = LLMObservationProvider(FakeClient([proposal])).analyze(request, knowledge)
     assert resolved.analyses[0].error_code is None
+    # An offset that points at neither occurrence cannot pick one.
+    proposal["evidence"][0]["ky_tu_bat_dau"] = 3
+    wrong = LLMObservationProvider(FakeClient([proposal])).analyze(request, knowledge)
+    assert wrong.analyses[0].error_code == "QUOTE_OFFSET_MISMATCH"
+
+
+def test_respaced_quote_resolves_to_the_contract_text(reasoning_case):
+    knowledge, data = reasoning_case
+    original = "Bên Bán  \ncó nghĩa vụ bàn giao\tcăn hộ."
+    data["payload"]["chunks"][0]["noi_dung"] = "Điều 5. " + original
+    proposal = semantic(data) | {
+        "evidence": [
+            # Re-spaced by the model, with a wrong offset.
+            {
+                "doan_id": "CHUNK_1",
+                "trich_dan": "Bên Bán có nghĩa vụ bàn giao căn hộ.",
+                "ky_tu_bat_dau": 0,
+            }
+        ]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    evidence = batch.analyses[0].observation_proposal.evidence[0]
+    assert evidence.trich_dan == original  # the stored quote is the contract's own text
+    assert (evidence.ky_tu_bat_dau, evidence.ky_tu_ket_thuc) == (8, 8 + len(original))
+
+
+def test_spliced_quote_keeps_only_the_part_the_contract_contains(reasoning_case):
+    knowledge, data = reasoning_case
+    text = (
+        "Bên Mua phải chịu: (i) Lãi chậm thanh toán đến ngày chấm dứt; "
+        "(ii) Phạt vi phạm với mức phạt là 8% giá bán căn hộ."
+    )
+    data["payload"]["chunks"][0]["noi_dung"] = text
+    spliced = "Bên Mua phải chịu: (i) Lãi chậm thanh toán đến ngày chấm dứt và bồi thường."
+    proposal = semantic(data) | {
+        "evidence": [{"doan_id": "CHUNK_1", "trich_dan": spliced, "ky_tu_bat_dau": None}]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    evidence = batch.analyses[0].observation_proposal.evidence[0]
+    assert (
+        evidence.trich_dan == "Bên Mua phải chịu: (i) Lãi chậm thanh toán đến ngày chấm dứt;"[:-1]
+    )
+    assert text.startswith(evidence.trich_dan)
+
+
+def test_paraphrased_quote_is_still_rejected(reasoning_case):
+    knowledge, data = reasoning_case
+    data["payload"]["chunks"][0]["noi_dung"] = "Bên Bán có nghĩa vụ bàn giao căn hộ."
+    proposal = semantic(data) | {
+        "evidence": [
+            {
+                "doan_id": "CHUNK_1",
+                "trich_dan": "Bên bán phải bàn giao căn hộ.",
+                "ky_tu_bat_dau": None,
+            }
+        ]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert batch.analyses[0].error_code == "QUOTE_MISMATCH"
 
 
 @pytest.mark.parametrize(

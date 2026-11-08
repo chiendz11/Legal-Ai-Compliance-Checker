@@ -96,6 +96,7 @@ def module_source(
             source_cache_dir=settings.source_cache_dir,
             llm_client_factory=llm_client_factory(settings),
             llm_max_calls=settings.assessment_llm_max_calls,
+            llm_parallel=settings.assessment_llm_parallel,
             ocr=build_ocr_engine(
                 settings.document_ocr,
                 command=settings.tesseract_cmd,

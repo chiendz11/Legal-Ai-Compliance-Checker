@@ -4,6 +4,7 @@ import json
 from datetime import date
 from decimal import Decimal
 
+import pytest
 from legal_checker.modules.documents.chunker import chunk_document
 from legal_checker.modules.documents.parser import DocumentPage, DocumentText
 from legal_checker.modules.documents.profile_extractor import extract_profile
@@ -182,6 +183,52 @@ def test_seller_heading_with_roman_numeral_or_name_on_same_line():
     assert [s.ten_chu_the for s in same_line.subjects] == [
         "CÔNG TY CỔ PHẦN BẤT ĐỘNG SẢN ĐẦU TƯ VÀ PHÁT TRIỂN CAO ỐC THIÊN LONG"
     ]
+
+
+def test_seller_heading_after_party_letter_and_title_case_company():
+    _, letter = _profile(
+        "I. BÊN A: BÊN BÁN NHÀ Ở (sau đây gọi tắt là Bên Bán): \nCÔNG TY CỔ PHẦN THÀNH PHỐ XANH  \n"
+    )
+    _, title_case = _profile(
+        "I. BÊN BÁN CĂN HỘ CHUNG CƯ (sau đây gọi tắt là Bên bán):\n"
+        "- Tên tổ chức, cá nhân: Công Ty TNHH Đầu Tư Xây Dựng Minh Hưng.\n"
+    )
+    assert [s.ten_chu_the for s in letter.subjects] == ["CÔNG TY CỔ PHẦN THÀNH PHỐ XANH"]
+    assert [s.ten_chu_the for s in title_case.subjects] == [
+        "Công Ty TNHH Đầu Tư Xây Dựng Minh Hưng."
+    ]
+
+
+SELLER = "I. BÊN BÁN CĂN HỘ (“Bên Bán”):\nCÔNG TY CỔ PHẦN ĐẦU TƯ BẤT ĐỘNG SẢN SIC\n"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "“Nhà Chung Cư” là nhà chung cư nơi có Căn Hộ do Bên Bán làm chủ đầu tư.",
+        "“Dự Án” là dự án do Công ty Cổ phần Đầu Tư Bất  \nĐộng Sản SIC là chủ đầu tư.",
+    ],
+)
+def test_seller_is_investor_when_the_contract_says_so(text):
+    _, result = _profile(SELLER + text)
+    assert result.profile.ben_ban_la_chu_dau_tu is True
+    assert _facts(result)["profile.ben_ban_la_chu_dau_tu"].evidence_ids
+
+
+def test_another_company_as_investor_says_nothing_about_the_seller():
+    _, result = _profile(SELLER + "“Dự Án” do Công ty Cổ phần Khác Hẳn làm chủ đầu tư.")
+    assert result.profile.ben_ban_la_chu_dau_tu is None
+
+
+def test_social_housing_title_and_home_purpose_variants():
+    _, social = _profile("HỢP ĐỒNG MUA BÁN NHÀ Ở XÃ HỘI\nCĂN HỘ CHUNG CƯ CÔNG ĐOÀN\n")
+    assert social.profile.la_nha_o_xa_hoi is True
+    for line in (
+        "Mục đích sử dụng Căn Hộ: chỉ dùng để ở.",
+        "e) Mục đích sử dụng Căn Hộ: Dùng làm nhà ở.",
+    ):
+        _, result = _profile(line)
+        assert result.profile.muc_dich_su_dung_can_ho == "DE_O"
 
 
 def _signing(result):

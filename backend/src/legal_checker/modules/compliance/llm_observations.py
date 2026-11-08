@@ -7,7 +7,9 @@ Without an injected client/review it emits explicit UNKNOWN records, not fake AI
 
 import hashlib
 import json
+import re
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 
 from pydantic import ValidationError
@@ -33,7 +35,7 @@ from legal_checker.shared.contracts.document_intelligence import ContractProfile
 from legal_checker.shared.contracts.reasoning import Observation, ReasoningRequest
 from legal_checker.shared.llm.types import LlmClient, LlmClientError
 
-PROMPT_VERSION = "C07_SEMANTIC_V1"
+PROMPT_VERSION = "C07_SEMANTIC_V2"
 SCHEMA_VERSION = "C07_PROPOSAL_V1"
 INSTRUCTIONS = """Bạn phân tích MỘT criterion pháp lý theo dữ liệu JSON được cung cấp.
 Chỉ dùng criterion, requirement version, predicate/rules đã pin và evidence được chọn.
@@ -59,6 +61,26 @@ Không coi lời hứa trong hợp đồng là chứng minh đã thực hiện n
 Numeric do backend tính bằng Decimal; không bịa mẫu số, đơn vị, thời điểm hoặc
 expert review. Candidate facts chỉ là đề xuất trích xuất; không cấp verification.
 Không trả gates, facts_verified, source_verified hoặc BackendReview.
+QUY TẮC TRÍCH DẪN: mỗi evidence[].trich_dan phải SAO CHÉP NGUYÊN VĂN một câu hoặc cụm
+câu ngắn (tối đa khoảng 300 ký tự) lấy từ trường noi_dung của đúng một phần tử trong
+selected_contract_evidence, kèm doan_id của phần tử đó. Đó là lời văn của HỢP ĐỒNG.
+Tuyệt đối không đưa vào trich_dan câu chữ của criterion, requirement_version,
+decision_rules, legal_article, legal_document hay lời giải thích của bạn. Không viết lại,
+tóm tắt hay sửa chính tả câu hợp đồng, không ghép hay lược bớt phần giữa câu; cần nhiều
+đoạn thì tạo nhiều phần tử evidence riêng. Nếu không có câu hợp đồng nào nói về nội dung
+cần kiểm tra thì để evidence rỗng và trả UNKNOWN.
+NHIỆM VỤ CHÍNH là đọc selected_contract_evidence và trả lời: lời văn hợp đồng có thể hiện
+nội dung criterion yêu cầu không. Có câu hợp đồng thể hiện đủ nội dung đó → SATISFIED,
+trích câu đó. Có câu hợp đồng trái với predicate → VIOLATED, trích câu đó. Xác minh
+nguồn, phiên bản, scope, ngoại lệ, chứng từ thực hiện là việc của backend
+(backend_verification); KHÔNG lấy việc chưa xác minh những điều đó làm lý do trả UNKNOWN
+và không liệt kê chúng trong missing_conditions. Chỉ trả UNKNOWN khi không câu hợp đồng
+nào nói về nội dung cần kiểm tra, khi lời văn mơ hồ, hoặc khi predicate cần một dữ kiện
+nằm ngoài hợp đồng.
+Criterion dạng "hợp đồng phải có/phải quy định/phải ghi rõ X": chỉ xét X có mặt trong lời
+văn hợp đồng hay không; có → SATISFIED. Không đánh giá X công bằng hay bất lợi, và không
+suy ra VIOLATED từ một điều khoản khác bất lợi. VIOLATED chỉ dùng khi câu hợp đồng trái
+một ngưỡng, giới hạn hoặc điều cấm cụ thể nêu trong predicate/decision_rules.
 """
 
 
@@ -162,6 +184,49 @@ def _package(request, knowledge, requirement, criterion, profile, verification=N
     return payload, selected
 
 
+_MIN_PREFIX_WORDS = 8
+
+
+def _word_spans(text: str, words: list[str]) -> list[tuple[int, int]]:
+    pattern = re.compile(r"\s+".join(map(re.escape, words)))
+    return [match.span() for match in pattern.finditer(text)]
+
+
+def _locate_quote(text: str, quote: str, offset: int | None) -> tuple[int, int]:
+    """Exact span of a model quote inside the original chunk text.
+
+    PDF text keeps the layout's spaces and line breaks ("Bên Bán  \\ncó nghĩa vụ"), which
+    models routinely re-space, and models are poor at character offsets. A quote is accepted
+    when its words appear in this order in the chunk with only whitespace differing, at
+    exactly one place (or at the place the given offset points to). Every other character
+    must match, so a paraphrase or an invented quote is still rejected.
+    """
+    if offset is not None and text[offset : offset + len(quote)] == quote:
+        return offset, offset + len(quote)
+    words = quote.split()
+    if not words:
+        raise ProposalValidationError("EMPTY_QUOTE")
+    spans = _word_spans(text, words)
+    if not spans:
+        # Models often splice a sentence ("chịu: (ii) Phạt ..." skipping "(i) ..."). The
+        # longest opening run of words that the contract really contains is kept as the
+        # evidence, if it is long enough to stand on its own; the rest is never stored.
+        floor = max(_MIN_PREFIX_WORDS, -(-len(words) * 3 // 5))
+        for size in range(len(words) - 1, floor - 1, -1):
+            if spans := _word_spans(text, words[:size]):
+                break
+    if not spans:
+        raise ProposalValidationError("QUOTE_MISMATCH")
+    if len(spans) == 1:
+        return spans[0]
+    if offset is None:
+        raise ProposalValidationError("AMBIGUOUS_QUOTE")
+    for span in spans:
+        if span[0] == offset:
+            return span
+    raise ProposalValidationError("QUOTE_OFFSET_MISMATCH")
+
+
 def _proposal_observation(proposal, selected, request, model_version):
     """Resolve quotes on original strings and prevent any out-of-context evidence."""
     if not proposal.giai_thich.strip():
@@ -173,20 +238,12 @@ def _proposal_observation(proposal, selected, request, model_version):
             raise ProposalValidationError("FOREIGN_EVIDENCE")
         if not item.trich_dan:
             raise ProposalValidationError("EMPTY_QUOTE")
-        start = item.ky_tu_bat_dau
-        if start is None:
-            start = chunk.noi_dung.find(item.trich_dan)
-            if start < 0:
-                raise ProposalValidationError("QUOTE_MISMATCH")
-            if chunk.noi_dung.find(item.trich_dan, start + 1) >= 0:
-                raise ProposalValidationError("AMBIGUOUS_QUOTE")
-        end = start + len(item.trich_dan)
-        if start < 0 or chunk.noi_dung[start:end] != item.trich_dan:
-            raise ProposalValidationError("QUOTE_OFFSET_MISMATCH")
+        start, end = _locate_quote(chunk.noi_dung, item.trich_dan, item.ky_tu_bat_dau)
         evidence.append(
             Evidence(
                 doan_id=item.doan_id,
-                trich_dan=item.trich_dan,
+                # Always the contract's own characters, even when the model re-spaced them.
+                trich_dan=chunk.noi_dung[start:end],
                 ky_tu_bat_dau=start,
                 ky_tu_ket_thuc=end,
             )
@@ -248,9 +305,13 @@ class LLMObservationProvider:
         max_calls: int = 1,
         criterion_ids: Sequence[str] | None = None,
         max_context_chars: int = 60000,
+        max_parallel_calls: int = 1,
     ):
         if type(max_calls) is not int or max_calls < 0:
             raise ValueError("max_calls must be a nonnegative integer")
+        if type(max_parallel_calls) is not int or max_parallel_calls < 1:
+            raise ValueError("max_parallel_calls must be a positive integer")
+        self.max_parallel_calls = max_parallel_calls
         if type(max_context_chars) is not int or max_context_chars < 1:
             raise ValueError("max_context_chars must be positive")
         self.automatic_draft_review = automatic_draft_review
@@ -354,8 +415,7 @@ class LLMObservationProvider:
             if row.tieu_chi_id in replays or row.tieu_chi_id not in owners:
                 raise ValueError("Duplicate or foreign replay criterion")
             replays[row.tieu_chi_id] = row
-        analyses = []
-        calls = 0
+        prepared = {}
         for criterion_id, requirement in owners.items():
             criterion = knowledge.criteria[criterion_id]
             verification = verifications.get(criterion_id)
@@ -385,11 +445,80 @@ class LLMObservationProvider:
                     )
                 )
             )
+            size = len(json.dumps(package, ensure_ascii=False, default=str))
+            prepared[criterion_id] = (package, selected, independent_material, size)
+
+        def skip_reason(criterion_id):
+            """Why this criterion gets no AI call, before the call budget is considered."""
+            _, selected, independent_material, size = prepared[criterion_id]
+            if criterion_id in replays:
+                return "REPLAY"
+            if self.criterion_ids is not None and criterion_id not in self.criterion_ids:
+                return "NOT_REQUESTED"
+            if not selected and not independent_material:
+                return "NO_SELECTED_C06"
+            if size > self.max_context_chars:
+                return "CONTEXT_LIMIT"
+            if self.client is None:
+                return "OFFLINE_NO_CLIENT"
+            return None
+
+        # The call budget goes first to criteria the backend has verified, since only those
+        # can become findings; the rest follow in checklist order (stable sort).
+        candidates = [cid for cid in owners if skip_reason(cid) is None]
+        candidates.sort(key=lambda cid: cid not in verifications)
+        chosen = candidates[: self.max_calls]
+        provider = getattr(getattr(self.client, "settings", None), "provider", "OPENAI")
+        call_origin = "GROQ" if str(provider).upper() == "GROQ" else "OPENAI"
+
+        def call(criterion_id):
+            model, request_id, proposal = "UNAVAILABLE_PROVIDER_MODEL", None, None
+            error, message = None, ""
+            try:
+                response = self.client.complete(
+                    _context(request),
+                    instructions=INSTRUCTIONS,
+                    payload=deepcopy(prepared[criterion_id][0]),
+                    schema=SemanticProposal.model_json_schema(),
+                    prompt_version=PROMPT_VERSION,
+                    schema_version=SCHEMA_VERSION,
+                )
+                model, request_id = response.model_version, response.request_id
+                if len(response.content) > 100000:
+                    raise ProposalValidationError("RESPONSE_LIMIT")
+                proposal = SemanticProposal.model_validate(parse_json_object(response.content))
+            except LlmClientError as exc:
+                error = exc.code
+                message = f"Không phân tích được criterion: lỗi API {exc.code}."
+            except (ValidationError, ValueError) as exc:
+                error = exc.code if isinstance(exc, ProposalValidationError) else "INVALID_SCHEMA"
+                message = f"Phản hồi AI không hợp lệ: {error}."
+            return model, request_id, proposal, error, message
+
+        workers = min(self.max_parallel_calls, len(chosen))
+        if workers > 1:
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                called = dict(zip(chosen, pool.map(call, chosen), strict=True))
+        else:
+            called = {cid: call(cid) for cid in chosen}
+
+        skip_messages = {
+            "NOT_REQUESTED": "Criterion chưa được chọn để gọi AI trong lần này.",
+            "NO_SELECTED_C06": "Thiếu C06 selected FINAL chứa nội dung cho criterion.",
+            "CONTEXT_LIMIT": "Ngữ cảnh vượt giới hạn; cần chuẩn bị evidence gọn hơn.",
+            "OFFLINE_NO_CLIENT": "Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.",
+            "CALL_LIMIT": "Đã đạt giới hạn số criterion được gọi AI trong lần này.",
+        }
+        analyses = []
+        for criterion_id in owners:
+            package, selected, _, _ = prepared[criterion_id]
+            verification = verifications.get(criterion_id)
             digest = _digest(package)
             replay = replays.get(criterion_id)
             origin, model, request_id = "NO_CALL", "NO_LLM_CALL", None
             proposal, proposed_observation, error = None, None, None
             message = ""
+            reason = skip_reason(criterion_id)
             if replay is not None:
                 if replay.input_sha256 != digest or replay.prompt_version != PROMPT_VERSION:
                     raise ValueError(
@@ -403,59 +532,12 @@ class LLMObservationProvider:
                 origin = "REPLAY"
                 if proposal is None:
                     error, message = replay.error_code, replay.observation.giai_thich
-            elif self.criterion_ids is not None and criterion_id not in self.criterion_ids:
-                error, message = (
-                    "NOT_REQUESTED",
-                    "Criterion chưa được chọn để gọi AI trong lần này.",
-                )
-            elif not selected and not independent_material:
-                error, message = (
-                    "NO_SELECTED_C06",
-                    "Thiếu C06 selected FINAL chứa nội dung cho criterion.",
-                )
-            elif len(json.dumps(package, ensure_ascii=False, default=str)) > self.max_context_chars:
-                error, message = (
-                    "CONTEXT_LIMIT",
-                    "Ngữ cảnh vượt giới hạn; cần chuẩn bị evidence gọn hơn.",
-                )
-            elif self.client is None:
-                error, message = (
-                    "OFFLINE_NO_CLIENT",
-                    "Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.",
-                )
-            elif calls >= self.max_calls:
-                error, message = (
-                    "CALL_LIMIT",
-                    "Đã đạt giới hạn số criterion được gọi AI trong lần này.",
-                )
+            elif reason is not None or criterion_id not in called:
+                error = reason or "CALL_LIMIT"
+                message = skip_messages[error]
             else:
-                calls += 1
-                provider = getattr(getattr(self.client, "settings", None), "provider", "OPENAI")
-                origin = "GROQ" if str(provider).upper() == "GROQ" else "OPENAI"
-                model = "UNAVAILABLE_PROVIDER_MODEL"
-                try:
-                    response = self.client.complete(
-                        _context(request),
-                        instructions=INSTRUCTIONS,
-                        payload=deepcopy(package),
-                        schema=SemanticProposal.model_json_schema(),
-                        prompt_version=PROMPT_VERSION,
-                        schema_version=SCHEMA_VERSION,
-                    )
-                    model, request_id = response.model_version, response.request_id
-                    if len(response.content) > 100000:
-                        raise ProposalValidationError("RESPONSE_LIMIT")
-                    proposal = SemanticProposal.model_validate(parse_json_object(response.content))
-                except LlmClientError as exc:
-                    error, message = (
-                        exc.code,
-                        f"Không phân tích được criterion: lỗi API {exc.code}.",
-                    )
-                except (ValidationError, ValueError) as exc:
-                    error = (
-                        exc.code if isinstance(exc, ProposalValidationError) else "INVALID_SCHEMA"
-                    )
-                    message = f"Phản hồi AI không hợp lệ: {error}."
+                origin = call_origin
+                model, request_id, proposal, error, message = called[criterion_id]
             if proposal is not None:
                 try:
                     if proposal.tieu_chi_id != criterion_id:

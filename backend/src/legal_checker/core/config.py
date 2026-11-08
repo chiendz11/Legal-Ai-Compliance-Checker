@@ -28,7 +28,9 @@ class Settings:
     assessment_modules: str = "none"
     # C07 observations: "offline" (no paid calls, UNKNOWN per criterion) or "openai".
     assessment_llm: str = "offline"
-    assessment_llm_max_calls: int = 20
+    assessment_llm_max_calls: int = 80
+    # Concurrent C07 requests per run; 1 keeps calls sequential.
+    assessment_llm_parallel: int = 4
     # "inline" runs jobs in the API process; "celery" sends them to the Redis-backed worker.
     assessment_queue: str = "inline"
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -67,7 +69,8 @@ class Settings:
             source_max_bytes=int(os.getenv("SOURCE_MAX_BYTES", str(100 * 1024 * 1024))),
             assessment_modules=os.getenv("ASSESSMENT_MODULES", "none"),
             assessment_llm=os.getenv("ASSESSMENT_LLM", "offline"),
-            assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "20")),
+            assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "80")),
+            assessment_llm_parallel=int(os.getenv("ASSESSMENT_LLM_PARALLEL", "4")),
             assessment_queue=os.getenv("ASSESSMENT_QUEUE", "inline"),
             redis_url=os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             run_lease_seconds=int(os.getenv("RUN_LEASE_SECONDS", "600")),

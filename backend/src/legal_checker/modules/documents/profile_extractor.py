@@ -29,7 +29,7 @@ from legal_checker.shared.contracts.document_intelligence import (
     ProfileTimeMarker,
 )
 
-PROFILE_EXTRACTOR_VERSION = "rules-v4"
+PROFILE_EXTRACTOR_VERSION = "rules-v5"
 LITERAL = "LABEL_REGEX"
 PHRASE = "PHRASE_REGEX"  # giá trị ghi nguyên văn trong câu (không có nhãn "X:")
 DERIVED = "RULE_DERIVED"
@@ -291,20 +291,42 @@ def _find(chunks: Sequence[ChunkRecord], pattern: re.Pattern[str]) -> Span | Non
 
 _TITLE = re.compile(r"HỢP ĐỒNG MUA BÁN CĂN HỘ(?: CHUNG CƯ)?(?![^\n]*\.{4,})")
 _FUTURE = re.compile(r"hình thành trong tương lai")
-_PURPOSE_HOME = re.compile(r"Mục đích sử dụng(?: Căn [Hh]ộ)?:\s*(?:[Dd]ùng )?để ở", re.I)
+# "Mục đích sử dụng Căn Hộ: chỉ dùng để ở", "... của Căn hộ: để ở", "...: Dùng làm nhà ở".
+_PURPOSE_HOME = re.compile(
+    r"Mục đích sử dụng(?: của)?(?: Căn [Hh]ộ)?:\s*(?:chỉ\s+)?(?:dùng\s+)?(?:để ở|làm nhà ở)",
+    re.I,
+)
 _VN_LAW = re.compile(r"pháp luật Việt Nam|CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", re.I)
 _REAL_ESTATE_LAW = re.compile(r"Luật Kinh [Dd]oanh [Bb]ất [Đđ]ộng [Ss]ản")
-_SELLER_IS_INVESTOR = re.compile(r"“Chủ đầu tư”,\s*“Bên Bán”|“Bên Bán”,\s*“Chủ đầu tư”")
-# Tiêu đề "BÊN BÁN" ở đầu dòng, có thể có số thứ tự thường/La Mã ("1.", "I.").
+_SELLER_IS_INVESTOR = re.compile(
+    r"“Chủ đầu tư”,\s*“Bên Bán”|“Bên Bán”,\s*“Chủ đầu tư”"
+    # "... Nhà Chung Cư nơi có Căn Hộ do Bên Bán làm chủ đầu tư"
+    r"|do\s+Bên\s+Bán\s+(?:làm|là)\s+chủ\s+đầu\s+tư"
+    # "I. BÊN BÁN CĂN HỘ (...):" rồi ngay dòng sau "Chủ đầu tư: <tên>"
+    r"|BÊN BÁN[^\n]*\n[ \t]*Chủ đầu tư[ \t]*:",
+    re.I,
+)
+# "Dự án ... do Công ty Cổ phần X làm chủ đầu tư": khớp khi X đúng là tên bên bán.
+_NAMED_INVESTOR = re.compile(
+    r"do\s+(?P<name>(?:(?:Tổng\s+)?Công\s+ty|Tập\s+đoàn)\s[^“”]{3,150}?)"
+    r"\s+(?:làm|là)\s+chủ\s+đầu\s+tư",
+    re.I,
+)
+# Tiêu đề hợp đồng nói rõ là nhà ở xã hội: yêu cầu chỉ dành cho nhà ở thương mại bị loại.
+_SOCIAL_HOUSING_TITLE = re.compile(r"HỢP ĐỒNG (?:MUA BÁN|THUÊ MUA) NHÀ Ở XÃ HỘI")
+# Tiêu đề "BÊN BÁN" ở đầu dòng, có thể có số thứ tự thường/La Mã ("1.", "I.") hoặc nhãn
+# "BÊN A:" phía trước ("I. BÊN A: BÊN BÁN NHÀ Ở ...").
 # Tên công ty có thể nằm ngay sau trên cùng dòng ("BÊN BÁN: CÔNG TY ...").
-_SELLER_HEADING = re.compile(r"^[ \t]*(?:(?:\d+|[IVX]+)\.[ \t]*)?BÊN BÁN\b", re.M)
+_SELLER_HEADING = re.compile(
+    r"^[ \t]*(?:(?:\d+|[IVX]+)\.[ \t]*)?(?:BÊN A[ \t]*:[ \t]*)?BÊN BÁN\b", re.M
+)
 # Dòng tiếp theo toàn chữ in hoa, ngắn: phần tên công ty bị xuống dòng.
 _NAME_CONTINUATION = re.compile(r"\n[ \t]*([A-ZÀ-Ỹ][A-ZÀ-Ỹ \t()&.-]{0,40}?)[ \t]*(?=\n|$)")
 # Tên tổ chức ở bất kỳ đâu trong dòng: "TỔNG CÔNG TY ...", "- Công ty: CÔNG TY CỔ PHẦN ...",
 # "Tên Công ty: Công ty Cổ phần HBI". "Công ty:" (nhãn) không khớp vì sau đó là dấu hai chấm.
 _ORG_NAME = re.compile(
     r"(?P<name>(?:TỔNG[ \t]+)?CÔNG[ \t]+TY[^\n]*"
-    r"|(?:Tổng[ \t]+)?Công[ \t]+ty[ \t]+(?:[A-ZĐ]|cổ phần|trách nhiệm|TNHH)[^\n]*)"
+    r"|(?:Tổng[ \t]+)?Công[ \t]+[Tt]y[ \t]+(?:[A-ZĐ]|cổ phần|trách nhiệm|TNHH)[^\n]*)"
 )
 _SELLER_WINDOW_LINES = 4
 
@@ -327,6 +349,26 @@ def _find_seller(chunks: Sequence[ChunkRecord]) -> tuple[str, Span] | None:
             if cont and m.group("name").isupper() and cont.group(1).isupper():
                 end = cont.end(1)  # "... CAO ỐC" + "THIÊN LONG"
             return " ".join(text[start:end].split()), Span(chunk, start, end)
+    return None
+
+
+def _plain_name(text: str) -> str:
+    return " ".join(text.replace("–", "-").split()).casefold().rstrip(" .,;:")
+
+
+def _same_party(a: str, b: str) -> bool:
+    """Equal names, or one cut short by a line break (at least five words in common)."""
+    a, b = _plain_name(a), _plain_name(b)
+    short, long = sorted((a, b), key=len)
+    return a == b or (len(short.split()) >= 5 and long.startswith(short))
+
+
+def _find_named_investor(chunks: Sequence[ChunkRecord], seller_name: str) -> Span | None:
+    """The contract names the seller itself as the project's investor."""
+    for chunk in chunks:
+        for m in _NAMED_INVESTOR.finditer(chunk.noi_dung):
+            if _same_party(m.group("name"), seller_name):
+                return Span(chunk, m.start(), m.end())
     return None
 
 
@@ -396,10 +438,14 @@ def extract_profile(
     if future := _find(chunks, _FUTURE):
         set_field("tinh_trang_tai_san", "HINH_THANH_TRONG_TUONG_LAI", [future], DERIVED)
         set_field("la_nha_xay_moi", True, [future], DERIVED)
-    if investor := _find(chunks, _SELLER_IS_INVESTOR):
-        set_field("ben_ban_la_chu_dau_tu", True, [investor], DERIVED)
+    if social := _find(chunks, _SOCIAL_HOUSING_TITLE):
+        set_field("la_nha_o_xa_hoi", True, [social], DERIVED)
 
     seller = _find_seller(chunks)
+    if investor := _find(chunks, _SELLER_IS_INVESTOR):
+        set_field("ben_ban_la_chu_dau_tu", True, [investor], DERIVED)
+    elif seller and (named := _find_named_investor(chunks, seller[0])):
+        set_field("ben_ban_la_chu_dau_tu", True, [seller[1], named], DERIVED)
     buyer_spans = [c.span for c in found.get("ten_ben_mua", [])] if buyer else []
     subjects: list[ProfileSubject] = []
     if seller:

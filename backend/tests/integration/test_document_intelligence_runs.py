@@ -1,7 +1,9 @@
 """Uploaded contracts run group A's document intelligence inside the full assessment run."""
 
 import pytest
+from legal_checker.core.postgres import connect_postgres
 from legal_checker.modules.assessments.cases import CaseRepository
+from legal_checker.modules.retrieval.repository import RetrievalDatasetRepository
 from legal_checker.workflows.integrated import (
     MODULE_SOURCE,
     REFERENCE_DI_SOURCE,
@@ -113,6 +115,12 @@ class _FakeOcr:
 
 def test_scanned_pdf_is_assessed_from_ocr_text(integrated):
     integrated.runner.source.ocr = _FakeOcr()
+    with connect_postgres(integrated.database_url) as connection:
+        # The contract-type catalogue row the stored profile refers to (seeded in real DBs).
+        connection.execute(
+            "INSERT INTO knowledge.loai_hop_dong (loai_hop_dong_id, ten_loai) "
+            "VALUES ('MB_CAN_HO_CHUNG_CU', 'Mua bán căn hộ chung cư') ON CONFLICT DO NOTHING"
+        )
     ca_id = case_for(integrated, _minimal_pdf([""]), "scan_ocr.pdf")
     record, status, stages = run(integrated, ca_id)
     assert status["status"] == "COMPLETED", status.get("error")
@@ -124,6 +132,23 @@ def test_scanned_pdf_is_assessed_from_ocr_text(integrated):
     assert record.module_source == MODULE_SOURCE
     report = integrated.client.get(f"/api/v1/cases/{ca_id}/runs/{record.run_id}/reports").json()
     assert report["items"][0]["report"]["report_json"]["audit"]["module_source"] == MODULE_SOURCE
+    # The extraction is stored for this contract, so retrieval sees section paths and facts.
+    hop_dong_id = draft.contract_profile.hop_dong_id
+    repository = RetrievalDatasetRepository(integrated.database_url)
+    assert repository.section_paths(hop_dong_id)
+    with connect_postgres(integrated.database_url) as connection:
+        profile = connection.execute(
+            "SELECT ngay_giao_ket, loai_hop_dong_id FROM runtime.ho_so_hop_dong "
+            "WHERE hop_dong_id=%s",
+            (hop_dong_id,),
+        ).fetchone()
+    assert str(profile["ngay_giao_ket"]) == "2026-11-01"
+    assert profile["loai_hop_dong_id"] == "MB_CAN_HO_CHUNG_CU"
+    # A second run of the same contract reuses the stored rows instead of conflicting.
+    again = integrated.client.post(
+        f"/api/v1/cases/{ca_id}/runs", headers={"Idempotency-Key": f"di-again-{ca_id}"}
+    )
+    assert integrated.client.get(again.json()["status_url"]).json()["status"] == "COMPLETED"
 
 
 def test_scan_that_ocr_cannot_read_explains_why(integrated):

@@ -12,19 +12,23 @@ C07 observations call an LLM only when ASSESSMENT_LLM=openai (paid, opt-in). Off
 provider returns an explicit UNKNOWN per criterion instead of inventing findings.
 """
 
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
+import psycopg
 from devtools.upstream_fixtures import load_document
 
 from legal_checker.modules.applicable_law.scope_resolver import CatalogScopeResolver
 from legal_checker.modules.applicable_law.temporal_resolver import CatalogTemporalResolver
 from legal_checker.modules.assessments.cases import CaseRepository
 from legal_checker.modules.citation_validation.service import CatalogCitationValidator
+from legal_checker.modules.compliance.backend_verification import VerifiedObservationProvider
 from legal_checker.modules.compliance.llm_observations import LLMObservationProvider
 from legal_checker.modules.documents.ocr import OcrEngine, OcrFailedError
 from legal_checker.modules.documents.parser import PdfTextReader, UnsupportedDocumentError
+from legal_checker.modules.documents.repository import DocumentRepository
 from legal_checker.modules.documents.service import PdfDocumentIntelligence, SourceMismatchError
 from legal_checker.modules.retrieval.repository import RetrievalDatasetRepository
 from legal_checker.modules.retrieval.service import LexicalRetrievalService
@@ -37,6 +41,7 @@ from legal_checker.workflows.assessment_workflow import DraftModules
 
 MODULE_SOURCE = "MODULES"
 REFERENCE_DI_SOURCE = "MODULES_DI_REFERENCE"
+logger = logging.getLogger(__name__)
 
 
 class DocumentIntelligenceUnavailable(LookupError):
@@ -66,6 +71,7 @@ class IntegratedModulesSource:
         source_cache_dir: Path | None = None,
         llm_client_factory: Callable[[], object] | None = None,
         llm_max_calls: int = 0,
+        llm_parallel: int = 1,
         ocr: OcrEngine | None = None,
     ):
         self.database_url = database_url
@@ -76,6 +82,7 @@ class IntegratedModulesSource:
         self.source_cache_dir = source_cache_dir
         self.llm_client_factory = llm_client_factory
         self.llm_max_calls = llm_max_calls
+        self.llm_parallel = llm_parallel
 
     def has_local_bytes(self, source: SourceDocument) -> bool:
         """The exact source is on this server, so reading it needs no network."""
@@ -129,6 +136,20 @@ class IntegratedModulesSource:
                 "'HỢP ĐỒNG MUA BÁN CĂN HỘ' title was found); only that contract type is "
                 "assessed for now",
             )
+        # An uploaded contract has no seeded rows, so its chunks (with section paths), field
+        # evidence, parties, time markers, citations and profile are stored before retrieval
+        # reads them by contract ID. IDs carry the extraction version, so a rerun adds nothing.
+        # Seeded contracts keep their reviewed dataset rows untouched.
+        # Storing is an aid to retrieval, not part of the assessment itself: if a catalogue
+        # row is missing the run still uses the in-memory extraction, and the cause is logged.
+        if case.source.object_uri.startswith(UPLOAD_SCHEME):
+            try:
+                DocumentRepository(self.database_url).save(extraction, replace_profile=True)
+            except psycopg.Error as error:
+                logger.warning(
+                    "document_extraction_not_stored",
+                    extra={"hop_dong_id": case.hop_dong_id, "error": str(error)[:300]},
+                )
         return extraction.result
 
     def _reference(self, case: AssessmentCase):
@@ -164,10 +185,16 @@ class IntegratedModulesSource:
                 section_paths=repository.section_paths, fact_evidence=repository.fact_evidence
             ),
             citations=CatalogCitationValidator(),
-            observations=LLMObservationProvider(
-                client=client,
-                max_calls=self.llm_max_calls if client else 0,
-                automatic_draft_review=True,
+            # Backend attestations for contract-content criteria are built from the run's
+            # resolved checklist; without them no catalogue criterion can ever conclude.
+            observations=VerifiedObservationProvider(
+                lambda verifications: LLMObservationProvider(
+                    client=client,
+                    max_calls=self.llm_max_calls if client else 0,
+                    max_parallel_calls=max(1, self.llm_parallel),
+                    automatic_draft_review=True,
+                    verifications=verifications,
+                )
             ),
         )
         # None keeps the workflow's default steps 5–7 (group C's evaluate).

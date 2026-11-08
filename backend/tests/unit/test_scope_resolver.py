@@ -214,6 +214,18 @@ def test_developer_new_build_confirms_housing_group_capacity():
     assert disabled[0].scope_status == "UNKNOWN"
 
 
+@pytest.mark.parametrize("group", ["MAU_CAN_HO", "ND_KDBDS"])
+def test_business_seller_confirms_model_contract_and_business_decree_groups(group):
+    template = clause([("loai_hop_dong_id", "IS_OR_DESCENDANT_OF", "MB_BAT_DONG_SAN")], group=group)
+    template["loai_chu_the"] = "CAN_XAC_MINH_TU_CACH_CAC_BEN"
+    fields = {"loai_hop_dong_id": "MB_CAN_HO_CHUNG_CU", "subjects": [("BEN_BAN", True)]}
+    business = resolve([template], profile(che_do_giao_dich="KINH_DOANH_BDS", **fields))
+    assert business.scope_status == "MATCH"
+    assert "team policy" in business.scope_reason
+    # Without the business-transaction fact the clause stays open, never NO_MATCH.
+    assert resolve([template], profile(**fields)).scope_status == "UNKNOWN"
+
+
 def test_evidenced_social_housing_excludes_commercial_family():
     payment = clause([("loai_hop_dong_id", "IS_OR_DESCENDANT_OF", "MB_BAT_DONG_SAN")])
     fields = {"loai_hop_dong_id": "MB_CAN_HO_CHUNG_CU", "la_nha_o_xa_hoi": True}

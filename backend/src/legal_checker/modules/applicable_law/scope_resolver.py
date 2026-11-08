@@ -45,6 +45,16 @@ DEFAULT_PARTY_CAPACITY_CHECKS: dict[str, tuple[dict[str, Any], ...]] = {
         {"field": "la_nha_xay_moi", "op": "EQ", "value": "CO"},
     ),
     "KDBDS": _BUSINESS_SALE,
+    # The catalog's own scope text for these groups: the model contract (Mẫu Ia) and the
+    # real-estate-business decree bind "chủ đầu tư/doanh nghiệp BĐS" selling in a business
+    # transaction, not a civil resale; evidenced social housing is excluded separately.
+    "MAU_CAN_HO": _BUSINESS_SALE,
+    "ND_KDBDS": _BUSINESS_SALE,
+    # Maintenance-account amendment to the housing law: the same parties as NHAO.
+    "VBPL012": (
+        {"field": "ben_ban_la_chu_dau_tu", "op": "EQ", "value": "CO"},
+        {"field": "la_nha_xay_moi", "op": "EQ", "value": "CO"},
+    ),
     "FAM_PRE_CERT_CAP": _FUTURE_COMMERCIAL_SALE,
     "FAM_PRE_HANDOVER_CAP": _FUTURE_COMMERCIAL_SALE,
 }
