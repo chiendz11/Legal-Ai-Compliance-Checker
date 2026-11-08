@@ -35,7 +35,7 @@ from legal_checker.shared.contracts.document_intelligence import ContractProfile
 from legal_checker.shared.contracts.reasoning import Observation, ReasoningRequest
 from legal_checker.shared.llm.types import LlmClient, LlmClientError
 
-PROMPT_VERSION = "C07_SEMANTIC_V2"
+PROMPT_VERSION = "C07_SEMANTIC_V3"
 SCHEMA_VERSION = "C07_PROPOSAL_V1"
 INSTRUCTIONS = """Bạn phân tích MỘT criterion pháp lý theo dữ liệu JSON được cung cấp.
 Chỉ dùng criterion, requirement version, predicate/rules đã pin và evidence được chọn.
@@ -52,9 +52,13 @@ trái predicate. MISSING chỉ được đề xuất nếu rule cho phép và c�
 absence và mandatory từ backend; top-K rỗng không chứng minh vắng nội dung.
 Thiếu nội dung/facts để đối chiếu predicate: UNKNOWN và ghi missing_conditions.
 checked_conditions/missing_conditions chỉ nói về nội dung của chính predicate.
-Các yêu cầu xác minh nguồn/scope/version/ngoại lệ chưa hoàn tất được ghi riêng trong
-verification_requirements, không tự bật flags. Một đề xuất nội dung SATISFIED vẫn
-có thể bị backend giữ UNKNOWN khi verification chưa đủ. Không coi ô trống luôn là MISSING.
+verification_requirements chỉ ghi một dữ kiện CỤ THỂ của hợp đồng này còn thiếu để kết
+luận (ví dụ: "chưa có Phụ lục 02 nêu mức kinh phí bảo trì"). Không ghi các việc xác minh
+chung như nguồn, phạm vi, phiên bản, ngoại lệ, tính hợp lệ của trích dẫn hay phê duyệt của
+người duyệt: backend luôn tự làm và tự kiểm các việc đó; backend_verification có
+requirement_applicability CONFIRMED nghĩa là phạm vi và phiên bản đã được xác nhận.
+Không tự bật flags. Một đề xuất SATISFIED vẫn có thể bị backend giữ UNKNOWN khi
+verification chưa đủ. Không coi ô trống luôn là MISSING.
 Các trường profile và candidate facts chỉ là bối cảnh, chưa tự được xác minh.
 External metadata chỉ xác định nguồn, không chứng minh nội dung chứng từ.
 Không coi lời hứa trong hợp đồng là chứng minh đã thực hiện nghĩa vụ bên ngoài.
@@ -185,8 +189,8 @@ def _package(request, knowledge, requirement, criterion, profile, verification=N
 
 
 _MIN_PREFIX_WORDS = 8
-# Unfilled template blanks: "[…]", "[...]", "…", "....", "___".
-PLACEHOLDER = re.compile(r"\[\s*(?:…|\.{3})\s*\]|…|\.{4,}|_{3,}")
+# Unfilled template blanks: "[…]", "[...]", "[điền vào]", "[•]", "…", "....", "___".
+PLACEHOLDER = re.compile(r"\[\s*(?:…|\.{3}|•|điền[^\]]{0,20})\s*\]|…|\.{4,}|_{3,}")
 
 
 def _word_spans(text: str, words: list[str]) -> list[tuple[int, int]]:

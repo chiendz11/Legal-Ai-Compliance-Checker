@@ -684,7 +684,7 @@ def test_review_cannot_silently_change_verified_facts_used_for_analysis(reasonin
         )
 
 
-@pytest.mark.parametrize("blank", ["[…]", "[...]", "……", "......", "____"])
+@pytest.mark.parametrize("blank", ["[…]", "[...]", "[điền vào]", "[•]", "……", "......", "____"])
 def test_a_blank_template_field_never_supports_a_finding(reasoning_case, blank):
     knowledge, data = reasoning_case
     text = f"c) Diện tích sàn xây dựng của căn hộ là: {blank} m2, tính theo khoản 7 Điều 1."

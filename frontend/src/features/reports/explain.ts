@@ -219,6 +219,10 @@ export function readableReason(text: string | null | undefined): string | null {
   if (/offline|NO_LLM_CALL/i.test(raw)) return "Chưa chạy AI để đọc nội dung hợp đồng.";
   if (/giới hạn số criterion|CALL_LIMIT/i.test(raw)) return "Đã hết lượt gọi AI trong lần chạy này.";
   if (/selected FINAL/i.test(raw)) return "Không tìm thấy đoạn hợp đồng liên quan để kiểm tra.";
+  if (/QUOTA_EXHAUSTED/.test(raw))
+    return "Không gọi được AI: tài khoản AI đã hết hạn mức. Cần nạp thêm rồi chạy lại.";
+  if (/lỗi API/.test(raw)) return "Không gọi được AI do lỗi kết nối tới nhà cung cấp; chạy lại sau.";
+  if (/MODEL_DISAGREEMENT/.test(raw)) return "Hai lần hỏi AI cho kết quả khác nhau nên chưa kết luận.";
   if (/TEMPLATE_PLACEHOLDER/.test(raw))
     return "Đoạn hợp đồng liên quan còn chỗ trống chưa điền (bản mẫu), nên chưa kết luận.";
   if (/QUOTE_(?:OFFSET_)?MISMATCH|AMBIGUOUS_QUOTE/.test(raw))
