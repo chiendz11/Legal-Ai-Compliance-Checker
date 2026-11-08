@@ -2222,6 +2222,110 @@
         ]
       }
     },
+    "/api/v1/reports/{bao_cao_id}/requirements": {
+      "get": {
+        "operationId": "getReportRequirementNames",
+        "tags": [
+          "reports"
+        ],
+        "summary": "Name the requirements a report lists",
+        "description": "Plain-language name and obligation group for every requirement in the report's checklist and applicable legal scope, read from the knowledge snapshot pinned in audit.context. IDs missing from the snapshot keep their code as the title.",
+        "x-implementation-status": "IMPLEMENTED",
+        "x-contract-status": "PROPOSED",
+        "x-module-contracts": [
+          "C13"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Output_RequirementNameList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Object not found in the caller's permitted scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Pinned knowledge snapshot is not available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Input_ApiError"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bao_cao_id",
+            "in": "path",
+            "required": true,
+            "description": "",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
     "/api/v1/cases/{ca_id}/runs/{run_id}/events": {
       "get": {
         "operationId": "streamRunProgress",
@@ -7063,6 +7167,60 @@
           "blockers"
         ],
         "title": "RunReviewState",
+        "type": "object"
+      },
+      "Output_RequirementName": {
+        "additionalProperties": false,
+        "description": "Plain-language name of one legal requirement, so screens never show only its code.",
+        "properties": {
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "obligation_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Obligation Group"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "title"
+        ],
+        "title": "RequirementName",
+        "type": "object"
+      },
+      "Output_RequirementNameList": {
+        "additionalProperties": false,
+        "properties": {
+          "knowledge_snapshot_sha256": {
+            "title": "Knowledge Snapshot Sha256",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Output_RequirementName"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "knowledge_snapshot_sha256",
+          "items"
+        ],
+        "title": "RequirementNameList",
         "type": "object"
       }
     }
