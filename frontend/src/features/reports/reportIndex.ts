@@ -6,6 +6,7 @@ import type {
   CitationValidation,
   CriterionResult,
   ProfileEvidence,
+  Recommendation,
   ReportContent,
   RequirementResult,
   RiskResult,
@@ -22,6 +23,7 @@ export type ReportIndex = {
   risksByCriterion: Map<string, RiskResult[]>;
   risksByFinding: Map<string, RiskResult[]>;
   profileEvidenceById: Map<string, ProfileEvidence>;
+  recommendationsByRisk: Map<string, Recommendation[]>;
 };
 
 function groupBy<T>(items: T[], key: (item: T) => string | null | undefined) {
@@ -54,6 +56,7 @@ export function buildIndex(content: ReportContent): ReportIndex {
     profileEvidenceById: new Map(
       (content.contract_profile.evidence ?? []).map((e) => [e.bang_chung_id, e]),
     ),
+    recommendationsByRisk: groupBy(content.recommendations, (r) => r.ket_qua_rui_ro_id),
   };
 }
 
@@ -66,17 +69,54 @@ export function useReportIndex() {
 }
 
 /** Human-readable criterion text from the knowledge snapshot pinned with the result. */
+export function criterionSnapshot(criterion: CriterionResult): Record<string, unknown> {
+  // Reference runs nest the knowledge row under "criterion"; module runs store it flat.
+  const snapshot = (criterion.tieu_chi_snapshot_json ?? {}) as Record<string, unknown>;
+  const nested = snapshot.criterion;
+  return nested && typeof nested === "object" ? (nested as Record<string, unknown>) : snapshot;
+}
+
 export function criterionText(criterion: CriterionResult): string {
-  const snapshot = criterion.tieu_chi_snapshot_json as { criterion?: { noi_dung?: string } };
-  return snapshot.criterion?.noi_dung ?? criterion.tieu_chi_id;
+  const text = criterionSnapshot(criterion).noi_dung;
+  return typeof text === "string" && text ? text : criterion.tieu_chi_id;
+}
+
+/** The pinned requirement version: "version" in reference runs, "requirement_version" in module runs. */
+export function requirementVersion(
+  requirement: RequirementResult,
+): Record<string, unknown> | undefined {
+  const snapshot = (requirement.requirement_snapshot_json ?? {}) as Record<string, unknown>;
+  const version = snapshot.version ?? snapshot.requirement_version;
+  return version && typeof version === "object" ? (version as Record<string, unknown>) : undefined;
 }
 
 export function requirementText(requirement: RequirementResult): string {
-  const snapshot = requirement.requirement_snapshot_json as { version?: { noi_dung?: string } };
-  return snapshot.version?.noi_dung ?? requirement.yeu_cau_ca_id;
+  const text = requirementVersion(requirement)?.noi_dung;
+  return typeof text === "string" && text ? text : requirement.yeu_cau_ca_id;
 }
 
 export function riskTitle(risk: RiskResult): string {
   const snapshot = risk.risk_snapshot as { ten_rui_ro?: string };
   return snapshot.ten_rui_ro ?? risk.rui_ro_id;
+}
+
+/** requirement_id → plain-language name and topic, from the report's pinned knowledge snapshot. */
+export type RequirementInfo = { title: string; group: string | null };
+export const RequirementNamesContext = createContext<Map<string, RequirementInfo>>(new Map());
+
+export function useRequirementName() {
+  const names = useContext(RequirementNamesContext);
+  return (requirementId: string | null | undefined) =>
+    (requirementId && names.get(requirementId)?.title) || null;
+}
+
+export function useRequirementGroup() {
+  const names = useContext(RequirementNamesContext);
+  return (requirementId: string | null | undefined) =>
+    (requirementId && names.get(requirementId)?.group) || null;
+}
+
+/** requirement_id of a per-case requirement row (yeu_cau_ca_id = <ca_id>_<requirement_id>). */
+export function requirementIdOf(index: ReportIndex, yeuCauCaId: string): string | null {
+  return index.applicableById.get(yeuCauCaId)?.requirement_id ?? null;
 }

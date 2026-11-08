@@ -25,8 +25,8 @@ export function AuditSection({ record }: { record: ReportRecord }) {
   const publication = audit.publication;
   return (
     <Section
-      title="Audit và phiên bản"
-      description="Snapshot tri thức, rule và run đã dùng để tái hiện báo cáo."
+      title="Truy vết và phiên bản"
+      description="Phiên bản kho tri thức, bộ quy tắc và lần chạy đã tạo ra báo cáo này, để có thể kiểm tra lại hoặc tạo lại đúng kết quả."
     >
       {publication && (
         <>
@@ -61,7 +61,7 @@ export function AuditSection({ record }: { record: ReportRecord }) {
       />
       <h3 className="subhead">Ngữ cảnh run</h3>
       <Fields rows={Object.entries(context).map(([k, v]) => [k, <Value value={v} />])} />
-      <h3 className="subhead">Lịch sử review (C12)</h3>
+      <h3 className="subhead">Lịch sử rà soát</h3>
       {mockEnabled ? (
         <Notice tone="info">Lịch sử review cần backend thật.</Notice>
       ) : (

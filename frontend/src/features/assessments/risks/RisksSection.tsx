@@ -1,77 +1,54 @@
-import type { Recommendation, ReportContent, RiskResult } from "../../../shared/api/client";
-import { Empty, MachineText, Section, StatusBadge } from "../../../shared/components/ui";
-import { RiskDistribution } from "../../reports/distributions";
+import type { Recommendation, RiskResult } from "../../../shared/api/client";
+import { StatusBadge } from "../../../shared/components/ui";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
+import { readRecommendation } from "../../reports/recommendation";
 import { criterionText, riskTitle, useReportIndex } from "../../reports/reportIndex";
 
-const GROUPS = [
-  { key: "compliance", title: "Rủi ro tuân thủ", note: "Phát sinh từ kết quả tiêu chí (C07)." },
-  { key: "citation", title: "Rủi ro viện dẫn", note: "Phát sinh từ xác minh viện dẫn (C09)." },
-  {
-    key: "verification",
-    title: "Cần xác minh",
-    note: "Chưa đủ căn cứ để kết luận; cần bổ sung hồ sơ hoặc review.",
-  },
-] as const;
+const ACTION_LABELS: Record<string, string> = {
+  REQUEST_VERIFICATION: "Việc cần làm",
+  REQUEST_EVIDENCE: "Cần bổ sung chứng cứ",
+};
 
-export function RisksSection({
-  risks,
-  recommendations,
-}: {
-  risks: ReportContent["risks"];
-  recommendations: Recommendation[];
-}) {
+
+/** One line saying what to do; the template's full text stays one click away. */
+export function RecommendationBlock({ recommendation }: { recommendation: Recommendation }) {
   const { focus } = useReportNav();
-  const recoByRisk = new Map<string, Recommendation[]>();
-  for (const r of recommendations) {
-    recoByRisk.set(r.ket_qua_rui_ro_id, [...(recoByRisk.get(r.ket_qua_rui_ro_id) ?? []), r]);
-  }
+  const view = readRecommendation(recommendation.noi_dung);
   return (
-    <Section
-      title="Rủi ro"
-      description="C10 tách theo nguồn. Mức độ do Risk Engine cung cấp; mỗi rủi ro trỏ về finding gốc."
+    <div
+      className={`recommendation${focus === recommendation.khuyen_nghi_ca_id ? " focused" : ""}`}
+      id={focusDomId(recommendation.khuyen_nghi_ca_id)}
     >
-      <RiskDistribution risks={risks} />
-      {GROUPS.map((group) => {
-        const items = risks[group.key];
-        const containsFocus = items.some((r) => r.ket_qua_rui_ro_id === focus);
-        return (
-          <details
-            key={group.key}
-            className="group"
-            open={containsFocus || (group.key !== "verification" && items.length > 0) || undefined}
-          >
-            <summary>
-              <strong>{group.title}</strong> <span className="count">{items.length}</span>
-              <span className="muted small"> {group.note}</span>
-            </summary>
-            {items.length === 0 ? (
-              <Empty>Không có.</Empty>
-            ) : (
-              <div className="stack">
-                {items.map((r) => (
-                  <RiskCard
-                    key={r.ket_qua_rui_ro_id}
-                    risk={r}
-                    recommendations={recoByRisk.get(r.ket_qua_rui_ro_id) ?? []}
-                  />
-                ))}
+      <span className="recommendation-label">
+        {ACTION_LABELS[recommendation.loai_hanh_dong] ?? "Việc cần làm"}
+      </span>
+      <p>{view.action}</p>
+      {view.details.length > 0 && (
+        <details className="more-filters">
+          <summary>Xem gợi ý đầy đủ</summary>
+          <dl className="recommendation-details">
+            {view.details.map((d) => (
+              <div key={d.title}>
+                <dt>{d.title}</dt>
+                <dd>{d.text}</dd>
               </div>
-            )}
-          </details>
-        );
-      })}
-    </Section>
+            ))}
+          </dl>
+        </details>
+      )}
+    </div>
   );
 }
 
-function RiskCard({
+export function RiskCard({
   risk,
   recommendations,
+  compact = false,
 }: {
   risk: RiskResult;
   recommendations: Recommendation[];
+  compact?: boolean;
 }) {
   const index = useReportIndex();
   const { focus, go } = useReportNav();
@@ -81,70 +58,40 @@ function RiskCard({
   const finding = risk.source.citation_finding_id
     ? index.findingById.get(risk.source.citation_finding_id)
     : undefined;
+  const snapshot = risk.risk_snapshot as { mo_ta?: string };
   return (
     <article
-      className={`card-flat${focus === risk.ket_qua_rui_ro_id ? " focused" : ""}`}
+      className={`card-flat risk${focus === risk.ket_qua_rui_ro_id ? " focused" : ""}`}
       id={focusDomId(risk.ket_qua_rui_ro_id)}
     >
       <header className="criterion-head">
-        <StatusBadge kind="severity" code={risk.severity} />
-        <StatusBadge kind="riskType" code={risk.risk_type} />
+        {risk.severity !== "REVIEW_REQUIRED" && <StatusBadge kind="severity" code={risk.severity} />}
         <strong>{riskTitle(risk)}</strong>
       </header>
-      <MachineText text={risk.giai_thich} />
+      {!compact && snapshot.mo_ta && <p>{snapshot.mo_ta}</p>}
+      {recommendations.map((k) => (
+        <RecommendationBlock key={k.khuyen_nghi_ca_id} recommendation={k} />
+      ))}
       <div className="links">
-        Nguồn:{" "}
         {criterion && (
-          <button type="button" className="link" onClick={() => go("compliance", criterion.ket_qua_id)}>
-            Tiêu chí: {criterionText(criterion)} (
-            <StatusBadge kind="criterion" code={criterion.finding} />)
+          <button type="button" className="link" onClick={() => go("topics", criterion.ket_qua_id)}>
+            Xem điểm kiểm tra: {criterionText(criterion)}
           </button>
         )}
         {finding && (
           <button type="button" className="link" onClick={() => go("citations", finding.finding_id)}>
-            Viện dẫn <code>{finding.vien_dan_id}</code> (
+            Xem trích dẫn <code>{finding.vien_dan_id}</code> (
             <StatusBadge kind="citation" code={finding.status} />)
           </button>
         )}
-        {!criterion && !finding && (
-          <span className="uncertain">Không tìm thấy finding nguồn trong report.</span>
-        )}
       </div>
-      <dl className="fields compact">
-        <div>
-          <dt>Quy tắc</dt>
-          <dd>
-            <code>{risk.quy_tac_id}</code>
-          </dd>
-        </div>
-        <div>
-          <dt>Căn cứ</dt>
-          <dd>
-            <LegalBasis ids={risk.legal_basis_ids} />
-          </dd>
-        </div>
-        <div>
-          <dt>Review</dt>
-          <dd>
-            <StatusBadge kind="review" code={risk.review_status} />
-          </dd>
-        </div>
-      </dl>
-      {recommendations.length > 0 && (
-        <div className="links">
-          Khuyến nghị:{" "}
-          {recommendations.map((k) => (
-            <button
-              key={k.khuyen_nghi_ca_id}
-              type="button"
-              className="link"
-              onClick={() => go("recommendations", k.khuyen_nghi_ca_id)}
-            >
-              {k.loai_hanh_dong}
-            </button>
-          ))}
-        </div>
+      {risk.legal_basis_ids.length > 0 && (
+        <p className="small">
+          <span className="muted">Căn cứ pháp lý: </span>
+          <LegalBasis ids={risk.legal_basis_ids} />
+        </p>
       )}
     </article>
   );
 }
+

@@ -18,20 +18,20 @@ import {
 import { useCan } from "../../shared/auth";
 import { Empty, LoadState, Notice, Section, StatusBadge } from "../../shared/components/ui";
 import { label, type LabelKind } from "../../shared/labels";
-import { useReportNav, type TabId } from "../reports/nav";
+import { type TabTarget, useReportNav } from "../reports/nav";
 import { criterionText, requirementText, riskTitle } from "../reports/reportIndex";
 
 type Field = { name: string; title: string; options?: readonly string[]; labels?: LabelKind };
 type Kind = {
   title: string;
-  tab: TabId;
+  tab: TabTarget;
   fields: Field[]; // what an OVERRIDE may change; mirrors backend TARGETS
 };
 
 const SEVERITY = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "REVIEW_REQUIRED"] as const;
 const KINDS: Record<string, Kind> = {
   ket_qua_tuan_thu: {
-    title: "Kết luận yêu cầu",
+    title: "Kết luận quy định",
     tab: "compliance",
     fields: [
       {
@@ -43,7 +43,7 @@ const KINDS: Record<string, Kind> = {
     ],
   },
   ket_qua_tieu_chi: {
-    title: "Tiêu chí",
+    title: "Điểm kiểm tra",
     tab: "compliance",
     fields: [
       {
@@ -169,8 +169,8 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
 
   return (
     <Section
-      title="Rà soát của chuyên viên"
-      description="Quyết định của người review được lưu thành lịch sử không sửa được (C12). Kết quả máy giữ nguyên; giá trị chỉnh sửa là lớp hiệu lực nằm trên."
+      title="Rà soát và phát hành"
+      description="Chuyên viên xác nhận, sửa hoặc yêu cầu bổ sung từng kết luận của máy, rồi phát hành báo cáo chính thức. Mọi quyết định được lưu lại và không sửa được; kết quả máy gốc vẫn giữ nguyên để đối chiếu."
     >
       <PublishPanel
         record={record}

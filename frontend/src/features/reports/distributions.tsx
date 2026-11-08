@@ -1,8 +1,4 @@
-import type {
-  CitationValidation,
-  ReportContent,
-  RequirementResult,
-} from "../../shared/api/client";
+import type { CitationValidation, RequirementResult } from "../../shared/api/client";
 import { Distribution, STATUS_COLORS as S } from "../../shared/components/Distribution";
 import { label, type LabelKind } from "../../shared/labels";
 
@@ -16,34 +12,12 @@ function items(kind: LabelKind, order: [string, string][], codes: string[]) {
   }));
 }
 
-export function RiskDistribution({ risks }: { risks: ReportContent["risks"] }) {
-  const all = [...risks.compliance, ...risks.citation, ...risks.verification];
-  return (
-    <Distribution
-      title="Phân bổ mức độ rủi ro"
-      description="Số rủi ro C10 theo mức độ do Risk Engine gán. “Cần review” là rủi ro chưa đủ căn cứ để xếp mức."
-      unit="rủi ro"
-      items={items(
-        "severity",
-        [
-          ["CRITICAL", S.critical],
-          ["HIGH", S.serious],
-          ["MEDIUM", S.warning],
-          ["LOW", S.good],
-          ["REVIEW_REQUIRED", S.none],
-        ],
-        all.map((r) => r.severity),
-      )}
-    />
-  );
-}
-
 export function RequirementDistribution({ results }: { results: RequirementResult[] }) {
   return (
     <Distribution
-      title="Phân bổ kết luận yêu cầu"
-      description="Số yêu cầu C08 theo trạng thái backend tổng hợp. Không quy đổi thành điểm tuân thủ."
-      unit="yêu cầu"
+      title="Kết luận theo quy định"
+      description="Số quy định theo từng kết luận. Hệ thống không quy đổi thành điểm số tuân thủ."
+      unit="quy định"
       items={items(
         "requirement",
         [
@@ -62,7 +36,7 @@ export function CitationDistribution({ findings }: { findings: CitationValidatio
   return (
     <Distribution
       title="Phân bổ kết quả xác minh viện dẫn"
-      description="Số viện dẫn C09 theo trạng thái tại ngày liên quan."
+      description="Số luật hợp đồng trích dẫn theo kết quả đối chiếu tại ngày ký."
       unit="viện dẫn"
       items={items(
         "citation",

@@ -172,8 +172,19 @@ export function MachineText({ text }: { text: string | null | undefined }) {
   if (VIETNAMESE.test(text)) return <p>{text}</p>;
   return (
     <details className="machine-note">
-      <summary>Diễn giải kỹ thuật của module</summary>
+      <summary>Chi tiết kỹ thuật (dành cho kỹ sư)</summary>
       <p>{text}</p>
     </details>
+  );
+}
+
+/** A requirement shown by its plain-language name, with the code kept small for reference. */
+export function RequirementTitle({ name, code }: { name: string | null; code: string }) {
+  // The code stays available on hover for engineers; readers see the name only.
+  if (!name) return <span title={code}>Quy định chưa có tên trong kho tri thức</span>;
+  return (
+    <span className="requirement-title" title={code}>
+      {name}
+    </span>
   );
 }

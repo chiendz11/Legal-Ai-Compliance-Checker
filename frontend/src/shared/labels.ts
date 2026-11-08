@@ -63,16 +63,16 @@ const table: Record<string, Record<string, Label>> = {
   scope: {
     MATCH: { text: "Thuộc phạm vi", tone: "good" },
     NO_MATCH: { text: "Ngoài phạm vi", tone: "neutral" },
-    UNKNOWN: { text: "Phạm vi chưa rõ", tone: "unknown" },
+    UNKNOWN: { text: "Chưa rõ phạm vi", tone: "unknown" },
   },
   version: {
-    RESOLVED: { text: "Đã chọn phiên bản", tone: "good" },
-    UNKNOWN: { text: "Phiên bản chưa rõ", tone: "unknown" },
+    RESOLVED: { text: "Đã chọn điều luật", tone: "good" },
+    UNKNOWN: { text: "Chưa chọn được điều luật", tone: "unknown" },
   },
   applicability: {
-    CONFIRMED: { text: "Áp dụng", tone: "good" },
+    CONFIRMED: { text: "Có áp dụng", tone: "good" },
     NOT_APPLICABLE: { text: "Không áp dụng", tone: "neutral" },
-    UNKNOWN: { text: "Chưa xác nhận áp dụng", tone: "unknown" },
+    UNKNOWN: { text: "Chưa rõ", tone: "unknown" },
   },
   anchor: {
     NGAY_GIAO_KET: { text: "ngày giao kết", tone: "neutral" },
