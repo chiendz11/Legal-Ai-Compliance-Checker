@@ -36,6 +36,12 @@ class Settings:
     run_requeue_after_seconds: int = 120
     report_export_dir: Path = PROJECT_ROOT / "data/private/report_exports"
     upload_dir: Path = PROJECT_ROOT / "data/private/uploads"
+    # OCR for scanned PDF pages: "auto" (Tesseract if installed with the language data),
+    # "tesseract" (required) or "off".
+    document_ocr: str = "off"
+    tesseract_cmd: str | None = None
+    tessdata_dir: Path | None = None
+    ocr_language: str = "vie"
     # Deployment pins for new cases; default to the versions existing cases of the release use.
     deployment_rule_version: str | None = None
     deployment_legal_knowledge_version: str | None = None
@@ -70,6 +76,12 @@ class Settings:
                 os.getenv("REPORT_EXPORT_DIR", "data/private/report_exports")
             ),
             upload_dir=_project_path(os.getenv("UPLOAD_DIR", "data/private/uploads")),
+            document_ocr=os.getenv("DOCUMENT_OCR", "auto"),
+            tesseract_cmd=os.getenv("TESSERACT_CMD") or None,
+            tessdata_dir=(
+                _project_path(os.environ["TESSDATA_DIR"]) if os.getenv("TESSDATA_DIR") else None
+            ),
+            ocr_language=os.getenv("OCR_LANGUAGE", "vie"),
             deployment_rule_version=os.getenv("DEPLOYMENT_RULE_VERSION") or None,
             deployment_legal_knowledge_version=(
                 os.getenv("DEPLOYMENT_LEGAL_KNOWLEDGE_VERSION") or None

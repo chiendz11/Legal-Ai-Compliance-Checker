@@ -4,6 +4,8 @@ Hai lớp:
 1. Trường ghi tường minh dạng "Nhãn: giá trị" (trang thông tin giao dịch, chỗ điền trong
    thân hợp đồng). Mỗi lần xuất hiện là một ứng viên kèm quote/offset trong chunk.
    Nhiều ứng viên khác giá trị → CONFLICT, giữ cả hai, không tự chọn.
+   Ngày ký còn được nhận từ câu ký kết ("Hôm nay, ngày 01 tháng 11 năm 2026") của hợp
+   đồng thật; câu đó là một ứng viên nữa của cùng trường, cùng quy tắc CONFLICT.
 2. Phân loại theo mã danh mục (loại hợp đồng, tình trạng tài sản...) từ dấu hiệu trong
    văn bản. Đây là suy luận theo quy tắc nên luôn ở trạng thái chờ review.
 
@@ -27,8 +29,9 @@ from legal_checker.shared.contracts.document_intelligence import (
     ProfileTimeMarker,
 )
 
-PROFILE_EXTRACTOR_VERSION = "rules-v3"
+PROFILE_EXTRACTOR_VERSION = "rules-v4"
 LITERAL = "LABEL_REGEX"
+PHRASE = "PHRASE_REGEX"  # giá trị ghi nguyên văn trong câu (không có nhãn "X:")
 DERIVED = "RULE_DERIVED"
 EXTRACTED = "EXTRACTED"
 REVIEW_PENDING = "DERIVED_REVIEW_PENDING"
@@ -54,6 +57,7 @@ class Candidate:
     value: object  # giá trị chuẩn hóa (date, Decimal, str, int, bool)
     raw: str
     span: Span
+    method: str = LITERAL
 
 
 @dataclass
@@ -203,6 +207,43 @@ def _label_candidates(chunks: Sequence[ChunkRecord]) -> dict[str, list[Candidate
     return found
 
 
+# Câu ký kết trong thân hợp đồng thật (không có nhãn "Ngày giao kết:"):
+#   "Hôm nay, ngày 01 tháng 11 năm 2026, tại ..." / "Hôm nay là ngày 01/11/2026"
+#   "Hợp đồng này được lập/ký/ký kết/giao kết (vào) ngày 01 tháng 11 năm 2026"
+# Chỉ nhận hai mở đầu này: "được ký ngày ..." đứng một mình hay gặp khi viện dẫn hợp đồng,
+# văn bản khác, và dòng "Hà Nội, ngày ..." chỉ là ngày soạn thảo. Mẫu trống ("ngày ....
+# tháng .... năm 20...") không có chữ số nên không khớp.
+_SIGNING_OPENING = (
+    r"(?:Hôm\s+nay(?:\s+là)?"
+    r"|Hợp\s+đồng\s+này\s+(?:đã\s+)?được\s+(?:lập|ký\s+kết|ký|giao\s+kết)(?:\s+vào)?)"
+)
+_SIGNING_PROSE = re.compile(
+    _SIGNING_OPENING + r"[ \t,:]*(?P<raw>ngày\s+(?:"
+    r"(?P<d>\d{1,2})\s+tháng\s+(?P<m>\d{1,2})\s+năm\s+(?P<y>\d{4})"
+    r"|(?P<dmy>\d{1,2}[/.-]\d{1,2}[/.-]\d{4})))",
+    re.I,
+)
+
+
+def _signing_phrase_candidates(chunks: Sequence[ChunkRecord]) -> list[Candidate]:
+    found = []
+    for chunk in chunks:
+        for m in _SIGNING_PROSE.finditer(chunk.noi_dung):
+            if m.group("dmy"):
+                value = _parse_date(m.group("dmy"))
+            else:
+                try:
+                    value = date(int(m.group("y")), int(m.group("m")), int(m.group("d")))
+                except ValueError:
+                    value = None
+            if value is None:
+                continue
+            raw = " ".join(m.group("raw").split())
+            span = Span(chunk, m.start(), m.end())
+            found.append(Candidate("ngay_giao_ket", value, raw, span, PHRASE))
+    return found
+
+
 def _drop_truncated(candidates: list[Candidate]) -> list[Candidate]:
     """Bỏ ứng viên chữ bị cắt do xuống dòng trong ô hẹp ("Đinh" so với "Đinh Tường Nam")."""
     texts = [c.value for c in candidates if isinstance(c.value, str)]
@@ -214,6 +255,11 @@ def _drop_truncated(candidates: list[Candidate]) -> list[Candidate]:
     ]
 
 
+def _method(candidates: Sequence[Candidate]) -> str:
+    """Nhãn tường minh là bằng chứng mạnh nhất; có ứng viên từ câu thì ghi PHRASE."""
+    return LITERAL if all(c.method == LITERAL for c in candidates) else PHRASE
+
+
 def _resolve(builder: _Builder, name: str, candidates: list[Candidate]) -> object | None:
     """1 giá trị → EXTRACTED; nhiều giá trị khác nhau → CONFLICT (trả None, giữ ứng viên)."""
     candidates = _drop_truncated(candidates)
@@ -223,12 +269,13 @@ def _resolve(builder: _Builder, name: str, candidates: list[Candidate]) -> objec
     for c in candidates:
         distinct.setdefault(_canonical(c.value), c.value)
     spans = [c.span for c in candidates]
+    method = _method(candidates)
     if len(distinct) == 1:
         value = candidates[0].value
-        builder.fact(name, value, spans, status=EXTRACTED, method=LITERAL)
+        builder.fact(name, value, spans, status=EXTRACTED, method=method)
         return value
     ordered = [distinct[k] for k in sorted(distinct)]
-    builder.fact(name, ordered, spans, status=CONFLICT, method=LITERAL, raw=None)
+    builder.fact(name, ordered, spans, status=CONFLICT, method=method, raw=None)
     return None
 
 
@@ -291,13 +338,15 @@ def extract_profile(
 ) -> ContractProfile:
     b = _Builder(hop_dong_id, version)
     found = _label_candidates(chunks)
+    if phrases := _signing_phrase_candidates(chunks):
+        found.setdefault("ngay_giao_ket", []).extend(phrases)
     profile: dict[str, object] = {}
 
     def set_field(name: str, value: object, spans: Sequence[Span], method: str) -> None:
         if value is None or not spans:
             return
         profile[name] = value
-        status = EXTRACTED if method == LITERAL else REVIEW_PENDING
+        status = EXTRACTED if method in (LITERAL, PHRASE) else REVIEW_PENDING
         b.fact(f"profile.{name}", value, spans, status=status, method=method)
 
     # --- 1. Trường tường minh
@@ -313,8 +362,9 @@ def extract_profile(
 
     if signing is not None and (year_only is None or year_only == signing.year):
         spans = [c.span for c in found["ngay_giao_ket"]]
-        set_field("ngay_giao_ket", signing, spans, LITERAL)
-        set_field("ngay_giao_ket_raw", found["ngay_giao_ket"][0].raw, spans, LITERAL)
+        method = _method(found["ngay_giao_ket"])
+        set_field("ngay_giao_ket", signing, spans, method)
+        set_field("ngay_giao_ket_raw", found["ngay_giao_ket"][0].raw, spans, method)
         set_field("do_chinh_xac_ngay", "DAY", spans, DERIVED)
         set_field("trang_thai_ngay", EXTRACTED, spans, DERIVED)
         set_field("loai_moc_ap_dung", "NGAY_GIAO_KET", spans, DERIVED)

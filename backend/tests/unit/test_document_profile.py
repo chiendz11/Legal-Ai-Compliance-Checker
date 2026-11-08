@@ -182,3 +182,66 @@ def test_seller_heading_with_roman_numeral_or_name_on_same_line():
     assert [s.ten_chu_the for s in same_line.subjects] == [
         "CÔNG TY CỔ PHẦN BẤT ĐỘNG SẢN ĐẦU TƯ VÀ PHÁT TRIỂN CAO ỐC THIÊN LONG"
     ]
+
+
+def _signing(result):
+    return next(m for m in result.time_markers if m.loai_moc == "SIGNING")
+
+
+def test_signing_date_is_read_from_the_opening_sentence():
+    chunks, result = _profile(
+        "HỢP ĐỒNG MUA BÁN CĂN HỘ CHUNG CƯ\n"
+        "Hôm nay, ngày 01 tháng 11 năm 2026, tại Hà Nội, chúng tôi gồm:\n"
+    )
+    p = result.profile
+    assert (p.ngay_giao_ket, p.do_chinh_xac_ngay, p.loai_moc_ap_dung) == (
+        date(2026, 11, 1),
+        "DAY",
+        "NGAY_GIAO_KET",
+    )
+    assert p.ngay_giao_ket_raw == "ngày 01 tháng 11 năm 2026"
+    fact = _facts(result)["profile.ngay_giao_ket"]
+    assert (fact.trang_thai, fact.phuong_phap) == ("EXTRACTED", "PHRASE_REGEX")
+    assert fact.gia_tri_raw == "Hôm nay, ngày 01 tháng 11 năm 2026"
+    assert (_signing(result).ngay, _signing(result).duoc_dung_phan_giai) == (
+        date(2026, 11, 1),
+        True,
+    )
+    _validate(chunks, result)
+
+
+def test_signing_sentence_variants():
+    cases = {
+        "Hôm nay là ngày 5/3/2024 tại TP. Hồ Chí Minh": date(2024, 3, 5),
+        "Hợp đồng này được lập vào ngày 12 tháng 7 năm 2023": date(2023, 7, 12),
+        "Hợp đồng này được ký kết ngày 20\ntháng 01 năm 2022, gồm 10 điều": date(2022, 1, 20),
+    }
+    for text, expected in cases.items():
+        assert _profile(f"HỢP ĐỒNG\n{text}\n")[1].profile.ngay_giao_ket == expected, text
+
+
+def test_dates_that_are_not_the_signing_sentence_are_ignored():
+    for text in (
+        "Hà Nội, ngày 01 tháng 11 năm 2026",  # ngày soạn thảo ở đầu văn bản
+        "theo Hợp đồng góp vốn được ký ngày 10 tháng 5 năm 2020",  # hợp đồng khác
+        "Hôm nay, ngày ..... tháng ..... năm 20.....",  # mẫu trống
+        "Hôm nay, ngày 31 tháng 02 năm 2026",  # ngày không tồn tại
+    ):
+        chunks, result = _profile(f"HỢP ĐỒNG MUA BÁN CĂN HỘ\n{text}\n")
+        assert result.profile.ngay_giao_ket is None, text
+        assert _signing(result).duoc_dung_phan_giai is False
+        _validate(chunks, result)
+
+
+def test_signing_sentence_agrees_with_label_or_is_a_conflict():
+    same = "Hôm nay, ngày 16 tháng 02 năm 2017, tại Hà Nội"
+    _, agree = _profile(BODY + same, APPENDIX)
+    assert agree.profile.ngay_giao_ket == date(2017, 2, 16)
+    assert _facts(agree)["ngay_giao_ket"].evidence_ids[1:]  # nhãn + câu đều là bằng chứng
+
+    _, conflict = _profile(BODY + "Hôm nay, ngày 20 tháng 3 năm 2018", APPENDIX)
+    assert conflict.profile.ngay_giao_ket is None
+    fact = _facts(conflict)["ngay_giao_ket"]
+    assert fact.trang_thai == "CONFLICT"
+    assert fact.gia_tri_chuan_json == ["2017-02-16", "2018-03-20"]
+    assert _signing(conflict).duoc_dung_phan_giai is False

@@ -85,6 +85,7 @@ def module_source(
     settings: Settings, cases: CaseRepository, documents: SourceStorage | None = None
 ) -> ModuleSource:
     if settings.assessment_modules == "modules":
+        from legal_checker.modules.documents.ocr import build_ocr_engine
         from legal_checker.workflows.integrated import IntegratedModulesSource
 
         return IntegratedModulesSource(
@@ -95,6 +96,12 @@ def module_source(
             source_cache_dir=settings.source_cache_dir,
             llm_client_factory=llm_client_factory(settings),
             llm_max_calls=settings.assessment_llm_max_calls,
+            ocr=build_ocr_engine(
+                settings.document_ocr,
+                command=settings.tesseract_cmd,
+                language=settings.ocr_language,
+                tessdata_dir=settings.tessdata_dir,
+            ),
         )
     if settings.assessment_modules == "reference":
         return ReferenceReplaySource(settings.database_url)

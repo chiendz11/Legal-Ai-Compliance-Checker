@@ -66,18 +66,15 @@ def run(ctx, ca_id):
     return ctx.runs.get(ca_id, run_id), status, {s["stage"]: s["status"] for s in status["stages"]}
 
 
-def test_uploaded_pdf_is_read_by_group_a_and_labelled_as_modules(integrated):
+def test_document_that_is_not_an_apartment_contract_is_not_processed(integrated):
+    # Text layer is readable, but there is no "HỢP ĐỒNG MUA BÁN CĂN HỘ" title.
     ca_id = case_for(integrated, CONTRACT, "hop_dong.pdf")
     record, status, stages = run(integrated, ca_id)
     assert record.module_source == MODULE_SOURCE
-    assert stages["INTAKE"] == "COMPLETED"
-    assert stages["DOCUMENT_INTELLIGENCE"] == "COMPLETED", status.get("error")
-    assert status["status"] == "COMPLETED", status.get("error")
-    draft = integrated.runs.draft(ca_id, record.run_id)
-    assert draft.contract_profile.hop_dong_id == draft.case.hop_dong_id
-    assert "HOP DONG MUA BAN" in " ".join(c.noi_dung for c in draft.chunks)
-    report = integrated.client.get(f"/api/v1/cases/{ca_id}/runs/{record.run_id}/reports").json()
-    assert report["items"][0]["report"]["report_json"]["audit"]["module_source"] == MODULE_SOURCE
+    assert status["status"] == "FAILED"
+    assert status["error"]["details"] == [{"reason": "CONTRACT_TYPE_UNSUPPORTED"}]
+    assert stages["DOCUMENT_INTELLIGENCE"] == "FAILED"
+    assert integrated.runs.draft(ca_id, record.run_id) is None  # no 306 x "insufficient"
 
 
 def test_uploaded_docx_fails_with_a_clear_format_reason(integrated):
@@ -101,3 +98,41 @@ def test_scanned_pdf_without_text_stops_instead_of_an_empty_assessment(integrate
 def test_seeded_case_without_local_source_keeps_the_reference_label(integrated):
     record, _, _ = run(integrated, CASE)
     assert record.module_source == REFERENCE_DI_SOURCE
+
+
+class _FakeOcr:
+    version = "fake-ocr-1"
+
+    def recognize(self, png: bytes) -> str:
+        return (
+            "HỢP ĐỒNG MUA BÁN CĂN HỘ CHUNG CƯ\n"
+            "Hôm nay, ngày 01 tháng 11 năm 2026, tại Hà Nội\n"
+            "Điều 2. Giá bán căn hộ là 2.000.000.000 đồng"
+        )
+
+
+def test_scanned_pdf_is_assessed_from_ocr_text(integrated):
+    integrated.runner.source.ocr = _FakeOcr()
+    ca_id = case_for(integrated, _minimal_pdf([""]), "scan_ocr.pdf")
+    record, status, stages = run(integrated, ca_id)
+    assert status["status"] == "COMPLETED", status.get("error")
+    assert stages["DOCUMENT_INTELLIGENCE"] == "COMPLETED"
+    draft = integrated.runs.draft(ca_id, record.run_id)
+    assert any("Giá bán căn hộ" in c.noi_dung for c in draft.chunks)
+    assert str(draft.contract_profile.profile.ngay_giao_ket) == "2026-11-01"
+    assert draft.contract_profile.profile.loai_hop_dong_id == "MB_CAN_HO_CHUNG_CU"
+    assert record.module_source == MODULE_SOURCE
+    report = integrated.client.get(f"/api/v1/cases/{ca_id}/runs/{record.run_id}/reports").json()
+    assert report["items"][0]["report"]["report_json"]["audit"]["module_source"] == MODULE_SOURCE
+
+
+def test_scan_that_ocr_cannot_read_explains_why(integrated):
+    class Blank(_FakeOcr):
+        def recognize(self, png: bytes) -> str:
+            return ""
+
+    integrated.runner.source.ocr = Blank()
+    ca_id = case_for(integrated, _minimal_pdf(["", ""]), "blank_scan.pdf")
+    _, status, _ = run(integrated, ca_id)
+    assert status["error"]["details"] == [{"reason": "DOCUMENT_NOT_READABLE"}]
+    assert "OCR found no readable text" in status["error"]["message"]

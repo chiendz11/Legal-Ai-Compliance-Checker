@@ -23,7 +23,8 @@ from legal_checker.modules.applicable_law.temporal_resolver import CatalogTempor
 from legal_checker.modules.assessments.cases import CaseRepository
 from legal_checker.modules.citation_validation.service import CatalogCitationValidator
 from legal_checker.modules.compliance.llm_observations import LLMObservationProvider
-from legal_checker.modules.documents.parser import UnsupportedDocumentError
+from legal_checker.modules.documents.ocr import OcrEngine, OcrFailedError
+from legal_checker.modules.documents.parser import PdfTextReader, UnsupportedDocumentError
 from legal_checker.modules.documents.service import PdfDocumentIntelligence, SourceMismatchError
 from legal_checker.modules.retrieval.repository import RetrievalDatasetRepository
 from legal_checker.modules.retrieval.service import LexicalRetrievalService
@@ -65,8 +66,10 @@ class IntegratedModulesSource:
         source_cache_dir: Path | None = None,
         llm_client_factory: Callable[[], object] | None = None,
         llm_max_calls: int = 0,
+        ocr: OcrEngine | None = None,
     ):
         self.database_url = database_url
+        self.ocr = ocr
         self.cases = cases
         self.storage = storage
         self.upload_dir = upload_dir
@@ -90,21 +93,41 @@ class IntegratedModulesSource:
 
     def _extract(self, case: AssessmentCase):
         try:
-            extraction = PdfDocumentIntelligence(self.storage).run(case)
+            extraction = PdfDocumentIntelligence(self.storage, PdfTextReader(self.ocr)).run(case)
+        except OcrFailedError as error:
+            raise DocumentReadError("OCR_FAILED", str(error)) from error
         except UnsupportedDocumentError as error:
             raise DocumentReadError("DOCUMENT_FORMAT_UNSUPPORTED", str(error)) from error
         except (SourceMismatchError, SourceIntegrityError) as error:
             raise DocumentReadError("SOURCE_INTEGRITY_FAILED", str(error)) from error
         except SourceStorageError as error:
             raise DocumentReadError("DOCUMENT_INTELLIGENCE_UNAVAILABLE", str(error)) from error
-        # A scanned PDF has no text layer: without OCR nothing can be read, and assessing an
-        # empty document would turn every requirement into a misleading "insufficient".
+        # Assessing an empty document would turn every requirement into a misleading
+        # "insufficient", so a contract with no readable text stops here.
         if not extraction.result.chunks:
+            pages = len(extraction.document.pages)
+            unreadable = len(extraction.unreadable_pages)
+            cause = (
+                "OCR found no readable text either (blank or very low-quality scan)"
+                if self.ocr is not None
+                else "OCR is not configured (install Tesseract with Vietnamese data, see "
+                "DOCUMENT_OCR in .env.example)"
+            )
             raise DocumentReadError(
                 "DOCUMENT_NOT_READABLE",
-                f"No text could be read from {len(extraction.document.pages)} page(s) "
-                f"({len(extraction.unreadable_pages)} without a text layer); scanned PDFs "
-                "need OCR, which the document module does not have yet",
+                f"No text could be read from {pages} page(s) ({unreadable} without a text "
+                f"layer); {cause}",
+            )
+        # The rule catalogue only covers apartment sale contracts. A document whose type
+        # group A cannot recognise (a resolution, a notice, another kind of contract) would
+        # leave every requirement's scope unknown and report all of them as "insufficient",
+        # which reads like a finding about the contract. Say plainly that it is not handled.
+        if extraction.result.contract_profile.profile.loai_hop_dong_id is None:
+            raise DocumentReadError(
+                "CONTRACT_TYPE_UNSUPPORTED",
+                "The document is not recognised as an apartment sale contract (no "
+                "'HỢP ĐỒNG MUA BÁN CĂN HỘ' title was found); only that contract type is "
+                "assessed for now",
             )
         return extraction.result
 

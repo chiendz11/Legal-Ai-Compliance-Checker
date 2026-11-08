@@ -7,6 +7,8 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from legal_checker.modules.documents.ocr import DEFAULT_MAX_PAGES, OcrEngine, render_pages
+
 
 @dataclass(frozen=True)
 class DocumentPage:
@@ -27,7 +29,7 @@ class DocumentReader(Protocol):
 
 
 class UnsupportedDocumentError(ValueError):
-    """MIME type has no reader yet (DOCX/OCR are planned)."""
+    """MIME type has no reader yet (DOCX is planned)."""
 
 
 # Trang có ít hơn ngưỡng này ký tự (bỏ khoảng trắng) coi như không đọc được:
@@ -111,9 +113,12 @@ def _is_readable(text: str) -> bool:
 
 
 class PdfTextReader:
-    """DocumentReader cho PDF có text layer. Chưa OCR: trang scan có readable=False."""
+    """DocumentReader cho PDF. Trang có lớp chữ đọc bằng pypdf; trang scan được OCR khi có
+    ``ocr`` (không có thì giữ readable=False như trước)."""
 
-    def __init__(self) -> None:
+    def __init__(self, ocr: OcrEngine | None = None, *, max_ocr_pages: int = DEFAULT_MAX_PAGES):
+        self.ocr = ocr
+        self.max_ocr_pages = max_ocr_pages
         self.parser_version: str | None = None
 
     def extract(self, content: bytes, mime_type: str) -> DocumentText:
@@ -124,4 +129,11 @@ class PdfTextReader:
         for number, raw in enumerate(raw_pages, start=1):
             text = _normalize(raw)
             pages.append(DocumentPage(number, text, "TEXT", _is_readable(text)))
+        scanned = [p.page_number for p in pages if not p.readable][: self.max_ocr_pages]
+        if self.ocr is not None and scanned:
+            for number, png in render_pages(content, scanned):
+                text = _normalize(self.ocr.recognize(png)).strip("\n")
+                pages[number - 1] = DocumentPage(number, text, "OCR", _is_readable(text))
+            # Kết quả phụ thuộc engine OCR → version trích xuất (và mọi ID) đổi theo.
+            self.parser_version += f"+{self.ocr.version}"
         return DocumentText(hashlib.sha256(content).hexdigest(), tuple(pages))
