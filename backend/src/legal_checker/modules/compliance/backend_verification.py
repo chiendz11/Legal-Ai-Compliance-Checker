@@ -20,7 +20,7 @@ from legal_checker.modules.compliance.criterion_reasoner import CONTENT_TYPES
 from legal_checker.modules.compliance.decision_rules import parse_json_object
 from legal_checker.modules.compliance.verification import CriterionVerification
 from legal_checker.shared.contracts.common import Context
-from legal_checker.shared.contracts.reasoning import Gates
+from legal_checker.shared.contracts.reasoning import Gates, ReasoningRequest
 
 POLICY = "BACKEND_CONTRACT_CONTENT_V1"
 
@@ -88,9 +88,22 @@ class VerifiedObservationProvider:
         self.make_provider = make_provider
 
     def observe(self, context, profile, requirements, retrieval, chunks, knowledge):
+        from legal_checker.modules.compliance.language_check import apply_language_check
+
         verifications = contract_content_verifications(
             context, profile.hop_dong_id, requirements, knowledge
         )
-        return self.make_provider(verifications).observe(
+        observations = self.make_provider(verifications).observe(
             context, profile, requirements, retrieval, chunks, knowledge
         )
+        request = ReasoningRequest(
+            **Context.model_validate(context.model_dump()).model_dump(),
+            payload={
+                "hop_dong_id": profile.hop_dong_id,
+                "requirements": requirements,
+                "retrieval": retrieval,
+                "chunks": chunks,
+            },
+        )
+        # Measured, not judged: decided after the AI so a disagreement is caught.
+        return apply_language_check(request, knowledge, observations)

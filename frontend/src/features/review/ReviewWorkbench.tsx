@@ -25,6 +25,7 @@ import {
   StatusBadge,
 } from "../../shared/components/ui";
 import { label, type LabelKind } from "../../shared/labels";
+import { AiSuggestionNote } from "../assessments/compliance/ComplianceSection";
 import { readableReason } from "../reports/explain";
 import { type TabTarget, useReportNav } from "../reports/nav";
 import { criterionText, requirementText, riskTitle } from "../reports/reportIndex";
@@ -375,6 +376,9 @@ function TargetCard({
           );
         })}
       </dl>
+      {target.doi_tuong_loai === "ket_qua_tieu_chi" && (
+        <AiSuggestionNote reason={machine?.values.uncertainty_reason as string | null} />
+      )}
       {raw && raw !== readableReason(raw) && (
         <Disclosure summary="Chi tiết kỹ thuật">
           <p className="small muted">{raw}</p>

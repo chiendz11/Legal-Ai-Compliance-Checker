@@ -185,6 +185,8 @@ def _package(request, knowledge, requirement, criterion, profile, verification=N
 
 
 _MIN_PREFIX_WORDS = 8
+# Unfilled template blanks: "[…]", "[...]", "…", "....", "___".
+PLACEHOLDER = re.compile(r"\[\s*(?:…|\.{3})\s*\]|…|\.{4,}|_{3,}")
 
 
 def _word_spans(text: str, words: list[str]) -> list[tuple[int, int]]:
@@ -306,12 +308,17 @@ class LLMObservationProvider:
         criterion_ids: Sequence[str] | None = None,
         max_context_chars: int = 60000,
         max_parallel_calls: int = 1,
+        agreement_calls: int = 1,
     ):
         if type(max_calls) is not int or max_calls < 0:
             raise ValueError("max_calls must be a nonnegative integer")
         if type(max_parallel_calls) is not int or max_parallel_calls < 1:
             raise ValueError("max_parallel_calls must be a positive integer")
         self.max_parallel_calls = max_parallel_calls
+        if type(agreement_calls) is not int or agreement_calls < 1:
+            raise ValueError("agreement_calls must be a positive integer")
+        # Repeated asks of a decisive answer; any disagreement leaves the criterion UNKNOWN.
+        self.agreement_calls = agreement_calls
         if type(max_context_chars) is not int or max_context_chars < 1:
             raise ValueError("max_context_chars must be positive")
         self.automatic_draft_review = automatic_draft_review
@@ -471,7 +478,7 @@ class LLMObservationProvider:
         provider = getattr(getattr(self.client, "settings", None), "provider", "OPENAI")
         call_origin = "GROQ" if str(provider).upper() == "GROQ" else "OPENAI"
 
-        def call(criterion_id):
+        def call_once(criterion_id):
             model, request_id, proposal = "UNAVAILABLE_PROVIDER_MODEL", None, None
             error, message = None, ""
             try:
@@ -494,6 +501,26 @@ class LLMObservationProvider:
                 error = exc.code if isinstance(exc, ProposalValidationError) else "INVALID_SCHEMA"
                 message = f"Phản hồi AI không hợp lệ: {error}."
             return model, request_id, proposal, error, message
+
+        def call(criterion_id):
+            """A decisive answer counts only if every repeated answer gives the same finding."""
+            first = call_once(criterion_id)
+            proposal = first[2]
+            if proposal is None or proposal.proposed_finding == "UNKNOWN":
+                return first
+            for _ in range(self.agreement_calls - 1):
+                again = call_once(criterion_id)
+                if again[2] is None or again[2].proposed_finding != proposal.proposed_finding:
+                    second = "lỗi" if again[2] is None else again[2].proposed_finding
+                    return (
+                        first[0],
+                        first[1],
+                        None,
+                        "MODEL_DISAGREEMENT",
+                        f"Hai lần hỏi AI cho kết quả khác nhau ({proposal.proposed_finding} và "
+                        f"{second}) nên chưa kết luận.",
+                    )
+            return first
 
         workers = min(self.max_parallel_calls, len(chosen))
         if workers > 1:
@@ -543,6 +570,12 @@ class LLMObservationProvider:
                     if proposal.tieu_chi_id != criterion_id:
                         raise ProposalValidationError("FOREIGN_CRITERION")
                     proposed_observation = _proposal_observation(proposal, selected, request, model)
+                    # A blank template field ("là: [...]m2") is not contract content: no
+                    # decisive finding may rest on it.
+                    if proposal.proposed_finding != "UNKNOWN" and any(
+                        PLACEHOLDER.search(e.trich_dan) for e in proposed_observation.evidence
+                    ):
+                        raise ProposalValidationError("TEMPLATE_PLACEHOLDER")
                     if (
                         replay is not None
                         and replay.observation_proposal is not None

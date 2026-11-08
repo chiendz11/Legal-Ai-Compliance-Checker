@@ -13,6 +13,7 @@ import type {
   RequirementResult,
 } from "../../shared/api/client";
 import { fieldLabel } from "../../shared/fieldLabels";
+import { stripEngineMarks } from "../../shared/components/ui";
 import { label } from "../../shared/labels";
 
 export type Cause =
@@ -199,7 +200,6 @@ export function explainRequirement(
 // Sentences written by the engine for engineers, not for readers.
 const ENGINE_TRACE =
   /Cannot accept a finding|Unresolved gate|Provider uncertainty|Requirement applicability|Criterion (?:local_applicability|requires)|^(?:INSUFFICIENT|UNKNOWN):|\b[a-z]+_[a-z_]+=/;
-const DRAFT_MARK = /^\s*\[MACHINE_DRAFT_REVIEW\]\s*/;
 
 /**
  * One Vietnamese sentence for a stored machine explanation (criterion result, review card).
@@ -209,22 +209,44 @@ const DRAFT_MARK = /^\s*\[MACHINE_DRAFT_REVIEW\]\s*/;
 export function readableReason(text: string | null | undefined): string | null {
   const raw = (text ?? "").trim();
   if (!raw) return null;
-  if (!ENGINE_TRACE.test(raw)) return raw.replace(DRAFT_MARK, "");
+  if (!ENGINE_TRACE.test(raw)) return stripEngineMarks(raw);
+  const disagreement = raw.match(/Hai lần hỏi AI[^;]*/);
+  if (disagreement) return disagreement[0].trim();
+  const measured = raw.match(/\[BACKEND_LANGUAGE_CHECK\]\s*([^;]+)/);
+  if (measured?.[1]) return measured[1].trim();
   if (/applicability\/scope\/version is not confirmed/i.test(raw))
     return "Chưa kết luận vì chưa xác nhận quy định này áp dụng cho hợp đồng (hợp đồng chưa cho biết đủ thông tin về các bên hoặc loại giao dịch). Lý do cụ thể ghi ở quy định.";
   if (/offline|NO_LLM_CALL/i.test(raw)) return "Chưa chạy AI để đọc nội dung hợp đồng.";
   if (/giới hạn số criterion|CALL_LIMIT/i.test(raw)) return "Đã hết lượt gọi AI trong lần chạy này.";
   if (/selected FINAL/i.test(raw)) return "Không tìm thấy đoạn hợp đồng liên quan để kiểm tra.";
+  if (/TEMPLATE_PLACEHOLDER/.test(raw))
+    return "Đoạn hợp đồng liên quan còn chỗ trống chưa điền (bản mẫu), nên chưa kết luận.";
   if (/QUOTE_(?:OFFSET_)?MISMATCH|AMBIGUOUS_QUOTE/.test(raw))
     return "AI đưa trích dẫn không khớp nguyên văn hợp đồng nên kết luận bị loại.";
-  const ai = raw.match(/Semantic predicate has not been reviewed:\s*([^;]+)/);
-  if (ai?.[1]) return `AI chưa kết luận được: ${ai[1].trim().replace(/\.?$/, ".")}`;
+  const ai = raw.match(/Semantic predicate has not been reviewed( \(AI proposed \w+\))?:\s*([^;]+)/);
+  // An AI that did conclude is shown apart as a suggestion; here only why it was not accepted.
+  if (ai?.[2] && !ai[1]) return `AI chưa kết luận được: ${ai[2].trim().replace(/\.?$/, ".")}`;
   if (/AI còn liệt kê điều kiện chưa rõ/.test(raw))
     return "AI còn nêu điều kiện chưa rõ nên chưa kết luận.";
   if (/case facts|local_applicability/i.test(raw))
     return "Điểm kiểm tra này chỉ áp dụng khi có điều kiện phát sinh cụ thể; điều kiện đó chưa được xác minh nên kết luận của AI chưa được chấp nhận.";
   if (/^INSUFFICIENT/.test(raw)) return "Chưa đủ căn cứ: các điểm kiểm tra bắt buộc chưa có kết luận.";
   return "Chưa đủ căn cứ để kết luận.";
+}
+
+export type AiSuggestion = { finding: string; text: string };
+
+/**
+ * What the AI proposed for a criterion the backend did not accept (a hint for the reviewer,
+ * never a finding). Its quotes, already checked against the contract, are the evidence shown.
+ */
+export function aiSuggestion(reason: string | null | undefined): AiSuggestion | null {
+  const raw = reason ?? "";
+  const proposed = raw.match(/\(AI proposed (SATISFIED|VIOLATED|MISSING)\):\s*([^;]+)/);
+  if (proposed?.[1] && proposed[2]) return { finding: proposed[1], text: proposed[2].trim() };
+  const kept = raw.match(/AI suggestion \(not accepted\): (SATISFIED|VIOLATED|MISSING) \| (.+)$/);
+  if (kept?.[1] && kept[2]) return { finding: kept[1], text: stripEngineMarks(kept[2]) };
+  return null;
 }
 
 /** Short reason under one criterion, instead of the raw module trace. */

@@ -682,3 +682,19 @@ def test_review_cannot_silently_change_verified_facts_used_for_analysis(reasonin
         LLMObservationProvider(reviews=[review], verifications=[verification]).analyze(
             request, knowledge, replay_records=batch.analyses
         )
+
+
+@pytest.mark.parametrize("blank", ["[…]", "[...]", "……", "......", "____"])
+def test_a_blank_template_field_never_supports_a_finding(reasoning_case, blank):
+    knowledge, data = reasoning_case
+    text = f"c) Diện tích sàn xây dựng của căn hộ là: {blank} m2, tính theo khoản 7 Điều 1."
+    data["payload"]["chunks"][0]["noi_dung"] = text
+    proposal = semantic(data) | {
+        "evidence": [{"doan_id": "CHUNK_1", "trich_dan": text, "ky_tu_bat_dau": 0}]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert batch.analyses[0].error_code == "TEMPLATE_PLACEHOLDER"
+    assert batch.observations[0].proposed_finding == "UNKNOWN"

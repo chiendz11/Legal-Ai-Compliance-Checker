@@ -31,6 +31,8 @@ class Settings:
     assessment_llm_max_calls: int = 80
     # Concurrent C07 requests per run; 1 keeps calls sequential.
     assessment_llm_parallel: int = 4
+    # A decisive AI answer is asked again; the answers must agree to count.
+    assessment_llm_agreement: int = 2
     # "inline" runs jobs in the API process; "celery" sends them to the Redis-backed worker.
     assessment_queue: str = "inline"
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -71,6 +73,7 @@ class Settings:
             assessment_llm=os.getenv("ASSESSMENT_LLM", "offline"),
             assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "80")),
             assessment_llm_parallel=int(os.getenv("ASSESSMENT_LLM_PARALLEL", "4")),
+            assessment_llm_agreement=int(os.getenv("ASSESSMENT_LLM_AGREEMENT", "2")),
             assessment_queue=os.getenv("ASSESSMENT_QUEUE", "inline"),
             redis_url=os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             run_lease_seconds=int(os.getenv("RUN_LEASE_SECONDS", "600")),

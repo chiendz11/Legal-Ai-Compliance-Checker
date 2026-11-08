@@ -21,6 +21,7 @@ import {
   type Cause,
   CAUSES,
   concludedCount,
+  aiSuggestion,
   explainCriterion,
   explainRequirement,
   viDate,
@@ -284,6 +285,7 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
       ) : (
         <MachineText text={criterion.giai_thich} />
       )}
+      <AiSuggestionNote reason={criterion.uncertainty_reason} />
 
       <h4 className="minihead">Bằng chứng trong hợp đồng</h4>
       {criterion.evidence?.length ? (
@@ -387,5 +389,17 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
         </p>
       </Disclosure>
     </article>
+  );
+}
+
+/** The AI's own conclusion when the backend did not accept it: a hint, clearly labelled. */
+export function AiSuggestionNote({ reason }: { reason: string | null | undefined }) {
+  const hint = aiSuggestion(reason);
+  if (!hint) return null;
+  return (
+    <p className="ai-suggestion">
+      <strong>Gợi ý của AI, chưa được chấp nhận:</strong> {label("criterion", hint.finding).text}.{" "}
+      {hint.text} <span className="muted">Chuyên viên xác nhận hoặc sửa ở mục Rà soát.</span>
+    </p>
   );
 }

@@ -59,6 +59,7 @@ def build_source(settings, with_llm: bool):
         llm_client_factory=llm_client_factory(settings) if with_llm else None,
         llm_max_calls=settings.assessment_llm_max_calls,
         llm_parallel=settings.assessment_llm_parallel,
+        llm_agreement=settings.assessment_llm_agreement,
         ocr=build_ocr_engine(
             settings.document_ocr,
             command=settings.tesseract_cmd,

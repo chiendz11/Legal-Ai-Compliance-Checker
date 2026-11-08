@@ -26,6 +26,7 @@ from legal_checker.shared.contracts.reasoning import (
 from legal_checker.shared.contracts.temporal import ApplicableRequirement
 from legal_checker.shared.ids import stable_id
 
+AI_SUGGESTION = "AI suggestion (not accepted):"
 CONTENT_TYPES = {"CONTRACT_CONTENT", "NOI_DUNG_BAT_BUOC"}
 SCOPED_TYPES = {
     "PERFORMANCE_OR_CONDITIONAL",
@@ -387,6 +388,11 @@ def _evaluate(
     )
     if exclusion_reason:
         issues.append("Excluded by applicability policy: " + exclusion_reason)
+    if issues and observation and proposal in {"SATISFIED", "VIOLATED", "MISSING"}:
+        # Kept for the reviewer as a hint only; the finding stays UNKNOWN. Always last, so
+        # the note (which may contain ';') runs to the end of the text.
+        note = observation.giai_thich.replace("[MACHINE_DRAFT_REVIEW]", "").strip()
+        issues.append(f"{AI_SUGGESTION} {proposal} | {note}")
     uncertainty = "; ".join(dict.fromkeys(issues)) if issues else None
     snapshot = deepcopy(criterion)
     snapshot["knowledge_snapshot_sha256"] = request.knowledge_snapshot_sha256

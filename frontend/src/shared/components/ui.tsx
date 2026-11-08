@@ -167,7 +167,16 @@ const VIETNAMESE = /[ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọ�
  * technical traces (e.g. "INSUFFICIENT: mandatory criterion findings=[...]") are kept intact but
  * folded away, since the status badge and counts already say the same thing in Vietnamese.
  */
-export function MachineText({ text }: { text: string | null | undefined }) {
+/** Engine prefixes and markers that mean nothing to a reader. */
+export function stripEngineMarks(text: string): string {
+  return text
+    .replace(/Conclusion target:[^.]*\.\s*/g, "")
+    .replace(/\[(?:MACHINE_DRAFT_REVIEW|BACKEND_LANGUAGE_CHECK)\]\s*/g, "")
+    .trim();
+}
+
+export function MachineText({ text: raw }: { text: string | null | undefined }) {
+  const text = raw ? stripEngineMarks(raw) : raw;
   if (!text) return null;
   if (VIETNAMESE.test(text)) return <p>{text}</p>;
   return (

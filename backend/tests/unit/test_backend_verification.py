@@ -62,6 +62,8 @@ def test_catalogue_criteria_stay_unknown_without_an_attestation(catalogue_case):
     result = run(knowledge, data, [])
     assert result.finding == "UNKNOWN"
     assert "case facts" in (result.uncertainty_reason or "")
+    # The blocked AI proposal is kept as a hint for the reviewer.
+    assert "(AI proposed SATISFIED): Synthetic provider" in result.uncertainty_reason
 
 
 @pytest.mark.parametrize("finding", ["SATISFIED", "VIOLATED"])

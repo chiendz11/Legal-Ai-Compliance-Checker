@@ -92,3 +92,29 @@ def test_parallel_calls_give_the_same_records_as_sequential(reasoning_case):
 def test_parallel_setting_must_be_a_positive_integer(value):
     with pytest.raises(ValueError):
         LLMObservationProvider(max_parallel_calls=value)
+
+
+def test_a_decisive_answer_counts_only_when_asked_twice_with_the_same_result(reasoning_case):
+    knowledge, data = reasoning_case
+    request = ReasoningRequest.model_validate(data)
+    agree = FakeClient([semantic(data), semantic(data)])
+    batch = LLMObservationProvider(agree, agreement_calls=2).analyze(request, knowledge)
+    assert len(agree.calls) == 2 and batch.analyses[0].error_code is None
+
+    differ = FakeClient([semantic(data), semantic(data, proposed_finding="VIOLATED")])
+    batch = LLMObservationProvider(differ, agreement_calls=2).analyze(request, knowledge)
+    assert batch.analyses[0].error_code == "MODEL_DISAGREEMENT"
+    assert batch.observations[0].proposed_finding == "UNKNOWN"
+
+    failed = FakeClient([semantic(data), "not json"])
+    batch = LLMObservationProvider(failed, agreement_calls=2).analyze(request, knowledge)
+    assert batch.analyses[0].error_code == "MODEL_DISAGREEMENT"  # a failed re-ask fails closed
+
+
+def test_an_undecided_answer_is_not_asked_again(reasoning_case):
+    knowledge, data = reasoning_case
+    client = FakeClient([semantic(data, proposed_finding="UNKNOWN", evidence=[])])
+    LLMObservationProvider(client, agreement_calls=2).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert len(client.calls) == 1

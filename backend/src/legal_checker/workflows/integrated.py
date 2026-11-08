@@ -72,6 +72,7 @@ class IntegratedModulesSource:
         llm_client_factory: Callable[[], object] | None = None,
         llm_max_calls: int = 0,
         llm_parallel: int = 1,
+        llm_agreement: int = 1,
         ocr: OcrEngine | None = None,
     ):
         self.database_url = database_url
@@ -83,6 +84,7 @@ class IntegratedModulesSource:
         self.llm_client_factory = llm_client_factory
         self.llm_max_calls = llm_max_calls
         self.llm_parallel = llm_parallel
+        self.llm_agreement = llm_agreement
 
     def has_local_bytes(self, source: SourceDocument) -> bool:
         """The exact source is on this server, so reading it needs no network."""
@@ -192,6 +194,7 @@ class IntegratedModulesSource:
                     client=client,
                     max_calls=self.llm_max_calls if client else 0,
                     max_parallel_calls=max(1, self.llm_parallel),
+                    agreement_calls=max(1, self.llm_agreement),
                     automatic_draft_review=True,
                     verifications=verifications,
                 )
