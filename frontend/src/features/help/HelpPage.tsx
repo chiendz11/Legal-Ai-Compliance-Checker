@@ -104,7 +104,7 @@ export function HelpPage() {
       <h3 className="subhead">Giới hạn hiện tại</h3>
       <ul className="help-limits">
         <li>Chỉ đánh giá hợp đồng mua bán căn hộ chung cư; tài liệu loại khác sẽ được báo là không xử lý.</li>
-        <li>Tệp DOCX được lưu nhưng chưa đánh giá; hãy tải bản PDF.</li>
+        <li>Tệp DOCX được đọc theo nội dung văn bản; DOCX không có số trang nên không xem song song với báo cáo được (vẫn tải được tệp gốc).</li>
         <li>Bản scan được đọc bằng OCR tiếng Việt; bản quá mờ có thể đọc sai dấu.</li>
         <li>
           Muốn đánh giá nội dung từng điều khoản cần bật AI trên máy chủ. Không có AI, các điểm kiểm

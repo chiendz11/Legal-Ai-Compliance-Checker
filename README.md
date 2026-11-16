@@ -95,7 +95,7 @@ Run đi qua `workflows/runner.py` → `DraftAssessmentWorkflow` → `build_draft
 API (`ASSESSMENT_QUEUE=inline`) hoặc Celery worker (`celery`). Khi chưa có module bước 1–7,
 run kết thúc FAILED với lý do `MODULE_NOT_IMPLEMENTED`; `ASSESSMENT_MODULES=reference` phát lại
 tham chiếu QA để kiểm thử tích hợp và báo cáo được gắn nhãn `REFERENCE_REPLAY`.
-Chưa có xác thực/phân quyền tenant: các route này chỉ dùng cho môi trường local.
+Đăng nhập bật bằng `AUTH_MODE=on` (tài khoản local qua `scripts.users`, cookie phiên có ký; route kiểm tra vai trò và chỉ đọc dữ liệu cùng tenant). `AUTH_MODE=off` dùng một danh tính dev cố định, chỉ cho môi trường local.
 [Kịch bản demo](docs/guides/demo.md).
 Input dùng contracts trong code và schema runtime tại `/openapi.json` khi chạy backend,
 cần đúng hash/case/run.

@@ -30,6 +30,8 @@ export const NEXT_STEP: Partial<Record<Cause, string>> = {
   MISSING_FACT:
     "Kiểm tra hợp đồng có ghi các thông tin còn thiếu không; nếu có, chuyên viên xác nhận ở mục Rà soát.",
   DATE: "Bổ sung ngày còn thiếu (ví dụ ngày thu tiền) nếu hợp đồng hoặc phụ lục có ghi.",
+  NEEDS_REVIEWER:
+    "Chuyên viên xác minh dữ kiện của các điểm kiểm tra còn chờ (điều kiện phát sinh, điều khoản bị cấm) và kết luận ở mục Rà soát.",
   AI_PENDING: "Chuyên viên xem các đề xuất của AI và xác nhận hoặc sửa ở mục Rà soát.",
   NO_EVIDENCE:
     "Kiểm tra hợp đồng có điều khoản tương ứng không; nếu có, đánh dấu ở mục Rà soát.",

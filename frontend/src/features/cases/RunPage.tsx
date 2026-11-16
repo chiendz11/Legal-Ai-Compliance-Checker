@@ -47,7 +47,7 @@ const FAILURE_HELP: Record<string, string> = {
 /** One-line cause shown on the step where the run stopped. */
 const FAILURE_SHORT: Record<string, string> = {
   DOCUMENT_INTELLIGENCE_UNAVAILABLE: "Không đọc được tệp hợp đồng gốc",
-  DOCUMENT_FORMAT_UNSUPPORTED: "Chỉ đọc được PDF, chưa đọc DOCX",
+  DOCUMENT_FORMAT_UNSUPPORTED: "Tệp không phải PDF/DOCX đọc được (có thể bị hỏng)",
   DOCUMENT_NOT_READABLE: "Không đọc được chữ, kể cả bằng OCR",
   CONTRACT_TYPE_UNSUPPORTED: "Không phải hợp đồng mua bán căn hộ",
   OCR_FAILED: "OCR bản scan bị lỗi",

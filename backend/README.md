@@ -6,24 +6,24 @@ Package Python là `legal_checker`, nằm tại `backend/src/legal_checker/`. M�
 
 | Folder | Trách nhiệm | Hiện trạng |
 |---|---|---|
-| `api/v1` | Nhận HTTP, parse contracts, gọi service/workflow, ánh xạ lỗi | GET run/knowledge và health đang chạy; route POST nội bộ bước 5–7 đã bỏ; contracts/reviews/reports chưa có endpoints |
-| `core` | Settings, tạo kết nối PostgreSQL, lỗi, security/logging chung | Config/database/exceptions đang chạy; security là interface; logging chưa triển khai |
+| `api/v1` | Nhận HTTP, parse contracts, gọi service/workflow, ánh xạ lỗi | Auth, contracts (upload/nguồn), cases, runs (khởi chạy/trạng thái/kết quả), reports, review/publish, knowledge và health; không có POST riêng bước 5–7 |
+| `core` | Settings, tạo kết nối PostgreSQL, lỗi, security/logging chung | Config/database/exceptions và log JSON vận hành đang chạy; xác thực ở `api/auth.py`, `core/security` giữ interface phân quyền |
 | `shared/contracts` | Schemas C01–C13/X01/X02 và input/output bàn giao | Đang dùng trong API, modules và tests |
 | `shared/llm` | Audit X02, types/config và transport client dùng chung | PostgreSQL audit sink và client OpenAI tùy chọn; module sở hữu prompt/schema/provider; runner nhóm C không tạo paid client |
 | `shared/storage` | Đọc bytes tài liệu nguồn | `CachedHttpSourceStorage`: HTTP(S), SHA-256 và cache local; [cách dùng cho nhóm A](../docs/architecture/data_flow_and_storage.md) |
-| `modules/documents` | Intake, parser/OCR, chia đoạn, trích profile/viện dẫn, lưu metadata | Interfaces; parser/OCR/extraction thật chưa triển khai |
+| `modules/documents` | Intake, parser/OCR, chia đoạn, trích profile/viện dẫn, lưu metadata | Intake, parser PDF (pypdf + OCR Tesseract cho trang scan) và DOCX, chunker, profile/citation extractor, DocumentRepository |
 | `modules/legal_knowledge` | Đọc/quản lý knowledge và phiên bản | Repository SQL + immutable snapshots đang chạy |
-| `modules/applicable_law` | Scope, checklist, phiên bản pháp luật áp dụng | Interfaces và skeleton |
-| `modules/citation_validation` | Chuẩn hóa, xác thực và phân loại viện dẫn C09 | Interfaces và skeleton |
-| `modules/retrieval` | Index, tìm evidence, rerank và tạo C06 | Interfaces và skeleton |
+| `modules/applicable_law` | Scope, checklist, phiên bản pháp luật áp dụng | `CatalogScopeResolver` (C04, gồm policy tư cách các bên) và `CatalogTemporalResolver` (C05) theo catalog |
+| `modules/citation_validation` | Chuẩn hóa, xác thực và phân loại viện dẫn C09 | `CatalogCitationValidator` đối chiếu catalog văn bản |
+| `modules/retrieval` | Index, tìm evidence, rerank và tạo C06 | `LexicalRetrievalService` (BM25) đọc section paths/fact evidence; embedding/rerank là tùy chọn |
 | `modules/compliance` | Đánh giá criterion C07, tổng hợp C08, kiểm tra provenance | Provider/review độc lập, bốn findings, 7 loại criterion, 12 numeric schema và AGG_CAN_HO_V1; service compliance-only đã triển khai |
 | `modules/risks` | Map hai nguồn compliance/citation rồi tổng hợp C10 | Rules/catalog đã pin, guards, source XOR, severity và dedup giữ provenance; UNKNOWN chỉ verification theo policy |
 | `modules/recommendations` | Chọn template C11 và kiểm tra C10 | Generator/validator/service dùng template, selection policy ALL, facts/limits và diagnostics; luôn PENDING |
-| `modules/assessments` | Lưu/đọc run, checksum audit và runner nhóm C | PostgreSQL transaction giữ normalized rows/full DTO/pins/lineage; CLI offline/replay/save/read/export; service/API full assessment còn interface |
-| `modules/reviews` | Human review C12 và lưu events | Interfaces |
-| `modules/reports` | Dựng report, lưu phiên bản và export | Builder C13 nhận C10/C11 đã cung cấp, không tính risk/actions; service/repository/exporter là interfaces |
+| `modules/assessments` | Lưu/đọc run, checksum audit và runner nhóm C | PostgreSQL transaction giữ normalized rows/full DTO/pins/lineage; CLI offline/replay/save/read/export; service full assessment (khởi chạy, trạng thái, rebuild, publish) |
+| `modules/reviews` | Human review C12 và lưu events | Ghi C12 append-only theo run, đồng bộ bảng C12 của workbook |
+| `modules/reports` | Dựng report, lưu phiên bản và export | Builder C13 nhận C10/C11 đã cung cấp, không tính risk/actions; lưu phiên bản và xuất PDF/DOCX/JSON có dấu xác thực |
 | `workflows` | Điều phối module, kiểm tra bàn giao | Steps 5–7 đã chạy; DraftAssessmentWorkflow ghép upstream được inject; thiếu retrieval/observations/citation giữ diagnostics; states còn interface |
-| `worker` | Chạy services/workflow trong background | Chưa cấu hình Celery/broker hoặc đăng ký tasks |
+| `worker` | Chạy services/workflow trong background | Celery + Redis (`ASSESSMENT_QUEUE=celery`), Beat khôi phục run bị mất lease |
 | `migrations` | Alembic revisions, SQL baseline và kiểm tra tiếp nhận DB cũ | `scripts.local_db init` chạy Alembic tới head; cấu hình tại `backend/alembic.ini` |
 | `tests` | Unit, integration, contract, E2E | Regression suite trên PostgreSQL test riêng |
 | `src/devtools` | Tải dataset, đọc/validate và seed Excel | Development helpers; runtime không import package này |

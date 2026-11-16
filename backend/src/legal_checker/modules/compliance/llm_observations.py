@@ -313,6 +313,7 @@ class LLMObservationProvider:
         max_context_chars: int = 60000,
         max_parallel_calls: int = 1,
         agreement_calls: int = 1,
+        call_unconcludable: bool = True,
     ):
         if type(max_calls) is not int or max_calls < 0:
             raise ValueError("max_calls must be a nonnegative integer")
@@ -326,6 +327,9 @@ class LLMObservationProvider:
         if type(max_context_chars) is not int or max_context_chars < 1:
             raise ValueError("max_context_chars must be positive")
         self.automatic_draft_review = automatic_draft_review
+        # False: no call for a criterion whose answer could only be a reviewer hint, because
+        # neither a review, an attestation nor the automatic review could accept it.
+        self.call_unconcludable = call_unconcludable
         self.client = client
         self.reviews = [BackendReview.model_validate(row.model_dump()) for row in reviews]
         self.verifications = [
@@ -472,7 +476,21 @@ class LLMObservationProvider:
                 return "CONTEXT_LIMIT"
             if self.client is None:
                 return "OFFLINE_NO_CLIENT"
+            if not self.call_unconcludable and not concludable(criterion_id):
+                return "NOT_CONCLUDABLE"
             return None
+
+        def concludable(criterion_id):
+            """Some AI answer could become a finding: reviewed, attested or admissible."""
+            if criterion_id in reviews or criterion_id in verifications:
+                return True
+            if not self.automatic_draft_review:
+                return False
+            from legal_checker.modules.compliance.automatic_review import (
+                admissible_without_verification,
+            )
+
+            return admissible_without_verification(criterion_id, request, knowledge)
 
         # The call budget goes first to criteria the backend has verified, since only those
         # can become findings; the rest follow in checklist order (stable sort).
@@ -538,6 +556,10 @@ class LLMObservationProvider:
             "NO_SELECTED_C06": "Thiếu C06 selected FINAL chứa nội dung cho criterion.",
             "CONTEXT_LIMIT": "Ngữ cảnh vượt giới hạn; cần chuẩn bị evidence gọn hơn.",
             "OFFLINE_NO_CLIENT": "Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.",
+            "NOT_CONCLUDABLE": (
+                "Không gọi AI: điểm kiểm tra này cần dữ kiện được xác minh trước khi có "
+                "kết luận, nên chuyên viên xem xét ở mục Rà soát."
+            ),
             "CALL_LIMIT": "Đã đạt giới hạn số criterion được gọi AI trong lần này.",
         }
         analyses = []

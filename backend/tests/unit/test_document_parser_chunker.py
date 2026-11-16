@@ -5,6 +5,9 @@ import hashlib
 import pytest
 from legal_checker.modules.documents.chunker import chunk_document, extraction_version
 from legal_checker.modules.documents.parser import (
+    DOCX_MIME as DOCX,
+)
+from legal_checker.modules.documents.parser import (
     DocumentPage,
     DocumentText,
     PdfTextReader,
@@ -75,6 +78,84 @@ def test_pdf_reader_keeps_pages_hash_and_marks_unreadable_pages():
 def test_pdf_reader_rejects_other_mime_types():
     with pytest.raises(UnsupportedDocumentError):
         PdfTextReader().extract(b"%PDF-1.4", "application/msword")
+
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+
+def docx_document(body: str) -> bytes:
+    """A DOCX with the given w:body XML (only document.xml is needed to read the text)."""
+    import io
+    import zipfile
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            "word/document.xml",
+            f'<w:document xmlns:w="{W_NS}"><w:body>{body}</w:body></w:document>',
+        )
+    return buffer.getvalue()
+
+
+def para(*runs: str) -> str:
+    return (
+        "<w:p>"
+        + "".join(f"<w:r><w:t xml:space='preserve'>{r}</w:t></w:r>" for r in runs)
+        + "</w:p>"
+    )
+
+
+def test_docx_reader_reads_paragraphs_tables_and_page_breaks_in_order():
+    body = (
+        para("HỢP ĐỒNG MUA BÁN ", "CĂN HỘ CHUNG CƯ")
+        + "<w:p><w:r><w:t>Điều 1.</w:t><w:tab/><w:t>Đối tượng</w:t></w:r></w:p>"
+        + "<w:tbl><w:tr><w:tc>"
+        + para("Giá bán")
+        + "</w:tc><w:tc>"
+        + para("2.000.000.000 đồng")
+        + "</w:tc></w:tr></w:tbl>"
+        + "<w:p><w:r><w:br w:type='page'/>"
+        + "<w:t>Điều 2. Bàn giao căn hộ cho bên mua</w:t></w:r></w:p>"
+        + "<w:p><w:r><w:delText>đã xóa</w:delText></w:r></w:p>"
+        + "<w:sdt><w:sdtContent>"
+        + para("Phụ lục 01 kèm theo hợp đồng")
+        + "</w:sdtContent></w:sdt>"
+    )
+    content = docx_document(body)
+    reader = PdfTextReader()
+    document = reader.extract(content, DOCX)
+    assert reader.parser_version == "docx-xml-1"
+    assert document.source_sha256 == hashlib.sha256(content).hexdigest()
+    assert [p.page_number for p in document.pages] == [1, 2]
+    first, second = (p.text for p in document.pages)
+    assert first.startswith("HỢP ĐỒNG MUA BÁN CĂN HỘ CHUNG CƯ\nĐiều 1.\tĐối tượng\n")
+    assert "Giá bán\t2.000.000.000 đồng" in first
+    assert second.startswith("Điều 2. Bàn giao căn hộ")
+    assert "Phụ lục 01" in second and "đã xóa" not in second
+    assert all(p.method == "TEXT" and p.readable for p in document.pages)
+
+
+def test_docx_nested_table_is_read_once():
+    inner = "<w:tbl><w:tr><w:tc>" + para("ô lồng bên trong") + "</w:tc></w:tr></w:tbl>"
+    body = "<w:tbl><w:tr><w:tc>" + para("ô ngoài") + inner + "</w:tc></w:tr></w:tbl>"
+    text = PdfTextReader().extract(docx_document(body), DOCX).pages[0].text
+    assert text.count("ô lồng bên trong") == 1 and "ô ngoài" in text
+
+
+@pytest.mark.parametrize(
+    "content", [b"not a zip", docx_document("")[:30], b"PK\x05\x06" + b"\0" * 18]
+)
+def test_docx_reader_rejects_broken_files(content):
+    with pytest.raises(UnsupportedDocumentError, match="Not a readable DOCX"):
+        PdfTextReader().extract(content, DOCX)
+
+
+def test_docx_reader_refuses_an_oversized_body(monkeypatch):
+    from legal_checker.modules.documents import parser
+
+    monkeypatch.setattr(parser, "MAX_DOCX_XML_BYTES", 10)
+    with pytest.raises(UnsupportedDocumentError, match="too large"):
+        PdfTextReader().extract(docx_document(para("x" * 50)), DOCX)
 
 
 def test_repeated_form_copies_are_reduced_to_one():

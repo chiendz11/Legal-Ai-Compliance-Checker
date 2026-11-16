@@ -11,7 +11,7 @@ from legal_checker.workflows.integrated import (
 )
 from test_assessment_runs import CASE, env, start  # noqa: F401  (fixture re-export)
 from test_contract_upload import docx_bytes
-from unit.test_document_parser_chunker import _minimal_pdf
+from unit.test_document_parser_chunker import _minimal_pdf, docx_document, para
 
 CONTRACT = _minimal_pdf(
     [
@@ -79,13 +79,35 @@ def test_document_that_is_not_an_apartment_contract_is_not_processed(integrated)
     assert integrated.runs.draft(ca_id, record.run_id) is None  # no 306 x "insufficient"
 
 
-def test_uploaded_docx_fails_with_a_clear_format_reason(integrated):
-    ca_id = case_for(integrated, docx_bytes(), "hop_dong.docx")
+def test_unreadable_docx_fails_with_a_clear_format_reason(integrated):
+    ca_id = case_for(integrated, docx_bytes(), "hop_dong.docx")  # no valid document.xml
     record, status, stages = run(integrated, ca_id)
     assert record.module_source == MODULE_SOURCE
     assert status["status"] == "FAILED"
     assert status["error"]["details"] == [{"reason": "DOCUMENT_FORMAT_UNSUPPORTED"}]
     assert stages["DOCUMENT_INTELLIGENCE"] == "FAILED"
+
+
+def test_uploaded_docx_contract_is_assessed_from_its_text(integrated):
+    with connect_postgres(integrated.database_url) as connection:
+        connection.execute(
+            "INSERT INTO knowledge.loai_hop_dong (loai_hop_dong_id, ten_loai) "
+            "VALUES ('MB_CAN_HO_CHUNG_CU', 'Mua bán căn hộ chung cư') ON CONFLICT DO NOTHING"
+        )
+    payload = docx_document(
+        para("HỢP ĐỒNG MUA BÁN CĂN HỘ CHUNG CƯ")
+        + para("Hôm nay, ngày 01 tháng 11 năm 2026, tại Hà Nội")
+        + para("Điều 2. Giá bán căn hộ là 2.000.000.000 đồng")
+    )
+    ca_id = case_for(integrated, payload, "hop_dong.docx")
+    record, status, stages = run(integrated, ca_id)
+    assert status["status"] == "COMPLETED", status.get("error")
+    assert stages["DOCUMENT_INTELLIGENCE"] == "COMPLETED"
+    draft = integrated.runs.draft(ca_id, record.run_id)
+    assert any("Giá bán căn hộ" in c.noi_dung for c in draft.chunks)
+    assert str(draft.contract_profile.profile.ngay_giao_ket) == "2026-11-01"
+    assert draft.contract_profile.profile.loai_hop_dong_id == "MB_CAN_HO_CHUNG_CU"
+    assert record.module_source == MODULE_SOURCE
 
 
 def test_scanned_pdf_without_text_stops_instead_of_an_empty_assessment(integrated):

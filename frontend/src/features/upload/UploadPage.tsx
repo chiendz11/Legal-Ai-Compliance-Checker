@@ -216,7 +216,7 @@ export function UploadPage() {
         </div>
         <p className="small muted">
           Chỉ đánh giá hợp đồng mua bán căn hộ chung cư; tài liệu loại khác sẽ được báo là không xử
-          lý. Tệp DOCX được lưu nhưng chưa đánh giá.
+          lý. Nhận PDF (kể cả bản scan) và DOCX.
         </p>
       </form>
     </Section>

@@ -98,6 +98,7 @@ def module_source(
             llm_max_calls=settings.assessment_llm_max_calls,
             llm_parallel=settings.assessment_llm_parallel,
             llm_agreement=settings.assessment_llm_agreement,
+            llm_hints=settings.assessment_llm_hints,
             ocr=build_ocr_engine(
                 settings.document_ocr,
                 command=settings.tesseract_cmd,

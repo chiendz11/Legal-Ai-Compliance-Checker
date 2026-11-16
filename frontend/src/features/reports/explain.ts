@@ -24,6 +24,7 @@ export type Cause =
   | "MARKER"
   | "DATE"
   | "NO_AI"
+  | "NEEDS_REVIEWER"
   | "AI_PENDING"
   | "NO_EVIDENCE"
   | "DONE"
@@ -52,6 +53,10 @@ export const CAUSES: Record<Cause, { title: string; hint: string }> = {
   NO_AI: {
     title: "Chưa chạy AI đánh giá nội dung",
     hint: "Lần chạy này không gọi AI (hoặc đã hết lượt gọi), nên các điểm kiểm tra còn “chưa xác định”. Bật AI rồi chạy lại.",
+  },
+  NEEDS_REVIEWER: {
+    title: "Cần chuyên viên xác minh dữ kiện",
+    hint: "Các điểm kiểm tra này chỉ kết luận được khi có dữ kiện đã xác minh (điều kiện phát sinh, điều khoản bị cấm, việc thực hiện hợp đồng). AI không thể tự kết luận ở đây nên hệ thống không gọi AI, tránh tốn phí.",
   },
   AI_PENDING: {
     title: "AI đã đọc nhưng chưa đủ căn cứ kết luận",
@@ -192,10 +197,18 @@ export function explainRequirement(
     return { cause: "NO_AI", text: "Chưa chạy AI để đọc và đánh giá nội dung hợp đồng." };
   if (noted(criteria, /giới hạn|CALL_LIMIT/i))
     return { cause: "NO_AI", text: "AI chưa được gọi cho quy định này (đã hết lượt gọi của lần chạy)." };
+  if (noted(criteria, NOT_CONCLUDABLE))
+    return {
+      cause: "NEEDS_REVIEWER",
+      text: "Các điểm kiểm tra của quy định này cần chuyên viên xác minh dữ kiện trước khi kết luận.",
+    };
   if (noted(criteria, /selected FINAL/i))
     return { cause: "NO_EVIDENCE", text: "Không tìm thấy đoạn hợp đồng liên quan để kiểm tra." };
   return { cause: "OTHER", text: "Chưa đủ bằng chứng để kết luận." };
 }
+
+// C07 skipped the AI call: no answer could become a finding without a verified fact.
+const NOT_CONCLUDABLE = /Không gọi AI: điểm kiểm tra này cần dữ kiện/;
 
 // Sentences written by the engine for engineers, not for readers.
 const ENGINE_TRACE =
@@ -218,6 +231,8 @@ export function readableReason(text: string | null | undefined): string | null {
     return "Chưa kết luận vì chưa xác nhận quy định này áp dụng cho hợp đồng (hợp đồng chưa cho biết đủ thông tin về các bên hoặc loại giao dịch). Lý do cụ thể ghi ở quy định.";
   if (/offline|NO_LLM_CALL/i.test(raw)) return "Chưa chạy AI để đọc nội dung hợp đồng.";
   if (/giới hạn số criterion|CALL_LIMIT/i.test(raw)) return "Đã hết lượt gọi AI trong lần chạy này.";
+  if (NOT_CONCLUDABLE.test(raw))
+    return "Điểm kiểm tra này cần dữ kiện được xác minh trước khi kết luận; chuyên viên xem xét ở mục Rà soát.";
   if (/selected FINAL/i.test(raw)) return "Không tìm thấy đoạn hợp đồng liên quan để kiểm tra.";
   if (/QUOTA_EXHAUSTED/.test(raw))
     return "Không gọi được AI: tài khoản AI đã hết hạn mức. Cần nạp thêm rồi chạy lại.";

@@ -82,8 +82,8 @@ Mở http://localhost:5173. Windows: nếu test/seed báo lỗi giải mã ký t
 1. (AUTH_MODE=on) **Đăng nhập** bằng tài khoản trưởng nhóm; góc phải hiện tên và vai trò.
 2. **Lịch sử**: 300 ca DEV/VALIDATION; lọc theo trạng thái run/kết luận, tìm theo mã, sắp xếp.
 3. **Tải hợp đồng**: kéo thả một PDF có lớp chữ → tạo ca → chạy. Cả 9 bước chạy bằng module
-   thật và báo cáo ghi `MODULES`. Tải DOCX thì run dừng ở bước đọc hợp đồng với lý do
-   `DOCUMENT_FORMAT_UNSUPPORTED` (nhóm A chưa có parser DOCX).
+   thật và báo cáo ghi `MODULES`. DOCX cũng được đọc (theo nội dung văn bản, không xem song
+   song được); tệp hỏng hoặc không phải PDF/DOCX dừng với `DOCUMENT_FORMAT_UNSUPPORTED`.
 4. Bấm **Chạy đánh giá** ở `CA360_051`. Trang run hiện 9 stage chuyển PENDING → RUNNING →
    COMPLETED (cập nhật qua SSE). Nói rõ: COMPLETED là có kết quả máy, chưa phải đã review.
 5. Trang tự mở **báo cáo**. Chỉ vào nhãn DRAFT/chưa review và nhãn nguồn module.
@@ -131,7 +131,11 @@ api (`ASSESSMENT_QUEUE=celery`), worker (Celery + beat khôi phục run bị m�
 
 ## Giới hạn hiện tại
 
-- Module đọc hợp đồng (nhóm A) chỉ đọc PDF có lớp chữ: chưa có OCR cho bản scan và chưa đọc DOCX.
+- Module đọc hợp đồng (nhóm A) đọc PDF có lớp chữ, PDF scan (OCR Tesseract tiếng Việt, cần cài
+  `tesseract-ocr-vie`; image Docker đã có) và DOCX. DOCX không có số trang nên trích dẫn không mở
+  được khung xem song song.
+- C07 mặc định chỉ gọi AI cho các điểm kiểm tra có thể thành kết luận; bật `ASSESSMENT_LLM_HINTS=on`
+  nếu muốn AI gợi ý cả các điểm kiểm tra chờ chuyên viên (khoảng 8 lần số lượt gọi).
 - Ca dataset có sẵn dùng hồ sơ/đoạn văn tham chiếu khi PDF gốc không có trên máy chủ.
 - C09 có chẩn đoán `C09_PROVENANCE_UNAVAILABLE` (khoảng trống tích hợp nhóm B/C).
 - PDF gốc của các ca seed nằm trên host lưu trữ của dataset; khi host đó không truy cập được,

@@ -698,3 +698,73 @@ def test_a_blank_template_field_never_supports_a_finding(reasoning_case, blank):
     )
     assert batch.analyses[0].error_code == "TEMPLATE_PLACEHOLDER"
     assert batch.observations[0].proposed_finding == "UNKNOWN"
+
+
+def test_hint_only_criteria_get_no_call_when_hints_are_off(reasoning_case):
+    """Nothing could accept the answer (no review, attestation or automatic review)."""
+    knowledge, data = reasoning_case
+    client = FakeClient([])
+    batch = LLMObservationProvider(client, call_unconcludable=False).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert client.calls == []
+    assert batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+    assert batch.analyses[0].origin == "NO_CALL"
+    assert batch.observations[0].proposed_finding == "UNKNOWN"
+    assert "chuyên viên" in batch.observations[0].giai_thich
+
+
+def test_attested_criteria_are_still_called_when_hints_are_off(reasoning_case):
+    knowledge, data = reasoning_case
+    request = ReasoningRequest.model_validate(data)
+    verification = prior_verification(request, facts={"x": True}, facts_verified=True)
+    client = FakeClient([semantic(data)])
+    LLMObservationProvider(client, verifications=[verification], call_unconcludable=False).analyze(
+        request, knowledge
+    )
+    assert len(client.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "conditions,called",
+    [
+        ({}, True),
+        ({"case_facts_required": True}, False),
+        ({"optional_choice": True}, False),
+        ({"exception_ids": ["EXC_1"]}, False),
+    ],
+)
+def test_automatic_review_admissibility_decides_the_call(reasoning_case, conditions, called):
+    """Without an attestation, only criteria the automatic review could accept are asked."""
+    knowledge, data = reasoning_case
+    knowledge.criteria["CRITERION_1"]["dieu_kien"] = conditions
+    client = FakeClient([semantic(data)] * 2)
+    batch = LLMObservationProvider(
+        client, automatic_draft_review=True, call_unconcludable=False
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert bool(client.calls) is called
+    if not called:
+        assert batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+
+
+def test_non_content_criteria_get_no_call_when_hints_are_off(reasoning_case):
+    knowledge, data = reasoning_case
+    knowledge.criteria["CRITERION_1"]["loai_kiem_tra"] = "PERFORMANCE_WITH_DOCUMENTS"
+    client = FakeClient([])
+    batch = LLMObservationProvider(
+        client, automatic_draft_review=True, call_unconcludable=False
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert client.calls == [] and batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+
+
+@pytest.mark.parametrize(
+    "value,expected", [(None, False), ("off", False), ("on", True), ("1", True)]
+)
+def test_hint_calls_are_off_unless_configured(monkeypatch, value, expected):
+    from legal_checker.core.config import Settings
+
+    if value is None:
+        monkeypatch.delenv("ASSESSMENT_LLM_HINTS", raising=False)
+    else:
+        monkeypatch.setenv("ASSESSMENT_LLM_HINTS", value)
+    assert Settings.from_env().assessment_llm_hints is expected

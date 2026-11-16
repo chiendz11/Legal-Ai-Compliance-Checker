@@ -33,6 +33,10 @@ class Settings:
     assessment_llm_parallel: int = 4
     # A decisive AI answer is asked again; the answers must agree to count.
     assessment_llm_agreement: int = 2
+    # Also ask the AI about criteria that can never become a finding without a verified
+    # fact (conditional, prohibited-clause, performance): its answer is only a hint for the
+    # reviewer. Off by default: those calls were about 90% of the cost of a run.
+    assessment_llm_hints: bool = False
     # "inline" runs jobs in the API process; "celery" sends them to the Redis-backed worker.
     assessment_queue: str = "inline"
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -74,6 +78,8 @@ class Settings:
             assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "80")),
             assessment_llm_parallel=int(os.getenv("ASSESSMENT_LLM_PARALLEL", "4")),
             assessment_llm_agreement=int(os.getenv("ASSESSMENT_LLM_AGREEMENT", "2")),
+            assessment_llm_hints=os.getenv("ASSESSMENT_LLM_HINTS", "off").strip().lower()
+            in {"1", "true", "yes", "on"},
             assessment_queue=os.getenv("ASSESSMENT_QUEUE", "inline"),
             redis_url=os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             run_lease_seconds=int(os.getenv("RUN_LEASE_SECONDS", "600")),

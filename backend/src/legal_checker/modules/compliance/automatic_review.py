@@ -14,6 +14,46 @@ from legal_checker.shared.contracts.reasoning import Gates
 POLICY = "C07_GROUNDED_DRAFT_V1"
 
 
+def admissible_without_verification(criterion_id, request, knowledge) -> bool:
+    """Whether this review could ever accept a proposal for a criterion with no attestation.
+
+    Only the conditions that do not depend on the AI answer are checked: a semantic content
+    criterion, of a confirmed requirement, with no exception, optional choice or required
+    case facts (those make local applicability UNKNOWN). False means no AI answer can become
+    a finding here, so asking the AI would only produce a hint for the reviewer.
+    """
+    criterion = knowledge.criteria[criterion_id]
+    if criterion.get("loai_kiem_tra") not in CONTENT_TYPES:
+        return False
+    requirement = next(
+        (
+            r
+            for r in request.payload.requirements
+            if r.requirement_version_id == criterion["requirement_version_id"]
+        ),
+        None,
+    )
+    if requirement is None or not requirement.confirmed:
+        return False
+    try:
+        applicability = parse_json_object(criterion.get("dieu_kien", {}))
+    except ValueError:
+        return False
+    if any(
+        applicability.get(key)
+        for key in ("optional_choice", "case_facts_required", "exception_ids")
+    ):
+        return False
+    return not any(
+        row.get("tieu_chi_id") == criterion_id
+        or (
+            not row.get("tieu_chi_id")
+            and row.get("requirement_version_id") == requirement.requirement_version_id
+        )
+        for row in knowledge.tables.get("ngoai_le_ap_dung", [])
+    )
+
+
 def automatic_review(
     proposal, request, knowledge, *, verification=None, unresolved_provider_conditions=False
 ):

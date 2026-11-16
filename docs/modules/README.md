@@ -88,7 +88,7 @@ Khi ghép hệ thống, input đó được thay bằng output thật của các
 | Phần | Hiện trạng trong code | Cần hoàn thiện / nghiệm thu |
 |---|---|---|
 | PostgreSQL và dataset | Alembic, tải/seed/update, receipt và snapshot bất biến | Phân phối ZIP reviewed; kiểm tra restore và cùng release trên từng máy |
-| Bước 1–2 | Upload, PDF text parser, chunks, profile/facts và citation extractor; có DocumentRepository | OCR/DOCX còn thiếu; nối lưu extraction đầy đủ trước Retrieval; đo chất lượng extraction |
+| Bước 1–2 | Upload, PDF text parser, chunks, profile/facts và citation extractor; có DocumentRepository | Đã có OCR (Tesseract) và DOCX; extraction của hợp đồng upload được lưu trước Retrieval; còn đo chất lượng extraction |
 | Bước 3–4 | Catalog Scope/Temporal/Citation và BM25; có các tùy chọn embedding/reranking | Marker catalog còn thiếu/chồng lấn, profile không đủ, nối metadata evidence và C09 provenance |
 | Bước 5–7 | LLM proposals, grounding, rules/aggregation, risks/recommendations và persistence | Tạo/truyền CriterionVerification, xử lý quote/rate limit/budget, phân biệt lỗi kỹ thuật với thiếu nội dung |
 | Workflow | API khởi tạo run, Celery/Redis/Beat, lease/recovery, SSE/polling | Đóng các điểm nối Documents → Retrieval → verification; nghiệm thu nhiều PDF |
@@ -602,7 +602,7 @@ Repo đã tổ chức theo module: ports ở owning modules, implementations DB/
 Không cần tạo lại các folder cũ đã bỏ để thực hiện hướng dẫn này.
 
 Factory khởi tạo Knowledge, Store, LLM audit sink và source storage; GET knowledge/run dùng DB.
-API khởi chạy assessment toàn bộ chưa triển khai; không có POST chạy riêng bước 5–7.
+API khởi chạy assessment toàn bộ: `POST /api/v1/cases/{ca_id}/runs`; không có POST chạy riêng bước 5–7.
 Khi nối các services upstream vào full workflow, inject reader/provider/writer rõ ràng;
 không đưa query SQL trực tiếp vào route hoặc engine để bỏ qua ranh giới module.
 
