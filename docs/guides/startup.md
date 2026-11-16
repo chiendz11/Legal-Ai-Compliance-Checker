@@ -46,6 +46,10 @@ Xem [DB local](../database/local_setup.md) và [hướng dẫn nhóm](../huong_d
 
 ASSESSMENT_MODULES=modules đọc upload/cache/HTTP thật. Chỉ DEV/EVAL mới chọn
 modules_di_reference hoặc reference. LLM offline không gọi provider, không tự kết luận.
+Document Intelligence mặc định dùng `DOCUMENTS_EXTRACTOR=rules`; nếu muốn bật trích xuất
+semantic local cho 9 facts C02 bằng Ollama/Qwen (`DERIVED_REVIEW_PENDING`, ghi X02 `OLLAMA_LOCAL`),
+cấu hình `DOCUMENTS_EXTRACTOR=hybrid` theo [documents_local_llm.md](../modules/documents_local_llm.md)
+(tách biệt hoàn toàn với `ASSESSMENT_LLM` của C07).
 Người 4 cung cấp CriterionVerificationProvider, người 2/4 cung cấp EvidenceRegistryProvider
 cho chứng từ ngoài khi có; người 5 inject qua build_services(...). Registry và verifier
 phải pin đúng context của run, không bật human_verified/verified chỉ vì DTO hợp lệ.
