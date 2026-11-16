@@ -85,6 +85,35 @@ def llm_client_factory(settings: Settings):
     return build
 
 
+def document_semantic_extractor(settings: Settings):
+    """Documents uses its own local provider; C07 configuration remains independent."""
+    if settings.documents_extractor == "rules":
+        return None
+    if settings.documents_extractor != "hybrid":
+        raise ValueError("DOCUMENTS_EXTRACTOR must be rules or hybrid")
+    from legal_checker.modules.documents.ollama_client import OllamaDocumentClient, OllamaOptions
+    from legal_checker.modules.documents.semantic_extractor import (
+        SemanticDocumentExtractor,
+        SemanticOptions,
+    )
+
+    return SemanticDocumentExtractor(
+        OllamaDocumentClient(
+            OllamaOptions(
+                base_url=settings.documents_ollama_url,
+                model=settings.documents_ollama_model,
+                timeout_seconds=settings.documents_llm_timeout_seconds,
+            ),
+            PostgresLlmAuditSink(settings.database_url),
+        ),
+        settings.source_cache_dir / "documents_llm",
+        SemanticOptions(
+            max_calls=settings.documents_llm_max_calls,
+            recheck_existing=settings.documents_llm_recheck_existing,
+        ),
+    )
+
+
 def module_source(
     settings: Settings,
     cases: CaseRepository,
@@ -126,6 +155,7 @@ def module_source(
             allow_reference_documents=settings.assessment_modules == "modules_di_reference",
             verification_provider=verification_provider,
             external_registry_provider=external_registry_provider,
+            document_semantic_extractor=document_semantic_extractor(settings),
         )
     if settings.assessment_modules == "reference":
         return ReferenceReplaySource(settings.database_url)

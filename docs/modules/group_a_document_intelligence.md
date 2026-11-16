@@ -269,3 +269,8 @@ không ghép qua trang không đọc được. Tham chiếu động vẫn tách 
 Xem [phương pháp, giới hạn và kiểm tra](../guides/legal_document_methods_trial_20261109.md)
 và [policy máy đọc](../contracts/document_chunking_policy.json). Workbook seed cũ và
 output inference mới phải giữ đúng extraction/version của từng bên.
+
+## Trích xuất ngữ nghĩa bằng model local
+
+Xem [Documents hybrid với Qwen/Ollama](documents_local_llm.md): cấu hình độc lập
+với C07, facts chờ kiểm tra, quote/offset, versioning, audit và giới hạn v1.

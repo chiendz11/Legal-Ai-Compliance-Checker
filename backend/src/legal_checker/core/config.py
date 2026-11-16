@@ -23,6 +23,12 @@ class Settings:
     source_cache_dir: Path = PROJECT_ROOT / "data/private/source_cache"
     source_download_timeout_seconds: float = 30
     source_max_bytes: int = 100 * 1024 * 1024
+    documents_extractor: str = "rules"
+    documents_ollama_url: str = "http://127.0.0.1:11434"
+    documents_ollama_model: str = "qwen3.5:9b-q4_K_M"
+    documents_llm_max_calls: int = 2
+    documents_llm_timeout_seconds: float = 240
+    documents_llm_recheck_existing: bool = False
     # "modules": read real bytes (including remote URLs), never silently replay QA;
     # "modules_di_reference": explicitly allow dataset DI for development;
     # "reference": replay QA end to end; "none": fail clearly.
@@ -65,6 +71,15 @@ class Settings:
                 os.getenv("SOURCE_DOWNLOAD_TIMEOUT_SECONDS", "30")
             ),
             source_max_bytes=int(os.getenv("SOURCE_MAX_BYTES", str(100 * 1024 * 1024))),
+            documents_extractor=os.getenv("DOCUMENTS_EXTRACTOR", "rules"),
+            documents_ollama_url=os.getenv("DOCUMENTS_OLLAMA_URL", "http://127.0.0.1:11434"),
+            documents_ollama_model=os.getenv("DOCUMENTS_OLLAMA_MODEL", "qwen3.5:9b-q4_K_M"),
+            documents_llm_max_calls=int(os.getenv("DOCUMENTS_LLM_MAX_CALLS", "2")),
+            documents_llm_timeout_seconds=float(os.getenv("DOCUMENTS_LLM_TIMEOUT_SECONDS", "240")),
+            documents_llm_recheck_existing=os.getenv(
+                "DOCUMENTS_LLM_RECHECK_EXISTING", "off"
+            ).lower()
+            in {"on", "true", "1"},
             assessment_modules=os.getenv("ASSESSMENT_MODULES", "none"),
             assessment_llm=os.getenv("ASSESSMENT_LLM", "offline"),
             assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "20")),
