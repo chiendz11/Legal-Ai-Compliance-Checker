@@ -1,3 +1,4 @@
+import { requirementDisplayStatus, criterionDisplayStatus } from "./assessmentStatus";
 import type { ReportContent } from "../../shared/api/client";
 import { label, type LabelKind } from "../../shared/labels";
 
@@ -13,20 +14,23 @@ function count<T>(items: T[], key: (item: T) => string) {
  */
 export function SummaryTiles({ content }: { content: ReportContent }) {
   const { compliance, citation_validation, risks, recommendations } = content;
+  const scope = content.applicable_legal_scope;
+  const confirmed = scope.filter((r) => r.applicability_status === "CONFIRMED").length;
+  const excluded = scope.filter((r) => r.applicability_status === "NOT_APPLICABLE").length;
   return (
     <div className="tiles">
       <Tile
         title="Yêu cầu"
         total={compliance.requirement_results.length}
         kind="requirement"
-        counts={count(compliance.requirement_results, (r) => r.status)}
-        note={`${content.applicable_legal_scope.length} yêu cầu trong phạm vi`}
+        counts={count(compliance.requirement_results, requirementDisplayStatus)}
+        note={`${scope.length} được xét; ${confirmed} xác nhận áp dụng; ${excluded} không áp dụng; ${scope.length - confirmed - excluded} chưa xác định`}
       />
       <Tile
         title="Tiêu chí"
         total={compliance.criterion_results.length}
         kind="criterion"
-        counts={count(compliance.criterion_results, (c) => c.finding)}
+        counts={count(compliance.criterion_results, criterionDisplayStatus)}
       />
       <Tile
         title="Viện dẫn"

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { label, type LabelKind } from "../labels";
-import { displayText } from "../text";
+import { cleanExplanationText, displayText } from "../text";
 
 export function StatusBadge({ kind, code }: { kind: LabelKind; code: string | null | undefined }) {
   const { text, tone } = label(kind, code);
@@ -160,8 +160,6 @@ export function LoadState({ error, children }: { error: unknown; children?: Reac
   return <p className="muted">{children ?? "Đang tải…"}</p>;
 }
 
-const VIETNAMESE = /[ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọỏõùúụủũỳýỵỷỹ]/i;
-
 /**
  * Explanations written by the reasoning modules. Vietnamese text reads as prose; English
  * technical traces (e.g. "INSUFFICIENT: mandatory criterion findings=[...]") are kept intact but
@@ -169,11 +167,27 @@ const VIETNAMESE = /[ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọ�
  */
 export function MachineText({ text }: { text: string | null | undefined }) {
   if (!text) return null;
-  if (VIETNAMESE.test(text)) return <p>{text}</p>;
+  const cleaned = cleanExplanationText(text);
+  if (!cleaned) return null;
+  const hasRawTech =
+    text !== cleaned &&
+    (text.includes("Rule=") ||
+      text.includes("quote/offset") ||
+      text.includes("Unresolved gate") ||
+      text.includes("UPSTREAM_SCOPE_UNRESOLVED") ||
+      text.includes("REVIEW_SCOPE_EXCLUDED:"));
+
   return (
-    <details className="machine-note">
-      <summary>Diễn giải kỹ thuật của module</summary>
-      <p>{text}</p>
-    </details>
+    <div>
+      <p>{cleaned}</p>
+      {hasRawTech && (
+        <details className="machine-note">
+          <summary>Chi tiết kiểm toán kỹ thuật (Audit trace)</summary>
+          <pre className="small muted" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+            {text}
+          </pre>
+        </details>
+      )}
+    </div>
   );
 }

@@ -456,7 +456,7 @@ GitOps thêm ServiceMonitor, PrometheusRule HTTP lỗi >5%/backend scrape down. 
 1. `LLMObservationProvider` trước đây không được truyền `BackendReview`; adapter cố ý hạ proposal về `UNKNOWN`. Luồng tích hợp nay bật policy `C07_GROUNDED_DRAFT_V1` để backend kiểm điều kiện tiếp nhận proposal thành **bản nháp**.
 2. Backend kiểm context, C05, selected C06, quote/offset, legal provenance và rules; review độc lập do con người/backend cung cấp vẫn có quyền ưu tiên.
 3. Quote khớp chỉ chứng minh nguồn trích. **Không biến việc quote khớp thành chứng minh predicate pháp lý đúng.** Policy máy chỉ nhận semantic contract-content draft từ catalog đã được xác minh; số liệu phải qua Decimal với facts độc lập, ngoại lệ/performance/absence thiếu căn cứ vẫn UNKNOWN. C07/C13 vẫn chờ human review.
-4. Knowledge hiện seed có nhiều trạng thái `...PENDING_HUMAN`/`...CHUA_DUYET`: giữ nguyên; không sửa hàng loạt thành VERIFIED để làm đẹp kết quả. Vì vậy chạy lại không bảo đảm mọi criterion thành SATISFIED/VIOLATED.
+4. Baseline reviewed ngày 05/11 dùng V750_LEGAL_KNOWLEDGE_USER_REVIEWED_20261105 và hash trong manifest. HUMAN_VERIFIED không bổ sung null dates, marker mappings hoặc runtime verification mới; không bảo đảm mọi criterion có kết luận.
 5. C08 nay hiểu đúng hai dạng C05 của resolver thật: scope không khớp và requirement chưa được ban hành tại ngày đã biết. Candidate version, ngày không rõ hoặc thiếu chuỗi phiên bản lịch sử vẫn INSUFFICIENT. Không tự ẩn mọi UNKNOWN.
 
 #### 5.4.7. Trình tự triển khai và giới hạn GitOps khi code chưa publish
@@ -514,7 +514,7 @@ resources:
 - ../../../workloads/frontend
 - ../../../workloads/worker
 ```
-Commit và push lên nhánh `main` của `Legal-Ai-Compliance-Checker-gitops`. Argo CD sẽ tự động phát hiện và triển khai Pod mới lên cụm!
+Commit/push vào đúng nhánh GitOps mà Argo Application đang theo dõi. Local phase-two ngày 05/11 theo feat/local-phase2-worker-verification, trong khi publish app main mặc định cập nhật GitOps main. Kiểm targetRevision/image thực tế trước rollout; DB migrate/update là bước riêng.
 
 ---
 

@@ -10,6 +10,7 @@ from zipfile import ZipFile, ZipInfo
 import pytest
 from devtools.dataset_download import (
     DatasetError,
+    cache_bundled_sources,
     check_dataset,
     download_archive,
     pull_dataset,
@@ -70,6 +71,70 @@ def test_install_exact_files_and_rerun_without_download(tmp_path):
         == "already_present"
     )
     assert not list(destination.parent.glob(".dataset-pull-*"))
+
+
+def bundled_source_manifest(tmp_path):
+    root = tmp_path / "installed"
+    root.mkdir()
+    (root / "full.xlsx").write_bytes(b"workbook")
+    pdf = root / "sources/HD001.pdf"
+    pdf.parent.mkdir()
+    pdf.write_bytes(b"%PDF-1.7 synthetic test source")
+    index = root / "SOURCE_FILES.json"
+    index.write_text(
+        json.dumps({"items": [{"path": "sources/HD001.pdf", "sha256": sha256_file(pdf)}]})
+    )
+    manifest = {
+        "dataset_version": "bundled",
+        "distribution": "DEV_VALIDATION",
+        "workbook": "full.xlsx",
+        "bundled_sources_index": index.name,
+        "required_files": {
+            p.relative_to(root).as_posix(): sha256_file(p) for p in [pdf, index, root / "full.xlsx"]
+        },
+    }
+    return root, manifest, pdf
+
+
+def test_bundled_pdf_cache_is_verified_and_idempotent(tmp_path):
+    root, manifest, pdf = bundled_source_manifest(tmp_path)
+    cache = tmp_path / "cache"
+    result = cache_bundled_sources(manifest, root, cache)
+    assert result["created"] == result["sources"] == 1
+    assert result["database_changed"] is False
+    assert (cache / sha256_file(pdf)).read_bytes() == pdf.read_bytes()
+    assert cache_bundled_sources(manifest, root, cache)["created"] == 0
+
+
+def test_bundled_cache_keeps_existing_corrupt_entry_for_inspection(tmp_path):
+    root, manifest, pdf = bundled_source_manifest(tmp_path)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    existing = cache / sha256_file(pdf)
+    existing.write_bytes(b"user file")
+    with pytest.raises(DatasetError, match="preserved"):
+        cache_bundled_sources(manifest, root, cache)
+    assert existing.read_bytes() == b"user file"
+
+
+def test_bundled_source_index_cannot_reference_unpinned_files(tmp_path):
+    root, manifest, _ = bundled_source_manifest(tmp_path)
+    index = root / "SOURCE_FILES.json"
+    index.write_text(json.dumps({"items": [{"path": "../outside.pdf", "sha256": "a" * 64}]}))
+    manifest["required_files"][index.name] = sha256_file(index)
+    with pytest.raises(DatasetError, match="differs"):
+        cache_bundled_sources(manifest, root, tmp_path / "cache")
+
+
+def test_local_release_does_not_download_the_previous_remote_version(tmp_path):
+    manifest, archive = dataset_zip(tmp_path)
+    manifest["publication_status"] = "LOCAL_ARCHIVE_READY"
+    destination = tmp_path / "current"
+    with pytest.raises(DatasetError, match="has not been published"):
+        pull_dataset(manifest, destination, downloader=lambda *args: pytest.fail("downloaded"))
+    assert not destination.exists()
+    assert pull_dataset(manifest, destination, archive_path=archive)["status"] == "installed"
+    assert pull_dataset(manifest, destination)["status"] == "already_present"
 
 
 def test_existing_folder_is_preserved_on_mismatch(tmp_path):

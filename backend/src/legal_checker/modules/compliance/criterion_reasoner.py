@@ -201,6 +201,11 @@ def _type_issues(criterion_type, proposal, observation, gates, request, conditio
         not observation.facts_verified or target not in {"CONTRACT_CONTENT", "PERFORMANCE"}
     ):
         issues.append("A verified evaluation_target CONTRACT_CONTENT/PERFORMANCE is required")
+    if "allowed_evaluation_targets" in conditions and (
+        not isinstance(conditions["allowed_evaluation_targets"], list)
+        or target not in conditions["allowed_evaluation_targets"]
+    ):
+        issues.append("Decision rule does not permit this evaluation_target")
     if criterion_type in {"PERFORMANCE_OR_CONDITIONAL", "DOI_CHIEU_CO_DIEU_KIEN"}:
         if (
             not observation.facts_verified
@@ -277,6 +282,44 @@ def _evaluate(
 ) -> CriterionResult:
     """Check one proposal without modifying the request, catalog or verification state."""
     criterion_id = criterion["tieu_chi_id"]
+    from legal_checker.modules.compliance.review_scope import outside_reason, scope_receipt
+
+    receipt = scope_receipt(
+        requirement,
+        Context(**{k: getattr(request, k) for k in Context.model_fields}),
+        knowledge,
+        contract_id=request.payload.hop_dong_id,
+    )
+    excluded_by_review = outside_reason(receipt, criterion_id)
+    if excluded_by_review:
+        snapshot = deepcopy(criterion)
+        snapshot.update(
+            knowledge_snapshot_sha256=request.knowledge_snapshot_sha256,
+            context=request.model_dump(mode="json", include=set(Context.model_fields)),
+            hop_dong_id=request.payload.hop_dong_id,
+            assessment_review=deepcopy(receipt),
+        )
+        return CriterionResult(
+            ket_qua_id=stable_id(request, "C07", f"{requirement.yeu_cau_ca_id}/{criterion_id}"),
+            ca_id=request.ca_id,
+            yeu_cau_ca_id=requirement.yeu_cau_ca_id,
+            tieu_chi_id=criterion_id,
+            finding="UNKNOWN",
+            giai_thich=excluded_by_review,
+            gates=Gates(
+                scope_confirmed=requirement.confirmed,
+                version_resolved=requirement.version_status == "RESOLVED",
+            ),
+            uncertainty_reason=excluded_by_review,
+            legal_basis_ids=_legal_basis(criterion, knowledge),
+            tieu_chi_snapshot_json=snapshot,
+            model_version="BACKEND_REVIEW_SCOPE_V1",
+            prompt_version="NOT_USED",
+            lan_chay_id=request.run_id,
+            mandatory=criterion.get("bat_buoc") is True,
+            excluded=True,
+            exclusion_reason=excluded_by_review,
+        )
     proposal = observation.proposed_finding if observation else "UNKNOWN"
     rule, conditions, issues = load_decision_rule(criterion_id, proposal, knowledge)
     applicability, applicability_issues = _applicability(criterion, knowledge)

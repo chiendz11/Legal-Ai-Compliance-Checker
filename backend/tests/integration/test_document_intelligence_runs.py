@@ -99,5 +99,94 @@ def test_scanned_pdf_without_text_stops_instead_of_an_empty_assessment(integrate
 
 
 def test_seeded_case_without_local_source_keeps_the_reference_label(integrated):
+    integrated.runner.source.allow_reference_documents = True
     record, _, _ = run(integrated, CASE)
     assert record.module_source == REFERENCE_DI_SOURCE
+
+
+def test_live_run_persists_active_extraction_before_retrieval(integrated):
+    from legal_checker.core.postgres import connect_postgres
+
+    ca_id = case_for(integrated, CONTRACT, "persist.pdf")
+    record, status, _ = run(integrated, ca_id)
+    assert status["status"] == "COMPLETED", status.get("error")
+    draft = integrated.runs.draft(ca_id, record.run_id)
+    with connect_postgres(integrated.database_url) as connection:
+        rows = connection.execute(
+            "SELECT doan_id FROM runtime.doan_hop_dong WHERE hop_dong_id=%s",
+            (draft.case.hop_dong_id,),
+        ).fetchall()
+    assert {row["doan_id"] for row in rows} == {chunk.doan_id for chunk in draft.chunks}
+    report = integrated.client.get(f"/api/v1/cases/{ca_id}/runs/{record.run_id}/reports").json()
+    audit = report["items"][0]["report"]["report_json"]["audit"]
+    assert any(d["code"] == "DOCUMENT_EXTRACTION_PERSISTED" for d in audit["diagnostics"])
+    assert any(d["code"] == "VERIFICATION_PROVIDER_NOT_CONFIGURED" for d in audit["diagnostics"])
+    assert audit["assessment_profile"]["requirement_ids"] == sorted(
+        {r.requirement_id for r in draft.requirements}
+    )
+
+
+def test_modules_never_uses_qa_when_source_is_unavailable(integrated):
+    source = integrated.runner.source
+    assert source.allow_reference_documents is False
+    source._reference = lambda case: pytest.fail("Live mode must not use QA")
+    record, status, _ = run(integrated, CASE)
+    assert record.module_source == MODULE_SOURCE
+    assert status["status"] == "FAILED"
+
+
+def test_person_four_verifier_is_called_with_live_upstream(integrated):
+    from types import SimpleNamespace
+
+    from legal_checker.core.postgres import connect_postgres
+
+    calls = []
+
+    def verify(context, profile, requirements, chunks, knowledge, *, coverage=None):
+        with connect_postgres(integrated.database_url) as connection:
+            count = connection.execute(
+                "SELECT count(*) AS n FROM runtime.doan_hop_dong WHERE hop_dong_id=%s",
+                (profile.hop_dong_id,),
+            ).fetchone()["n"]
+        assert count == len(chunks)  # Document writer completed before verifier/consumer.
+        assert context.knowledge_snapshot_sha256 == knowledge.sha256
+        assert coverage is not None
+        assert coverage.hop_dong_id == profile.hop_dong_id
+        assert coverage.page_count == 1 and coverage.unreadable_pages == []
+        assert coverage.all_pages_have_text
+        calls.append(context.run_id)
+        return []  # No independent attestation: never fabricate verified facts.
+
+    integrated.runner.source.verification_provider = SimpleNamespace(verify=verify)
+    ca_id = case_for(integrated, CONTRACT, "verify.pdf")
+    record, status, _ = run(integrated, ca_id)
+    assert status["status"] == "COMPLETED", status.get("error")
+    assert calls == [record.run_id]
+
+
+def test_external_source_registry_rejects_another_run_before_processing(integrated):
+    from types import SimpleNamespace
+
+    from legal_checker.shared.contracts.reasoning import ExternalEvidenceRegistration
+
+    def load(context, case, knowledge):
+        assert knowledge.sha256 == context.knowledge_snapshot_sha256
+        return [
+            ExternalEvidenceRegistration(
+                **{**context.model_dump(), "run_id": "FOREIGN_RUN"},
+                hop_dong_id=case.hop_dong_id,
+                yeu_cau_ca_id="YCCA",
+                tieu_chi_id="TC",
+                bang_chung_id="EXT",
+                object_uri="fixture://receipt",
+                sha256="a" * 64,
+                verified=False,
+                verification_reference="REGISTERED_NOT_VERIFIED",
+            )
+        ]
+
+    integrated.runner.source.external_registry_provider = SimpleNamespace(load=load)
+    ca_id = case_for(integrated, CONTRACT, "registry.pdf")
+    _, status, _ = run(integrated, ca_id)
+    assert status["status"] == "FAILED"
+    assert status["error"]["details"] == [{"reason": "HANDOFF_VALIDATION_FAILED"}]

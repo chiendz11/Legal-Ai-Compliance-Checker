@@ -6,7 +6,7 @@ Callers may pass `on_stage` to observe progress and `evaluator` to swap steps 5â
 """
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from legal_checker.modules.applicable_law.scope_resolver import ScopeResolver
 from legal_checker.modules.applicable_law.temporal_resolver import TemporalResolver
@@ -15,7 +15,7 @@ from legal_checker.modules.compliance.observations import ObservationProvider
 from legal_checker.modules.documents.intake import IntakeService
 from legal_checker.modules.documents.service import DocumentIntelligenceService
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
-from legal_checker.modules.retrieval.service import RetrievalService
+from legal_checker.modules.retrieval.service import RetrievalRefinementService, RetrievalService
 from legal_checker.shared.contracts.assessment import AssessmentCase
 from legal_checker.shared.contracts.citation import CitationValidation
 from legal_checker.shared.contracts.common import Context
@@ -49,6 +49,8 @@ class DraftModules:
     citations: CitationValidator | None
     observations: ObservationProvider | None
     external_evidence_registry: Sequence[ExternalEvidenceRegistration] = ()
+    diagnostics: list[dict] = field(default_factory=list)
+    retrieval_refinement: RetrievalRefinementService | None = None
 
 
 class DraftAssessmentWorkflow:
@@ -124,54 +126,20 @@ class DraftAssessmentWorkflow:
                 candidate.scope_status,
             ):
                 raise ValueError("Temporal resolution changed scope-owned fields")
-        on_stage("TEMPORAL_RESOLUTION", "COMPLETED")
-        diagnostics = []
-        retrieval = []
-        if self.modules.retrieval is None:
-            diagnostics.append({"module": "C06", "code": "RETRIEVAL_NOT_RUN"})
-            on_stage("RETRIEVAL", "SKIPPED")
-        else:
-            on_stage("RETRIEVAL", "RUNNING")
-            retrieval = [
-                RetrievalEvidence.model_validate(item.model_dump())
-                for item in self.modules.retrieval.retrieve(
-                    context.model_copy(deep=True),
-                    [item.model_copy(deep=True) for item in requirements],
-                    [item.model_copy(deep=True) for item in document.chunks],
-                    self.knowledge,
-                )
-            ]
-        validate_retrieval(
-            RetrievalInput(
-                context=context,
-                hop_dong_id=case.hop_dong_id,
-                requirements=requirements,
-                chunks=document.chunks,
-            ),
-            retrieval,
-            self.knowledge,
-        )
-        if self.modules.retrieval is not None:
-            on_stage("RETRIEVAL", "COMPLETED")
-        # Observations feed step 5, so the compliance stage starts here.
-        on_stage("COMPLIANCE", "RUNNING")
-        observations = []
-        if self.modules.observations is None:
-            diagnostics.append({"module": "C07", "code": "OBSERVATION_PROVIDER_NOT_RUN"})
-        else:
-            observations = [
-                Observation.model_validate(item.model_dump())
-                for item in self.modules.observations.observe(
-                    context.model_copy(deep=True),
-                    document.contract_profile.model_copy(deep=True),
-                    [item.model_copy(deep=True) for item in requirements],
-                    [item.model_copy(deep=True) for item in retrieval],
-                    [item.model_copy(deep=True) for item in document.chunks],
-                    self.knowledge,
-                )
-            ]
+        from legal_checker.modules.compliance.review_scope import apply_review_scope
 
-        # Branch B independently validates citations and joins A only at Risk/Report.
+        requirements = apply_review_scope(registered, context, requirements, self.knowledge)
+        # Validate upstream provenance before any paid refinement/reasoning pass.
+        validate_legal(
+            context,
+            document,
+            LegalOutput(scope=scope, requirements=requirements, citations=[]),
+            self.knowledge,
+            citation_branch_status="NOT_RUN",
+            assessment_case=registered,
+        )
+        on_stage("TEMPORAL_RESOLUTION", "COMPLETED")
+        # Branch B is independent of paid reasoning; expose its result promptly.
         citations = []
         citation_status = "NOT_RUN" if self.modules.citations is None else "COMPLETED"
         on_stage("CITATION_VALIDATION", "SKIPPED" if self.modules.citations is None else "RUNNING")
@@ -191,9 +159,78 @@ class DraftAssessmentWorkflow:
             LegalOutput(scope=scope, requirements=requirements, citations=citations),
             self.knowledge,
             citation_branch_status=citation_status,
+            assessment_case=registered,
         )
         if self.modules.citations is not None:
             on_stage("CITATION_VALIDATION", "COMPLETED")
+        diagnostics = []
+        retrieval = []
+        if self.modules.retrieval is None:
+            diagnostics.append({"module": "C06", "code": "RETRIEVAL_NOT_RUN"})
+            on_stage("RETRIEVAL", "SKIPPED")
+        else:
+            on_stage("RETRIEVAL", "RUNNING")
+            retrieval = [
+                RetrievalEvidence.model_validate(item.model_dump())
+                for item in self.modules.retrieval.retrieve(
+                    context.model_copy(deep=True),
+                    [item.model_copy(deep=True) for item in requirements],
+                    [item.model_copy(deep=True) for item in document.chunks],
+                    self.knowledge,
+                )
+            ]
+        if self.modules.retrieval is not None:
+            on_stage("RETRIEVAL", "COMPLETED")
+        # Full-text semantic refinement belongs to the evaluation work, not BM25 progress.
+        on_stage("COMPLIANCE", "RUNNING")
+        if self.modules.retrieval_refinement is not None:
+            if self.modules.retrieval is None:
+                raise ValueError("Retrieval refinement requires a retrieval producer")
+            retrieval = [
+                RetrievalEvidence.model_validate(row.model_dump())
+                for row in self.modules.retrieval_refinement.refine(
+                    context.model_copy(deep=True),
+                    document.contract_profile.model_copy(deep=True),
+                    [r.model_copy(deep=True) for r in requirements],
+                    [r.model_copy(deep=True) for r in retrieval],
+                    [c.model_copy(deep=True) for c in document.chunks],
+                    self.knowledge,
+                )
+            ]
+        validate_retrieval(
+            RetrievalInput(
+                context=context,
+                hop_dong_id=case.hop_dong_id,
+                requirements=requirements,
+                chunks=document.chunks,
+            ),
+            retrieval,
+            self.knowledge,
+        )
+        observations = []
+        if self.modules.observations is None:
+            diagnostics.append({"module": "C07", "code": "OBSERVATION_PROVIDER_NOT_RUN"})
+        else:
+            observations = [
+                Observation.model_validate(item.model_dump())
+                for item in self.modules.observations.observe(
+                    context.model_copy(deep=True),
+                    document.contract_profile.model_copy(deep=True),
+                    [item.model_copy(deep=True) for item in requirements],
+                    [item.model_copy(deep=True) for item in retrieval],
+                    [item.model_copy(deep=True) for item in document.chunks],
+                    self.knowledge,
+                )
+            ]
+
+        validate_legal(
+            context,
+            document,
+            LegalOutput(scope=scope, requirements=requirements, citations=citations),
+            self.knowledge,
+            citation_branch_status=citation_status,
+            assessment_case=registered,
+        )
         on_stage("RISK_AGGREGATION", "RUNNING")
         on_stage("RECOMMENDATION", "RUNNING")
         evaluation = self.evaluator(
@@ -216,6 +253,7 @@ class DraftAssessmentWorkflow:
             self.knowledge,
         )
         evaluation.payload.diagnostics.extend(diagnostics)
+        evaluation.payload.diagnostics.extend(self.modules.diagnostics)
         for stage in ("COMPLIANCE", "RISK_AGGREGATION", "RECOMMENDATION"):
             on_stage(stage, "COMPLETED")
         return AssessmentDraft(

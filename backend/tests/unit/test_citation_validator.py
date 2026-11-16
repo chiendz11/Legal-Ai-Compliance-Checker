@@ -90,6 +90,7 @@ RELATIONS = [
     },
 ]
 KNOWLEDGE = SimpleNamespace(
+    sha256=CONTEXT.knowledge_snapshot_sha256,
     documents=DOCUMENTS,
     tables={
         "quan_he_van_ban": RELATIONS,
@@ -193,7 +194,9 @@ def test_short_form_of_the_law_name_is_not_a_mismatch():
             "linh_vuc": "BVNTD_2010",
         }
     }
-    knowledge = SimpleNamespace(documents=documents, tables=KNOWLEDGE.tables)
+    knowledge = SimpleNamespace(
+        documents=documents, tables=KNOWLEDGE.tables, sha256=CONTEXT.knowledge_snapshot_sha256
+    )
     [finding] = CatalogCitationValidator().validate(
         CONTEXT, profile(), [citation("59/2010/QH12", "Luật Bảo vệ người tiêu dùng")], knowledge
     )
@@ -210,7 +213,8 @@ def test_social_housing_decree_depends_on_contract_social_housing_status():
     )
     assert validate(item, profile(date(2025, 1, 1), social=True)).status == "VALID"
     unknown = validate(item, profile(date(2025, 1, 1), social=None))
-    assert (unknown.status, unknown.domain_status) == ("VALID", "UNKNOWN")
+    assert (unknown.status, unknown.domain_status) == ("UNKNOWN", "UNKNOWN")
+    assert unknown.reason_code == "DOMAIN_UNKNOWN"
 
 
 def test_unknown_signing_date_is_unknown():

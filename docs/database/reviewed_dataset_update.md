@@ -1,6 +1,8 @@
-# Cập nhật DB từ workbook đã được duyệt
+# Cập nhật DB từ workbook đã được duyệt — lịch sử 05/11
 
-Revision hiện tại: **user-reviewed-20261105**. Đây là bản metadata review mới của
+**Không dùng quy trình này cho TEAM_BASELINE_20261107.** Release mới yêu cầu DB mới; xem [guide hiện hành](../guides/dataset_team_baseline_20261107.md). Các hash/lệnh dưới đây mô tả lần cập nhật reviewed-flags cũ, chỉ dùng với manifest/code đúng revision lịch sử.
+
+Revision lịch sử: **user-reviewed-20261105**. Đây là bản metadata review mới của
 dataset `v7.5.0-source-pdf360-r2-structured / supabase-public-v1`, không đổi schema
 workbook hoặc bộ PDF nguồn.
 

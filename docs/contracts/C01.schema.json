@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C01",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "$defs": {
     "AssessmentTiming": {
       "additionalProperties": false,
@@ -33,6 +36,20 @@
           ],
           "default": null,
           "title": "Loai Moc Ap Dung"
+        },
+        "review_mode": {
+          "default": "FULL_ASSESSMENT",
+          "enum": [
+            "FULL_ASSESSMENT",
+            "DRAFT_REVIEW"
+          ],
+          "title": "Review Mode",
+          "type": "string"
+        },
+        "document_set_complete": {
+          "default": false,
+          "title": "Document Set Complete",
+          "type": "boolean"
         }
       },
       "required": [
@@ -157,8 +174,5 @@
     "created_by"
   ],
   "title": "AssessmentCase",
-  "type": "object",
-  "x-contract-id": "C01",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

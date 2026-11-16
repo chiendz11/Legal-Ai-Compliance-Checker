@@ -1,53 +1,43 @@
-# Dữ liệu trên máy local
+# Dữ liệu local ngoài Git
 
-Repo giữ code, schema/migrations, tài liệu và cấu hình mẫu. Dataset, DB local,
-cache và thông tin kết nối thật nằm ngoài Git trong `data/private/` và `.env`.
-`data/private/` cũng được loại khỏi Docker build context.
+Repo giữ code, schema/migrations, tài liệu và manifest; workbook, PDF, DB/cache
+và `.env` nằm ngoài Git. `data/private/` cũng được loại khỏi Docker build context.
 
-## Bộ dữ liệu đang dùng
-
-- Dataset: `v7.5.0-source-pdf360-r2-structured`, storage revision `supabase-public-v1`, review revision `user-reviewed-20261105`.
-- Dev: workbook đầy đủ DEV_VALIDATION, 240 DEV + 60 VALIDATION.
-- MASTER và TEST_INPUTS giữ ở nơi phát hành ngoài repo; evaluator dùng đúng gói.
-- SHA-256 workbook DEV_VALIDATION:
-  `c77b43613918a95acb0845153218f52ec0edef855314397ccb670eaac0643f7f`.
-- Workbook chia nhỏ phục vụ xem/tra cứu; lệnh seed vẫn nhận workbook đầy đủ.
+Release hiện hành: `v7.5.0-pdf360-v4r2-runtime-20261110`, storage
+`bundled-pdf-v4r2`, knowledge `HUMAN_VERIFIED` theo quyết định chủ dự án.
+DEV_VALIDATION gồm 240 DEV + 60 VALIDATION và 32 ca regression trong QA.
 
 ```text
-data/
-├── README.md                         # Tài liệu trong repo
-└── private/                          # Được Git và Docker bỏ qua
-    ├── postgres-local/               # PostgreSQL native và các DB local
-    └── v750_source_pdf360_r2_supabase_user_reviewed_20261105/
-        ├── bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx
-        ├── README_SU_DUNG.md
-        ├── PDF_URLS_DEV_VALIDATION.csv
-        └── sources/
-            ├── text/                 # Text tham chiếu đúng 300 ca DEV/VALIDATION
-            └── controlled/           # Nguồn cho regression cases
+data/private/
+├── postgres-local/                     # PostgreSQL native, giữ dữ liệu cũ
+├── source_cache/<sha256>                # Cache PDF đã kiểm hash
+└── v750_pdf360_v4r2_runtime_20261110/
+    ├── bang_du_lieu_v7_5_0_PDF360_V4R2_20261110_DEV_VALIDATION.xlsx
+    ├── SOURCE_FILES.json
+    ├── KNOWLEDGE_ACCEPTANCE.json
+    ├── QUALITY_SCOPE.json
+    ├── LITERAL_ASSERTIONS.csv
+    ├── README_SU_DUNG.md
+    └── sources/
+        ├── pdf/HD360_*.pdf              # Đúng PDF v4 r2 của workbook
+        └── controlled/                 # Nguồn giả lập chỉ cho regression
 ```
 
-PDF chính được tải từ URL public trong `tep_nguon.object_uri`, kiểm tra SHA-256
-rồi cache local. Gói DEV_VALIDATION mới không đóng kèm PDF; các URL và hash PDF được giữ nguyên.
-Text references dùng `dataset://v750-source-pdf360-r2-structured/sources/text/` và
-ánh xạ theo thư mục giải nén; chúng chưa được upload lên storage.
-
-## Seed DB
-
-Từ root repo, sau khi activate môi trường Python và chuẩn bị PostgreSQL:
-
 ```bash
-python -m scripts.dataset pull
+python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
 python -m scripts.dataset check
+python -m scripts.dataset cache-sources
 python -m scripts.local_db init
 python -m scripts.local_db seed
 python -m scripts.local_db check
 ```
 
-Các lệnh đọc `DATABASE_URL` và `SEED_WORKBOOK_PATH` từ `.env`.
-`dataset pull` dùng manifest `configs/dataset_dev_validation.json`, kiểm tra hash ZIP
-và từng file, chỉ cài workbook/text/controlled/CSV/README. File PDF tải từ Supabase;
-ZIP mới chỉ chứa workbook, text và metadata review. Lệnh tải giữ nguyên DB và dữ liệu local
-đang có; workbook hoặc text khác hash sẽ báo lỗi thay vì ghi đè.
-Mỗi người dùng DB local riêng. DB mới dùng `seed`; DB đã seed bản trước dùng [quy trình update](../docs/database/reviewed_dataset_update.md) để giữ hợp đồng upload, run và report. Giữ folder release cũ làm baseline đối chiếu; lệnh tải không xóa nó.
-PostgreSQL native dùng `postgres-local/`; Docker Compose dùng named volume riêng.
+Đổi `.env` sang DB/folder mới trước khi seed. Không xóa DB cũ hoặc dùng lệnh
+update reviewed-flags cho release thay PDF/chunks. `dataset pull` và
+`cache-sources` chỉ tạo files, không ghi DB.
+
+PDF dùng `dataset://` và cache theo hash; v4 r2 chưa được xuất bản Supabase.
+Không lấy bytes v2 từ URL cũ thay cho PDF mới. API/worker cần cùng cache.
+Workbook chia nhỏ chỉ để xem, seed nhận workbook đầy đủ trong manifest.
+
+Xem [phạm vi reference/gold và hướng dẫn chi tiết](../docs/guides/dataset_pdf360_v4r2_runtime_20261110.md).

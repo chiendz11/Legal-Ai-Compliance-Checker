@@ -38,6 +38,12 @@ const PROFILE_LABELS: Record<string, string> = {
   la_nha_xay_moi: "Nhà xây mới",
   che_do_giao_dich: "Chế độ giao dịch",
   muc_dich_su_dung_can_ho: "Mục đích sử dụng căn hộ",
+  dien_tich: "Diện tích sử dụng căn hộ (m²)",
+  gross_area_m2: "Diện tích sàn xây dựng căn hộ (m²)",
+  land_area_m2: "Diện tích thửa đất (m²)",
+  document_stage: "Trạng thái tài liệu",
+  warranty_subject: "Đối tượng bảo hành",
+  warranty_months: "Thời hạn bảo hành (tháng)",
 };
 
 export function ProfileSection({ profile }: { profile: ContractProfile }) {
@@ -137,14 +143,19 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
       )}
 
       <h3 className="subhead">Dữ kiện trích xuất ({profile.facts?.length ?? 0})</h3>
+      <p className="small muted">
+        Dữ kiện do máy trích xuất; người rà soát cần xác nhận trước khi phát hành báo cáo.
+        Bạn có thể mở từng mục để kiểm tra trích dẫn nguồn.
+      </p>
       <div className="stack">
         {profile.facts?.map((f) => (
           <Disclosure
             key={f.trich_xuat_id}
             summary={
               <>
-                <code>{f.ten_truong}</code> <Value value={f.gia_tri_chuan_json} />{" "}
-                {!f.human_verified && <span className="tag">chưa xác minh</span>}
+                <span title={f.ten_truong}>{PROFILE_LABELS[f.ten_truong] ?? f.ten_truong}</span>{" "}
+                <Value value={f.gia_tri_chuan_json} />{" "}
+                {!f.human_verified && <span className="tag">Chờ người rà soát xác nhận</span>}
               </>
             }
           >

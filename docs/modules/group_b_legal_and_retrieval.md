@@ -1,8 +1,24 @@
 # Hướng dẫn Triển khai Nhóm B (Bước 3–4: Legal Scope, Citation Validation & Retrieval)
 
+Thử nghiệm Retrieval hiện hành: [source/structural context V2](../guides/legal_document_methods_trial_20261109.md).
+C06 phân biệt đoạn tìm thấy với ngữ cảnh cha/dẫn chiếu qua scores; ngữ cảnh được chọn
+không tự là evidence chứng minh một kết luận. Không trộn chunk IDs của seed với extraction mới.
+
+Cập nhật tích hợp 09/11: Temporal Resolver nhận persisted C01: ngày khai báo chỉ dùng đúng loại mốc, có provenance riêng và không được ghi đè ngày C02 mâu thuẫn. Scope trọng tài có binding dự thảo hạn chế.
+Xem [đặc tả và kết quả sửa](../guides/remaining_verification_alignment_20261109.md).
+
+Dataset hiện hành: [TEAM_BASELINE_20261107](../guides/dataset_team_baseline_20261107.md). Dùng scope 36 atomic requirements và topic mapping; không lọc bằng 10 parent families cũ rồi bỏ mất nhóm nguồn.
+
 > **Người phụ trách**: Người 3 · **Input**: C02, C03, Chunks, Legal DB · **Output**: C04, C05 (ApplicableRequirement), C06 (RetrievalEvidence), C09 (CitationValidation)
 
+Đặc tả hiện hành: [INTEGRATION_V1](../contracts/integration_spec.md), [dictionary](../contracts/data_dictionary.md).
+
+Bàn giao bắt buộc: [playbook năm người](../guides/parallel_development_playbook.md), [acceptance scenarios](../contracts/handoff_acceptance.json). Recipe SQL baseline/standalone bên dưới không thay source live workflow_runs/report_versions.
+
 Tài liệu chung: [Tổng quan module & Quy tắc JOIN](README.md)
+
+Revision tri thức 06/11: dùng [policy scope/temporal](../contracts/knowledge_applicability_policy.md)
+để phân biệt ngày chọn pháp luật và sự kiện thực hiện. Release TEAM 07/11 đã dựng lại runtime/QA cùng pin; nhận xét giữ pin 05/11 chỉ dành revision lịch sử. Không gán hash mới lên expected cũ.
 
 ---
 
@@ -19,6 +35,9 @@ C09 gửi cho Risk/Report, không dùng để thêm/bớt checklist C05.
 Đọc: `knowledge.loai_hop_dong`, `pham_vi_ap_dung`, `yeu_cau_phap_ly`, các metadata
 cần thiết của `phien_ban_yeu_cau`; đọc `runtime.ho_so_hop_dong`, `chu_the_hop_dong`.
 
+Đọc runtime rows ở trên là recipe dev/baseline. Live nhận C02 của extraction đang
+chạy; không đọc profile bảng đơn để thay DTO mới. Knowledge luôn từ snapshot pin.
+
 Làm lần lượt:
 
 1. Dựng profile DTO từ giá trị đã chọn, giữ unknown và provenance.
@@ -26,8 +45,7 @@ Làm lần lượt:
 3. Đánh giá ba trạng thái: MATCH / NO_MATCH / UNKNOWN. Thiếu fact không mặc định NO_MATCH.
 4. Tạo checklist requirement families và lý do; giữ profile/scope condition snapshot.
 5. Trả C04 với `yeu_cau_ca_id`, `ca_id`, `requirement_id`, `scope_status`, `scope_reason`.
-6. Writer lưu/cập nhật phần scope của `runtime.yeu_cau_ap_dung`.
-   Scope và Temporal cùng viết bảng này: thống nhất ID và phân quyền cột để không ghi đè nhau.
+6. Live trả C04 trong memory, Temporal dùng cùng IDs; workflow lưu snapshot. Nếu làm writer normalized riêng cho standalone, Scope chỉ sở hữu cột scope và Temporal cột temporal; không ghi đè baseline. Không cần thêm writer DB giữa mỗi hàm.
 
 Không chọn requirement chỉ vì hợp đồng viện dẫn nó. Một luật không được viện dẫn
 vẫn có thể tạo requirement áp dụng theo profile.
@@ -39,7 +57,7 @@ vẫn có thể tạo requirement áp dụng theo profile.
 
 Đọc: `knowledge.phien_ban_yeu_cau`, `van_ban_phap_ly`, `quan_he_van_ban`,
 `ngoai_le_ap_dung`, nguồn/điều khoản cần xác minh và `runtime.moc_thoi_gian_hop_dong`.
-Ghi phần temporal của `runtime.yeu_cau_ap_dung`.
+Live trả C05 vào workflow; ghi normalized chỉ thuộc use case baseline/standalone đã chọn, không bắt buộc trước Retrieval live.
 
 Làm lần lượt:
 
@@ -75,13 +93,16 @@ và trạng thái áp dụng của ca, không chỉ là thông tin chuyển riê
 
 Đọc: `runtime.vien_dan_phap_ly_hop_dong`, `bang_chung_vien_dan`, chunks/mốc/profile;
 `knowledge.van_ban_phap_ly`, `quan_he_van_ban`, `nguon_phap_ly`, các nguồn liên quan.
-Ghi: `runtime.phat_hien_vien_dan`.
+Projection baseline/standalone: `runtime.phat_hien_vien_dan`; live trả C09 vào draft,
+không bắt buộc ghi bảng này trước khi gọi Risk.
 
 Làm lần lượt theo các files trong `modules/citation_validation/`:
 
 1. `normalizer.py`: chuẩn hóa citation có evidence, giữ nguyên raw; nhiều ứng viên
    định danh chưa phân biệt được thì giữ UNKNOWN.
-2. `identity_validator.py`: kiểm tra số hiệu/tên/loại khớp nguồn đã xác minh.
+2. `identity_validator.py`: dùng [policy định danh V2](../contracts/citation_identity_policy.json):
+   số hiệu, tên+năm khớp duy nhất hoặc anchor số hiệu trong cùng hợp đồng; không
+   tự chọn bản mới nhất hoặc bản đang hiệu lực để đoán ý viện dẫn.
 3. `temporal_validator.py`: xét hiệu lực/thay thế tại relevant date; current status lưu riêng.
 4. `domain_validator.py`: xét phù hợp giao dịch/chủ thể/vấn đề pháp lý.
 5. `classifier.py`: trả VALID / STALE / INVALID / UNKNOWN với reason code, lý do và nguồn.
@@ -96,7 +117,7 @@ SELECT f.finding_id, f.ca_id, f.vien_dan_id, f.van_ban_id, f.trang_thai,
        f.ma_ly_do, f.moc_ap_dung, f.finding_verified, f.lan_chay_id
 FROM runtime.phat_hien_vien_dan f
 WHERE f.ca_id = 'CA360_001'
-  AND f.lan_chay_id = 'CA360_001_PDF360_LS2_REFERENCE'
+  AND f.lan_chay_id = 'REF_TEAM_20261107_CA360_001'
 ORDER BY f.finding_id;
 ```
 
@@ -107,7 +128,7 @@ ORDER BY f.finding_id;
 
 Đọc: `runtime.yeu_cau_ap_dung`, `doan_hop_dong`; knowledge `tieu_chi_danh_gia`,
 `phien_ban_yeu_cau`, policies liên quan; index/embedding của đúng phiên bản.
-Ghi: `runtime.ket_qua_truy_xuat`; nếu triển khai embeddings, ghi
+Projection baseline/standalone: `runtime.ket_qua_truy_xuat`; live trả C06 vào draft. Nếu triển khai embeddings, ghi
 `runtime.embedding_doan_hop_dong` và metadata model/index.
 
 Làm lần lượt:
@@ -132,7 +153,7 @@ from legal_checker.modules.retrieval.repository import RetrievalDatasetRepositor
 load_dotenv(".env")
 repository = RetrievalDatasetRepository(os.environ["DATABASE_URL"])
 inputs = repository.load_input_rows("CA360_001")
-candidates = repository.load_seeded_evidence("CA360_001", "CA360_001_PDF360_LS2_REFERENCE")
+candidates = repository.load_seeded_evidence("CA360_001", "REF_TEAM_20261107_CA360_001")
 print(len(inputs["requirements"]), len(inputs["chunks"]), len(candidates))
 ```
 
@@ -184,8 +205,7 @@ Vì UNKNOWN loại hợp đồng vẫn cần được xử lý, ví dụ đọc 
 đánh giá trên C02. Nếu tối ưu query theo loại/subtype, phải xét scope tổng quát, loại cha
 và nhóm chưa đủ facts; không lọc mất chúng chỉ vì giá trị profile NULL. Nhiều scope clauses
 của một family cần đọc `che_do_ket_hop`/policy để quyết định AND/OR, không coi mỗi row là
-một requirement độc lập. Với dataset 360, adapter tham chiếu chỉ xét 10 families;
-module thật cần khai báo phạm vi catalog được hỗ trợ, không tự hiểu đó là toàn bộ luật.
+một requirement độc lập. Baseline TEAM có scope tham chiếu 36 atomic requirements/ca trong ASSESSMENT_SCOPE.json; live xét catalog pin (323 families). Không tự hiểu reference đã annotate toàn bộ luật.
 
 **Output:** C04 giữ `requirement_id`, group, trạng thái và lý do/predicate/profile snapshot.
 Sinh `yeu_cau_ca_id` ổn định cho family thuộc case. Ghi phần scope của `yeu_cau_ap_dung`.
@@ -271,7 +291,8 @@ WHERE van_ban_nguon_id=%(document_id)s OR van_ban_dich_id=%(document_id)s
 ORDER BY moc_hieu_luc, quan_he_id;
 ```
 
-Nếu số hiệu chưa rõ, thêm candidate search theo tên/context trong module; không tự sửa
+Nếu số hiệu chưa rõ, áp dụng policy V2 để phân biệt identity đã phân giải với
+candidates; tên không năm/số/anchor giữ UNKNOWN. Không tự sửa
 OCR để ép Q23 có kết quả. Không dùng Q24 như bằng chứng sửa đổi toàn bộ văn bản khi quan
 hệ chỉ ảnh hưởng một phạm vi. C09 giữ relevant/current status riêng, nguồn evidence và run.
 
@@ -315,8 +336,5 @@ reasoner chọn và kiểm chứng khi tạo C07. Nếu không tìm thấy selec
 rỗng cho target nhưng cần checkpoint/coverage của lần retrieval để phân biệt chưa chạy
 với chạy rồi không tìm thấy; một bảng evidence rỗng tự nó không phân biệt được hai việc.
 
-**Nơi ghi và bên dùng tiếp:** Scope/Temporal → `yeu_cau_ap_dung` (C04/C05), Citation →
-`phat_hien_vien_dan` (C09), Retrieval → `ket_qua_truy_xuat` (C06). Nhóm C lấy C05/C06 cho
-bước 5 và C09 cho bước 6; nhóm D lấy cả hai nhánh. Writer upstream và checkpoint thật
-vẫn cần triển khai, các query trên không tự tạo chúng.
+**Nơi bàn giao:** live truyền C04/C05/C06/C09 bằng DTO, giữ trong workflow_runs.draft_json khi hoàn thành; Documents được persist trước vì Retrieval đọc metadata. Các bảng yeu_cau_ap_dung/phat_hien_vien_dan/ket_qua_truy_xuat ở trên là projection baseline/standalone, không phải bắt buộc thêm writer cho mỗi live stage. Nhóm C nhận C05/C06 và C09; nhóm D đọc cùng draft/run.
 

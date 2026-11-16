@@ -1,0 +1,60 @@
+{
+  "policy_id": "DOCUMENT_SOURCE_CONTEXT_V2",
+  "status": "IMPLEMENTED_TRIAL_PENDING_QUALITY_ACCEPTANCE",
+  "chunker_version": "structural-sentences-v2",
+  "citation_extractor_version": "source-spans-v5",
+  "semantic_prompt_version": "C07_SEMANTIC_V13",
+  "source_coordinates": "Python character offsets in NFC parser text, not PDF byte offsets",
+  "chunking": {
+    "structural_parents": ["PHU_LUC", "PHAN", "CHUONG", "DIEU"],
+    "child_boundaries": ["NUMBERED_CLAUSE", "PARAGRAPH", "SENTENCE"],
+    "target_chars": 1800,
+    "fallback_budget_multiplier": 2,
+    "atomic_observed_legal_citations": true,
+    "model_tokenizer_budget": false,
+    "native_layout_table_parser": false,
+    "unpunctuated_fallback": "BOUNDED_SOURCE_SPLIT; not proof of semantic completeness",
+    "source_rewriting": false
+  },
+  "citation_extraction": {
+    "input": "Readable source text before chunk-local interpretation",
+    "output": "C03 plus exact occurrence intersections in the active chunks",
+    "unreadable_pages": "BARRIER; never join legal-name/number fragments across them",
+    "missing_source": "Never reconstruct missing characters or catalog identities",
+    "identity_and_effectiveness": "C09_CATALOG_IDENTITY_V2, separate downstream validation"
+  },
+  "retrieval_context": {
+    "policy_id": "BOUNDED_STRUCTURAL_CONTEXT_V1",
+    "max_additional_chunks": 3,
+    "max_additional_chars": 6000,
+    "total_rows_limit": "Existing top_k",
+    "parent": "Contiguous chunks sharing the same article path; preserve annex ancestry",
+    "cross_reference": "Explicit internal contract target with unique structural identity",
+    "score_roles": ["parent_context", "internal_reference_context", "context_anchor_rank"],
+    "ambiguous_reference": "Do not expand",
+    "legal_conclusion": "None; context selection does not prove a criterion"
+  },
+  "reasoning": {
+    "criterion_source": "Pinned knowledge criterion and decision rules",
+    "automatic_gtc_satisfied_recipe": false,
+    "candidate_fact_source_ids": ["Selected chunk ID", "Current quote_catalog ID", "Registered external ID"],
+    "candidate_fact_verification": "None; source aliases do not verify proposed fact values",
+    "required": ["Predicate evaluation", "Exact source quotes", "Existing C07 gates"],
+    "unsupported_or_insufficient": "UNKNOWN with reason",
+    "human_review": "PENDING until an attributable review decision"
+  },
+  "reference_data": {
+    "old_seed_and_reports": "Remain pinned to their original source/extraction/run",
+    "new_chunks": "Rebuild C06 and downstream snapshots; do not relabel old answers",
+    "trial_workbook": "Inspection only, not seedable and not legal gold",
+    "evaluation": "DEV first; VALIDATION after method freeze; TEST is not selected by tooling",
+    "pdf_edits": "Only for an actual source defect with new checksum and provenance"
+  },
+  "references": [
+    "https://docling-project.github.io/docling/concepts/chunking/",
+    "https://www.mongodb.com/docs/atlas/ai-integrations/langchain/parent-document-retrieval/",
+    "https://lexpredict-lexnlp.readthedocs.io/en/latest/modules/extract/en/citations.html",
+    "https://stanfordnlp.github.io/contract-nli/",
+    "https://arxiv.org/abs/2408.10343"
+  ]
+}

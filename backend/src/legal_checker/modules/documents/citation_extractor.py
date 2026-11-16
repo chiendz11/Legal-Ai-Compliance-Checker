@@ -1,4 +1,4 @@
-"""C03 extraction of contract-authored legal citations (regex, chưa dùng LLM).
+"""C03 source-first extraction of contract-authored legal citations.
 
 - EXTRACTED: có số hiệu văn bản pháp luật (vd 91/2015/QH13) hoặc (Bộ) luật kèm năm.
 - AMBIGUOUS: chỉ có tên văn bản, không số hiệu/năm (vd "theo Luật Nhà ở").
@@ -6,11 +6,19 @@
 - Cùng một văn bản + điều/khoản nêu nhiều lần → 1 citation với nhiều vị trí.
 """
 
+from __future__ import annotations
+
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from itertools import groupby, pairwise
+from typing import TYPE_CHECKING
 
-from legal_checker.modules.documents.chunker import ChunkRecord
+from legal_checker.modules.documents.citation_spans import find_citation_spans
+
+if TYPE_CHECKING:
+    from legal_checker.modules.documents.chunker import ChunkRecord
+    from legal_checker.modules.documents.parser import DocumentText
 from legal_checker.shared.contracts.citation import (
     CitationExtraction,
     CitationExtractionMetadata,
@@ -18,77 +26,7 @@ from legal_checker.shared.contracts.citation import (
     CitationPosition,
 )
 
-EXTRACTOR_VERSION = "regex-v3"
-
-# Số hiệu văn bản pháp luật: chỉ nhận ký hiệu loại văn bản đã biết, để không bắt nhầm
-# số hợp đồng ("070/2017/HDMB"). Vd 91/2015/QH13, 99/2015/NĐ-CP, 02/2016/TT-BXD.
-# PDF có thể xuống dòng ngay sau dấu gạch ("99/2015/NĐ-\nCP"): số hiệu chuẩn hóa bỏ khoảng trắng.
-_SO_HIEU = re.compile(
-    r"\b\d{1,4}/\d{4}/"
-    r"(?:QH\d{1,2}|UBTVQH\d{0,2}|(?:NĐ|ND|TTLT|TT|QĐ|QD|NQ|PL|CT)"
-    r"(?:-[ \t]*\n?[ \t]*[A-Za-zĐđ0-9]+)*)"
-    r"(?![A-Za-zĐđ0-9])"
-)
-_SUFFIX_LOAI = (
-    ("UBTVQH", "Nghị quyết"),
-    ("QH", "Luật"),
-    ("NĐ", "Nghị định"),
-    ("ND", "Nghị định"),
-    ("TTLT", "Thông tư liên tịch"),
-    ("TT", "Thông tư"),
-    ("QĐ", "Quyết định"),
-    ("QD", "Quyết định"),
-    ("NQ", "Nghị quyết"),
-    ("PL", "Pháp lệnh"),
-    ("CT", "Chỉ thị"),
-)
-# Loại văn bản viết hoa chữ đầu ("Luật", "Bộ luật"/"Bộ Luật", "Nghị định"/"Nghị Định"...).
-# "luật"/"nghị định" viết thường thường là cách nói chung ("theo quy định của pháp luật").
-_LOAI = re.compile(
-    r"(?<![A-Za-zÀ-ỹ])(?P<loai>Bộ [Ll]uật|Luật|Nghị [Đđ]ịnh|Thông [Tt]ư liên tịch|"
-    r"Thông [Tt]ư|Nghị [Qq]uyết|Quyết [Đđ]ịnh|Pháp [Ll]ệnh)(?![A-Za-zÀ-ỹ])"
-)
-_LOAI_CHUAN = {
-    "bộ luật": "Bộ luật",
-    "luật": "Luật",
-    "nghị định": "Nghị định",
-    "thông tư liên tịch": "Thông tư liên tịch",
-    "thông tư": "Thông tư",
-    "nghị quyết": "Nghị quyết",
-    "quyết định": "Quyết định",
-    "pháp lệnh": "Pháp lệnh",
-}
-# Từ báo hiệu tên văn bản đã kết thúc ("Luật Nhà ở | và theo thỏa thuận").
-_STOP_WORDS = frozenset(
-    "và để khi về mà thì theo của tại trong đối với như sau trước hiện có được cho các "
-    "này đó nêu dựa vào thực phải từ bằng hoặc nhưng do ngày số năm quy đã sẽ nghĩa là "
-    "trên dưới hướng liên gồm bao chưa không nếu đến tới cùng hay ra "
-    # Đầu dòng tiếp theo là mục mới, không phải phần tên bị xuống dòng.
-    "điều khoản điểm bên trang chương mục phụ".split()
-)
-# Sau "pháp" là cách nói chung ("pháp Luật Việt Nam"), sau "Luật" mà là "sư" là luật sư.
-_GENERIC_BEFORE = re.compile(r"pháp[ \t]*$", re.IGNORECASE)
-_NOT_A_NAME = frozenset({"sư", "này", "đó", "trên", "nêu", "hiện"})
-_MAX_NAME_WORDS = 8
-# Tên có thể bị xuống dòng trong PDF ("Luật Kinh\nDoanh Bất Động Sản"): cho phép 1 lần "\n".
-_WORD = re.compile(r"(?:[ \t]+|[ \t]*\n[ \t]*)(?P<word>[^\s,.;:()\[\]\"“”‘’]+)")
-# Năm sau tên: "Luật Nhà ở 2014", "... năm 2014", "... ngày 25 tháng 11 năm 2014",
-# "... ngày 25/11/2014".
-_NAM_SAU_TEN = re.compile(
-    r"[ \t]+(?:năm[ \t]+|ngày[ \t]+\d{1,2}(?:[ \t]+tháng[ \t]+\d{1,2}[ \t]+năm[ \t]+|/\d{1,2}/))?"
-    r"(?P<nam>(?:19|20)\d{2})(?!\d)"
-)
-_GAP_TO_SO_HIEU = re.compile(r"[ \t]*(?:số[ \t]*)?")
-_LOAI_TRUOC_SO_HIEU = re.compile(
-    r"(?P<loai>Bộ [Ll]uật|Luật|Nghị [Đđ]ịnh|Thông [Tt]ư liên tịch|Thông [Tt]ư|"
-    r"Nghị [Qq]uyết|Quyết [Đđ]ịnh|Pháp [Ll]ệnh)[ \t]+(?:số[ \t]+)?$"
-)
-_DIEU_TRUOC = re.compile(
-    r"(?:điểm[ \t]+(?P<diem>[a-zđ])[ \t,]+)?"
-    r"(?:khoản[ \t]+(?P<khoan>\d+)[ \t,]+)?"
-    r"Điều[ \t]+(?P<dieu>\d+[a-z]?)[ \t,]+(?:của[ \t]+)?$",
-    re.IGNORECASE,
-)
+EXTRACTOR_VERSION = "source-spans-v5"
 
 
 @dataclass(frozen=True)
@@ -147,113 +85,90 @@ class CitationRecord:
         )
 
 
-def _loai_tu_so_hieu(so_hieu: str) -> str | None:
-    suffix = so_hieu.rsplit("/", 1)[-1]
-    for key, loai in _SUFFIX_LOAI:
-        if suffix.startswith(key):
-            return loai
-    return None
+def extract_citations(
+    chunks: Iterable[ChunkRecord], *, version: str, document: DocumentText | None = None
+) -> list[CitationRecord]:
+    """Extract on source text once, then map occurrences to exact chunk intersections.
 
+    If no document is provided (legacy callers), only contiguous supplied slices are
+    joined. Never bridge an unread/omitted region or infer missing source characters.
+    """
+    chunks = sorted(chunks, key=lambda c: (c.global_start, c.thu_tu))
+    if len({c.hop_dong_id for c in chunks}) > 1:
+        raise ValueError("Citation sources belong to several contracts")
+    if any(c.global_end - c.global_start != len(c.noi_dung) for c in chunks):
+        raise ValueError("Chunk source offsets do not match its text")
+    if any(a.global_end > b.global_start for a, b in pairwise(chunks)):
+        raise ValueError("Overlapping citation source slices")
+    if document is not None:
+        from legal_checker.modules.documents.chunker import join_pages
 
-def _name_after(text: str, loai_end: int, first_lower_ok: bool) -> tuple[str, int]:
-    """Đọc tên văn bản sau loại: lấy từng từ cho tới từ dừng/dấu câu/xuống dòng."""
-    words: list[str] = []
-    end = loai_end
-    for match in _WORD.finditer(text, loai_end):
-        if match.start() != end or len(words) >= _MAX_NAME_WORDS:
-            break
-        word = match.group("word")
-        if word.lower() in _STOP_WORDS or word[0].isdigit():
-            break
-        if not words and not (word[0].isupper() or first_lower_ok):
-            break
-        words.append(word)
-        end = match.end()
-    if words and words[0].lower() in _NOT_A_NAME:
-        return "", loai_end
-    return " ".join(words), end
-
-
-def _spans(text: str) -> list[dict]:
-    spans: list[dict] = []
-    for m in _SO_HIEU.finditer(text):
-        start = m.start()
-        before = text[max(0, start - 30) : start]
-        loai_m = _LOAI_TRUOC_SO_HIEU.search(before)
-        if loai_m:
-            start -= len(before) - loai_m.start()
-        loai = _LOAI_CHUAN[loai_m.group("loai").lower()] if loai_m else None
-        spans.append(
-            {
-                "start": start,
-                "end": m.end(),
-                "so_hieu": re.sub(r"\s+", "", m.group(0)),
-                "loai": loai or _loai_tu_so_hieu(m.group(0)),
-                "ten": None,
-                "nam": int(m.group(0).split("/")[1]),
-                "status": "EXTRACTED",
-                "rule": "SO_HIEU",
-            }
-        )
-    for m in _LOAI.finditer(text):
-        if _GENERIC_BEFORE.search(text[max(0, m.start() - 10) : m.start()]):
-            continue
-        loai = _LOAI_CHUAN[m.group("loai").lower()]
-        # "Căn cứ Luật bảo vệ người tiêu dùng": tên luật hay viết thường sau chữ "Luật" hoa.
-        name, name_end = _name_after(text, m.end(), first_lower_ok=loai in ("Luật", "Bộ luật"))
-        if not name:
-            continue
-        ten = f"{loai} {name}"
-        nam_m = _NAM_SAU_TEN.match(text, name_end)
-        nam = int(nam_m.group("nam")) if nam_m else None
-        end = nam_m.end() if nam_m else name_end
-        merged = next(
-            (
-                s
-                for s in spans
-                if s["start"] <= m.start() < s["end"]
-                or (end <= s["start"] and _GAP_TO_SO_HIEU.fullmatch(text[end : s["start"]]))
-            ),
-            None,
-        )
-        if merged:  # "Luật Nhà ở số 65/2014/QH13": gộp tên vào span số hiệu
-            merged["start"] = min(merged["start"], m.start())
-            merged["loai"] = loai
-            merged["ten"] = merged["ten"] or ten
-            continue
-        luat = loai in ("Luật", "Bộ luật")
-        spans.append(
-            {
-                "start": m.start(),
-                "end": end,
-                "so_hieu": None,
-                "loai": loai,
-                "ten": ten,
-                "nam": nam,
-                "status": "EXTRACTED" if nam and luat else "AMBIGUOUS",
-                "rule": "TEN_NAM" if nam else "TEN_ONLY",
-            }
-        )
-    for s in spans:
-        window = text[max(0, s["start"] - 60) : s["start"]]
-        dieu_m = _DIEU_TRUOC.search(window)
-        s["dieu"] = s["khoan"] = s["diem"] = None
-        if dieu_m:
-            s["start"] -= len(window) - dieu_m.start()
-            s.update(dieu_m.groupdict())
-    return sorted(spans, key=lambda s: s["start"])
-
-
-def extract_citations(chunks: Iterable[ChunkRecord], *, version: str) -> list[CitationRecord]:
-    records: dict[tuple, CitationRecord] = {}
+        source, starts, _ = join_pages(document)
+        if any(source[c.global_start : c.global_end] != c.noi_dung for c in chunks):
+            raise ValueError("Chunk differs from the supplied document source")
+    # Each run contains source-contiguous chunks; missing regions are never joined.
+    numbered = []
+    group = 0
+    previous = None
     for chunk in chunks:
-        for s in _spans(chunk.noi_dung):
-            quote = chunk.noi_dung[s["start"] : s["end"]]
-            doc_key = s["so_hieu"] or (s["ten"] or "").lower()
-            key = (doc_key, s["nam"] if not s["so_hieu"] else None, s["dieu"], s["khoan"])
+        if previous is not None and (
+            previous.global_end != chunk.global_start or previous.thu_tu + 1 != chunk.thu_tu
+        ):
+            group += 1
+        numbered.append((group, chunk))
+        previous = chunk
+    records: dict[tuple, CitationRecord] = {}
+    regions = []
+    if document is None:
+        for _, pairs in groupby(numbered, key=lambda item: item[0]):
+            run = [chunk for _, chunk in pairs]
+            regions.append((run[0].global_start, "".join(c.noi_dung for c in run), run))
+    else:
+        # Unreadable pages are barriers, even though join_pages preserves their number.
+        a = None
+        for page, start in zip(
+            sorted(document.pages, key=lambda p: p.page_number), starts, strict=True
+        ):
+            if page.readable:
+                if a is None:
+                    a = start
+            elif a is not None:
+                regions.append((a, source[a:start], chunks))
+                a = None
+        if a is not None:
+            regions.append((a, source[a:], chunks))
+    for origin, text, run in regions:
+        if not run:
+            continue
+        for s in find_citation_spans(text):
+            quote = text[s["start"] : s["end"]]
+            start, end = origin + s["start"], origin + s["end"]
+            mentions = [
+                (
+                    c,
+                    max(start, c.global_start) - c.global_start,
+                    min(end, c.global_end) - c.global_start,
+                )
+                for c in run
+                if c.global_start < end and c.global_end > start
+            ]
+            if sum(b - a for _, a, b in mentions) != end - start:
+                # The full source can expose spans outside the supplied extraction.
+                # Do not publish a raw citation whose complete source cannot be located.
+                continue
+            doc_key = s["so_hieu"] or (s["ten"] or f"UNRESOLVED_TYPE:{s['loai']}").lower()
+            dynamic = bool(re.search(r"hiện\s+hành|từng\s+thời\s+điểm", quote, re.I))
+            key = (
+                doc_key,
+                s["nam"] if not s["so_hieu"] else None,
+                s["dieu"],
+                s["khoan"],
+                s["diem"],
+                dynamic,
+            )
             record = records.get(key)
             if record is None:
-                hop_dong_id = chunk.hop_dong_id
+                hop_dong_id = run[0].hop_dong_id
                 record = CitationRecord(
                     vien_dan_id=f"{hop_dong_id}_VD_{version}_{len(records) + 1:03d}",
                     hop_dong_id=hop_dong_id,
@@ -269,9 +184,15 @@ def extract_citations(chunks: Iterable[ChunkRecord], *, version: str) -> list[Ci
                     provenance={"method": EXTRACTOR_VERSION, "rule": s["rule"]},
                 )
                 records[key] = record
-            record.mentions.append(
-                CitationMention(
-                    chunk.doan_id, chunk.page_start, chunk.page_end, s["start"], s["end"], quote
+            for source, start, end in mentions:
+                record.mentions.append(
+                    CitationMention(
+                        source.doan_id,
+                        source.page_start,
+                        source.page_end,
+                        start,
+                        end,
+                        source.noi_dung[start:end],
+                    )
                 )
-            )
     return list(records.values())

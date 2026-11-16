@@ -585,3 +585,16 @@ def test_conflicting_expected_checklist_is_rejected(aggregation_case):
     knowledge.criteria_for = lambda version: [first, first]
     with pytest.raises(ValueError, match="duplicate or foreign criteria"):
         only_aggregate(aggregation_case, [])
+
+
+def test_all_valid_local_exclusions_have_separate_operational_disposition(aggregation_case):
+    criteria = findings_for(aggregation_case, ["UNKNOWN"] * 3)
+    for r in criteria:
+        r.excluded = True
+        r.exclusion_reason = "Verified scenario condition did not arise"
+    result = only_aggregate(aggregation_case, criteria)
+    assert result.status == "INSUFFICIENT"
+    assert result.requirement_snapshot_json["assessment_disposition"] == "NOT_TRIGGERED"
+    criteria[0].gates.source_verified = False
+    result = only_aggregate(aggregation_case, criteria)
+    assert result.requirement_snapshot_json["assessment_disposition"] == "NEEDS_EVIDENCE"

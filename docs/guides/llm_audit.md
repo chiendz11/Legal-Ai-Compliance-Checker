@@ -125,4 +125,4 @@ ORDER BY ngay_goi, lan_goi_id;
 
 Thêm điều kiện `trace_id` khi xem một run. Sink không tự phát hành HTTP endpoint hoặc mở quyền đọc audit cho người dùng khác.
 
-Schema máy đọc: [llm_audit.schema.json](llm_audit.schema.json). Khi đổi X02, cập nhật model, schema này và `contracts/X02.schema.json` trong cùng PR; tests kiểm tra tính nhất quán. Tests mock provider và dùng DB test riêng; không gọi provider thật hoặc yêu cầu API key.
+Schema máy đọc: [llm_audit.schema.json](../contracts/llm_audit.schema.json). Khi đổi X02, cập nhật model, schema này và `contracts/X02.schema.json` trong cùng PR; tests kiểm tra tính nhất quán. Tests mock provider và dùng DB test riêng; không gọi provider thật hoặc yêu cầu API key.

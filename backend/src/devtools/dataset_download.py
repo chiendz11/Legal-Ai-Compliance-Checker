@@ -82,6 +82,55 @@ def check_dataset(manifest: dict, destination: Path) -> dict:
     }
 
 
+def cache_bundled_sources(manifest: dict, destination: Path, cache_dir: Path) -> dict:
+    """Install verified bundled PDFs into the existing hash-addressed source cache.
+
+    This enables dataset:// source references without publishing imaginary HTTP URLs.
+    Existing corrupt cache entries are reported and preserved for inspection.
+    """
+    check_dataset(manifest, destination)
+    index_name = manifest.get("bundled_sources_index")
+    if index_name not in manifest["required_files"]:
+        raise DatasetError("This release has no pinned bundled source index")
+    entries = json.loads(destination.joinpath(*member_path(index_name).parts).read_text())["items"]
+    if cache_dir.is_symlink():
+        raise DatasetError("Source cache must not be a symbolic link")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    verified = []
+    for entry in entries:
+        name, digest = entry["path"], entry["sha256"]
+        if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
+            raise DatasetError("Bundled source contains an invalid SHA-256")
+        if manifest["required_files"].get(name) != digest:
+            raise DatasetError("Source index differs from the pinned dataset manifest")
+        source = destination.joinpath(*member_path(name).parts)
+        if not source.is_file() or not source.read_bytes().startswith(b"%PDF-"):
+            raise DatasetError("Bundled source is not a PDF")
+        target = cache_dir / digest
+        if target.is_symlink():
+            raise DatasetError("Source cache entry must not be a symbolic link")
+        if target.exists() and sha256_file(target) != digest:
+            raise DatasetError("Existing source cache checksum differs; file was preserved")
+        verified.append((source, target))
+    created = 0
+    for source, target in verified:
+        if target.exists():
+            continue
+        with source.open("rb") as incoming, target.open("xb") as outgoing:
+            shutil.copyfileobj(incoming, outgoing, 1024 * 1024)
+        if sha256_file(target) != target.name:
+            target.unlink()
+            raise DatasetError("Source changed while populating the cache")
+        created += 1
+    return {
+        "status": "cached",
+        "sources": len(verified),
+        "created": created,
+        "cache_dir": str(cache_dir.resolve()),
+        "database_changed": False,
+    }
+
+
 def download_archive(url: str, output: Path, expected_bytes: int) -> None:
     parsed = urlparse(url)
     if parsed.scheme != "https":
@@ -149,7 +198,7 @@ def extract_dataset(manifest: dict, archive_path: Path, destination: Path) -> No
                     raise DatasetError("ZIP contains symbolic links")
             if not set(manifest["required_files"]).issubset(names):
                 raise DatasetError("ZIP lacks required dataset files")
-            # Install the DB seed and reference texts. PDFs remain available via Supabase.
+            # Install only pinned release files, including bundled PDFs when specified.
             for name in manifest["required_files"]:
                 target = destination.joinpath(*member_path(name).parts)
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -176,6 +225,15 @@ def pull_dataset(
                 "Use another destination or restore the expected files."
             ) from error
         return {"status": "already_present", **result}
+    if (
+        archive_path is None
+        and url is None
+        and manifest.get("publication_status", "PUBLISHED") != "PUBLISHED"
+    ):
+        raise DatasetError(
+            "This pinned release is ready locally but has not been published at its URL. "
+            "Use --archive with the new ZIP, or --url after the exact ZIP is uploaded."
+        )
     source_url = url or manifest["archive"].get("url")
     if archive_path is None and not source_url:
         raise DatasetError("Provide --url, DATASET_ARCHIVE_URL, or --archive")

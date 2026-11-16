@@ -61,6 +61,21 @@ def test_reviewed_type_specific_proposals_have_positive_paths(
         assert "Conclusion target:" in result.giai_thich
 
 
+def test_performance_only_rule_still_accepts_independently_registered_performance(reasoning_case):
+    knowledge, data = reasoning_case
+    observation = configure(knowledge, data, "DOI_CHIEU_CO_DIEU_KIEN", "VIOLATED")
+    observation["facts"]["evaluation_target"] = "PERFORMANCE"
+    register_external(data)
+    knowledge.decision("CRITERION_1", "VIOLATED")["dieu_kien_json"].update(
+        conclusion_scope_required=True,
+        performance_requires_receipt_evidence=True,
+        allowed_evaluation_targets=["PERFORMANCE"],
+    )
+    assert only_result(knowledge, data).finding == "VIOLATED"
+    data["payload"]["external_evidence_registry"][0]["verified"] = False
+    assert_unknown(only_result(knowledge, data))
+
+
 @pytest.mark.parametrize(
     "criterion_type",
     [

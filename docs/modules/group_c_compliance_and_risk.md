@@ -1,12 +1,35 @@
 # Hướng dẫn Triển khai Nhóm C (Bước 5–7: Compliance Reasoning, Risk & Recommendation)
 
+Transport/hiển thị: [bản sửa 09/11](../guides/report_consistency_and_llm_efficiency_20261109.md).
+C07_SEMANTIC_V14 dùng shared-source batches, quote permissions vẫn riêng từng item.
+C11 bind dữ liệu đã quan sát, ghi rõ binding còn thiếu; không đưa placeholder ra như
+câu sửa đã hoàn thiện. Coverage/disposition không được đổi chỉ để sửa nhãn UI.
+
+Phương pháp thử hiện hành: [source spans và structural context](../guides/legal_document_methods_trial_20261109.md).
+Không còn recipe GTC tự đề xuất SATISFIED. C07 đọc criterion/rules pin và evidence;
+candidate_facts.evidence_ids được dùng quote ID trong catalog của đúng input, nhưng
+candidate fact vẫn chưa được xác minh. ID ngoài catalog/selected source bị loại.
+
+Cập nhật tích hợp 09/11: Policy local conditions tách điều kiện phát sinh khỏi predicate đáp ứng; C07 excluded/C08 NOT_TRIGGERED khác SATISFIED. Numeric bảo trì chỉ bind nguồn/mẫu số đúng phạm vi dự thảo.
+Xem [đặc tả và kết quả sửa](../guides/remaining_verification_alignment_20261109.md).
+
+Dataset hiện hành: [TEAM_BASELINE_20261107](../guides/dataset_team_baseline_20261107.md). QA là SILVER/SYNTHETIC_SPEC, không phải gold độc lập; không bật mọi gate hoặc dùng source builder thay production verifier.
+
 > **Người phụ trách**: Người 4 · **Input**: C05, C06, C09 · **Output**: C07, C08 (ComplianceFindings), C10 (Risks), C11 (Recommendations)
+
+Đặc tả hiện hành: [INTEGRATION_V1](../contracts/integration_spec.md), [dictionary](../contracts/data_dictionary.md).
+
+Bàn giao bắt buộc: [playbook năm người](../guides/parallel_development_playbook.md), [acceptance scenarios](../contracts/handoff_acceptance.json). Recipe SQL baseline/standalone bên dưới không thay source live workflow_runs/report_versions.
 
 Tài liệu chung: [Tổng quan module & Quy tắc JOIN](README.md)
 
 ---
 
 ## 6. Nhóm C: bước 5–7: Compliance, Risk và Recommendation
+
+Xem thêm [source verifier, batch/quote và kịch bản đồ án](../guides/synthetic_evidence_and_inference_fixes_20261107.md).
+Source-only là mặc định. Synthetic cần source/hash khớp và giữ audit riêng; không
+được dùng output demo này để thay expected độc lập của DEV/VAL/TEST.
 
 ### 6.1 Entrypoints và knowledge đã pin
 
@@ -45,6 +68,10 @@ Ghi: `runtime.ket_qua_tieu_chi`, `bang_chung_ket_qua`, `bang_chung_ngoai`,
 `ket_qua_tuan_thu`. Các C07/C08 đã seed là output tham khảo, không phải input
 để reasoning tự sao chép kết luận.
 
+Đó là projection của Store standalone nhóm C. Full pipeline live truyền DTO và lưu
+workflow_runs.draft_json/report_versions qua runner; không yêu cầu người 4 thêm
+normalized writer vào mỗi engine hoặc tạo Store row cho mọi workflow run.
+
 #### Luồng xử lý một criterion
 
 1. Từ C05 chọn requirement version; lấy criteria của version đó.
@@ -81,7 +108,7 @@ JOIN runtime.ca_danh_gia ca USING (ca_id)
 JOIN runtime.doan_hop_dong d
   ON d.doan_id = r.doan_id AND d.hop_dong_id = ca.hop_dong_id
 WHERE ca.ca_id = 'CA360_001'
-  AND r.lan_chay_id = 'CA360_001_PDF360_LS2_REFERENCE'
+  AND r.lan_chay_id = 'REF_TEAM_20261107_CA360_001'
   AND r.duoc_chon IS TRUE AND r.giai_doan = 'FINAL'
 ORDER BY a.yeu_cau_ca_id, r.thu_hang, r.truy_xuat_id;
 ```
@@ -99,7 +126,7 @@ không phải byte PDF hoặc vị trí trên text đã bị chuẩn hóa khác.
 
 C07/C08 đã có provider, reasoner, grounding, aggregation và service trong
 `modules/compliance/`; runner nhóm C mặc định offline, không gọi API trả phí.
-Xem [README compliance](../backend/src/legal_checker/modules/compliance/README.md)
+Xem [README compliance](../../backend/README.md)
 để chạy theo checklist, cấu hình OpenAI tùy chọn và thực hiện review/replay.
 
 ```text
@@ -173,7 +200,7 @@ Không bắt buộc LLM cho mọi criterion. Numeric rules, C08, C10 và C11 ch�
 C07 có semantic provider và OpenAI client tùy chọn. Prompt/schema/provider thuộc module;
 `shared/llm` có transport/config/types và `audit_llm_call`/`PostgresLlmAuditSink` cho X02.
 Runner nhóm C không tạo paid client; muốn dùng LLM-generated C11 phải đổi contract có
-chủ đích. [Ví dụ dùng audit](llm_audit.md).
+chủ đích. [Ví dụ dùng audit](../guides/llm_audit.md).
 
 Mỗi lời gọi thật cần timeout, retry có giới hạn, validate structured output và X02 audit
 lưu vào `runtime.nhat_ky_goi_llm`: provider/model/prompt/schema version, input/output hash,
@@ -442,8 +469,8 @@ Risk riêng, C07/C09 reference được phép là upstream; khi test Reasoning t
 Runner `legal_checker.modules.assessments.run_group_c` đã hỗ trợ offline/replay,
 `--save`, `--read-run` và export atomic vào thư mục mới. Metadata/hash/counts/lineage
 phản ánh DTO thật; read kiểm tra dữ liệu đã lưu và không chạy lại engines. Xem
-[lệnh PowerShell](../backend/src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57)
-và [bàn giao nhóm C](group_c_handoff.md). Không dùng observations/EXPECTED đã seed
+[lệnh PowerShell](../../backend/src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57)
+và [bàn giao nhóm C](../group_c_handoff.md). Không dùng observations/EXPECTED đã seed
 làm kết quả của provider mới rồi báo metric pass.
 
 **Bàn giao nhóm C:** C07/C08/C10/C11 cùng Context/run/hash, rows + DTO lineage đã lưu,

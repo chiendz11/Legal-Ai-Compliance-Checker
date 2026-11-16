@@ -1,3 +1,4 @@
+import { requirementDisplayStatus } from "./assessmentStatus";
 import type {
   CitationValidation,
   ReportContent,
@@ -51,8 +52,10 @@ export function RequirementDistribution({ results }: { results: RequirementResul
           ["PARTIAL", S.warning],
           ["COMPLIANT", S.good],
           ["INSUFFICIENT", S.none],
+          ["NOT_TRIGGERED", S.none],
+          ["OUTSIDE_REVIEW_SCOPE", S.none],
         ],
-        results.map((r) => r.status),
+        results.map(requirementDisplayStatus),
       )}
     />
   );

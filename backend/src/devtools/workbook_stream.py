@@ -6,6 +6,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from openpyxl.utils.datetime import MAC_EPOCH, WINDOWS_EPOCH
+from openpyxl.utils.escape import unescape
 
 from devtools.database_seed import SeedError, convert_cell
 
@@ -32,14 +33,16 @@ def _value(cell):
         raise SeedError("Workbook contains a formula or Excel error")
     kind = cell.get("t")
     if kind == "inlineStr":
-        return "".join(cell.itertext())
+        # PDF text may contain control glyphs encoded as OOXML _xHHHH_. Decode
+        # once so source text, exact offsets and payload hashes remain unchanged.
+        return unescape("".join(cell.itertext()))
     value = cell.find(NS + "v")
     if value is None or value.text is None:
         return None
     if kind == "b":
         return value.text == "1"
     if kind in ("str", "d"):
-        return value.text
+        return unescape(value.text) if kind == "str" else value.text
     if kind == "s":
         raise SeedError("Use the original release workbook, without shared-string conversion")
     raw = value.text

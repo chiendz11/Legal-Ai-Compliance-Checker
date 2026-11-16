@@ -1,8 +1,9 @@
 """C01: intake produces a pinned assessment and an accessible source reference."""
 
 from datetime import date
+from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from legal_checker.shared.contracts.common import DeploymentPin, Model
 
@@ -25,6 +26,19 @@ class AssessmentTiming(Model):
     ngay_danh_gia: date
     moc_ap_dung: date | None = None
     loai_moc_ap_dung: str | None = None
+    review_mode: Literal["FULL_ASSESSMENT", "DRAFT_REVIEW"] = "FULL_ASSESSMENT"
+    # Receipt of the contract/annex set, not human approval or proof of execution.
+    document_set_complete: bool = False
+
+    @model_serializer(mode="wrap")
+    def preserve_legacy_report_bytes(self, handler):
+        data = handler(self)
+        # Frozen reports predating these fields must keep their original digest.
+        # New database/API cases explicitly set both values and persist them.
+        for name in ("review_mode", "document_set_complete"):
+            if name not in self.model_fields_set:
+                data.pop(name, None)
+        return data
 
 
 class AssessmentCase(Model):

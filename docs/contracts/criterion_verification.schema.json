@@ -1,0 +1,227 @@
+{
+  "$defs": {
+    "Gates": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage_complete": {
+          "default": false,
+          "title": "Coverage Complete",
+          "type": "boolean"
+        },
+        "absence_verified": {
+          "default": false,
+          "title": "Absence Verified",
+          "type": "boolean"
+        },
+        "evidence_validated": {
+          "default": false,
+          "title": "Evidence Validated",
+          "type": "boolean"
+        },
+        "source_verified": {
+          "default": false,
+          "title": "Source Verified",
+          "type": "boolean"
+        },
+        "scope_confirmed": {
+          "default": false,
+          "title": "Scope Confirmed",
+          "type": "boolean"
+        },
+        "version_resolved": {
+          "default": false,
+          "title": "Version Resolved",
+          "type": "boolean"
+        },
+        "evidence_conflict": {
+          "default": false,
+          "title": "Evidence Conflict",
+          "type": "boolean"
+        },
+        "exceptions_resolved": {
+          "default": false,
+          "title": "Exceptions Resolved",
+          "type": "boolean"
+        }
+      },
+      "title": "Gates",
+      "type": "object"
+    },
+    "VerifiedExternalExcerpt": {
+      "additionalProperties": false,
+      "description": "Text extracted and checked by the backend against a registered source file.",
+      "properties": {
+        "bang_chung_id": {
+          "minLength": 1,
+          "title": "Bang Chung Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "source_locator": {
+          "minLength": 1,
+          "title": "Source Locator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bang_chung_id",
+        "sha256",
+        "text",
+        "source_locator"
+      ],
+      "title": "VerifiedExternalExcerpt",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Context-bound pre-analysis attestation; it cannot approve an AI's conclusion.",
+  "properties": {
+    "contract_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "ca_id": {
+      "minLength": 1,
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "phien_ban_id": {
+      "minLength": 1,
+      "title": "Phien Ban Id",
+      "type": "string"
+    },
+    "rule_version": {
+      "minLength": 1,
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "legal_knowledge_version": {
+      "minLength": 1,
+      "title": "Legal Knowledge Version",
+      "type": "string"
+    },
+    "knowledge_snapshot_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Knowledge Snapshot Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "trace_id": {
+      "minLength": 1,
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "hop_dong_id": {
+      "title": "Hop Dong Id",
+      "type": "string"
+    },
+    "yeu_cau_ca_id": {
+      "title": "Yeu Cau Ca Id",
+      "type": "string"
+    },
+    "tieu_chi_id": {
+      "title": "Tieu Chi Id",
+      "type": "string"
+    },
+    "verification_reference": {
+      "minLength": 1,
+      "title": "Verification Reference",
+      "type": "string"
+    },
+    "gates": {
+      "$ref": "#/$defs/Gates"
+    },
+    "local_applicability": {
+      "default": "UNKNOWN",
+      "enum": [
+        "MATCH",
+        "NO_MATCH",
+        "UNKNOWN"
+      ],
+      "title": "Local Applicability",
+      "type": "string"
+    },
+    "mandatory_confirmed": {
+      "default": false,
+      "title": "Mandatory Confirmed",
+      "type": "boolean"
+    },
+    "all_pages_readable": {
+      "default": false,
+      "title": "All Pages Readable",
+      "type": "boolean"
+    },
+    "all_related_documents_received": {
+      "default": false,
+      "title": "All Related Documents Received",
+      "type": "boolean"
+    },
+    "template_field_unfilled": {
+      "default": false,
+      "title": "Template Field Unfilled",
+      "type": "boolean"
+    },
+    "facts": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Facts",
+      "type": "object"
+    },
+    "facts_verified": {
+      "default": false,
+      "title": "Facts Verified",
+      "type": "boolean"
+    },
+    "external_excerpts": {
+      "items": {
+        "$ref": "#/$defs/VerifiedExternalExcerpt"
+      },
+      "title": "External Excerpts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "ca_id",
+    "phien_ban_id",
+    "rule_version",
+    "legal_knowledge_version",
+    "knowledge_snapshot_sha256",
+    "run_id",
+    "trace_id",
+    "hop_dong_id",
+    "yeu_cau_ca_id",
+    "tieu_chi_id",
+    "verification_reference"
+  ],
+  "title": "CriterionVerification",
+  "type": "object"
+}

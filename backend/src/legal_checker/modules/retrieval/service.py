@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, Protocol
 
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
+from legal_checker.modules.retrieval.anchors import anchored_chunks
 from legal_checker.modules.retrieval.fact_evidence import (
     DEFAULT_FACT_PATTERNS,
     FactEvidence,
@@ -13,8 +14,9 @@ from legal_checker.modules.retrieval.fact_evidence import (
 )
 from legal_checker.modules.retrieval.indexer import BM25Index, EvidenceIndex, tokenize
 from legal_checker.modules.retrieval.reranker import EvidenceReranker
+from legal_checker.modules.retrieval.structural_context import context_chunks
 from legal_checker.shared.contracts.common import Context
-from legal_checker.shared.contracts.document_intelligence import Chunk
+from legal_checker.shared.contracts.document_intelligence import Chunk, ContractProfile
 from legal_checker.shared.contracts.retrieval import RetrievalEvidence
 from legal_checker.shared.contracts.temporal import ApplicableRequirement
 from legal_checker.shared.ids import retrieval_id
@@ -30,7 +32,21 @@ class RetrievalService(Protocol):
     ) -> list[RetrievalEvidence]: ...
 
 
-RETRIEVAL_VERSION = "BM25_SYLLABLE_BIGRAM_V1"
+class RetrievalRefinementService(Protocol):
+    """Optional orchestrator handoff before C07; returns the authoritative refined C06."""
+
+    def refine(
+        self,
+        context: Context,
+        profile: ContractProfile,
+        requirements: list[ApplicableRequirement],
+        retrieval: list[RetrievalEvidence],
+        chunks: list[Chunk],
+        knowledge: KnowledgeSnapshot,
+    ) -> list[RetrievalEvidence]: ...
+
+
+RETRIEVAL_VERSION = "BM25_SOURCE_ANCHORS_V2"
 # Reciprocal Rank Fusion constant from Cormack et al. (2009); robust without tuning.
 RRF_K = 60
 
@@ -104,6 +120,8 @@ class HybridRetrievalService:
         fact_evidence: Callable[[str], list[FactEvidence]] | None = None,
         fact_patterns: Mapping[str, str] | None = None,
         max_fact_chunks: int = 3,
+        max_context_chunks: int = 3,
+        max_context_chars: int = 6000,
     ):
         self.indexes = dict(indexes) if indexes else {"bm25": BM25Index()}
         self.min_term_coverage = min_term_coverage
@@ -111,6 +129,9 @@ class HybridRetrievalService:
         self.fact_evidence = fact_evidence
         self.fact_patterns = DEFAULT_FACT_PATTERNS if fact_patterns is None else fact_patterns
         self.max_fact_chunks = max_fact_chunks
+        self.max_context_chunks, self.max_context_chars = max_context_chunks, max_context_chars
+        if max_context_chunks < 0 or max_context_chars < 0:
+            raise ValueError("Context limits must be non-negative")
         self.reranker = reranker
         self.embedding_model, self.rerank_model = embedding_model, rerank_model
         self.top_k, self.candidate_k, self.rerank_k = top_k, candidate_k, rerank_k
@@ -127,7 +148,10 @@ class HybridRetrievalService:
             parts.append("PATH")
         if fact_evidence is not None:
             parts.append("FACT")
-        self.retrieval_version = "+".join(parts) + "_V1"
+        if section_paths is not None and max_context_chunks:
+            parts.append(f"STRUCTURAL_CONTEXT{max_context_chunks}x{max_context_chars}")
+        parts.append("SOURCE_ANCHORS")
+        self.retrieval_version = "+".join(parts) + "_V2"
 
     def ranked(
         self, hop_dong_id: str, query: str, index_version: str, chunk_by_id: dict[str, Chunk]
@@ -161,9 +185,13 @@ class HybridRetrievalService:
         query: str,
         rows: list[tuple[str, dict[str, float | None]]],
         facts: list[FactEvidence],
+        *,
+        criterion_id: str | None = None,
     ) -> list[tuple[str, dict[str, float | None]]]:
         """Matching field evidence first (search scores kept when the chunk was also found)."""
-        promoted = matching_chunks(query, facts, self.fact_patterns, self.max_fact_chunks)
+        promoted = matching_chunks(
+            query, facts, self.fact_patterns, self.max_fact_chunks, criterion_id=criterion_id
+        )
         if not promoted:
             return rows
         found = dict(rows)
@@ -172,7 +200,12 @@ class HybridRetrievalService:
         return (head + [row for row in rows if row[0] not in ids])[: self.top_k]
 
     def selected(self, rank: int, row: dict[str, float | None], best: dict) -> bool:
-        if row.get("fact"):
+        if (
+            row.get("fact")
+            or row.get("topic_anchor")
+            or row.get("parent_context")
+            or row.get("internal_reference_context")
+        ):
             return True
         if rank > self.select_k or (row.get("term_coverage") or 0.0) < self.min_term_coverage:
             return False
@@ -197,6 +230,8 @@ class HybridRetrievalService:
         if not chunks:
             return []
         hop_dong_id = contracts.pop()
+        source_chunks = chunks
+        paths = {}
         if self.section_paths is not None:
             paths = self.section_paths(hop_dong_id)
             # Searched text only: rows still point at the original chunk by doan_id.
@@ -223,12 +258,42 @@ class HybridRetrievalService:
             for criterion in knowledge.criteria_for(requirement.requirement_version_id):
                 query = search_query(criterion)
                 rows = self.ranked(hop_dong_id, query, index_version, chunk_by_id)
-                rows = self.with_facts(query, rows, facts)
+                # Paths are search features, not original headings. Testing an anchored
+                # heading against a path-prefixed index view silently misses that heading.
+                anchored = anchored_chunks(query, source_chunks)
+                found = dict(rows)
+                rows = [(key, {**found.get(key, {}), "topic_anchor": 1.0}) for key in anchored] + [
+                    row for row in rows if row[0] not in anchored
+                ]
+                rows = rows[: self.top_k]
+                rows = self.with_facts(query, rows, facts, criterion_id=criterion["tieu_chi_id"])
                 for doan_id, scores in rows:
                     scores["term_coverage"] = round(
                         term_coverage(query, chunk_by_id[doan_id].noi_dung), 4
                     )
                 best = next((s for _, s in rows if not s.get("fact")), {})
+                primary = [
+                    d
+                    for rank, (d, scores) in enumerate(rows, 1)
+                    if self.selected(rank, scores, best)
+                ]
+                expanded = context_chunks(
+                    source_chunks,
+                    paths,
+                    primary,
+                    max_chunks=self.max_context_chunks,
+                    max_chars=self.max_context_chars,
+                )
+                if expanded:
+                    scores_by_id = dict(rows)
+                    promoted = [
+                        (d, {**scores_by_id.get(d, {}), **scores}) for d, scores in expanded.items()
+                    ]
+                    rows = (
+                        [(d, s) for d, s in rows if d in primary]
+                        + promoted
+                        + [(d, s) for d, s in rows if d not in primary and d not in expanded]
+                    )[: self.top_k]
                 for rank, (doan_id, scores) in enumerate(rows, start=1):
                     evidence.append(
                         RetrievalEvidence(

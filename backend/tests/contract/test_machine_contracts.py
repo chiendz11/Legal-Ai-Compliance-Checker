@@ -119,7 +119,7 @@ def test_catalog_handoffs_and_database_ownership_are_resolvable(documents):
 def test_ui_design_distinguishes_live_routes_from_future_contracts(documents):
     runtime = create_app(services=Services(knowledge=None, assessments=None)).openapi()["paths"]
     design = documents["openapi.design.json"]
-    assert design["x-contract-status"] == "PROPOSED"
+    assert design["x-contract-status"] == "IMPLEMENTED_BASELINE"
     assert "/api/v1/pipeline/steps-5-7" not in design["paths"]
     assert "/api/v1/reasoning" not in design["paths"]
     ids = []
@@ -193,3 +193,12 @@ def test_json_schema_does_not_replace_cross_field_python_validation():
     Draft202012Validator(ApplicableRequirement.model_json_schema()).validate(candidate)
     with pytest.raises(ValueError, match="Confirmed requirement needs"):
         ApplicableRequirement.model_validate(candidate)
+
+
+def test_full_document_review_schema_matches_backend_model(documents):
+    from legal_checker.shared.contracts.document_review import DocumentReviewArtifact
+
+    schema = documents["contracts/document_review.schema.json"]
+    assert {
+        k: v for k, v in schema.items() if k != "$schema"
+    } == DocumentReviewArtifact.model_json_schema()

@@ -458,6 +458,292 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ApiErrorDetail */
+        ApiErrorDetail: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Trace Id */
+            trace_id: string;
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** ApplicableRequirement */
+        ApplicableRequirement: {
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Requirement Version Id */
+            requirement_version_id?: string | null;
+            /** Nhom Phien Ban */
+            nhom_phien_ban?: string | null;
+            /**
+             * Scope Status
+             * @enum {string}
+             */
+            scope_status: "MATCH" | "NO_MATCH" | "UNKNOWN";
+            /**
+             * Version Status
+             * @enum {string}
+             */
+            version_status: "RESOLVED" | "UNKNOWN";
+            /**
+             * Applicability Status
+             * @enum {string}
+             */
+            applicability_status: "CONFIRMED" | "NOT_APPLICABLE" | "UNKNOWN";
+            /** Moc Id */
+            moc_id?: string | null;
+            /** Loai Moc */
+            loai_moc?: string | null;
+            /** Moc Ap Dung */
+            moc_ap_dung?: string | null;
+            /** Resolution Method */
+            resolution_method?: string | null;
+            /** Profile Snapshot Json */
+            profile_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Dieu Kien Snapshot Json */
+            dieu_kien_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Nguon Snapshot Json */
+            nguon_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Phien Ban Id */
+            phien_ban_id: string;
+            /** Reason */
+            reason?: {
+                [key: string]: string;
+            };
+            /**
+             * Assessment Review
+             * @description Backend review-purpose receipt; separate from legal scope/source snapshots.
+             */
+            assessment_review?: {
+                [key: string]: unknown;
+            };
+        };
+        /** AssessmentCase */
+        AssessmentCase: {
+            /** Ca Id */
+            ca_id: string;
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            source: components["schemas"]["SourceDocument"];
+            assessment_context: components["schemas"]["AssessmentTiming"];
+            deployment: components["schemas"]["DeploymentPin"];
+            /** Tenant Id */
+            tenant_id: string;
+            /** Created By */
+            created_by: string;
+        };
+        /** AssessmentTiming */
+        AssessmentTiming: {
+            /**
+             * Ngay Danh Gia
+             * Format: date
+             */
+            ngay_danh_gia: string;
+            /** Moc Ap Dung */
+            moc_ap_dung?: string | null;
+            /** Loai Moc Ap Dung */
+            loai_moc_ap_dung?: string | null;
+            /**
+             * Review Mode
+             * @default FULL_ASSESSMENT
+             * @enum {string}
+             */
+            review_mode: "FULL_ASSESSMENT" | "DRAFT_REVIEW";
+            /**
+             * Document Set Complete
+             * @default false
+             */
+            document_set_complete: boolean;
+        };
+        /** CaseRecord */
+        CaseRecord: {
+            case: components["schemas"]["AssessmentCase"];
+            /** Latest Run Id */
+            latest_run_id?: string | null;
+            /** Latest Run Status */
+            latest_run_status?: ("QUEUED" | "RUNNING" | "COMPLETED" | "FAILED") | null;
+            /** Ten Tai Lieu */
+            ten_tai_lieu?: string | null;
+            /** Latest Report Id */
+            latest_report_id?: string | null;
+            /** Requirement Status Counts */
+            requirement_status_counts?: {
+                [key: string]: number;
+            };
+        };
+        /** Chunk */
+        Chunk: {
+            /** Doan Id */
+            doan_id: string;
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /** Noi Dung */
+            noi_dung: string;
+            /** Page Start */
+            page_start: number;
+            /** Page End */
+            page_end: number;
+        };
+        /**
+         * CitationExtraction
+         * @description C03: contract-authored citations; independent of the applicable-law checklist.
+         */
+        CitationExtraction: {
+            /** Vien Dan Id */
+            vien_dan_id: string;
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /** Raw Text */
+            raw_text: string;
+            normalized: components["schemas"]["CitationNormalization"];
+            extraction: components["schemas"]["CitationExtractionMetadata"];
+            /** Evidence */
+            evidence: components["schemas"]["CitationPosition"][];
+        };
+        /** CitationExtractionMetadata */
+        CitationExtractionMetadata: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "EXTRACTED" | "AMBIGUOUS" | "UNKNOWN";
+            /** Confidence */
+            confidence?: number | null;
+        };
+        /** CitationNormalization */
+        CitationNormalization: {
+            /** So Hieu */
+            so_hieu?: string | null;
+            /** Ten Van Ban */
+            ten_van_ban?: string | null;
+            /** Loai Van Ban */
+            loai_van_ban?: string | null;
+            /** Nam */
+            nam?: number | null;
+            /** Ngay Ban Hanh */
+            ngay_ban_hanh?: string | null;
+            /** Dieu */
+            dieu?: string | null;
+            /** Khoan */
+            khoan?: string | null;
+        };
+        /** CitationPosition */
+        CitationPosition: {
+            /** Doan Id */
+            doan_id: string;
+            /** Page Start */
+            page_start: number;
+            /** Page End */
+            page_end: number;
+        };
+        /** CitationValidation */
+        CitationValidation: {
+            /** Finding Id */
+            finding_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Vien Dan Id */
+            vien_dan_id: string;
+            /** Normalized Van Ban Id */
+            normalized_van_ban_id?: string | null;
+            /** Relevant Date */
+            relevant_date?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "VALID" | "STALE" | "INVALID" | "UNKNOWN";
+            /** Reason Code */
+            reason_code: string;
+            /** Ly Do */
+            ly_do: string;
+            /**
+             * Domain Status
+             * @enum {string}
+             */
+            domain_status: "MATCH" | "MISMATCH" | "UNKNOWN";
+            /** Finding Verified */
+            finding_verified: boolean;
+            /** Current Status */
+            current_status?: string | null;
+            /** Replacement Van Ban Id */
+            replacement_van_ban_id?: string | null;
+            /** Source Snapshot Json */
+            source_snapshot_json: {
+                [key: string]: unknown;
+            };
+            /** Lan Chay Id */
+            lan_chay_id: string;
+            /** Knowledge Version */
+            knowledge_version: string;
+        };
+        /** Context */
+        Context: {
+            /**
+             * Contract Version
+             * @default 1.0
+             * @constant
+             */
+            contract_version: "1.0";
+            /** Ca Id */
+            ca_id: string;
+            /** Phien Ban Id */
+            phien_ban_id: string;
+            /** Rule Version */
+            rule_version: string;
+            /** Legal Knowledge Version */
+            legal_knowledge_version: string;
+            /** Knowledge Snapshot Sha256 */
+            knowledge_snapshot_sha256: string;
+            /** Run Id */
+            run_id: string;
+            /** Trace Id */
+            trace_id: string;
+        };
+        /**
+         * ContractProfile
+         * @description C02: typed extraction output with nullable facts and explicit provenance.
+         */
+        ContractProfile: {
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            profile: components["schemas"]["ProfileFields"];
+            /** Subjects */
+            subjects?: components["schemas"]["ProfileSubject"][];
+            /** Time Markers */
+            time_markers?: components["schemas"]["ProfileTimeMarker"][];
+            /** Facts */
+            facts?: components["schemas"]["ExtractedFact"][];
+            /** Evidence */
+            evidence?: components["schemas"]["ProfileEvidence"][];
+        };
+        /** ContractRecord */
+        ContractRecord: {
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /** Ten Tai Lieu */
+            ten_tai_lieu: string;
+            source: components["schemas"]["SourceDocument"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** CriterionResult */
         CriterionResult: {
             /** Ket Qua Id */
@@ -516,6 +802,15 @@ export interface components {
             /** Exclusion Reason */
             exclusion_reason?: string | null;
         };
+        /** DeploymentPin */
+        DeploymentPin: {
+            /** Phien Ban Id */
+            phien_ban_id: string;
+            /** Rule Version */
+            rule_version: string;
+            /** Legal Knowledge Version */
+            legal_knowledge_version: string;
+        };
         /** Evidence */
         Evidence: {
             /** Doan Id */
@@ -540,6 +835,47 @@ export interface components {
              * @default false
              */
             verified: boolean;
+        };
+        /** ExtractedFact */
+        ExtractedFact: {
+            /** Trich Xuat Id */
+            trich_xuat_id: string;
+            /** Ten Truong */
+            ten_truong: string;
+            /** Gia Tri Raw */
+            gia_tri_raw?: string | null;
+            /** Gia Tri Chuan Json */
+            gia_tri_chuan_json?: unknown | null;
+            /** Trang Thai */
+            trang_thai: string;
+            /** Phuong Phap */
+            phuong_phap: string;
+            /**
+             * Human Verified
+             * @default false
+             */
+            human_verified: boolean;
+            /** Evidence Ids */
+            evidence_ids?: string[];
+        };
+        /** FinalReport */
+        FinalReport: {
+            /** Bao Cao Id */
+            bao_cao_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Phien Ban Bao Cao */
+            phien_ban_bao_cao: string;
+            report_json: components["schemas"]["ReportContent"];
+            /**
+             * Report Status
+             * @enum {string}
+             */
+            report_status: "DRAFT" | "REVIEW_REQUIRED" | "PUBLISHED";
+            /** Review Status */
+            review_status: string;
+            /** Report Uri */
+            report_uri?: string | null;
         };
         /** Gates */
         Gates: {
@@ -589,657 +925,13 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** ApiError */
-        Input_ApiError: {
-            error: components["schemas"]["Input_ApiErrorDetail"];
-        };
-        /** ApiErrorDetail */
-        Input_ApiErrorDetail: {
-            /**
-             * Code
-             * @enum {string}
-             */
-            code: "VALIDATION_ERROR" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "RESULT_NOT_READY" | "STALE_REVIEW" | "REVIEW_REQUIRED" | "FILE_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR" | "PROCESSING_FAILED";
-            /** Message */
-            message: string;
-            /** Trace Id */
-            trace_id: string;
-            /** Details */
-            details?: {
-                [key: string]: unknown;
-            }[];
-        };
-        /** CaseCreate */
-        Input_CaseCreate: {
-            /**
-             * Hop Dong Id
-             * @example HD_EXAMPLE
-             */
-            hop_dong_id: string;
-            /**
-             * Ngay Danh Gia
-             * Format: date
-             */
-            ngay_danh_gia: string;
-            /**
-             * Moc Ap Dung
-             * @default null
-             */
-            moc_ap_dung: string | null;
-            /**
-             * Loai Moc Ap Dung
-             * @default null
-             */
-            loai_moc_ap_dung: string | null;
-            /**
-             * Phien Ban Id
-             * @description Omit to let backend select an allowed deployment release.
-             * @default null
-             */
-            phien_ban_id: string | null;
-        };
-        /** PublishRequest */
-        Input_PublishRequest: {
-            /** Expected Review Revision */
-            expected_review_revision: string;
-        };
-        /** ReviewCreate */
-        Input_ReviewCreate: {
-            target: components["schemas"]["Input_ReviewTarget"];
-            /**
-             * Action
-             * @enum {string}
-             */
-            action: "CONFIRM" | "OVERRIDE" | "REQUEST_MORE_EVIDENCE" | "REJECT" | "COMMENT";
-            /** After */
-            after?: {
-                [key: string]: unknown;
-            };
-            /** Reason */
-            reason: string;
-            /** Expected Target Sha256 */
-            expected_target_sha256: string;
-        };
-        /** ReviewTarget */
-        Input_ReviewTarget: {
-            /** Doi Tuong Loai */
-            doi_tuong_loai: string;
-            /** Doi Tuong Id */
-            doi_tuong_id: string;
-        };
-        /** ApiErrorDetail */
-        Output_ApiErrorDetail: {
-            /**
-             * Code
-             * @enum {string}
-             */
-            code: "VALIDATION_ERROR" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "RESULT_NOT_READY" | "STALE_REVIEW" | "REVIEW_REQUIRED" | "FILE_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR" | "PROCESSING_FAILED";
-            /** Message */
-            message: string;
-            /** Trace Id */
-            trace_id: string;
-            /** Details */
-            details?: {
-                [key: string]: unknown;
-            }[];
-        };
-        /** ApplicableRequirement */
-        Output_ApplicableRequirement: {
-            /** Yeu Cau Ca Id */
-            yeu_cau_ca_id: string;
-            /** Ca Id */
-            ca_id: string;
-            /** Requirement Id */
-            requirement_id: string;
-            /**
-             * Requirement Version Id
-             * @default null
-             */
-            requirement_version_id: string | null;
-            /**
-             * Nhom Phien Ban
-             * @default null
-             */
-            nhom_phien_ban: string | null;
-            /**
-             * Scope Status
-             * @enum {string}
-             */
-            scope_status: "MATCH" | "NO_MATCH" | "UNKNOWN";
-            /**
-             * Version Status
-             * @enum {string}
-             */
-            version_status: "RESOLVED" | "UNKNOWN";
-            /**
-             * Applicability Status
-             * @enum {string}
-             */
-            applicability_status: "CONFIRMED" | "NOT_APPLICABLE" | "UNKNOWN";
-            /**
-             * Moc Id
-             * @default null
-             */
-            moc_id: string | null;
-            /**
-             * Loai Moc
-             * @default null
-             */
-            loai_moc: string | null;
-            /**
-             * Moc Ap Dung
-             * @default null
-             */
-            moc_ap_dung: string | null;
-            /**
-             * Resolution Method
-             * @default null
-             */
-            resolution_method: string | null;
-            /** Profile Snapshot Json */
-            profile_snapshot_json?: {
-                [key: string]: unknown;
-            };
-            /** Dieu Kien Snapshot Json */
-            dieu_kien_snapshot_json?: {
-                [key: string]: unknown;
-            };
-            /** Nguon Snapshot Json */
-            nguon_snapshot_json?: {
-                [key: string]: unknown;
-            };
-            /** Phien Ban Id */
-            phien_ban_id: string;
-            /** Reason */
-            reason?: {
-                [key: string]: string;
-            };
-        };
-        /** AssessmentCase */
-        Output_AssessmentCase: {
-            /** Ca Id */
-            ca_id: string;
-            /** Hop Dong Id */
-            hop_dong_id: string;
-            source: components["schemas"]["Output_SourceDocument"];
-            assessment_context: components["schemas"]["Output_AssessmentTiming"];
-            deployment: components["schemas"]["Output_DeploymentPin"];
-            /** Tenant Id */
-            tenant_id: string;
-            /** Created By */
-            created_by: string;
-        };
-        /** AssessmentDraft */
-        Output_AssessmentDraft: {
-            context: components["schemas"]["Output_Context"];
-            case: components["schemas"]["Output_AssessmentCase"];
-            contract_profile: components["schemas"]["Output_ContractProfile"];
-            /** Chunks */
-            chunks: components["schemas"]["Output_Chunk"][];
-            /** Extracted Citations */
-            extracted_citations: components["schemas"]["Output_CitationExtraction"][];
-            /** Citation Findings */
-            citation_findings: components["schemas"]["Output_CitationValidation"][];
-            /** Scope */
-            scope: components["schemas"]["Output_ScopeResolution"][];
-            /** Requirements */
-            requirements: components["schemas"]["Output_ApplicableRequirement"][];
-            /** Retrieval */
-            retrieval: components["schemas"]["Output_RetrievalEvidence"][];
-            evaluation: components["schemas"]["Output_PipelineResponse"];
-        };
-        /** AssessmentTiming */
-        Output_AssessmentTiming: {
-            /**
-             * Ngay Danh Gia
-             * Format: date
-             */
-            ngay_danh_gia: string;
-            /**
-             * Moc Ap Dung
-             * @default null
-             */
-            moc_ap_dung: string | null;
-            /**
-             * Loai Moc Ap Dung
-             * @default null
-             */
-            loai_moc_ap_dung: string | null;
-        };
-        /** CaseRecord */
-        Output_CaseRecord: {
-            case: components["schemas"]["Output_AssessmentCase"];
-            /**
-             * Latest Run Id
-             * @default null
-             */
-            latest_run_id: string | null;
-            /**
-             * Latest Run Status
-             * @default null
-             */
-            latest_run_status: ("QUEUED" | "RUNNING" | "COMPLETED" | "FAILED") | null;
-            /**
-             * Ten Tai Lieu
-             * @default null
-             */
-            ten_tai_lieu: string | null;
-            /**
-             * Latest Report Id
-             * @default null
-             */
-            latest_report_id: string | null;
-            /** Requirement Status Counts */
-            requirement_status_counts?: {
-                [key: string]: number;
-            };
-        };
-        /** Chunk */
-        Output_Chunk: {
-            /** Doan Id */
-            doan_id: string;
-            /** Hop Dong Id */
-            hop_dong_id: string;
-            /** Noi Dung */
-            noi_dung: string;
-            /** Page Start */
-            page_start: number;
-            /** Page End */
-            page_end: number;
-        };
-        /**
-         * CitationExtraction
-         * @description C03: contract-authored citations; independent of the applicable-law checklist.
-         */
-        Output_CitationExtraction: {
-            /** Vien Dan Id */
-            vien_dan_id: string;
-            /** Hop Dong Id */
-            hop_dong_id: string;
-            /** Raw Text */
-            raw_text: string;
-            normalized: components["schemas"]["Output_CitationNormalization"];
-            extraction: components["schemas"]["Output_CitationExtractionMetadata"];
-            /** Evidence */
-            evidence: components["schemas"]["Output_CitationPosition"][];
-        };
-        /** CitationExtractionMetadata */
-        Output_CitationExtractionMetadata: {
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "EXTRACTED" | "AMBIGUOUS" | "UNKNOWN";
-            /**
-             * Confidence
-             * @default null
-             */
-            confidence: number | null;
-        };
-        /** CitationNormalization */
-        Output_CitationNormalization: {
-            /**
-             * So Hieu
-             * @default null
-             */
-            so_hieu: string | null;
-            /**
-             * Ten Van Ban
-             * @default null
-             */
-            ten_van_ban: string | null;
-            /**
-             * Loai Van Ban
-             * @default null
-             */
-            loai_van_ban: string | null;
-            /**
-             * Nam
-             * @default null
-             */
-            nam: number | null;
-            /**
-             * Ngay Ban Hanh
-             * @default null
-             */
-            ngay_ban_hanh: string | null;
-            /**
-             * Dieu
-             * @default null
-             */
-            dieu: string | null;
-            /**
-             * Khoan
-             * @default null
-             */
-            khoan: string | null;
-        };
-        /** CitationPosition */
-        Output_CitationPosition: {
-            /** Doan Id */
-            doan_id: string;
-            /** Page Start */
-            page_start: number;
-            /** Page End */
-            page_end: number;
-        };
-        /** CitationValidation */
-        Output_CitationValidation: {
-            /** Finding Id */
-            finding_id: string;
-            /** Ca Id */
-            ca_id: string;
-            /** Vien Dan Id */
-            vien_dan_id: string;
-            /**
-             * Normalized Van Ban Id
-             * @default null
-             */
-            normalized_van_ban_id: string | null;
-            /**
-             * Relevant Date
-             * @default null
-             */
-            relevant_date: string | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "VALID" | "STALE" | "INVALID" | "UNKNOWN";
-            /** Reason Code */
-            reason_code: string;
-            /** Ly Do */
-            ly_do: string;
-            /**
-             * Domain Status
-             * @enum {string}
-             */
-            domain_status: "MATCH" | "MISMATCH" | "UNKNOWN";
-            /** Finding Verified */
-            finding_verified: boolean;
-            /**
-             * Current Status
-             * @default null
-             */
-            current_status: string | null;
-            /**
-             * Replacement Van Ban Id
-             * @default null
-             */
-            replacement_van_ban_id: string | null;
-            /** Source Snapshot Json */
-            source_snapshot_json: {
-                [key: string]: unknown;
-            };
-            /** Lan Chay Id */
-            lan_chay_id: string;
-            /** Knowledge Version */
-            knowledge_version: string;
-        };
-        /** Context */
-        Output_Context: {
-            /**
-             * Contract Version
-             * @default 1.0
-             * @constant
-             */
-            contract_version: "1.0";
-            /** Ca Id */
-            ca_id: string;
-            /** Phien Ban Id */
-            phien_ban_id: string;
-            /** Rule Version */
-            rule_version: string;
-            /** Legal Knowledge Version */
-            legal_knowledge_version: string;
-            /** Knowledge Snapshot Sha256 */
-            knowledge_snapshot_sha256: string;
-            /** Run Id */
-            run_id: string;
-            /** Trace Id */
-            trace_id: string;
-        };
-        /**
-         * ContractProfile
-         * @description C02: typed extraction output with nullable facts and explicit provenance.
-         */
-        Output_ContractProfile: {
-            /** Hop Dong Id */
-            hop_dong_id: string;
-            profile: components["schemas"]["Output_ProfileFields"];
-            /** Subjects */
-            subjects?: components["schemas"]["Output_ProfileSubject"][];
-            /** Time Markers */
-            time_markers?: components["schemas"]["Output_ProfileTimeMarker"][];
-            /** Facts */
-            facts?: components["schemas"]["Output_ExtractedFact"][];
-            /** Evidence */
-            evidence?: components["schemas"]["Output_ProfileEvidence"][];
-        };
-        /** ContractRecord */
-        Output_ContractRecord: {
-            /**
-             * Hop Dong Id
-             * @example HD_EXAMPLE
-             */
-            hop_dong_id: string;
-            /** Ten Tai Lieu */
-            ten_tai_lieu: string;
-            source: components["schemas"]["Output_SourceDocument"];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** CriterionResult */
-        Output_CriterionResult: {
-            /** Ket Qua Id */
-            ket_qua_id: string;
-            /** Ca Id */
-            ca_id: string;
-            /** Yeu Cau Ca Id */
-            yeu_cau_ca_id: string;
-            /** Tieu Chi Id */
-            tieu_chi_id: string;
-            /**
-             * Finding
-             * @enum {string}
-             */
-            finding: "SATISFIED" | "MISSING" | "VIOLATED" | "UNKNOWN";
-            /** Giai Thich */
-            giai_thich: string;
-            gates: components["schemas"]["Output_Gates"];
-            /**
-             * Uncertainty Reason
-             * @default null
-             */
-            uncertainty_reason: string | null;
-            /**
-             * Pham Vi Ket Luan
-             * @default CURRENT_CRITERION
-             * @constant
-             */
-            pham_vi_ket_luan: "CURRENT_CRITERION";
-            /** Evidence */
-            evidence?: components["schemas"]["Output_Evidence"][];
-            /** External Evidence */
-            external_evidence?: components["schemas"]["Output_ExternalEvidence"][];
-            /** Legal Basis Ids */
-            legal_basis_ids?: string[];
-            /** Tieu Chi Snapshot Json */
-            tieu_chi_snapshot_json: {
-                [key: string]: unknown;
-            };
-            /** Model Version */
-            model_version: string;
-            /** Prompt Version */
-            prompt_version: string;
-            /** Lan Chay Id */
-            lan_chay_id: string;
-            /**
-             * Review Status
-             * @default PENDING
-             * @constant
-             */
-            review_status: "PENDING";
-            /** Mandatory */
-            mandatory: boolean;
-            /**
-             * Excluded
-             * @default false
-             */
-            excluded: boolean;
-            /**
-             * Exclusion Reason
-             * @default null
-             */
-            exclusion_reason: string | null;
-        };
-        /** DeploymentPin */
-        Output_DeploymentPin: {
-            /** Phien Ban Id */
-            phien_ban_id: string;
-            /** Rule Version */
-            rule_version: string;
-            /** Legal Knowledge Version */
-            legal_knowledge_version: string;
-        };
-        /** Evidence */
-        Output_Evidence: {
-            /** Doan Id */
-            doan_id: string;
-            /** Trich Dan */
-            trich_dan: string;
-            /** Ky Tu Bat Dau */
-            ky_tu_bat_dau: number;
-            /** Ky Tu Ket Thuc */
-            ky_tu_ket_thuc: number;
-        };
-        /** ExternalEvidence */
-        Output_ExternalEvidence: {
-            /** Bang Chung Id */
-            bang_chung_id: string;
-            /** Object Uri */
-            object_uri: string;
-            /** Sha256 */
-            sha256: string;
-            /**
-             * Verified
-             * @default false
-             */
-            verified: boolean;
-        };
-        /** ExtractedFact */
-        Output_ExtractedFact: {
-            /** Trich Xuat Id */
-            trich_xuat_id: string;
-            /** Ten Truong */
-            ten_truong: string;
-            /**
-             * Gia Tri Raw
-             * @default null
-             */
-            gia_tri_raw: string | null;
-            /**
-             * Gia Tri Chuan Json
-             * @default null
-             */
-            gia_tri_chuan_json: unknown | null;
-            /** Trang Thai */
-            trang_thai: string;
-            /** Phuong Phap */
-            phuong_phap: string;
-            /**
-             * Human Verified
-             * @default false
-             */
-            human_verified: boolean;
-            /** Evidence Ids */
-            evidence_ids?: string[];
-        };
-        /** FinalReport */
-        Output_FinalReport: {
-            /** Bao Cao Id */
-            bao_cao_id: string;
-            /** Ca Id */
-            ca_id: string;
-            /** Phien Ban Bao Cao */
-            phien_ban_bao_cao: string;
-            report_json: components["schemas"]["Output_ReportContent"];
-            /**
-             * Report Status
-             * @enum {string}
-             */
-            report_status: "DRAFT" | "REVIEW_REQUIRED" | "PUBLISHED";
-            /** Review Status */
-            review_status: string;
-            /**
-             * Report Uri
-             * @default null
-             */
-            report_uri: string | null;
-        };
-        /** Gates */
-        Output_Gates: {
-            /**
-             * Coverage Complete
-             * @default false
-             */
-            coverage_complete: boolean;
-            /**
-             * Absence Verified
-             * @default false
-             */
-            absence_verified: boolean;
-            /**
-             * Evidence Validated
-             * @default false
-             */
-            evidence_validated: boolean;
-            /**
-             * Source Verified
-             * @default false
-             */
-            source_verified: boolean;
-            /**
-             * Scope Confirmed
-             * @default false
-             */
-            scope_confirmed: boolean;
-            /**
-             * Version Resolved
-             * @default false
-             */
-            version_resolved: boolean;
-            /**
-             * Evidence Conflict
-             * @default false
-             */
-            evidence_conflict: boolean;
-            /**
-             * Exceptions Resolved
-             * @default false
-             */
-            exceptions_resolved: boolean;
-        };
-        /** HealthResponse */
-        Output_HealthResponse: {
-            /**
-             * Status
-             * @constant
-             */
-            status: "ok";
-            /** Schema Version */
-            schema_version: string;
-        };
         /** HumanReview */
-        Output_HumanReview: {
+        HumanReview: {
             /** Review Id */
             review_id: string;
             /** Ca Id */
             ca_id: string;
-            target: components["schemas"]["Output_ReviewTarget"];
+            target: components["schemas"]["ReviewTarget"];
             /** Actor Id */
             actor_id: string;
             /**
@@ -1265,6 +957,188 @@ export interface components {
             /** Phien Ban Id */
             phien_ban_id: string;
         };
+        /** ApiError */
+        Input_ApiError: {
+            error: components["schemas"]["Input_ApiErrorDetail"];
+        };
+        /** ApiErrorDetail */
+        Input_ApiErrorDetail: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Trace Id */
+            trace_id: string;
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * CaseCreate
+         * @description Backend derives actor, tenant and knowledge pins; an unknown relevant date stays null.
+         */
+        Input_CaseCreate: {
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /**
+             * Ngay Danh Gia
+             * Format: date
+             */
+            ngay_danh_gia: string;
+            /** Moc Ap Dung */
+            moc_ap_dung?: string | null;
+            /** Loai Moc Ap Dung */
+            loai_moc_ap_dung?: string | null;
+            /**
+             * Review Mode
+             * @default FULL_ASSESSMENT
+             * @enum {string}
+             */
+            review_mode: "FULL_ASSESSMENT" | "DRAFT_REVIEW";
+            /**
+             * Document Set Complete
+             * @default false
+             */
+            document_set_complete: boolean;
+            /**
+             * Phien Ban Id
+             * @description Omit to let backend select an allowed deployment release.
+             */
+            phien_ban_id?: string | null;
+        };
+        /** LoginRequest */
+        Input_LoginRequest: {
+            /** User Id */
+            user_id: string;
+            /** Password */
+            password: string;
+        };
+        /** PublishRequest */
+        Input_PublishRequest: {
+            /** Expected Review Revision */
+            expected_review_revision: string;
+        };
+        /** ReviewCreate */
+        Input_ReviewCreate: {
+            target: components["schemas"]["ReviewTarget"];
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "CONFIRM" | "OVERRIDE" | "REQUEST_MORE_EVIDENCE" | "REJECT" | "COMMENT";
+            /** After */
+            after?: {
+                [key: string]: unknown;
+            };
+            /** Reason */
+            reason: string;
+            /** Expected Target Sha256 */
+            expected_target_sha256: string;
+        };
+        /**
+         * LegalBasisItem
+         * @description Display record for one cited ID; verification flags are shown, never upgraded.
+         */
+        LegalBasisItem: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "DOCUMENT" | "ARTICLE" | "REQUIREMENT_VERSION" | "UNKNOWN";
+            /** Title */
+            title: string;
+            /** Number */
+            number?: string | null;
+            /** Excerpt */
+            excerpt?: string | null;
+            /** Requirement Id */
+            requirement_id?: string | null;
+            /** Article Id */
+            article_id?: string | null;
+            /** Effective From */
+            effective_from?: string | null;
+            /** Effective To */
+            effective_to?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Pages */
+            pages?: (number | null)[] | null;
+            /** Url */
+            url?: string | null;
+            /** Verification */
+            verification?: string | null;
+            document?: components["schemas"]["LegalDocumentRef"] | null;
+        };
+        /** LegalDocumentRef */
+        LegalDocumentRef: {
+            /** Van Ban Id */
+            van_ban_id: string;
+            /** So Hieu */
+            so_hieu?: string | null;
+            /** Ten Van Ban */
+            ten_van_ban?: string | null;
+        };
+        /** AssessmentDraft */
+        Output_AssessmentDraft: {
+            context: components["schemas"]["Context"];
+            case: components["schemas"]["AssessmentCase"];
+            contract_profile: components["schemas"]["ContractProfile"];
+            /** Chunks */
+            chunks: components["schemas"]["Chunk"][];
+            /** Extracted Citations */
+            extracted_citations: components["schemas"]["CitationExtraction"][];
+            /** Citation Findings */
+            citation_findings: components["schemas"]["CitationValidation"][];
+            /** Scope */
+            scope: components["schemas"]["ScopeResolution"][];
+            /** Requirements */
+            requirements: components["schemas"]["ApplicableRequirement"][];
+            /** Retrieval */
+            retrieval: components["schemas"]["RetrievalEvidence"][];
+            evaluation: components["schemas"]["PipelineResponse"];
+        };
+        /** CaseRecord */
+        Output_CaseRecord: {
+            case: components["schemas"]["AssessmentCase"];
+            /** Latest Run Id */
+            latest_run_id?: string | null;
+            /** Latest Run Status */
+            latest_run_status?: ("QUEUED" | "RUNNING" | "COMPLETED" | "FAILED") | null;
+            /** Ten Tai Lieu */
+            ten_tai_lieu?: string | null;
+            /** Latest Report Id */
+            latest_report_id?: string | null;
+            /** Requirement Status Counts */
+            requirement_status_counts?: {
+                [key: string]: number;
+            };
+        };
+        /** ContractRecord */
+        Output_ContractRecord: {
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /** Ten Tai Lieu */
+            ten_tai_lieu: string;
+            source: components["schemas"]["SourceDocument"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** HealthResponse */
+        Output_HealthResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "ok";
+            /** Schema Version */
+            schema_version: string;
+        };
         /** KnowledgeResponse */
         Output_KnowledgeResponse: {
             /** Schema Version */
@@ -1282,10 +1156,17 @@ export interface components {
              */
             review_status: "PENDING_HUMAN_REVIEW" | "HUMAN_VERIFIED";
         };
+        /** LegalBasisList */
+        Output_LegalBasisList: {
+            /** Knowledge Snapshot Sha256 */
+            knowledge_snapshot_sha256: string;
+            /** Items */
+            items: components["schemas"]["LegalBasisItem"][];
+        };
         /** Page[CaseRecord] */
         Output_Page_CaseRecord_: {
             /** Items */
-            items: components["schemas"]["Output_CaseRecord"][];
+            items: components["schemas"]["CaseRecord"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -1296,7 +1177,7 @@ export interface components {
         /** Page[ContractRecord] */
         Output_Page_ContractRecord_: {
             /** Items */
-            items: components["schemas"]["Output_ContractRecord"][];
+            items: components["schemas"]["ContractRecord"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -1307,7 +1188,7 @@ export interface components {
         /** Page[ReportRecord] */
         Output_Page_ReportRecord_: {
             /** Items */
-            items: components["schemas"]["Output_ReportRecord"][];
+            items: components["schemas"]["ReportRecord"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -1318,7 +1199,7 @@ export interface components {
         /** Page[ReviewRecord] */
         Output_Page_ReviewRecord_: {
             /** Items */
-            items: components["schemas"]["Output_ReviewRecord"][];
+            items: components["schemas"]["ReviewRecord"][];
             /** Page */
             page: number;
             /** Page Size */
@@ -1326,454 +1207,14 @@ export interface components {
             /** Total */
             total: number;
         };
-        /** PipelineResponse */
-        Output_PipelineResponse: {
-            /**
-             * Contract Version
-             * @default 1.0
-             * @constant
-             */
-            contract_version: "1.0";
-            /** Ca Id */
-            ca_id: string;
-            /** Phien Ban Id */
-            phien_ban_id: string;
-            /** Rule Version */
-            rule_version: string;
-            /** Legal Knowledge Version */
-            legal_knowledge_version: string;
-            /** Knowledge Snapshot Sha256 */
-            knowledge_snapshot_sha256: string;
-            /** Run Id */
-            run_id: string;
-            /** Trace Id */
-            trace_id: string;
-            /**
-             * Contract Name
-             * @default Steps57Result
-             * @constant
-             */
-            contract_name: "Steps57Result";
-            /**
-             * Produced At
-             * Format: date-time
-             */
-            produced_at: string;
-            payload: components["schemas"]["Output_PipelineResult"];
-        };
-        /** PipelineResult */
-        Output_PipelineResult: {
-            /** Criterion Results */
-            criterion_results: components["schemas"]["Output_CriterionResult"][];
-            /** Requirement Results */
-            requirement_results: components["schemas"]["Output_RequirementResult"][];
-            /** Risks */
-            risks: components["schemas"]["Output_RiskResult"][];
-            /** Recommendations */
-            recommendations: components["schemas"]["Output_Recommendation"][];
-            /** Excluded Requirements */
-            excluded_requirements: string[];
-        };
-        /** ProfileEvidence */
-        Output_ProfileEvidence: {
-            /** Doan Id */
-            doan_id: string;
-            /** Trich Dan */
-            trich_dan: string;
-            /** Ky Tu Bat Dau */
-            ky_tu_bat_dau: number;
-            /** Ky Tu Ket Thuc */
-            ky_tu_ket_thuc: number;
-            /** Bang Chung Id */
-            bang_chung_id: string;
-        };
-        /**
-         * ProfileFields
-         * @description C02 fields from the data contract. Unknown values remain null, including booleans.
-         */
-        Output_ProfileFields: {
-            /**
-             * Loai Hop Dong Id
-             * @default null
-             */
-            loai_hop_dong_id: string | null;
-            /**
-             * Doi Tuong
-             * @default null
-             */
-            doi_tuong: string | null;
-            /**
-             * Linh Vuc
-             * @default null
-             */
-            linh_vuc: string | null;
-            /**
-             * He Phap Luat
-             * @default null
-             */
-            he_phap_luat: string | null;
-            /**
-             * Muc Dich Giao Dich
-             * @default null
-             */
-            muc_dich_giao_dich: string | null;
-            /**
-             * Ngay Giao Ket
-             * @default null
-             */
-            ngay_giao_ket: string | null;
-            /**
-             * Ngay Giao Ket Raw
-             * @default null
-             */
-            ngay_giao_ket_raw: string | null;
-            /**
-             * Do Chinh Xac Ngay
-             * @default null
-             */
-            do_chinh_xac_ngay: string | null;
-            /**
-             * Trang Thai Ngay
-             * @default null
-             */
-            trang_thai_ngay: string | null;
-            /**
-             * Loai Moc Ap Dung
-             * @default null
-             */
-            loai_moc_ap_dung: string | null;
-            /**
-             * Ngay Hieu Luc Hop Dong
-             * @default null
-             */
-            ngay_hieu_luc_hop_dong: string | null;
-            /**
-             * Ngay Ban Giao Du Kien
-             * @default null
-             */
-            ngay_ban_giao_du_kien: string | null;
-            /**
-             * Quan He Chu The
-             * @default null
-             */
-            quan_he_chu_the: string | null;
-            /**
-             * Ben Ban Co Von Nuoc Ngoai
-             * @default null
-             */
-            ben_ban_co_von_nuoc_ngoai: boolean | null;
-            /**
-             * Ben Ban La Chu Dau Tu
-             * @default null
-             */
-            ben_ban_la_chu_dau_tu: boolean | null;
-            /**
-             * Ben Ban La Ca Nhan
-             * @default null
-             */
-            ben_ban_la_ca_nhan: boolean | null;
-            /**
-             * Ben Mua La Ca Nhan
-             * @default null
-             */
-            ben_mua_la_ca_nhan: boolean | null;
-            /**
-             * Gia Tri Hop Dong
-             * @default null
-             */
-            gia_tri_hop_dong: string | null;
-            /**
-             * Don Vi Tien
-             * @default null
-             */
-            don_vi_tien: string | null;
-            /**
-             * Tinh Trang Tai San
-             * @default null
-             */
-            tinh_trang_tai_san: string | null;
-            /**
-             * La Nha O Xa Hoi
-             * @default null
-             */
-            la_nha_o_xa_hoi: boolean | null;
-            /**
-             * La Hop Dong Theo Mau
-             * @default null
-             */
-            la_hop_dong_theo_mau: boolean | null;
-            /**
-             * La Nha Xay Moi
-             * @default null
-             */
-            la_nha_xay_moi: boolean | null;
-            /**
-             * Che Do Giao Dich
-             * @default null
-             */
-            che_do_giao_dich: string | null;
-            /**
-             * Muc Dich Su Dung Can Ho
-             * @default null
-             */
-            muc_dich_su_dung_can_ho: string | null;
-        };
-        /** ProfileSubject */
-        Output_ProfileSubject: {
-            /** Chu The Id */
-            chu_the_id: string;
-            /** Vai Tro */
-            vai_tro: string;
-            /**
-             * Ten Chu The
-             * @default null
-             */
-            ten_chu_the: string | null;
-            /**
-             * Loai Chu The
-             * @default null
-             */
-            loai_chu_the: string | null;
-            /**
-             * La Thuong Nhan
-             * @default null
-             */
-            la_thuong_nhan: boolean | null;
-            /**
-             * La Chu The Kinh Doanh
-             * @default null
-             */
-            la_chu_the_kinh_doanh: boolean | null;
-            /**
-             * Human Verified
-             * @default false
-             */
-            human_verified: boolean;
-            /**
-             * Doan Bang Chung Id
-             * @default null
-             */
-            doan_bang_chung_id: string | null;
-        };
-        /** ProfileTimeMarker */
-        Output_ProfileTimeMarker: {
-            /** Moc Id */
-            moc_id: string;
-            /** Loai Moc */
-            loai_moc: string;
-            /**
-             * Gia Tri Raw
-             * @default null
-             */
-            gia_tri_raw: string | null;
-            /**
-             * Ngay
-             * @default null
-             */
-            ngay: string | null;
-            /**
-             * Do Chinh Xac
-             * @default null
-             */
-            do_chinh_xac: string | null;
-            /** Trang Thai */
-            trang_thai: string;
-            /**
-             * Duoc Dung Phan Giai
-             * @default false
-             */
-            duoc_dung_phan_giai: boolean;
-            /**
-             * Trich Xuat Id
-             * @default null
-             */
-            trich_xuat_id: string | null;
-        };
-        /** Recommendation */
-        Output_Recommendation: {
-            /** Khuyen Nghi Ca Id */
-            khuyen_nghi_ca_id: string;
-            /** Ket Qua Rui Ro Id */
-            ket_qua_rui_ro_id: string;
-            /** Khuyen Nghi Id */
-            khuyen_nghi_id: string;
-            /** Noi Dung */
-            noi_dung: string;
-            /** Loai Hanh Dong */
-            loai_hanh_dong: string;
-            /**
-             * Uu Tien
-             * @enum {string}
-             */
-            uu_tien: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "REVIEW_REQUIRED";
-            /** Dieu Kien Snapshot */
-            dieu_kien_snapshot: {
-                [key: string]: unknown;
-            };
-            /** Evidence Ids */
-            evidence_ids: string[];
-            /** Legal Basis Ids */
-            legal_basis_ids: string[];
-            /** Template Snapshot Json */
-            template_snapshot_json: {
-                [key: string]: unknown;
-            };
-            /** Rule Version */
-            rule_version: string;
-            /** Knowledge Snapshot Sha256 */
-            knowledge_snapshot_sha256: string;
-            /**
-             * Model Version
-             * @default TEMPLATE_ENGINE_NO_LLM
-             * @constant
-             */
-            model_version: "TEMPLATE_ENGINE_NO_LLM";
-            /**
-             * Prompt Version
-             * @default NOT_USED
-             * @constant
-             */
-            prompt_version: "NOT_USED";
-            /**
-             * Review Status
-             * @default PENDING
-             * @constant
-             */
-            review_status: "PENDING";
-        };
-        /** ReportCitations */
-        Output_ReportCitations: {
-            /** Citations */
-            citations: components["schemas"]["Output_CitationExtraction"][];
-            /** Findings */
-            findings: components["schemas"]["Output_CitationValidation"][];
-        };
-        /** ReportCompliance */
-        Output_ReportCompliance: {
-            /** Requirement Results */
-            requirement_results: components["schemas"]["Output_RequirementResult"][];
-            /** Criterion Results */
-            criterion_results: components["schemas"]["Output_CriterionResult"][];
-            /** Evidence */
-            evidence?: {
-                [key: string]: unknown;
-            }[];
-            /** Legal Basis */
-            legal_basis?: {
-                [key: string]: unknown;
-            }[];
-        };
-        /** ReportContent */
-        Output_ReportContent: {
-            case: components["schemas"]["Output_AssessmentCase"];
-            contract_profile: components["schemas"]["Output_ContractProfile"];
-            /** Applicable Legal Scope */
-            applicable_legal_scope: components["schemas"]["Output_ApplicableRequirement"][];
-            /** Checklist */
-            checklist: components["schemas"]["Output_ScopeResolution"][];
-            compliance: components["schemas"]["Output_ReportCompliance"];
-            citation_validation: components["schemas"]["Output_ReportCitations"];
-            risks: components["schemas"]["Output_ReportRisks"];
-            /** Recommendations */
-            recommendations: components["schemas"]["Output_Recommendation"][];
-            /** Overall Summary */
-            overall_summary: {
-                [key: string]: unknown;
-            };
-            /** Audit */
-            audit: {
-                [key: string]: unknown;
-            };
-        };
         /** ReportRecord */
         Output_ReportRecord: {
             /** Run Id */
             run_id: string;
             /** Review Revision */
             review_revision: string;
-            report: components["schemas"]["Output_FinalReport"];
-        };
-        /** ReportRisks */
-        Output_ReportRisks: {
-            /** Compliance */
-            compliance: components["schemas"]["Output_RiskResult"][];
-            /** Citation */
-            citation: components["schemas"]["Output_RiskResult"][];
-            /** Verification */
-            verification: components["schemas"]["Output_RiskResult"][];
-        };
-        /** RequirementResult */
-        Output_RequirementResult: {
-            /** Tuan Thu Id */
-            tuan_thu_id: string;
-            /** Yeu Cau Ca Id */
-            yeu_cau_ca_id: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "COMPLIANT" | "PARTIAL" | "NON_COMPLIANT" | "INSUFFICIENT";
-            /** So Tieu Chi Ap Dung */
-            so_tieu_chi_ap_dung: number;
-            /** So Tieu Chi Da Danh Gia */
-            so_tieu_chi_da_danh_gia: number;
-            /** So Unknown */
-            so_unknown: number;
-            /** Rule Version */
-            rule_version: string;
-            /** Giai Thich */
-            giai_thich: string;
-            /** Requirement Snapshot Json */
-            requirement_snapshot_json: {
-                [key: string]: unknown;
-            };
-            /** Coverage Complete */
-            coverage_complete: boolean;
-        };
-        /** RetrievalEvidence */
-        Output_RetrievalEvidence: {
-            /** Truy Xuat Id */
-            truy_xuat_id: string;
-            /** Yeu Cau Ca Id */
-            yeu_cau_ca_id: string;
-            /** Tieu Chi Id */
-            tieu_chi_id: string;
-            /** Doan Id */
-            doan_id: string;
-            /**
-             * Giai Doan
-             * @default FINAL
-             */
-            giai_doan: string;
-            /** Scores */
-            scores?: {
-                [key: string]: number | null;
-            };
-            /** Thu Hang */
-            thu_hang: number;
-            /** Duoc Chon */
-            duoc_chon: boolean;
-            /**
-             * Query Text
-             * @default
-             */
-            query_text: string;
-            /** Retrieval Version */
-            retrieval_version: string;
-            /**
-             * Embedding Model
-             * @default null
-             */
-            embedding_model: string | null;
-            /** Index Version */
-            index_version: string;
-            /**
-             * Rerank Model
-             * @default null
-             */
-            rerank_model: string | null;
-            /** Lan Chay Id */
-            lan_chay_id: string;
+            report: components["schemas"]["FinalReport"];
+            presentation?: components["schemas"]["ReportPresentation"] | null;
         };
         /** ReviewRecord */
         Output_ReviewRecord: {
@@ -1781,78 +1222,11 @@ export interface components {
             run_id: string;
             /** Target Sha256 */
             target_sha256: string;
-            review: components["schemas"]["Output_HumanReview"];
-        };
-        /** ReviewTarget */
-        Output_ReviewTarget: {
-            /** Doi Tuong Loai */
-            doi_tuong_loai: string;
-            /** Doi Tuong Id */
-            doi_tuong_id: string;
-        };
-        /** RiskResult */
-        Output_RiskResult: {
-            /** Ket Qua Rui Ro Id */
-            ket_qua_rui_ro_id: string;
-            /** Ca Id */
-            ca_id: string;
-            /**
-             * Risk Type
-             * @enum {string}
-             */
-            risk_type: "COMPLIANCE" | "CITATION" | "VERIFICATION";
-            /** Rui Ro Id */
-            rui_ro_id: string;
-            /**
-             * Severity
-             * @enum {string}
-             */
-            severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "REVIEW_REQUIRED";
-            source: components["schemas"]["Output_RiskSource"];
-            /** Quy Tac Id */
-            quy_tac_id: string;
-            /** Giai Thich */
-            giai_thich: string;
-            /** Risk Snapshot */
-            risk_snapshot: {
-                [key: string]: unknown;
-            };
-            /** Rule Snapshot Json */
-            rule_snapshot_json: {
-                [key: string]: unknown;
-            };
-            /** Evidence Ids */
-            evidence_ids: string[];
-            /** Legal Basis Ids */
-            legal_basis_ids: string[];
-            /**
-             * Review Status
-             * @default PENDING
-             * @constant
-             */
-            review_status: "PENDING";
-        };
-        /** RiskSource */
-        Output_RiskSource: {
-            /**
-             * Yeu Cau Ca Id
-             * @default null
-             */
-            yeu_cau_ca_id: string | null;
-            /**
-             * Ket Qua Tieu Chi Id
-             * @default null
-             */
-            ket_qua_tieu_chi_id: string | null;
-            /**
-             * Citation Finding Id
-             * @default null
-             */
-            citation_finding_id: string | null;
+            review: components["schemas"]["HumanReview"];
         };
         /** RunAccepted */
         Output_RunAccepted: {
-            context: components["schemas"]["Output_Context"];
+            context: components["schemas"]["Context"];
             /**
              * Status
              * @default QUEUED
@@ -1866,92 +1240,46 @@ export interface components {
         };
         /** RunProgress */
         Output_RunProgress: {
-            context: components["schemas"]["Output_Context"];
+            context: components["schemas"]["Context"];
             /**
              * Status
              * @enum {string}
              */
             status: "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
             /** Stages */
-            stages: components["schemas"]["Output_StageProgress"][];
+            stages: components["schemas"]["StageProgress"][];
             /**
              * Updated At
              * Format: date-time
              */
             updated_at: string;
-            /** @default null */
-            error: components["schemas"]["Output_ApiErrorDetail"] | null;
+            error?: components["schemas"]["ApiErrorDetail"] | null;
         };
-        /** ScopeResolution */
-        Output_ScopeResolution: {
-            /** Yeu Cau Ca Id */
-            yeu_cau_ca_id: string;
-            /** Ca Id */
-            ca_id: string;
-            /** Requirement Id */
-            requirement_id: string;
-            /**
-             * Nhom Phien Ban
-             * @default null
-             */
-            nhom_phien_ban: string | null;
-            /**
-             * Scope Status
-             * @enum {string}
-             */
-            scope_status: "MATCH" | "NO_MATCH" | "UNKNOWN";
-            /** Profile Snapshot Json */
-            profile_snapshot_json?: {
-                [key: string]: unknown;
-            };
-            /** Dieu Kien Snapshot Json */
-            dieu_kien_snapshot_json?: {
-                [key: string]: unknown;
-            };
-            /** Scope Reason */
-            scope_reason: string;
+        /** RunReviewState */
+        Output_RunReviewState: {
+            /** Run Id */
+            run_id: string;
+            /** Review Revision */
+            review_revision: string;
+            /** Targets */
+            targets: components["schemas"]["TargetReviewState"][];
+            /** Blockers */
+            blockers: {
+                [key: string]: string;
+            }[];
         };
-        /** SourceDocument */
-        Output_SourceDocument: {
-            /** Tep Id */
-            tep_id: string;
-            /**
-             * Url Nguon
-             * @default null
-             */
-            url_nguon: string | null;
-            /**
-             * Object Uri
-             * @default null
-             */
-            object_uri: string | null;
-            /** Mime Type */
-            mime_type: string;
-            /** Sha256 */
-            sha256: string;
-        };
-        /** StageProgress */
-        Output_StageProgress: {
-            /**
-             * Stage
-             * @enum {string}
-             */
-            stage: "INTAKE" | "DOCUMENT_INTELLIGENCE" | "SCOPE_RESOLUTION" | "TEMPORAL_RESOLUTION" | "CITATION_VALIDATION" | "RETRIEVAL" | "COMPLIANCE" | "RISK_AGGREGATION" | "RECOMMENDATION";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED";
-            /**
-             * Started At
-             * @default null
-             */
-            started_at: string | null;
-            /**
-             * Finished At
-             * @default null
-             */
-            finished_at: string | null;
+        /** SessionInfo */
+        Output_SessionInfo: {
+            /** Actor Id */
+            actor_id: string;
+            /** Tenant Id */
+            tenant_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Roles */
+            roles: string[];
+            /** Auth Mode */
+            auth_mode: string;
         };
         /** PipelineResponse */
         PipelineResponse: {
@@ -2000,6 +1328,129 @@ export interface components {
             recommendations: components["schemas"]["Recommendation"][];
             /** Excluded Requirements */
             excluded_requirements: string[];
+            /** Diagnostics */
+            diagnostics?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** ProfileEvidence */
+        ProfileEvidence: {
+            /** Doan Id */
+            doan_id: string;
+            /** Trich Dan */
+            trich_dan: string;
+            /** Ky Tu Bat Dau */
+            ky_tu_bat_dau: number;
+            /** Ky Tu Ket Thuc */
+            ky_tu_ket_thuc: number;
+            /** Bang Chung Id */
+            bang_chung_id: string;
+        };
+        /**
+         * ProfileFields
+         * @description C02 fields from the data contract. Unknown values remain null, including booleans.
+         */
+        ProfileFields: {
+            /** Loai Hop Dong Id */
+            loai_hop_dong_id?: string | null;
+            /** Doi Tuong */
+            doi_tuong?: string | null;
+            /** Linh Vuc */
+            linh_vuc?: string | null;
+            /** He Phap Luat */
+            he_phap_luat?: string | null;
+            /** Muc Dich Giao Dich */
+            muc_dich_giao_dich?: string | null;
+            /** Ngay Giao Ket */
+            ngay_giao_ket?: string | null;
+            /** Ngay Giao Ket Raw */
+            ngay_giao_ket_raw?: string | null;
+            /** Do Chinh Xac Ngay */
+            do_chinh_xac_ngay?: string | null;
+            /** Trang Thai Ngay */
+            trang_thai_ngay?: string | null;
+            /** Loai Moc Ap Dung */
+            loai_moc_ap_dung?: string | null;
+            /** Ngay Hieu Luc Hop Dong */
+            ngay_hieu_luc_hop_dong?: string | null;
+            /** Ngay Ban Giao Du Kien */
+            ngay_ban_giao_du_kien?: string | null;
+            /** Quan He Chu The */
+            quan_he_chu_the?: string | null;
+            /** Ben Ban Co Von Nuoc Ngoai */
+            ben_ban_co_von_nuoc_ngoai?: boolean | null;
+            /** Ben Ban La Chu Dau Tu */
+            ben_ban_la_chu_dau_tu?: boolean | null;
+            /** Ben Ban La Ca Nhan */
+            ben_ban_la_ca_nhan?: boolean | null;
+            /** Ben Mua La Ca Nhan */
+            ben_mua_la_ca_nhan?: boolean | null;
+            /** Gia Tri Hop Dong */
+            gia_tri_hop_dong?: string | null;
+            /** Don Vi Tien */
+            don_vi_tien?: string | null;
+            /** Tinh Trang Tai San */
+            tinh_trang_tai_san?: string | null;
+            /** La Nha O Xa Hoi */
+            la_nha_o_xa_hoi?: boolean | null;
+            /** La Giao Dich Dien Tu */
+            la_giao_dich_dien_tu?: boolean | null;
+            /** Co Thoa Thuan Trong Tai */
+            co_thoa_thuan_trong_tai?: boolean | null;
+            /** Co Thoa Thuan Dat Coc */
+            co_thoa_thuan_dat_coc?: boolean | null;
+            /** La Hop Dong Theo Mau */
+            la_hop_dong_theo_mau?: boolean | null;
+            /** La Nha Xay Moi */
+            la_nha_xay_moi?: boolean | null;
+            /** Che Do Giao Dich */
+            che_do_giao_dich?: string | null;
+            /** Muc Dich Su Dung Can Ho */
+            muc_dich_su_dung_can_ho?: string | null;
+        };
+        /** ProfileSubject */
+        ProfileSubject: {
+            /** Chu The Id */
+            chu_the_id: string;
+            /** Vai Tro */
+            vai_tro: string;
+            /** Ten Chu The */
+            ten_chu_the?: string | null;
+            /** Loai Chu The */
+            loai_chu_the?: string | null;
+            /** La Thuong Nhan */
+            la_thuong_nhan?: boolean | null;
+            /** La Chu The Kinh Doanh */
+            la_chu_the_kinh_doanh?: boolean | null;
+            /**
+             * Human Verified
+             * @default false
+             */
+            human_verified: boolean;
+            /** Doan Bang Chung Id */
+            doan_bang_chung_id?: string | null;
+        };
+        /** ProfileTimeMarker */
+        ProfileTimeMarker: {
+            /** Moc Id */
+            moc_id: string;
+            /** Loai Moc */
+            loai_moc: string;
+            /** Gia Tri Raw */
+            gia_tri_raw?: string | null;
+            /** Ngay */
+            ngay?: string | null;
+            /** Do Chinh Xac */
+            do_chinh_xac?: string | null;
+            /** Trang Thai */
+            trang_thai: string;
+            /**
+             * Duoc Dung Phan Giai
+             * @default false
+             */
+            duoc_dung_phan_giai: boolean;
+            /** Trich Xuat Id */
+            trich_xuat_id?: string | null;
         };
         /** Recommendation */
         Recommendation: {
@@ -2053,6 +1504,68 @@ export interface components {
              */
             review_status: "PENDING";
         };
+        /** ReportCitations */
+        ReportCitations: {
+            /** Citations */
+            citations: components["schemas"]["CitationExtraction"][];
+            /** Findings */
+            findings: components["schemas"]["CitationValidation"][];
+        };
+        /** ReportCompliance */
+        ReportCompliance: {
+            /** Requirement Results */
+            requirement_results: components["schemas"]["RequirementResult"][];
+            /** Criterion Results */
+            criterion_results: components["schemas"]["CriterionResult"][];
+            /** Evidence */
+            evidence?: {
+                [key: string]: unknown;
+            }[];
+            /** Legal Basis */
+            legal_basis?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** ReportContent */
+        ReportContent: {
+            case: components["schemas"]["AssessmentCase"];
+            contract_profile: components["schemas"]["ContractProfile"];
+            /** Applicable Legal Scope */
+            applicable_legal_scope: components["schemas"]["ApplicableRequirement"][];
+            /** Checklist */
+            checklist: components["schemas"]["ScopeResolution"][];
+            compliance: components["schemas"]["ReportCompliance"];
+            citation_validation: components["schemas"]["ReportCitations"];
+            risks: components["schemas"]["ReportRisks"];
+            /** Recommendations */
+            recommendations: components["schemas"]["Recommendation"][];
+            /** Overall Summary */
+            overall_summary: {
+                [key: string]: unknown;
+            };
+            /** Audit */
+            audit: {
+                [key: string]: unknown;
+            };
+        };
+        /** ReportRecord */
+        ReportRecord: {
+            /** Run Id */
+            run_id: string;
+            /** Review Revision */
+            review_revision: string;
+            report: components["schemas"]["FinalReport"];
+            presentation?: components["schemas"]["ReportPresentation"] | null;
+        };
+        /** ReportRisks */
+        ReportRisks: {
+            /** Compliance */
+            compliance: components["schemas"]["RiskResult"][];
+            /** Citation */
+            citation: components["schemas"]["RiskResult"][];
+            /** Verification */
+            verification: components["schemas"]["RiskResult"][];
+        };
         /** RequirementResult */
         RequirementResult: {
             /** Tuan Thu Id */
@@ -2080,6 +1593,60 @@ export interface components {
             };
             /** Coverage Complete */
             coverage_complete: boolean;
+        };
+        /** RetrievalEvidence */
+        RetrievalEvidence: {
+            /** Truy Xuat Id */
+            truy_xuat_id: string;
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
+            /** Tieu Chi Id */
+            tieu_chi_id: string;
+            /** Doan Id */
+            doan_id: string;
+            /**
+             * Giai Doan
+             * @default FINAL
+             */
+            giai_doan: string;
+            /** Scores */
+            scores?: {
+                [key: string]: number | null;
+            };
+            /** Thu Hang */
+            thu_hang: number;
+            /** Duoc Chon */
+            duoc_chon: boolean;
+            /**
+             * Query Text
+             * @default
+             */
+            query_text: string;
+            /** Retrieval Version */
+            retrieval_version: string;
+            /** Embedding Model */
+            embedding_model?: string | null;
+            /** Index Version */
+            index_version: string;
+            /** Rerank Model */
+            rerank_model?: string | null;
+            /** Lan Chay Id */
+            lan_chay_id: string;
+        };
+        /** ReviewRecord */
+        ReviewRecord: {
+            /** Run Id */
+            run_id: string;
+            /** Target Sha256 */
+            target_sha256: string;
+            review: components["schemas"]["HumanReview"];
+        };
+        /** ReviewTarget */
+        ReviewTarget: {
+            /** Doi Tuong Loai */
+            doi_tuong_loai: string;
+            /** Doi Tuong Id */
+            doi_tuong_id: string;
         };
         /** RiskResult */
         RiskResult: {
@@ -2132,6 +1699,82 @@ export interface components {
             /** Citation Finding Id */
             citation_finding_id?: string | null;
         };
+        /** ScopeResolution */
+        ScopeResolution: {
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Nhom Phien Ban */
+            nhom_phien_ban?: string | null;
+            /**
+             * Scope Status
+             * @enum {string}
+             */
+            scope_status: "MATCH" | "NO_MATCH" | "UNKNOWN";
+            /** Profile Snapshot Json */
+            profile_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Dieu Kien Snapshot Json */
+            dieu_kien_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Scope Reason */
+            scope_reason: string;
+        };
+        /** SourceDocument */
+        SourceDocument: {
+            /** Tep Id */
+            tep_id: string;
+            /** Url Nguon */
+            url_nguon?: string | null;
+            /** Object Uri */
+            object_uri?: string | null;
+            /** Mime Type */
+            mime_type: string;
+            /** Sha256 */
+            sha256: string;
+        };
+        /** StageProgress */
+        StageProgress: {
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "INTAKE" | "DOCUMENT_INTELLIGENCE" | "SCOPE_RESOLUTION" | "TEMPORAL_RESOLUTION" | "CITATION_VALIDATION" | "RETRIEVAL" | "COMPLIANCE" | "RISK_AGGREGATION" | "RECOMMENDATION";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED";
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+        };
+        /** TargetReviewState */
+        TargetReviewState: {
+            /** Doi Tuong Loai */
+            doi_tuong_loai: string;
+            /** Doi Tuong Id */
+            doi_tuong_id: string;
+            /** Target Sha256 */
+            target_sha256: string;
+            /** Overrides */
+            overrides?: {
+                [key: string]: unknown;
+            };
+            /** Latest Decision */
+            latest_decision?: string | null;
+            /**
+             * Review Count
+             * @default 0
+             */
+            review_count: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2144,6 +1787,182 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** Chunk */
+        Output_Chunk: {
+            /** Doan Id */
+            doan_id: string;
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /** Noi Dung */
+            noi_dung: string;
+            /** Page Start */
+            page_start: number;
+            /** Page End */
+            page_end: number;
+        };
+        /** FinalReport */
+        Output_FinalReport: {
+            /** Bao Cao Id */
+            bao_cao_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Phien Ban Bao Cao */
+            phien_ban_bao_cao: string;
+            report_json: components["schemas"]["ReportContent"];
+            /**
+             * Report Status
+             * @enum {string}
+             */
+            report_status: "DRAFT" | "REVIEW_REQUIRED" | "PUBLISHED";
+            /** Review Status */
+            review_status: string;
+            /** Report Uri */
+            report_uri?: string | null;
+        };
+        /** Evidence */
+        Output_Evidence: {
+            /** Doan Id */
+            doan_id: string;
+            /** Trich Dan */
+            trich_dan: string;
+            /** Ky Tu Bat Dau */
+            ky_tu_bat_dau: number;
+            /** Ky Tu Ket Thuc */
+            ky_tu_ket_thuc: number;
+        };
+        /** TargetReviewState */
+        Output_TargetReviewState: {
+            /** Doi Tuong Loai */
+            doi_tuong_loai: string;
+            /** Doi Tuong Id */
+            doi_tuong_id: string;
+            /** Target Sha256 */
+            target_sha256: string;
+            /** Overrides */
+            overrides?: {
+                [key: string]: unknown;
+            };
+            /** Latest Decision */
+            latest_decision?: string | null;
+            /**
+             * Review Count
+             * @default 0
+             */
+            review_count: number;
+        };
+        /** CriterionResult */
+        Output_CriterionResult: {
+            /** Ket Qua Id */
+            ket_qua_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
+            /** Tieu Chi Id */
+            tieu_chi_id: string;
+            /**
+             * Finding
+             * @enum {string}
+             */
+            finding: "SATISFIED" | "MISSING" | "VIOLATED" | "UNKNOWN";
+            /** Giai Thich */
+            giai_thich: string;
+            gates: components["schemas"]["Gates"];
+            /** Uncertainty Reason */
+            uncertainty_reason?: string | null;
+            /**
+             * Pham Vi Ket Luan
+             * @default CURRENT_CRITERION
+             * @constant
+             */
+            pham_vi_ket_luan: "CURRENT_CRITERION";
+            /** Evidence */
+            evidence?: components["schemas"]["Evidence"][];
+            /** External Evidence */
+            external_evidence?: components["schemas"]["ExternalEvidence"][];
+            /** Legal Basis Ids */
+            legal_basis_ids?: string[];
+            /** Tieu Chi Snapshot Json */
+            tieu_chi_snapshot_json: {
+                [key: string]: unknown;
+            };
+            /** Model Version */
+            model_version: string;
+            /** Prompt Version */
+            prompt_version: string;
+            /** Lan Chay Id */
+            lan_chay_id: string;
+            /**
+             * Review Status
+             * @default PENDING
+             * @constant
+             */
+            review_status: "PENDING";
+            /** Mandatory */
+            mandatory: boolean;
+            /**
+             * Excluded
+             * @default false
+             */
+            excluded: boolean;
+            /** Exclusion Reason */
+            exclusion_reason?: string | null;
+        };
+        /** CitationValidation */
+        Output_CitationValidation: {
+            /** Finding Id */
+            finding_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Vien Dan Id */
+            vien_dan_id: string;
+            /** Normalized Van Ban Id */
+            normalized_van_ban_id?: string | null;
+            /** Relevant Date */
+            relevant_date?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "VALID" | "STALE" | "INVALID" | "UNKNOWN";
+            /** Reason Code */
+            reason_code: string;
+            /** Ly Do */
+            ly_do: string;
+            /**
+             * Domain Status
+             * @enum {string}
+             */
+            domain_status: "MATCH" | "MISMATCH" | "UNKNOWN";
+            /** Finding Verified */
+            finding_verified: boolean;
+            /** Current Status */
+            current_status?: string | null;
+            /** Replacement Van Ban Id */
+            replacement_van_ban_id?: string | null;
+            /** Source Snapshot Json */
+            source_snapshot_json: {
+                [key: string]: unknown;
+            };
+            /** Lan Chay Id */
+            lan_chay_id: string;
+            /** Knowledge Version */
+            knowledge_version: string;
+        };
+        /** AssessmentCase */
+        Output_AssessmentCase: {
+            /** Ca Id */
+            ca_id: string;
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            source: components["schemas"]["SourceDocument"];
+            assessment_context: components["schemas"]["AssessmentTiming"];
+            deployment: components["schemas"]["DeploymentPin"];
+            /** Tenant Id */
+            tenant_id: string;
+            /** Created By */
+            created_by: string;
         };
         /**
          * LegalBasisItem
@@ -2159,136 +1978,379 @@ export interface components {
             kind: "DOCUMENT" | "ARTICLE" | "REQUIREMENT_VERSION" | "UNKNOWN";
             /** Title */
             title: string;
-            /**
-             * Number
-             * @default null
-             */
-            number: string | null;
-            /**
-             * Excerpt
-             * @default null
-             */
-            excerpt: string | null;
-            /**
-             * Requirement Id
-             * @default null
-             */
-            requirement_id: string | null;
-            /**
-             * Article Id
-             * @default null
-             */
-            article_id: string | null;
-            /**
-             * Effective From
-             * @default null
-             */
-            effective_from: string | null;
-            /**
-             * Effective To
-             * @default null
-             */
-            effective_to: string | null;
+            /** Number */
+            number?: string | null;
+            /** Excerpt */
+            excerpt?: string | null;
+            /** Requirement Id */
+            requirement_id?: string | null;
+            /** Article Id */
+            article_id?: string | null;
+            /** Effective From */
+            effective_from?: string | null;
+            /** Effective To */
+            effective_to?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Pages */
+            pages?: (number | null)[] | null;
+            /** Url */
+            url?: string | null;
+            /** Verification */
+            verification?: string | null;
+            document?: components["schemas"]["LegalDocumentRef"] | null;
+        };
+        /** RequirementResult */
+        Output_RequirementResult: {
+            /** Tuan Thu Id */
+            tuan_thu_id: string;
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
             /**
              * Status
-             * @default null
+             * @enum {string}
              */
-            status: string | null;
-            /**
-             * Pages
-             * @default null
-             */
-            pages: (number | null)[] | null;
-            /**
-             * Url
-             * @default null
-             */
-            url: string | null;
-            /**
-             * Verification
-             * @default null
-             */
-            verification: string | null;
-            /** @default null */
-            document: components["schemas"]["Output_LegalDocumentRef"] | null;
-        };
-        /** LegalDocumentRef */
-        Output_LegalDocumentRef: {
-            /** Van Ban Id */
-            van_ban_id: string;
-            /**
-             * So Hieu
-             * @default null
-             */
-            so_hieu: string | null;
-            /**
-             * Ten Van Ban
-             * @default null
-             */
-            ten_van_ban: string | null;
-        };
-        /** LegalBasisList */
-        Output_LegalBasisList: {
-            /** Knowledge Snapshot Sha256 */
-            knowledge_snapshot_sha256: string;
-            /** Items */
-            items: components["schemas"]["Output_LegalBasisItem"][];
-        };
-        /** SessionInfo */
-        Output_SessionInfo: {
-            /** Actor Id */
-            actor_id: string;
-            /** Tenant Id */
-            tenant_id: string;
-            /** Display Name */
-            display_name: string;
-            /** Roles */
-            roles: string[];
-            /** Auth Mode */
-            auth_mode: string;
-        };
-        /** LoginRequest */
-        Input_LoginRequest: {
-            /** User Id */
-            user_id: string;
-            /** Password */
-            password: string;
-        };
-        /** TargetReviewState */
-        Output_TargetReviewState: {
-            /** Doi Tuong Loai */
-            doi_tuong_loai: string;
-            /** Doi Tuong Id */
-            doi_tuong_id: string;
-            /** Target Sha256 */
-            target_sha256: string;
-            /** Overrides */
-            overrides?: {
+            status: "COMPLIANT" | "PARTIAL" | "NON_COMPLIANT" | "INSUFFICIENT";
+            /** So Tieu Chi Ap Dung */
+            so_tieu_chi_ap_dung: number;
+            /** So Tieu Chi Da Danh Gia */
+            so_tieu_chi_da_danh_gia: number;
+            /** So Unknown */
+            so_unknown: number;
+            /** Rule Version */
+            rule_version: string;
+            /** Giai Thich */
+            giai_thich: string;
+            /** Requirement Snapshot Json */
+            requirement_snapshot_json: {
                 [key: string]: unknown;
             };
-            /**
-             * Latest Decision
-             * @default null
-             */
-            latest_decision: string | null;
-            /**
-             * Review Count
-             * @default 0
-             */
-            review_count: number;
+            /** Coverage Complete */
+            coverage_complete: boolean;
         };
-        /** RunReviewState */
-        Output_RunReviewState: {
-            /** Run Id */
-            run_id: string;
-            /** Review Revision */
-            review_revision: string;
-            /** Targets */
-            targets: components["schemas"]["Output_TargetReviewState"][];
-            /** Blockers */
-            blockers: {
+        /** ReportContent */
+        Output_ReportContent: {
+            case: components["schemas"]["AssessmentCase"];
+            contract_profile: components["schemas"]["ContractProfile"];
+            /** Applicable Legal Scope */
+            applicable_legal_scope: components["schemas"]["ApplicableRequirement"][];
+            /** Checklist */
+            checklist: components["schemas"]["ScopeResolution"][];
+            compliance: components["schemas"]["ReportCompliance"];
+            citation_validation: components["schemas"]["ReportCitations"];
+            risks: components["schemas"]["ReportRisks"];
+            /** Recommendations */
+            recommendations: components["schemas"]["Recommendation"][];
+            /** Overall Summary */
+            overall_summary: {
+                [key: string]: unknown;
+            };
+            /** Audit */
+            audit: {
+                [key: string]: unknown;
+            };
+        };
+        /** RiskResult */
+        Output_RiskResult: {
+            /** Ket Qua Rui Ro Id */
+            ket_qua_rui_ro_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /**
+             * Risk Type
+             * @enum {string}
+             */
+            risk_type: "COMPLIANCE" | "CITATION" | "VERIFICATION";
+            /** Rui Ro Id */
+            rui_ro_id: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "REVIEW_REQUIRED";
+            source: components["schemas"]["RiskSource"];
+            /** Quy Tac Id */
+            quy_tac_id: string;
+            /** Giai Thich */
+            giai_thich: string;
+            /** Risk Snapshot */
+            risk_snapshot: {
+                [key: string]: unknown;
+            };
+            /** Rule Snapshot Json */
+            rule_snapshot_json: {
+                [key: string]: unknown;
+            };
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Legal Basis Ids */
+            legal_basis_ids: string[];
+            /**
+             * Review Status
+             * @default PENDING
+             * @constant
+             */
+            review_status: "PENDING";
+        };
+        /**
+         * ContractProfile
+         * @description C02: typed extraction output with nullable facts and explicit provenance.
+         */
+        Output_ContractProfile: {
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            profile: components["schemas"]["ProfileFields"];
+            /** Subjects */
+            subjects?: components["schemas"]["ProfileSubject"][];
+            /** Time Markers */
+            time_markers?: components["schemas"]["ProfileTimeMarker"][];
+            /** Facts */
+            facts?: components["schemas"]["ExtractedFact"][];
+            /** Evidence */
+            evidence?: components["schemas"]["ProfileEvidence"][];
+        };
+        /**
+         * CitationExtraction
+         * @description C03: contract-authored citations; independent of the applicable-law checklist.
+         */
+        Output_CitationExtraction: {
+            /** Vien Dan Id */
+            vien_dan_id: string;
+            /** Hop Dong Id */
+            hop_dong_id: string;
+            /** Raw Text */
+            raw_text: string;
+            normalized: components["schemas"]["CitationNormalization"];
+            extraction: components["schemas"]["CitationExtractionMetadata"];
+            /** Evidence */
+            evidence: components["schemas"]["CitationPosition"][];
+        };
+        /** ScopeResolution */
+        Output_ScopeResolution: {
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Nhom Phien Ban */
+            nhom_phien_ban?: string | null;
+            /**
+             * Scope Status
+             * @enum {string}
+             */
+            scope_status: "MATCH" | "NO_MATCH" | "UNKNOWN";
+            /** Profile Snapshot Json */
+            profile_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Dieu Kien Snapshot Json */
+            dieu_kien_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Scope Reason */
+            scope_reason: string;
+        };
+        /** ApplicableRequirement */
+        Output_ApplicableRequirement: {
+            /** Yeu Cau Ca Id */
+            yeu_cau_ca_id: string;
+            /** Ca Id */
+            ca_id: string;
+            /** Requirement Id */
+            requirement_id: string;
+            /** Requirement Version Id */
+            requirement_version_id?: string | null;
+            /** Nhom Phien Ban */
+            nhom_phien_ban?: string | null;
+            /**
+             * Scope Status
+             * @enum {string}
+             */
+            scope_status: "MATCH" | "NO_MATCH" | "UNKNOWN";
+            /**
+             * Version Status
+             * @enum {string}
+             */
+            version_status: "RESOLVED" | "UNKNOWN";
+            /**
+             * Applicability Status
+             * @enum {string}
+             */
+            applicability_status: "CONFIRMED" | "NOT_APPLICABLE" | "UNKNOWN";
+            /** Moc Id */
+            moc_id?: string | null;
+            /** Loai Moc */
+            loai_moc?: string | null;
+            /** Moc Ap Dung */
+            moc_ap_dung?: string | null;
+            /** Resolution Method */
+            resolution_method?: string | null;
+            /** Profile Snapshot Json */
+            profile_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Dieu Kien Snapshot Json */
+            dieu_kien_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Nguon Snapshot Json */
+            nguon_snapshot_json?: {
+                [key: string]: unknown;
+            };
+            /** Phien Ban Id */
+            phien_ban_id: string;
+            /** Reason */
+            reason?: {
                 [key: string]: string;
+            };
+            /**
+             * Assessment Review
+             * @description Backend review-purpose receipt; separate from legal scope/source snapshots.
+             */
+            assessment_review?: {
+                [key: string]: unknown;
+            };
+        };
+        /** Recommendation */
+        Output_Recommendation: {
+            /** Khuyen Nghi Ca Id */
+            khuyen_nghi_ca_id: string;
+            /** Ket Qua Rui Ro Id */
+            ket_qua_rui_ro_id: string;
+            /** Khuyen Nghi Id */
+            khuyen_nghi_id: string;
+            /** Noi Dung */
+            noi_dung: string;
+            /** Loai Hanh Dong */
+            loai_hanh_dong: string;
+            /**
+             * Uu Tien
+             * @enum {string}
+             */
+            uu_tien: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "REVIEW_REQUIRED";
+            /** Dieu Kien Snapshot */
+            dieu_kien_snapshot: {
+                [key: string]: unknown;
+            };
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Legal Basis Ids */
+            legal_basis_ids: string[];
+            /** Template Snapshot Json */
+            template_snapshot_json: {
+                [key: string]: unknown;
+            };
+            /** Rule Version */
+            rule_version: string;
+            /** Knowledge Snapshot Sha256 */
+            knowledge_snapshot_sha256: string;
+            /**
+             * Model Version
+             * @default TEMPLATE_ENGINE_NO_LLM
+             * @constant
+             */
+            model_version: "TEMPLATE_ENGINE_NO_LLM";
+            /**
+             * Prompt Version
+             * @default NOT_USED
+             * @constant
+             */
+            prompt_version: "NOT_USED";
+            /**
+             * Review Status
+             * @default PENDING
+             * @constant
+             */
+            review_status: "PENDING";
+        };
+        /** ProfileEvidence */
+        Output_ProfileEvidence: {
+            /** Doan Id */
+            doan_id: string;
+            /** Trich Dan */
+            trich_dan: string;
+            /** Ky Tu Bat Dau */
+            ky_tu_bat_dau: number;
+            /** Ky Tu Ket Thuc */
+            ky_tu_ket_thuc: number;
+            /** Bang Chung Id */
+            bang_chung_id: string;
+        };
+        /** KnowledgeInfo */
+        KnowledgeInfo: {
+            /** Schema Version */
+            schema_version: string;
+            /** Knowledge Snapshot Sha256 */
+            knowledge_snapshot_sha256: string;
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /**
+             * Review Status
+             * @enum {string}
+             */
+            review_status: "HUMAN_VERIFIED" | "SOURCE_CHECKED" | "PENDING_HUMAN_REVIEW";
+        };
+        /** CoverageView */
+        CoverageView: {
+            /** Finding Complete */
+            finding_complete?: boolean | null;
+            /** Full Text Complete */
+            full_text_complete?: boolean | null;
+            /** Conclusion Complete */
+            conclusion_complete: boolean;
+            /** Explanation */
+            explanation: string;
+        };
+        /** FindingView */
+        FindingView: {
+            /** Raw Status */
+            raw_status: string;
+            /** Display Status */
+            display_status: string;
+            coverage?: components["schemas"]["CoverageView"] | null;
+            /** Explanation */
+            explanation?: string | null;
+            /** Audit Trace */
+            audit_trace?: string[];
+        };
+        /** RecommendationView */
+        RecommendationView: {
+            /** Text */
+            text: string;
+            /** Unresolved Bindings */
+            unresolved_bindings?: string[];
+        };
+        /** ReportPresentation */
+        ReportPresentation: {
+            /**
+             * Policy Id
+             * @default REPORT_PRESENTATION_V1
+             * @constant
+             */
+            policy_id: "REPORT_PRESENTATION_V1";
+            /** Requirements */
+            requirements: {
+                [key: string]: components["schemas"]["FindingView"];
+            };
+            /** Criteria */
+            criteria: {
+                [key: string]: components["schemas"]["FindingView"];
+            };
+            /** Applicability Versions */
+            applicability_versions: {
+                [key: string]: string;
+            };
+            /** Diagnostics */
+            diagnostics: {
+                [key: string]: unknown;
             }[];
+            /** Recommendations */
+            recommendations: {
+                [key: string]: components["schemas"]["RecommendationView"];
+            };
         };
     };
     responses: never;
@@ -2334,7 +2396,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Output_KnowledgeResponse"];
+                    "application/json": components["schemas"]["KnowledgeInfo"];
                 };
             };
         };
@@ -2742,7 +2804,9 @@ export interface operations {
                  * @example {
                  *       "hop_dong_id": "HD_EXAMPLE",
                  *       "ngay_danh_gia": "2026-10-15",
-                 *       "moc_ap_dung": null
+                 *       "moc_ap_dung": null,
+                 *       "review_mode": "DRAFT_REVIEW",
+                 *       "document_set_complete": true
                  *     }
                  */
                 "application/json": components["schemas"]["Input_CaseCreate"];

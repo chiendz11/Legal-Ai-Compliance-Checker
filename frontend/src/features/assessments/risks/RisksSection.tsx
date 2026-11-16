@@ -1,5 +1,6 @@
 import type { Recommendation, ReportContent, RiskResult } from "../../../shared/api/client";
 import { Empty, MachineText, Section, StatusBadge } from "../../../shared/components/ui";
+import { shortCitationId } from "../../../shared/labels";
 import { RiskDistribution } from "../../reports/distributions";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
@@ -89,7 +90,7 @@ function RiskCard({
       <header className="criterion-head">
         <StatusBadge kind="severity" code={risk.severity} />
         <StatusBadge kind="riskType" code={risk.risk_type} />
-        <strong>{riskTitle(risk)}</strong>
+        <strong>{riskTitle(risk, index)}</strong>
       </header>
       <MachineText text={risk.giai_thich} />
       <div className="links">
@@ -101,8 +102,8 @@ function RiskCard({
           </button>
         )}
         {finding && (
-          <button type="button" className="link" onClick={() => go("citations", finding.finding_id)}>
-            Viện dẫn <code>{finding.vien_dan_id}</code> (
+          <button type="button" className="link" onClick={() => go("citations", finding.finding_id)} title={finding.vien_dan_id}>
+            {shortCitationId(finding.vien_dan_id)} (
             <StatusBadge kind="citation" code={finding.status} />)
           </button>
         )}
@@ -112,7 +113,7 @@ function RiskCard({
       </div>
       <dl className="fields compact">
         <div>
-          <dt>Quy tắc</dt>
+          <dt>Mã quy tắc</dt>
           <dd>
             <code>{risk.quy_tac_id}</code>
           </dd>
@@ -140,7 +141,7 @@ function RiskCard({
               className="link"
               onClick={() => go("recommendations", k.khuyen_nghi_ca_id)}
             >
-              {k.loai_hanh_dong}
+              <StatusBadge kind="actionType" code={k.loai_hanh_dong} />
             </button>
           ))}
         </div>

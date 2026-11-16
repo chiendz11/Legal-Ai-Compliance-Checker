@@ -140,6 +140,7 @@ def validate_legal(
     knowledge: KnowledgeSnapshot,
     *,
     citation_branch_status: str = "COMPLETED",
+    assessment_case=None,
 ):
     validate_context(context, knowledge)
     unique(output.scope, "yeu_cau_ca_id")
@@ -154,6 +155,45 @@ def validate_legal(
     if set(scopes) != {item.yeu_cau_ca_id for item in output.requirements}:
         raise ValueError("Temporal output changed the scope checklist")
     for requirement in output.requirements:
+        declaration = requirement.nguon_snapshot_json.get("assessment_marker")
+        if declaration:
+            if assessment_case is None:
+                raise ValueError("A declared temporal marker requires its persisted C01")
+            timing = assessment_case.assessment_context
+            kind = {"NGAY_GIAO_KET": "SIGNING", "NGAY_SU_DUNG_MAU": "TEMPLATE_USE"}.get(
+                timing.loai_moc_ap_dung, timing.loai_moc_ap_dung
+            )
+            if (
+                declaration.get("source") != "C01_DECLARED"
+                or assessment_case.ca_id != context.ca_id
+                or declaration.get("ca_id") != context.ca_id
+                or assessment_case.hop_dong_id != document.contract_profile.hop_dong_id
+                or declaration.get("marker_type") != kind
+                or requirement.loai_moc != kind
+                or declaration.get("declared_by") != assessment_case.created_by
+                or timing.moc_ap_dung is None
+                or declaration.get("date") != timing.moc_ap_dung.isoformat()
+                or declaration.get("basis")
+                != (
+                    "PLANNED_DRAFT_SCENARIO"
+                    if timing.review_mode == "DRAFT_REVIEW"
+                    else "CALLER_DECLARED"
+                )
+                or (
+                    requirement.moc_ap_dung is not None
+                    and requirement.moc_ap_dung != timing.moc_ap_dung
+                )
+            ):
+                raise ValueError("Temporal marker differs from persisted C01 declaration")
+            if requirement.version_status == "RESOLVED" and any(
+                marker.loai_moc == kind
+                and marker.ngay is not None
+                and marker.ngay != timing.moc_ap_dung
+                for marker in document.contract_profile.time_markers
+            ):
+                raise ValueError(
+                    "A C01 declaration cannot silently override a conflicting C02 date"
+                )
         scope = scopes[requirement.yeu_cau_ca_id]
         if scope.ca_id != context.ca_id or (
             scope.requirement_id,

@@ -20,6 +20,7 @@ import { Empty, LoadState, Notice, Section, StatusBadge } from "../../shared/com
 import { label, type LabelKind } from "../../shared/labels";
 import { useReportNav, type TabId } from "../reports/nav";
 import { criterionText, requirementText, riskTitle } from "../reports/reportIndex";
+import { criterionDisplayStatus, requirementDisplayStatus, type ReportPresentation } from "../reports/assessmentStatus";
 
 type Field = { name: string; title: string; options?: readonly string[]; labels?: LabelKind };
 type Kind = {
@@ -94,10 +95,10 @@ const ACTIONS: { action: ReviewAction; text: string }[] = [
   { action: "COMMENT", text: "Ghi chú" },
 ];
 
-type Machine = { title: string; values: Record<string, unknown>; focus: string };
+type Machine = { title: string; values: Record<string, unknown>; focus: string; displayStatus?: string; displayValues?: Record<string, unknown> };
 
 /** Machine values of each target, read from the report (which never contains reviewer edits). */
-function machineIndex(content: ReportContent) {
+function machineIndex(content: ReportContent, presentation?: ReportPresentation | null) {
   const map = new Map<string, Machine>();
   const put = (kind: string, id: string, machine: Machine) => map.set(`${kind}/${id}`, machine);
   for (const r of content.compliance.requirement_results)
@@ -105,12 +106,14 @@ function machineIndex(content: ReportContent) {
       title: requirementText(r),
       values: r,
       focus: r.yeu_cau_ca_id,
+      displayStatus: presentation?.requirements[r.tuan_thu_id]?.display_status ?? requirementDisplayStatus(r),
     });
   for (const c of content.compliance.criterion_results)
     put("ket_qua_tieu_chi", c.ket_qua_id, {
       title: criterionText(c),
       values: c,
       focus: c.ket_qua_id,
+      displayStatus: presentation?.criteria[c.ket_qua_id]?.display_status ?? criterionDisplayStatus(c),
     });
   for (const f of content.citation_validation.findings)
     put("phat_hien_vien_dan", f.finding_id, {
@@ -130,9 +133,10 @@ function machineIndex(content: ReportContent) {
     });
   for (const k of content.recommendations)
     put("khuyen_nghi_danh_gia", k.khuyen_nghi_ca_id, {
-      title: k.noi_dung,
+      title: presentation?.recommendations[k.khuyen_nghi_ca_id]?.text ?? k.noi_dung,
       values: k,
       focus: k.khuyen_nghi_ca_id,
+      displayValues: { noi_dung: presentation?.recommendations[k.khuyen_nghi_ca_id]?.text ?? k.noi_dung },
     });
   return map;
 }
@@ -151,7 +155,7 @@ const PAGE = 50;
 export function ReviewWorkbench({ record }: { record: ReportRecord }) {
   const caId = record.report.ca_id;
   const state = useReviewState(caId, record.run_id);
-  const machine = useMemo(() => machineIndex(record.report.report_json), [record]);
+  const machine = useMemo(() => machineIndex(record.report.report_json, record.presentation), [record]);
   const [filter, setFilter] = useState<Filter>("all");
   // A run can have hundreds of findings; render them a page at a time.
   const [limit, setLimit] = useState(PAGE);
@@ -267,8 +271,8 @@ function PublishPanel({
         </Notice>
       ) : blockers > 0 ? (
         <Notice tone="warn">
-          Còn {blockers} mục chặn phát hành: kết luận không tuân thủ / tuân thủ một phần, rủi ro
-          cao chưa xác nhận, hoặc đang yêu cầu bổ sung / bị bác bỏ.
+          Còn {blockers} mục chặn phát hành. Mỗi kết quả cần quyết định Xác nhận hoặc Chỉnh sửa;
+          bình luận chưa phải phê duyệt. Yêu cầu bổ sung và Từ chối tiếp tục chặn phát hành.
         </Notice>
       ) : revision === "none" ? (
         <Notice tone="info">Cần ít nhất một review trước khi phát hành.</Notice>
@@ -350,7 +354,18 @@ function TargetCard({
             <div key={field.name}>
               <dt>{field.title}</dt>
               <dd>
-                <FieldValue field={field} value={before} />
+                <FieldValue field={field} value={
+                  (field.name === "status" || field.name === "finding") && machine?.displayStatus
+                    ? machine.displayStatus : machine?.displayValues?.[field.name] ?? before
+                } />
+                {machine?.displayValues?.[field.name] !== undefined &&
+                  machine.displayValues[field.name] !== before && <details className="small muted">
+                    <summary>Nội dung máy nguyên bản đã lưu</summary>
+                    <FieldValue field={field} value={before} />
+                  </details>}
+                {machine?.displayStatus && machine.displayStatus !== before &&
+                  (field.name === "status" || field.name === "finding") &&
+                  <span className="small muted"> · giá trị máy lưu: {String(before)}</span>}
                 {after !== undefined && (
                   <>
                     {" → "}

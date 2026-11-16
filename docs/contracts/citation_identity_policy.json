@@ -1,0 +1,24 @@
+{
+  "policy_id": "C09_CATALOG_IDENTITY_V2",
+  "methods": [
+    "CATALOG_NUMBER_MATCH",
+    "CATALOG_TITLE_YEAR_MATCH",
+    "CONTRACT_NUMBER_ANCHOR_MATCH"
+  ],
+  "title_aliases": {
+    "luat bao ve nguoi tieu dung": "luat bao ve quyen loi nguoi tieu dung"
+  },
+  "title_year": "Exact canonical title and observed promulgation year; require one catalog candidate, never choose by signing/current date.",
+  "contract_anchor": "Same contract, exact canonical title, static reference; one explicit numbered version, EXTRACTED and verified catalog identity. Conflicting versions remain UNKNOWN.",
+  "dynamic_reference": "Do not bind a bare current/future law reference to a static contract anchor.",
+  "number_year_conflict": "MISMATCH, never silently corrected.",
+  "bare_name": "UNKNOWN without unique explicit anchor. A partial catalog having one document does not prove identity.",
+  "provenance": [
+    "identity_policy_id",
+    "catalog_identity_matched",
+    "catalog_number_matched",
+    "checks.identity.anchor_citation_ids"
+  ],
+  "separation": "Resolve C09 identity, then independently check temporal/domain and verified metadata. Never mutate C03 observed number/title/year.",
+  "historical_outputs": "Frozen reports/seed C09 are not rewritten; evaluate new output under this policy version."
+}

@@ -1,159 +1,121 @@
-# Kiến trúc backend theo module
+# Kiến trúc hệ thống và triển khai
 
-Backend là modular monolith Python/FastAPI. Package `legal_checker` dùng src layout tại `backend/src/legal_checker/`; nghiệp vụ và repository được đặt cùng module theo cấu trúc người dùng chọn.
+Cập nhật 05/11/2026. Quyết định chuẩn: [INTEGRATION_V1](../contracts/integration_spec.md).
+Bảng bàn giao H01–H24 mô tả rõ ownership năm người, nguồn dữ liệu và điều kiện nối.
 
-```text
-backend/
-├── src/
-│   ├── legal_checker/
-│   │   ├── main.py
-│   │   ├── api/v1/                 # contracts, assessments, reviews, reports, legal_knowledge
-│   │   ├── core/                   # config, postgres, security, logging, exceptions
-│   │   ├── migrations/             # Alembic env, revisions, SQL baseline, legacy adoption
-│   │   ├── shared/                 # contracts, llm audit, storage, ids, validation
-│   │   ├── modules/
-│   │   │   ├── documents/
-│   │   │   ├── legal_knowledge/
-│   │   │   ├── applicable_law/
-│   │   │   ├── citation_validation/
-│   │   │   ├── retrieval/
-│   │   │   ├── compliance/
-│   │   │   ├── risks/
-│   │   │   ├── recommendations/
-│   │   │   ├── assessments/
-│   │   │   ├── reviews/
-│   │   │   └── reports/
-│   │   ├── workflows/              # assessment_workflow, steps_5_7, handoffs, states
-│   │   └── worker/                 # celery_app, task chạy run và khôi phục run bị mất
-│   └── devtools/                   # Tải dataset, seed SQL và kiểm tra QA
-├── tests/{unit,integration,contract,e2e}/
-├── alembic.ini
-├── pyproject.toml
-└── Dockerfile
-```
+## 1. Modular monolith, API và worker
 
-[Backend README](../backend/README.md) mô tả trạng thái và trách nhiệm từng folder. `frontend`, `scripts`, `docs`, `data`, `configs` và `evals` vẫn ở root repo. Tài liệu BRD/contracts người dùng cung cấp được giữ làm baseline, kể cả các ví dụ cấu trúc cũ trong tài liệu gốc.
-
-## Mapping BRD
-
-| Bước / Chức năng | Module | Dữ liệu và trạng thái |
-|---|---|---|
-| 1–2 Document | `documents` | C01 → C02/C03/chunks; interfaces, chưa có parser/OCR thật |
-| Knowledge | `legal_knowledge` | Repository PostgreSQL và immutable snapshots; curation/versioning là interface |
-| 3A Scope/Temporal | `applicable_law` | C02 → C04 → C05; interfaces |
-| 3B Citation | `citation_validation` | C03 + profile/knowledge → C09; interface độc lập |
-| 4 Retrieval | `retrieval` | C05 + chunks → C06; interfaces |
-| 5 Compliance | `compliance` | C07 có provider/review/grounding, bốn findings, 7 loại criterion và 12 numeric schema; C08 áp dụng AGG_CAN_HO_V1; service compliance-only đã chạy |
-| 6 Risk | `risks` | C07 + C09 → C10; hai mappers, policy guards, source XOR và dedup đã triển khai |
-| 7 Recommendation | `recommendations` | C10 + pinned templates → C11; selection/facts/constraints validation, diagnostics và PENDING |
-| Assessment | `assessments` | Runner offline/replay/save/read/export và PostgreSQL Store; service/API full assessment còn interface |
-| 8 Review | `reviews` | C12 service/repository interfaces, chưa triển khai |
-| 9 Report | `reports` | Builder C13 ghép C10/C11 được cung cấp; chưa export/persist/publish |
-
-## Dependency
-
-- API dùng shared contracts và gọi module service/workflow; API không chứa rules pháp lý.
-- Workflows chọn thứ tự gọi, truyền context/knowledge và kiểm tra bàn giao.
-- Module sở hữu thuật toán, prompts, queries và repository của mình.
-- `core/postgres.py` tạo connection chung; repository sở hữu SQL và transaction. Knowledge và assessment repositories đang dùng PostgreSQL.
-- Module tự sở hữu LLM/embeddings, client/provider/prompt. `shared/llm/audit.py` cung cấp X02 sink/helper dùng chung. `shared/storage/http.py` triển khai đọc nguồn HTTP(S), kiểm tra SHA-256 và cache local cho nhóm A; [hướng dẫn](source_storage.md).
-- Alembic quản lý schema qua `migrations/versions/`; ba revision đầu dùng SQL baseline trong `migrations/sql/`. `scripts.local_db init` chạy tới head và kiểm tra lịch sử/checksum/cấu trúc trước khi tiếp nhận DB dùng runner cũ. Xem [quy trình migration](database_migrations.md).
-- C07 tách proposal AI khỏi review/backend verification; C08 tổng hợp checklist; C10 hợp nhất hai nhánh độc lập; C11 dùng templates đã pin. Các engines/services và `steps_5_7.evaluate` đã triển khai. [Cách chạy, giới hạn và kiểm tra](../backend/src/legal_checker/modules/compliance/README.md).
-- Contracts chỉ mô tả dữ liệu. Runtime không import `devtools`.
-- `main.create_app` và `api.dependencies.build_services` chọn implementations; các Protocol được đặt cùng module sở hữu.
-
-Luồng mục tiêu sau khi triển khai API assessment toàn bộ; hiện chưa có endpoint khởi chạy luồng này:
+Backend Python/FastAPI trong `backend/src/legal_checker/`. Mỗi business module giữ
+logic, prompt, mapper và repository riêng. API không chứa rules pháp lý. Workflow
+truyền DTO giữa module; không tạo HTTP/microservice cho mỗi công đoạn.
 
 ```mermaid
 flowchart TD
-    API[API] --> AS[Assessment service]
-    AS --> W[Workflow]
-    W --> C[Compliance: C07 và C08]
-    C --> R[Risk: C10]
-    CV[Citation: C09] --> R
-    R --> N[Recommendation: C11]
-    AS --> DB[Assessment repository]
-    DB --> CONN[Core database]
-    CONN --> SQL[PostgreSQL]
-    K[Knowledge repository] --> W
+    FE[React frontend] --> API[FastAPI]
+    API --> DB[(PostgreSQL: cases, runs, snapshots, reports)]
+    API --> Q[Redis queue]
+    B[Beat: một scheduler] --> Q
+    Q --> W[Celery worker: cùng backend image]
+    W --> D[Documents: bytes thật, SHA, extraction và writer]
+    D --> L[Scope → Temporal → Retrieval → C07 → C08]
+    D --> C[Citation Validation: C09]
+    L --> R[C10 Risks → C11 Recommendations]
+    C --> R
+    R --> P[C13 draft + diagnostics]
+    P --> DB
+    FE --> H[C12 review → report version → publish/export]
+    H --> API
+    S[Upload/cache/HTTP storage] --> D
 ```
 
-Applicable Law chỉ nhận profile/scope/knowledge; Citation Validation nhận citations/profile/knowledge riêng. C09 hội tụ ở Risk/Report, không sửa C05 hoặc C08. C05 vẫn là context/checklist cho Retrieval và Compliance; C06 chỉ là evidence references.
+`inline` dùng cùng runner trong tiến trình API cho local; `celery` tách xử lý nền.
+SSE/polling đọc trạng thái DB sau F5. Redis là broker at-least-once, PostgreSQL mới
+là nguồn trạng thái và kết quả. Task gửi IDs; claim/lease/recovery chống job lặp/mất.
+COMPLETED và report đầu tiên commit cùng transaction; COMPLETED chưa phải legal approval.
 
-`DraftAssessmentWorkflow` trong `workflows/assessment_workflow.py` ghép implementations
-upstream được inject và chạy bước 5–7. Nó giữ C01 pin, C04/C05/C06, C03/C09 và C07–C11
-trong `AssessmentDraft`, sao chép DTO giữa adapters và kiểm tra C06 trước provider.
-Retrieval/Observation/Citation có thể vắng mặt tường minh: giữ diagnostics và uncertainty,
-không tạo upstream giả. External registry phải được inject độc lập từ backend đáng tin.
-Đây chưa phải hệ thống đã triển khai toàn bộ bước 1–9; fixtures upstream không chứng
-minh chất lượng OCR/LLM/retrieval hoặc thay review pháp lý.
+## 2. Cấu trúc code và dependency
 
-## Điểm đặt code và interfaces còn lại
-
-| Chức năng trước | Nơi sở hữu hiện tại |
+| Folder | Trách nhiệm |
 |---|---|
-| Criterion reasoning + requirement aggregation | `modules/compliance/criterion_reasoner.py`, `requirement_aggregator.py` |
-| Entry point Compliance | `modules/compliance/service.py:evaluate_compliance` |
-| Risk branches | `modules/risks/compliance_mapper.py`, `citation_mapper.py`, `aggregator.py` |
-| Recommendation | `modules/recommendations/generator.py`, `validator.py` |
-| PostgreSQL knowledge reader | `modules/legal_knowledge/repository.py` |
-| PostgreSQL run store | `modules/assessments/repository.py`, connection chung trong `core/postgres.py` |
-| C13 draft | `modules/reports/builder.py` |
-| Document/source/search interfaces | `modules/documents/parser.py`, `shared/storage/source.py`, `modules/retrieval/` |
-| Khởi tạo dependency | `api/dependencies.py`, được gọi từ `main.py` |
+| `api/` | Auth, quyền/tenant, HTTP request/response và lỗi; gọi use case |
+| `core/` | Config, DB connection, logging/metrics/security primitives |
+| `shared/contracts/` | DTO và ràng buộc cấu trúc; dictionary/semantics ở docs/contracts |
+| `shared/storage/` | Đọc upload/HTTP, cache theo hash và kiểm bytes |
+| `shared/llm/` | Types/client/audit dùng khi module chọn; không sở hữu kết luận pháp lý |
+| `modules/` | Documents, legal knowledge, scope/temporal, citations, retrieval, compliance, risks, recommendations, assessments, reviews, reports |
+| `workflows/` | Compose implementations, thứ tự, handoff guards và runner |
+| `worker/` | Inline/Celery queues, tasks, heartbeat/recovery |
+| `migrations/` | Alembic revisions và SQL baselines |
+| `devtools/` | Dataset/seed/update/QA/audit; không import vào business modules |
 
-Không giữ package `app`, `business_modules`, `adapters`, `workflows/interfaces` hay import aliases cho đường dẫn trước. Contracts API được giữ; knowledge/run persistence đã chuyển sang PostgreSQL. Các endpoint hiện có được giữ; routes reviews/reports/contracts mới chỉ có APIRouter rỗng.
-
-Xem [khởi tạo](startup.md), [nối module](module_integration.md) và [hướng dẫn nhóm](huong_dan_trien_khai_module_sau_seed.md).
+`main.create_app` → `api.dependencies.build_services`. Người 4 có thể cung cấp
+CriterionVerificationProvider qua composition, không đặt client hoặc DB query vào
+numeric/aggregation engines. Người 5 nối provider trước C07.
 
 <a id="trạng-thái-skeleton-bước-57"></a>
 
-## Trạng thái triển khai bước 5–7
+## 3. Hiện trạng implementation và giới hạn
 
-Các entrypoint dưới đây đã chạy bằng engines thật, có tests nghiệp vụ và DB integration.
-Chúng là hàm Python thuần nhận context/knowledge và DTO đã validate; DB/HTTP/LLM nằm
-ở repository/provider. `evaluate_compliance` chỉ tạo risks/actions từ compliance;
-`steps_5_7.evaluate` nhận C09 để hợp nhất đủ hai nhánh.
+| Phần | Đã có | Giới hạn cần nghiệm thu |
+|---|---|---|
+| Documents | Upload, PDF text parser, structural chunks, profile/facts/C03, writer | OCR/DOCX parser chưa có; field coverage và citation occurrences cần eval |
+| Scope/Temporal | Rule-based scope và interval resolver từ catalog | Typed field thiếu, marker mapping/history/overlaps cần owner xác nhận |
+| Citation | Identity/temporal/domain/classifier + live provenance | Tên+năm chưa có policy unique identity; UNKNOWN không tự thành VALID |
+| Retrieval | BM25, fact/section metadata và tùy chọn semantic/rerank | Relevance/Recall@K trên annotations; không cần bật hybrid để coi có implementation |
+| C07/C08 | Proposals, gates/grounding/Decimal, deterministic aggregation | Verifier nghiệp vụ phải inject; budget/provider/quote failures còn phải đo |
+| C10/C11 | Hai nhánh risks, provenance, dedup và template actions | Nội dung retry so với thiếu hồ sơ cần nghiệm thu riêng |
+| Workflow/UI | Runs, queue/recovery, status/SSE, history, evidence viewer | E2E corpus thật và failure/recovery; không suy ra chất lượng từ pods Ready |
+| Review/report | C12, versioning, publish, export PDF/DOCX/JSON | Auth/tenant và REVIEW_ALL_FINDINGS_V1 cần nghiệm thu phát hành |
 
-| Module | Input | Output | File triển khai |
-|---|---|---|---|
-| Compliance | C05 + C06 + chunks/facts/observations + knowledge đã pin | C07 rồi C08 | `criterion_reasoner.py`, `grounding_validator.py`, `requirement_aggregator.py`, `service.py` |
-| Risks | C07 + C09 + C05/context/knowledge | C10, giữ provenance hai nhánh | `compliance_mapper.py`, `citation_mapper.py`, `aggregator.py`, `service.py` |
-| Recommendations | C10 + C05/context + knowledge | C11 chờ review | `generator.py`, `validator.py`, `service.py` |
+Các function C07/C08/C10/C11 là API Python nội bộ; không tạo lại routes POST chạy
+riêng bước 5–7 cho frontend. HTTP có 26 operations trong
+[OpenAPI](openapi.design.json); runtime `/openapi.json`, Swagger `/docs`.
 
-`criterion_reasoner.reason` xử lý bốn findings từ Observation đã review bởi backend,
-grounding và 12 numeric schema allowlist. Mỗi criterion của version resolved đều có
-kết quả; C05 unresolved không tạo criterion giả và được C08 giữ INSUFFICIENT. C08
-đối chiếu checklist đầy đủ và thực thi AGG_CAN_HO_V1, không dùng tỷ lệ SATISFIED thay rule.
-C07 thiếu context/contract/hash không được downstream nhận như output đã pin.
+## 4. Dữ liệu và version
 
-C10 có source XOR C07/C09, severity từ catalog và dedup giữ mọi rule match. C09 thiếu
-provenance có diagnostics, không tạo risk khẳng định STALE/INVALID; UNKNOWN chỉ thành
-VERIFICATION khi policy cho phép. C11 bind đúng risk instance, render mọi mapped template
-theo ALL, kiểm tra facts/required elements/constraints và giữ PENDING/NO_LLM metadata.
+Knowledge snapshot SHA, source PDF SHA, extraction/chunk version, dataset release,
+rule/model/prompt, migration và app/image/GitOps revisions là các trục độc lập.
+Schema `v7.4.9` không phải nhãn knowledge hoặc dataset đang dùng.
 
-Các routes POST chạy riêng reasoning/aggregation/risks/recommendations/pipeline đã xóa.
-Contracts dùng để bàn giao nội bộ. API khởi chạy assessment toàn bộ là `POST /api/v1/cases/{ca_id}/runs` (nhóm D, `workflows/runner.py`); xem [kịch bản demo](../guides/demo.md).
+Live `modules` tải bytes thật kể cả URL remote; không fallback expected.
+`modules_di_reference` và `reference` chỉ dev/eval, có nhãn riêng. Split DEV/VAL/TEST
+và ảnh hưởng của chunker được giải thích ở [dataset](../database/dataset_and_corpus.md)
+và [dictionary](../contracts/data_dictionary.md).
 
-Giữ nguyên contracts C01–C13, Knowledge PostgreSQL reader, Store, migrations, scripts tải dataset/seed và dữ liệu tham chiếu đã khóa phiên bản. GET knowledge/run vẫn dùng được. Dữ liệu EXPECTED trong QA là kết quả tham chiếu của phiên bản dựng dataset trước đây; không chứng minh module hiện tại đã triển khai hoặc đã pass eval.
+Live full-pipeline output ở `workflow_runs.draft_json`; report thật ở
+`report_versions`. `assessment_runs` là persistence standalone group C. Normalized
+rows trong workbook/QA giúp dev song song, không tự thay output run mới. Documents
+lưu normalized extraction vì Retrieval hiện đọc metadata DB, chỉ dùng active IDs.
+Xem [bảng nguồn đọc/ghi](../contracts/integration_spec.md#7-persistence-và-nguồn-đọc-thật).
 
-`reports.build_draft_report` chỉ ghép dữ liệu được truyền vào. Caller phải cung cấp `risks=` và `recommendations=` là C10/C11 đã hợp nhất; builder không tự chạy bước 6–7.
+## 5. Triển khai
 
-`modules.assessments.run_group_c` hỗ trợ offline/replay, save, read exact run và export
-vào thư mục mới. Runner không tạo paid client; không gắn reference observations/EXPECTED
-làm đáp án. `Store.save` ghi normalized C07/C08/C10/C11, full DTO, snapshots, pins và
-output lineage trong transaction. Retry cùng input/case/run trả output cũ; input khác
-cùng run conflict. Các đường đọc kiểm tra cả checksum, graph ownership, pinned knowledge,
-normalized rows và lineage trong transaction nhất quán, không chạy lại engines.
+| Môi trường | Thành phần | Mục tiêu |
+|---|---|---|
+| Module local | PostgreSQL riêng + Python; FE nếu cần; inline/offline mặc định | Dev logic và tests độc lập |
+| Local integration k3d | FE/API, worker/Beat, Redis/PostgreSQL PVC, storage cache, ingress/observability | Nghiệm thu ghép, không gọi là production HA |
+| Customer release | Cùng backend module, API và workers scale riêng | Cần auth, source storage/backup/restore, limits, secrets/TLS và nghiệm thu release |
 
-Nhóm D phải dùng `Store.get/get_input/get_lineage` với cặp case/run cụ thể để dựng
-report. Không fallback sang run mới nhất/QA EXPECTED hoặc ghép dữ liệu legacy thiếu
-lineage. Draft/unverified flags vẫn giữ; snapshot không đồng nghĩa phê duyệt pháp lý.
+Infrastructure repo sở hữu cluster/bootstrap; GitOps sở hữu workload desired state;
+app sở hữu migration/seed/update và nghiệp vụ. App merge/build không cập nhật DB.
+Argo chỉ sync branch/revision đang cấu hình, không tự theo main mọi repo.
 
-[Bàn giao nhóm C](group_c_handoff.md) chứa bằng chứng checks và demo save/read,
-mapping DB, lệnh PowerShell và các phụ thuộc ngoài phạm vi. Các phần còn lại là upstream
-thật bước 1–4, review C12, report persistence/export/UI, assessment API và worker.
+Hiện local phase-two theo GitOps `feat/local-phase2-worker-verification`; publish
+app main mặc định update GitOps main. Rollout local cần chọn đúng target branch;
+không đổi Argo branch khi main GitOps chưa có cấu hình tương ứng. Đây là trạng thái
+môi trường ngày 05/11, phải kiểm live trước rollout.
 
-## Audit LLM dùng chung
+Một backend image chạy API/worker/Beat; không cần Dockerfile worker. Tách microservices
+chỉ khi có bằng chứng cần ownership, scale, isolation hoặc lifecycle độc lập mà
+modular monolith không đáp ứng; chưa có yêu cầu phải tách ngay.
 
-`Services.llm_audit` được factory khởi tạo bằng `PostgresLlmAuditSink`, ghi vào bảng `runtime.nhat_ky_goi_llm` có sẵn. Mỗi module inject sink khi khởi tạo service; audit không chọn provider hoặc tạo client. `audit_llm_call` chỉ giữ hashes/metadata, đo latency và ghi từng attempt; không ghi raw prompt, response hoặc API key. Usage/cost chưa biết giữ null. [Quy ước, ví dụ và xử lý lỗi](llm_audit.md).
+## 6. Tài liệu và cách nghiệm thu
+
+- [Hướng dẫn dev](../guides/dev_setup.md), [khởi chạy](../guides/startup.md).
+- [Nguồn PDF/cache](data_flow_and_storage.md), [DB](../database/local_setup.md), [Alembic](../database/migrations.md).
+- [Handoff và ownership](../contracts/integration_spec.md), [nhóm A–D](../modules/README.md).
+- [DevOps/runbook](../devops/local_k3d_argocd_cicd_framework.md), [audit LLM](../guides/llm_audit.md).
+
+Schema pass, unit/DB integration pass, provider thật, eval chất lượng và rollout là
+những bằng chứng khác nhau. Changelog ghi rõ đã chạy gì; không lấy report reference
+hoặc một demo làm chứng nhận toàn hệ thống sẵn sàng khách hàng.

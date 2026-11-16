@@ -103,6 +103,33 @@ def seed():
     return seed
 
 
+def test_seed_restores_explicit_draft_context_and_keeps_legacy_defaults(database_url, seed):
+    seed.tables["ca_danh_gia"][0]["profile_snapshot_json"] = {
+        "review_mode": "DRAFT_REVIEW",
+        "document_set_complete": True,
+    }
+    seed_database(database_url, seed)
+    with connect_postgres(database_url) as connection:
+        rows = connection.execute(
+            "SELECT ca_id,review_mode,document_set_complete FROM runtime.ca_danh_gia ORDER BY ca_id"
+        ).fetchall()
+    assert rows[0]["review_mode"] == "DRAFT_REVIEW"
+    assert rows[0]["document_set_complete"] is True
+    assert rows[1]["review_mode"] == "FULL_ASSESSMENT"
+    assert rows[1]["document_set_complete"] is False
+
+
+def test_seed_rolls_back_invalid_explicit_review_context(database_url, seed):
+    seed.tables["ca_danh_gia"][0]["profile_snapshot_json"] = {
+        "review_mode": "DRAFT_REVIEW",
+        "document_set_complete": "false",
+    }
+    with pytest.raises(SeedError, match="Invalid explicit case review context"):
+        seed_database(database_url, seed)
+    with connect_postgres(database_url) as connection:
+        assert connection.execute("SELECT count(*) n FROM runtime.ca_danh_gia").fetchone()["n"] == 0
+
+
 def test_seed_idempotent_and_preserves_developer_changes(database_url, seed):
     first = seed_database(database_url, seed)
     assert first["inserted"] == sum(seed.counts.values())
@@ -155,7 +182,7 @@ def test_failed_seed_rolls_back_all_rows_but_keeps_alembic_schema(database_url, 
             connection.execute("SELECT version_num FROM dev_meta.alembic_version").fetchone()[
                 "version_num"
             ]
-            == "0007_dataset_updates"
+            == "0008_assessment_review_scope"
         )
 
 

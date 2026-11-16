@@ -9,6 +9,8 @@ __pycache__/
 .env.*
 !.env.example
 data/private/
+# Generated benchmark answers (including held-out evaluator answers) stay out of Git.
+backend/src/legal_checker/modules/benchmarks/data/
 *.sqlite3
 build/
 dist/

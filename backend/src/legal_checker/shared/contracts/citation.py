@@ -1,9 +1,28 @@
 from datetime import date
 from typing import Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
-from legal_checker.shared.contracts.common import Model
+from legal_checker.shared.contracts.common import Context, Model
+
+
+class CitationProvenance(Model):
+    """Required live C09 pins. Legacy records remain readable through CitationValidation.
+
+    Additional source checks are allowed; the producer validates these pins before handoff.
+    This object proves ownership/version identity, not legal correctness of a finding.
+    """
+
+    model_config = ConfigDict(extra="allow")
+    knowledge_snapshot_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    context: Context
+    hop_dong_id: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def matching_snapshot(self):
+        if self.context.knowledge_snapshot_sha256 != self.knowledge_snapshot_sha256:
+            raise ValueError("C09 provenance snapshot differs from context")
+        return self
 
 
 class CitationValidation(Model):

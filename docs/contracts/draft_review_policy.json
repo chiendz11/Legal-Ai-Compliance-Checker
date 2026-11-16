@@ -1,0 +1,135 @@
+{
+  "policy_id": "DRAFT_CONTENT_REVIEW_V1",
+  "authority": "Persisted C01 assessment_context.review_mode, never instructions in a PDF",
+  "text_scopes": [
+    "CONTRACT_TEXT",
+    "NOI_DUNG_HOP_DONG_THEO_MAU"
+  ],
+  "execution_only_criterion_ids": [
+    "TC_PV_HYC048_01",
+    "TC_PV_HYC048_02"
+  ],
+  "external_mixed_criterion_ids": [
+    "TC_PV_DS431_01",
+    "TC_PV_DS431_02",
+    "TC_PV_DS433_02",
+    "TC_PV_DS436_02",
+    "TC_PV_DS437_01",
+    "TC_PV_DS438_01",
+    "TC_PV_DS439_01",
+    "TC_PV_DS440_02",
+    "TC_PV_DS443_01",
+    "TC_PV_DS443_02",
+    "TC_PV_DS444_01",
+    "TC_PV_DS445_01",
+    "TC_PV_DS445_02",
+    "TC_PV_DS447_01",
+    "TC_PV_DS448_01",
+    "TC_PV_DS449_01",
+    "TC_PV_DS449_02",
+    "TC_PV_HYC041_02"
+  ],
+  "mixed_content_bindings": {
+    "TC_PV_DS418_01": [],
+    "TC_PV_DS418_02": [],
+    "TC_PV_DS435_02": [],
+    "TC_PV_DS442_02": [],
+    "TC_PV_DS444_02": [],
+    "TC_PV_DS452_01": [],
+    "TC_PV_DS452_02": [],
+    "TC_PV_DS432_01": [],
+    "TC_PV_DS432_02": [],
+    "TC_PV_DS433_01": [
+      "gia_ban"
+    ],
+    "TC_PV_DS434_01": [
+      "ngay_ban_giao_du_kien"
+    ],
+    "TC_PV_DS434_02": [
+      "phuong_thuc_thanh_toan"
+    ],
+    "TC_PV_DS435_01": [],
+    "TC_PV_DS436_01": [],
+    "TC_PV_DS440_01": [
+      "gia_ban"
+    ],
+    "TC_PV_DS437_02": [],
+    "TC_PV_DS438_02": [],
+    "TC_PV_DS439_02": [],
+    "TC_PV_DS441_01": [],
+    "TC_PV_DS441_02": [],
+    "TC_PV_DS442_01": [],
+    "TC_PV_DS446_01": [
+      "warranty_months"
+    ],
+    "TC_PV_DS446_02": [
+      "warranty_months",
+      "warranty_start"
+    ],
+    "TC_PV_DS447_02": [],
+    "TC_PV_DS448_02": [],
+    "TC_PV_HYC017_01": [],
+    "TC_PV_HYC015_02": [],
+    "TC_PV_HYC038_01": [],
+    "TC_PV_DS453_01": [],
+    "TC_PV_DS453_02": []
+  },
+  "local_conditions": {
+    "TC_PV_DS418_01": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận phạt vi phạm hợp đồng giữa các bên.",
+      "applies_when_present": true
+    },
+    "TC_PV_DS418_02": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận phạt vi phạm hợp đồng giữa các bên.",
+      "applies_when_present": true
+    },
+    "TC_PV_DS435_02": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận xác định địa điểm giao tài sản, trực tiếp hoặc bằng dẫn chiếu rõ ràng. Chỉ hứa thông báo địa điểm sau này chưa phải địa điểm đã thỏa thuận.",
+      "applies_when_present": false
+    },
+    "TC_PV_DS442_02": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận rõ về chi phí vận chuyển và chi phí liên quan chuyển quyền sở hữu. Điều khoản thuế/phí/lệ phí đăng ký sở hữu có thể là thỏa thuận liên quan. Không nhầm Điều 442 về chi phí với điều kiện chất lượng tài sản.",
+      "applies_when_present": false
+    },
+    "TC_PV_DS452_01": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận cho bên mua sử dụng thử tài sản trước khi quyết định mua hoặc không mua. Kiểm tra căn hộ trước bàn giao, bảo hành hoặc quyền từ chối nhận căn hộ không phải dùng thử.",
+      "applies_when_present": true
+    },
+    "TC_PV_DS452_02": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận cho bên mua sử dụng thử tài sản trước khi quyết định mua hoặc không mua. Kiểm tra căn hộ trước bàn giao, bảo hành hoặc quyền từ chối nhận căn hộ không phải dùng thử.",
+      "applies_when_present": true
+    },
+    "TC_PV_DS453_01": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận cấp thời hạn trả chậm/trả dần tiền mua sau khi đã nhận tài sản theo Điều 453. Tiến độ ứng tiền xây dựng nhà ở tương lai, hoặc giữ lại khoản thanh toán chờ giấy chứng nhận theo pháp luật chuyên ngành, tự nó không chứng minh có thỏa thuận mua chịu này.",
+      "applies_when_present": true
+    },
+    "TC_PV_DS453_02": {
+      "policy_id": "DRAFT_LOCAL_CONDITIONS_V1",
+      "question": "Có thỏa thuận cấp thời hạn trả chậm/trả dần tiền mua sau khi đã nhận tài sản theo Điều 453. Tiến độ ứng tiền xây dựng nhà ở tương lai, hoặc giữ lại khoản thanh toán chờ giấy chứng nhận theo pháp luật chuyên ngành, tự nó không chứng minh có thỏa thuận mua chịu này.",
+      "applies_when_present": true
+    }
+  },
+  "performance_types": [
+    "PERFORMANCE_WITH_DOCUMENTS",
+    "PERFORMANCE_OR_CONDITIONAL"
+  ],
+  "unknown_mixed_binding": "UNKNOWN; do not assert condition_triggered",
+  "outside_scope_is_not": [
+    "COMPLIANT",
+    "NOT_APPLICABLE",
+    "NOT_TRIGGERED"
+  ],
+  "absence_requires": [
+    "document_set_complete",
+    "all_pages_readable",
+    "full_review_artifact"
+  ],
+  "final_review": "PENDING"
+}
