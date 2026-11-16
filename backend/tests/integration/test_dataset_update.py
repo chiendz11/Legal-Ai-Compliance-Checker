@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from devtools.database_schema import TABLES
 from devtools.database_seed import SeedError, read_workbook, seed_database
+from devtools.database_stream_seed import seed_large_workbook
 from devtools.database_update import update_database
 from devtools.qa_schema import QA_TABLES
 from legal_checker.core.postgres import connect_postgres
@@ -281,3 +282,75 @@ def test_wrong_reviewed_hash_rolls_back_fresh_seed(empty_database_url, tmp_path)
         seed_database(empty_database_url, read_workbook(path), reviewed_knowledge_sha256="0" * 64)
     with connect_postgres(empty_database_url) as c:
         assert c.execute("SELECT count(*) n FROM runtime.hop_dong").fetchone()["n"] == 0
+
+
+def test_source_checked_seed_pins_snapshot_without_claiming_human_review(
+    empty_database_url, tmp_path
+):
+    path = tmp_path / "source_checked.xlsx"
+    expected = release_file(path, False)
+    seed_database(
+        empty_database_url,
+        read_workbook(path),
+        expected_knowledge_sha256=expected,
+        knowledge_review_status="SOURCE_CHECKED",
+    )
+    snapshot = Knowledge(empty_database_url, snapshot_sha256=expected)
+    assert snapshot.review_status == "SOURCE_CHECKED"
+    assert snapshot.criteria["CRIT"]["human_verified"] is False
+
+
+def test_source_checked_hash_failure_rolls_back_seed(empty_database_url, tmp_path):
+    path = tmp_path / "source_checked.xlsx"
+    release_file(path, False)
+    with pytest.raises(SeedError, match="pinned release hash"):
+        seed_database(
+            empty_database_url,
+            read_workbook(path),
+            expected_knowledge_sha256="0" * 64,
+            knowledge_review_status="SOURCE_CHECKED",
+        )
+    with connect_postgres(empty_database_url) as connection:
+        assert connection.execute("SELECT count(*) n FROM runtime.hop_dong").fetchone()["n"] == 0
+
+
+def test_streaming_seed_keeps_source_review_state_and_is_idempotent(empty_database_url, tmp_path):
+    path = tmp_path / "source_checked.xlsx"
+    expected = release_file(path, False)
+    result = seed_large_workbook(
+        empty_database_url,
+        path,
+        expected_knowledge_sha256=expected,
+        knowledge_review_status="SOURCE_CHECKED",
+    )
+    assert result["status"] == "seeded"
+    assert result["streaming"] is True
+    assert Knowledge(empty_database_url, snapshot_sha256=expected).review_status == "SOURCE_CHECKED"
+    assert seed_large_workbook(empty_database_url, path)["status"] == "already_seeded"
+
+
+def test_streaming_multipart_corruption_rolls_back_business_rows(empty_database_url, tmp_path):
+    from openpyxl import load_workbook
+
+    path = tmp_path / "bad_qa.xlsx"
+    release_file(path, False)
+    workbook = load_workbook(path)
+    case = {
+        "case_id": "QA_BAD",
+        "hop_dong_id": "DOC",
+        "group_id": "CONTROL",
+        "split": "REGRESSION",
+        "case_kind": "CONTROLLED",
+        "label_quality": "SYNTHETIC_SPEC",
+    }
+    table = next(t for t in QA_TABLES if t.name == "case_manifest")
+    workbook["QA_CASE_MANIFEST"].append([case.get(name) for name, _ in table.columns])
+    for number, content in enumerate(("{", "}"), 1):
+        workbook["QA_ARTIFACTS"].append(
+            [f"PART_{number}", "QA_BAD", "INPUT", "Example", "ONE", number, 2, "0" * 64, content]
+        )
+    workbook.save(path)
+    with pytest.raises(SeedError, match="checksum mismatch"):
+        seed_large_workbook(empty_database_url, path)
+    with connect_postgres(empty_database_url) as connection:
+        assert connection.execute("SELECT count(*) n FROM runtime.hop_dong").fetchone()["n"] == 0

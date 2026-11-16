@@ -45,7 +45,7 @@ def test_config_never_displays_key_and_mapping_does_not_load_real_env(monkeypatc
         ("C07_LLM_MAX_OUTPUT_TOKENS", "true"),
         ("C07_LLM_MAX_ATTEMPTS", "0"),
         ("C07_LLM_MAX_ATTEMPTS", "6"),
-        ("C07_LLM_MAX_RETRY_DELAY_SECONDS", "31"),
+        ("C07_LLM_MAX_RETRY_DELAY_SECONDS", "121"),
         ("C07_LLM_MAX_RETRY_DELAY_SECONDS", "-1"),
         ("C07_LLM_TOTAL_TIMEOUT_SECONDS", "0"),
     ],

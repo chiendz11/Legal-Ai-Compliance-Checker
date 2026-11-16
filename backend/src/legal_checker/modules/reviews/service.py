@@ -171,19 +171,15 @@ def publication_blockers(
                 {"doi_tuong_loai": state.kind, "doi_tuong_id": state.target_id, "reason": decision}
             )
             continue
-        effective = state.effective
-        serious = (
-            state.kind == "ket_qua_tuan_thu"
-            and effective.get("status") in ("NON_COMPLIANT", "PARTIAL")
-        ) or (state.kind == "ket_qua_rui_ro" and effective.get("severity") in ("HIGH", "CRITICAL"))
-        if serious and decision not in ("CONFIRM", "OVERRIDE"):
+        if decision not in ("CONFIRM", "OVERRIDE"):
             blockers.append(
                 {
                     "doi_tuong_loai": state.kind,
                     "doi_tuong_id": state.target_id,
-                    "reason": "UNCONFIRMED_SERIOUS_FINDING",
+                    "reason": "UNREVIEWED_FINDING",
                 }
             )
+            continue
     return blockers
 
 

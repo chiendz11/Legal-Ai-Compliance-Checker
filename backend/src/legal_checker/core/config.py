@@ -23,12 +23,18 @@ class Settings:
     source_cache_dir: Path = PROJECT_ROOT / "data/private/source_cache"
     source_download_timeout_seconds: float = 30
     source_max_bytes: int = 100 * 1024 * 1024
-    # "modules": real B/C modules (DI from dataset reference until group A merges);
-    # "reference": replay QA references end to end (integration only); "none": fail clearly.
+    # "modules": read real bytes (including remote URLs), never silently replay QA;
+    # "modules_di_reference": explicitly allow dataset DI for development;
+    # "reference": replay QA end to end; "none": fail clearly.
     assessment_modules: str = "none"
     # C07 observations: "offline" (no paid calls, UNKNOWN per criterion) or "openai".
     assessment_llm: str = "offline"
     assessment_llm_max_calls: int = 20
+    assessment_llm_batch_size: int = 1
+    assessment_llm_max_context_chars: int = 80000
+    # Explicit, hash-bound study sources. None keeps ordinary source-only checks.
+    synthetic_scenario_path: Path | None = None
+    assessment_full_document_review: bool = True
     # "inline" runs jobs in the API process; "celery" sends them to the Redis-backed worker.
     assessment_queue: str = "inline"
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -62,6 +68,19 @@ class Settings:
             assessment_modules=os.getenv("ASSESSMENT_MODULES", "none"),
             assessment_llm=os.getenv("ASSESSMENT_LLM", "offline"),
             assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "20")),
+            assessment_llm_batch_size=int(os.getenv("ASSESSMENT_LLM_BATCH_SIZE", "1")),
+            assessment_llm_max_context_chars=int(
+                os.getenv("ASSESSMENT_LLM_MAX_CONTEXT_CHARS", "80000")
+            ),
+            synthetic_scenario_path=(
+                _project_path(os.environ["SYNTHETIC_SCENARIO_PATH"])
+                if os.getenv("SYNTHETIC_SCENARIO_PATH")
+                else None
+            ),
+            assessment_full_document_review=os.getenv(
+                "ASSESSMENT_FULL_DOCUMENT_REVIEW", "on"
+            ).lower()
+            in {"on", "true", "1"},
             assessment_queue=os.getenv("ASSESSMENT_QUEUE", "inline"),
             redis_url=os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             run_lease_seconds=int(os.getenv("RUN_LEASE_SECONDS", "600")),

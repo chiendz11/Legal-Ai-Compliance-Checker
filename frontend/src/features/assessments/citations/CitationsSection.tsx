@@ -4,8 +4,10 @@ import type {
   ReportContent,
 } from "../../../shared/api/client";
 import { Empty, Fields, Section, StatusBadge, Value } from "../../../shared/components/ui";
+import { friendlyKnowledgeVersion, shortCitationId } from "../../../shared/labels";
 import { displayText } from "../../../shared/text";
 import { CitationDistribution } from "../../reports/distributions";
+import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { riskTitle, useReportIndex } from "../../reports/reportIndex";
 import { useOpenEvidence } from "../evidence/EvidenceViewer";
@@ -91,10 +93,10 @@ function CitationCard({
       </header>
       <blockquote className="raw">{displayText(citation.raw_text)}</blockquote>
       <p className="small muted">
-        <code>{citation.vien_dan_id}</code> · {pages} ·{" "}
+        <strong title={citation.vien_dan_id}>{shortCitationId(citation.vien_dan_id)}</strong> · {pages} ·{" "}
         <StatusBadge kind="extraction" code={citation.extraction.status} />
         {citation.extraction.confidence != null &&
-          ` độ tin cậy ${Math.round(citation.extraction.confidence * 100)}%`}
+          ` (độ tin cậy ${Math.round(citation.extraction.confidence * 100)}%)`}
       </p>
       <Fields
         rows={[
@@ -128,36 +130,46 @@ function FindingBlock({ finding }: { finding: CitationValidation }) {
         </div>
         <div>
           <h4 className="minihead">Trạng thái hiện tại (tham khảo)</h4>
-          <Value value={finding.current_status} />
+          <StatusBadge kind="docStatus" code={finding.current_status} />
         </div>
       </div>
       <p>{finding.ly_do}</p>
       <dl className="fields compact">
         <div>
-          <dt>Mã lý do</dt>
+          <dt>Đánh giá hiệu lực</dt>
           <dd>
-            <code>{finding.reason_code}</code>
+            <StatusBadge kind="reasonCode" code={finding.reason_code} />
           </dd>
         </div>
         <div>
           <dt>Văn bản chuẩn hóa</dt>
           <dd>
-            <Value value={finding.normalized_van_ban_id} />
+            <LegalBasis ids={finding.normalized_van_ban_id ? [finding.normalized_van_ban_id] : []} empty="Chưa chuẩn hóa" />
           </dd>
         </div>
         <div>
           <dt>Văn bản thay thế</dt>
           <dd>
-            <Value value={finding.replacement_van_ban_id} />
+            {finding.replacement_van_ban_id ? (
+              <LegalBasis ids={[finding.replacement_van_ban_id]} />
+            ) : (
+              <span className="muted small">Không có (văn bản vẫn áp dụng)</span>
+            )}
           </dd>
         </div>
         <div>
-          <dt>Knowledge</dt>
-          <dd>
-            <code>{finding.knowledge_version}</code>
+          <dt>Kho tri thức</dt>
+          <dd title={finding.knowledge_version}>
+            <span className="small">{friendlyKnowledgeVersion(finding.knowledge_version)}</span>
           </dd>
         </div>
       </dl>
+      <details className="small muted" style={{ marginTop: "8px" }}>
+        <summary style={{ cursor: "pointer" }}>Chi tiết mã kỹ thuật hệ thống</summary>
+        <p style={{ marginTop: "4px", fontSize: "0.85em" }}>
+          <code>ID Viện dẫn: {finding.vien_dan_id}</code> | <code>Mã lý do: {finding.reason_code}</code> | <code>Mã văn bản: {finding.normalized_van_ban_id}</code>
+        </p>
+      </details>
       {risks.length > 0 && (
         <div className="links">
           Rủi ro viện dẫn:{" "}

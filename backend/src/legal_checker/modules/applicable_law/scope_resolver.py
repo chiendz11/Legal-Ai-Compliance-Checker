@@ -154,6 +154,31 @@ def get_field(profile: ContractProfile, name: str) -> FieldValue:
 
     if name not in type(profile.profile).model_fields:
         return FieldValue(None, note=f"C02 profile has no field {name}")
+    if name in {"la_giao_dich_dien_tu", "co_thoa_thuan_trong_tai"}:
+        facts = [f for f in profile.facts if f.ten_truong == f"profile.{name}"]
+        registry = {e.bang_chung_id for e in profile.evidence}
+        value = getattr(profile.profile, name)
+        if (
+            value is None
+            or not facts
+            or any(
+                type(f.gia_tri_chuan_json) is not bool
+                or f.gia_tri_chuan_json is not value
+                or not f.evidence_ids
+                or not set(f.evidence_ids) <= registry
+                or (
+                    f.trang_thai not in {"EXTRACTED", "VERIFIED", "HUMAN_VERIFIED"}
+                    and not (
+                        name == "co_thoa_thuan_trong_tai"
+                        and value is False
+                        and f.trang_thai == "DERIVED_REVIEW_PENDING"
+                        and f.phuong_phap == "COMPLETE_DRAFT_COURT_ONLY_V1"
+                    )
+                )
+                for f in facts
+            )
+        ):
+            return FieldValue(None, note=f"{name} needs consistent evidenced C02 profile facts")
     evidence = tuple(
         evidence_id
         for fact in profile.facts

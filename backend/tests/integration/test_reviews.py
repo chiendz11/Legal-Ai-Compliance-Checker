@@ -172,8 +172,15 @@ def test_publication_requires_complete_current_review(run):
     assert stale.status_code == 409
     current = run.client.post(f"{run.base}/reports").json()
     blockers = state(run)["blockers"]
-    for item in blockers:  # serious findings still unconfirmed in this fixture, if any
-        review(run, target(run, item["doi_tuong_loai"]), "CONFIRM")
+    for item in blockers:
+        current_target = next(
+            target
+            for target in state(run)["targets"]
+            if target["doi_tuong_loai"] == item["doi_tuong_loai"]
+            and target["doi_tuong_id"] == item["doi_tuong_id"]
+        )
+        response = review(run, current_target, "CONFIRM")
+        assert response.status_code == 201, response.text
     if blockers:
         current = run.client.post(f"{run.base}/reports").json()
     published = publish(run, current["report"]["bao_cao_id"], current["review_revision"])

@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "X02",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "additionalProperties": false,
   "properties": {
     "lan_goi_id": {
@@ -168,8 +171,5 @@
     "ngay_goi"
   ],
   "title": "LlmAudit",
-  "type": "object",
-  "x-contract-id": "X02",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

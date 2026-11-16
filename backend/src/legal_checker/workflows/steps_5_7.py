@@ -9,6 +9,7 @@ from legal_checker.modules.compliance.requirement_aggregator import (
 )
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.modules.recommendations.service import generate_recommendations
+from legal_checker.modules.reports.presentation import requirement_diagnostic_code
 from legal_checker.modules.risks.service import evaluate_risks
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.modules import RecommendationRequest, RiskRequest
@@ -62,7 +63,7 @@ def evaluate(request: PipelineRequest, knowledge: KnowledgeSnapshot) -> Pipeline
             diagnostics.append(
                 {
                     "module": "C08",
-                    "code": "INSUFFICIENT_REQUIREMENT",
+                    "code": requirement_diagnostic_code(requirement),
                     "yeu_cau_ca_id": requirement.yeu_cau_ca_id,
                     "reason": requirement.giai_thich,
                 }

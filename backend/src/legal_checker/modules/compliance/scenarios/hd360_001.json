@@ -1,0 +1,3542 @@
+{
+  "kind": "SYNTHETIC_SCENARIO_V1",
+  "scenario_id": "HD360_001_STUDENT_SYNTHETIC_V1",
+  "not_real_documents": true,
+  "source_sha256": "fcc1745ff7552bbbb341385e7acc9b81fecc50f91212103f03fb5f3fcce27dea",
+  "original_source_sha256": "1f420ef80cc594887c24e82c1f102bbb39423ee98cc394344863c059bb6cde3a",
+  "knowledge_snapshot_sha256": "32d59bcb9efe506389543bae5ee819d2d07d4a322425fa2d3ffa377c1eff698b",
+  "description": "Nguồn giao dịch giả lập theo yêu cầu tech lead; không sửa luật, không human approve kết quả, không là gold eval. Hai biên nhận cố tình vượt tỷ lệ để kiểm thử nhánh vi phạm. Bổ sung proof obligations theo criterion, chứng từ hiện thực hóa giả lập và kiểm tra trực quan nguồn đã pin; không giả chữ ký/con dấu.",
+  "criteria": {
+    "TC_ACCOUNT_2015_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      },
+      "full_document_review": true
+    },
+    "TC_ACCOUNT_2015_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      },
+      "full_document_review": true
+    },
+    "TC_ACCOUNT_2015_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      },
+      "full_document_review": true
+    },
+    "TC_ACCOUNT_2021_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_ACCOUNT_2021_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_ACCOUNT_2021_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_ACCOUNT_2021_04": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_DISPUTE": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_EFFECT": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_HANDOVER": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_LIABILITY": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_METHOD": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_PARTIES": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_PENALTY": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_PRICE": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_PROPERTY": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_RIGHTS": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_TERM": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_TERMINATION": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_COMMERCIAL_CONTENT_WARRANTY": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_DEPOSIT_PRICE": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "numeric_scope": ""
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_APARTMENT": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_ASSET": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_COMMITMENTS": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_DATE": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_EFFECT": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_HANDOVER": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_METHOD": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_PARTIES": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_PRICE": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_RIGHTS": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_SIGN": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_HOUSING_CONTENT_TERM": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_MAINTENANCE_ACCOUNT_CONTENT": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_WARRANTY_ORIGIN_START": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_APT_WARRANTY_ORIGIN_TERM": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_04": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_05": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_06": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_07": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_08": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_09": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_10": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_11": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_12": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_13": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_14": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_15": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_16": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_17": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_18": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_MODEL01_2022_19": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_APT_AREA_NET_2024_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_APT_COMMON_PRIVATE_2024_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_APT_EFFECTIVE_SIGNING_2024_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_APT_PARKING_2024_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC001_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC002_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC003_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC004_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC005_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC005_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC005_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC006_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC007_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC007_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC007_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC008_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC008_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC009_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC009_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC009_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC010_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC011_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC012_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC012_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC013_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC014_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC015_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC015_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC016_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC032_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC033_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC034_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC035_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC036_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC037_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC038_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC039_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC040_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC041_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC042_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC043_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC044_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC045_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC046_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC047_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC049_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC050_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC052_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC053_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC054_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC076_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC077_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC078_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC079_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC080_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC081_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC082_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC083_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC084_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC085_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC087_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC088_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC089_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC090_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC091_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC092_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC093_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC094_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC095_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC096_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC097_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC098_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC100_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC101_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC102_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC104_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "numeric_scope": "DEVELOPER_SALE_MULTIPLE_OWNERS_NEW_RULES",
+        "apartment_value": "1996800000",
+        "apartment_value_unit": "VND",
+        "maintenance_amount": "39936000",
+        "maintenance_amount_unit": "VND",
+        "included_in_sale_payment": true,
+        "denominator_definition_reviewed": true,
+        "denominator_definition_review_reference": "SYNTHETIC_PRICE_BASE_V1",
+        "numeric_target_reviewed": true,
+        "numeric_target_review_reference": "SYNTHETIC_CRITERION_BINDING_V1",
+        "numeric_target": "MAINTENANCE_RATIO"
+      }
+    },
+    "TC_PV_GYC105_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC106_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC109_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC112_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC114_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC116_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC118_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC119_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC121_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC122_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC123_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC124_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC126_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC127_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC128_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC129_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC132_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC136_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC138_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC139_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC140_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC141_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC142_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC145_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC147_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC148_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC150_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC152_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC153_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC154_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "numeric_scope": "NEW_PROJECT",
+        "warranty_months": "60",
+        "warranty_unit": "MONTH",
+        "warranty_start": "COMPLETION_AND_ACCEPTANCE_INTO_USE"
+      }
+    },
+    "TC_PV_GYC158_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC159_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC160_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC161_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC162_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC163_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC164_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC165_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC166_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC167_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC168_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC169_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC170_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC171_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC172_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC173_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC174_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC175_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC176_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC177_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC180_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC181_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC182_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC183_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC184_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC185_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC186_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC187_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC190_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC191_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC192_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC193_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC194_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC195_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC196_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC207_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC208_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC209_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC210_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC211_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC212_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC213_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC214_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC218_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC219_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC220_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC221_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC222_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC223_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC224_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC225_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC228_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC229_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC230_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC231_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC232_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC233_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC234_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC235_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC236_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC237_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC018_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC018_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC019_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC019_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC020_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC021_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC021_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC022_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC022_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      },
+      "full_document_review": true
+    },
+    "TC_PV_HYC023_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC024_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC024_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC025_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC026_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC027_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC027_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC028_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC029_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC037_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC039_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC039_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC040_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC040_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      },
+      "full_document_review": true
+    },
+    "TC_PV_HYC040_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC040_04": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC041_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC042_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC042_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC043_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC043_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC044_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC044_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC045_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC046_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC047_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC048_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "organisation_uses_seal": true
+      },
+      "visual_absence_review": {
+        "method": "SOURCE_PINNED_VISUAL_INSPECTION",
+        "source_sha256": "fcc1745ff7552bbbb341385e7acc9b81fecc50f91212103f03fb5f3fcce27dea",
+        "pages": [
+          25,
+          75
+        ],
+        "content_absent": true,
+        "subject": "chữ ký và họ tên người ký",
+        "review_note": "Đã render và xem vùng kết thúc hợp đồng trang 25 và vùng ký trang 75: các khối BÊN MUA/BÊN BÁN còn trống; không có dấu/chữ ký hoặc chức vụ được điền. Không xác nhận người thật ký."
+      },
+      "external_text": "[SOURCE-PINNED MACHINE VISUAL REVIEW; KHÔNG PHẢI HUMAN APPROVAL] Đã render và xem vùng kết thúc hợp đồng trang 25 và vùng ký trang 75: các khối BÊN MUA/BÊN BÁN còn trống; không có dấu/chữ ký hoặc chức vụ được điền. Không xác nhận người thật ký. Source SHA: fcc1745ff7552bbbb341385e7acc9b81fecc50f91212103f03fb5f3fcce27dea"
+    },
+    "TC_PV_HYC048_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "organisation_uses_seal": true
+      },
+      "visual_absence_review": {
+        "method": "SOURCE_PINNED_VISUAL_INSPECTION",
+        "source_sha256": "fcc1745ff7552bbbb341385e7acc9b81fecc50f91212103f03fb5f3fcce27dea",
+        "pages": [
+          25,
+          75
+        ],
+        "content_absent": true,
+        "subject": "chức vụ người đại diện và con dấu tổ chức",
+        "review_note": "Đã render và xem vùng kết thúc hợp đồng trang 25 và vùng ký trang 75: các khối BÊN MUA/BÊN BÁN còn trống; không có dấu/chữ ký hoặc chức vụ được điền. Không xác nhận người thật ký."
+      },
+      "external_text": "[SOURCE-PINNED MACHINE VISUAL REVIEW; KHÔNG PHẢI HUMAN APPROVAL] Đã render và xem vùng kết thúc hợp đồng trang 25 và vùng ký trang 75: các khối BÊN MUA/BÊN BÁN còn trống; không có dấu/chữ ký hoặc chức vụ được điền. Không xác nhận người thật ký. Source SHA: fcc1745ff7552bbbb341385e7acc9b81fecc50f91212103f03fb5f3fcce27dea"
+    },
+    "TC_PV_HYC049_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC050_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC050_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_REGISTRATION_2024": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_REGISTRATION_2025": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS418_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS418_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS432_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS433_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS434_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS434_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS435_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS436_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS440_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS441_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS442_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS446_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS446_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS453_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS453_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC001_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC002_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC017_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC035_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC038_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC049_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "numeric_scope": "DEVELOPER_SALE_MULTI_OWNER_NHAO_2014",
+        "apartment_value": "1996800000",
+        "apartment_value_unit": "VND",
+        "maintenance_amount": "39936000",
+        "maintenance_amount_unit": "VND",
+        "included_in_sale_payment": true,
+        "denominator_definition_reviewed": true,
+        "denominator_definition_review_reference": "SYNTHETIC_PRICE_BASE_V1",
+        "numeric_target_reviewed": true,
+        "numeric_target_review_reference": "SYNTHETIC_CRITERION_BINDING_V1",
+        "numeric_target": "MAINTENANCE_RATIO"
+      }
+    },
+    "TC_PV_HYC049_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC053_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1",
+        "numeric_scope": "APARTMENT_NEW_BUILD_NHAO_2014",
+        "warranty_months": "60",
+        "warranty_unit": "MONTH",
+        "warranty_start": "COMPLETION_AND_ACCEPTANCE_INTO_USE"
+      }
+    },
+    "TC_PV_HYC053_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true,
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC013_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Nhật ký synthetic: giao dự thảo 10/02/2017, ký 16/02/2017; bên mua có thời gian nghiên cứu và không yêu cầu thêm thời gian trong kịch bản."
+    },
+    "TC_PV_HYC014_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Nhật ký synthetic: bên bán lưu bản hợp đồng trong hồ sơ giao dịch."
+    },
+    "TC_PV_HYC014_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Nhật ký synthetic 01/03/2017: bên mua yêu cầu bản sao do bản gốc hỏng; bên bán đã cấp bản sao cùng ngày."
+    },
+    "TC_PV_HYC030_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Hồ sơ synthetic ngày 01/02/2017: quyền sử dụng đất, hồ sơ dự án, bản vẽ thi công phê duyệt và giấy phép xây dựng đã có trước khi bán."
+    },
+    "TC_PV_HYC030_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Biên bản synthetic ngày 01/02/2017: nghiệm thu hạ tầng kỹ thuật theo tiến độ dự án."
+    },
+    "TC_PV_HYC030_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Biên bản synthetic ngày 01/02/2017: nghiệm thu hoàn thành phần móng tòa nhà trước ngày bán 16/02/2017."
+    },
+    "TC_PV_HYC031_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Nhật ký synthetic: chủ đầu tư thông báo cho cơ quan quản lý nhà ở cấp tỉnh ngày 03/02/2017, trước ngày bán."
+    },
+    "TC_PV_HYC031_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Văn bản synthetic ngày 05/02/2017: có phản hồi đủ điều kiện bán trước ngày bán. Không phải văn bản nhà nước thật."
+    },
+    "TC_PV_HYC032_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Thỏa thuận bảo lãnh synthetic ngày 08/02/2017 với TEST-BANK giả định đáp ứng năng lực: bảo lãnh nghĩa vụ tài chính khi không bàn giao theo cam kết. Không phải bảo lãnh có giá trị thực."
+    },
+    "TC_PV_HYC033_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Phiếu giao nhận synthetic ngày 16/02/2017: bên mua nhận bản sao hợp đồng bảo lãnh."
+    },
+    "TC_PV_HYC034_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true,
+        "numeric_scope": "FUTURE_FORMED_KDBDS_2014",
+        "contract_price": "1996800000",
+        "contract_price_unit": "VND",
+        "first_payment_excluding_deposit": "499200000",
+        "first_payment_excluding_deposit_unit": "VND",
+        "deposit": "0",
+        "deposit_unit": "VND",
+        "deposit_inclusion_reviewed": true,
+        "deposit_inclusion_review_reference": "SYNTHETIC_DEPOSIT_ZERO_V1",
+        "deposit_included_in_first_payment": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Biên nhận synthetic ngày 20/02/2017: đợt đầu 499.200.000 VND trên giá hợp đồng 1.996.800.000 VND; đặt cọc riêng 0 VND, đã kiểm tra không tính trùng."
+    },
+    "TC_PV_HYC035_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Nhật ký synthetic: thu tiền theo các đợt gắn với tiến độ xây dựng trong thỏa thuận; hồ sơ tiến độ được giả định đã đối chiếu."
+    },
+    "TC_PV_HYC036_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true,
+        "numeric_scope": "FUTURE_FORMED_KDBDS_2014",
+        "contract_price": "1996800000",
+        "contract_price_unit": "VND",
+        "cumulative_payment": "1497600000",
+        "cumulative_payment_unit": "VND",
+        "before_handover": true,
+        "before_certificate": true,
+        "foreign_seller_art10_4": false,
+        "ho_so_hop_dong.ben_ban_co_von_nuoc_ngoai": false
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Biên nhận synthetic 20/11/2017: lũy kế thực thu trước bàn giao 1.497.600.000 VND, giá hợp đồng 1.996.800.000 VND; bên bán không có vốn nước ngoài; chưa bàn giao."
+    },
+    "TC_PV_HYC037_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true,
+        "numeric_scope": "FUTURE_FORMED_KDBDS_2014",
+        "contract_price": "1996800000",
+        "contract_price_unit": "VND",
+        "cumulative_payment": "1956864000",
+        "cumulative_payment_unit": "VND",
+        "before_handover": true,
+        "before_certificate": true,
+        "foreign_seller_art10_4": false,
+        "ho_so_hop_dong.ben_ban_co_von_nuoc_ngoai": false
+      },
+      "external_text": "[SYNTHETIC - CHỨNG TỪ HƯ CẤU CHO ĐỒ ÁN] Biên nhận synthetic 20/01/2018: lũy kế thực thu trước cấp giấy chứng nhận 1.956.864.000 VND, giá hợp đồng 1.996.800.000 VND; chưa được cấp giấy chứng nhận."
+    },
+    "TC_PV_DS436_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS437_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true,
+        "agreed_apartment_count": "1",
+        "delivered_apartment_count": "1"
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Biên bản bàn giao giả lập ngày 30/12/2017: giao đúng 01 căn hộ TEST-A3-121 như thỏa thuận, có xác nhận nhận đủ của bên mua; không giao thừa hoặc thiếu."
+    },
+    "TC_PV_DS437_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS438_01": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS438_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS439_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Biên bản bàn giao giả lập xác nhận tài sản đã giao đúng loại căn hộ chung cư TEST-A3-121 và thông số trong hợp đồng, không phải một tài sản khác loại."
+    },
+    "TC_PV_DS439_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS440_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS443_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Phiếu giao nhận và log cung cấp thông tin giả lập 30/12/2017 ghi nhận bên mua đã nhận hướng dẫn sử dụng, không có việc từ chối cung cấp thông tin đã yêu cầu."
+    },
+    "TC_PV_DS445_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS447_01": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS447_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS448_01": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS448_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS449_01": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS449_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS452_01": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_DS452_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "synthetic_non_applicability_reason": "Kịch bản giả lập không phát sinh giao thiếu/thừa, khuyết tật, thiệt hại, chậm trả hoặc thỏa thuận dùng thử tương ứng."
+      },
+      "external_text": "[SYNTHETIC] Nhật ký kịch bản không ghi nhận sự kiện kích hoạt nghĩa vụ có điều kiện của criterion này; không khẳng định mọi hợp đồng thực đều như vậy."
+    },
+    "TC_PV_GYC017_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC018_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC019_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC020_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC021_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC022_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC023_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC024_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC025_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC026_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC027_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC028_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC029_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC030_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC031_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC051_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC226_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_GYC227_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC003_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC004_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC005_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC006_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC006_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC007_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC008_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC009_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC010_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC011_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC012_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC052_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC054_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_HYC054_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "scenario_document_set": "HD360_001_STUDENT_SYNTHETIC_V1"
+      }
+    },
+    "TC_PV_DS431_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Hồ sơ dự án giả lập xác định căn hộ TEST-A3-121 không thuộc danh mục cấm giao dịch; các điều kiện chuyển nhượng theo nhánh căn hộ thương mại đã được đối chiếu trong hồ sơ kịch bản."
+    },
+    "TC_PV_DS431_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Bộ hồ sơ quyền bán giả lập có quyền sử dụng đất dự án, giấy phép, quyền đầu tư xây dựng của bên bán và căn cứ được phép bán căn hộ; đã có trước 16/02/2017. Không phải giấy chứng nhận thật."
+    },
+    "TC_PV_DS432_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "CONTRACT_CONTENT",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Phiếu đối chiếu kỹ thuật giả lập xác định thỏa thuận chất lượng tại Điều 5 và Phụ lục 4 của hợp đồng không thấp hơn tiêu chuẩn bắt buộc/đã công bố của dự án trong kịch bản. Không tạo số hiệu tiêu chuẩn pháp luật mới."
+    },
+    "TC_PV_DS433_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "state_price_regulated": false,
+        "price_agreed": true,
+        "synthetic_non_applicability_reason": "Nhánh giá/phương thức do Nhà nước ấn định không được kích hoạt; các bên đã có thỏa thuận giá."
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Kịch bản căn hộ thương mại tự thỏa thuận giá, không thuộc cơ chế giá hoặc phương thức thanh toán Nhà nước ấn định. Giá đã được thỏa thuận 1.996.800.000 VND."
+    },
+    "TC_PV_DS435_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "delivery_location_agreed": true,
+        "synthetic_non_applicability_reason": "Đã có thỏa thuận địa điểm giao; nhánh mặc định khi không thỏa thuận không kích hoạt."
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Phụ lục thỏa thuận giả lập xác nhận các bên đã chọn địa điểm giao tại căn hộ TEST-A3-121; không cần dùng cơ chế mặc định vì thiếu thỏa thuận."
+    },
+    "TC_PV_DS441_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true,
+        "property_requires_registration": true,
+        "actual_handover_date": "2017-12-30",
+        "ownership_registration_date": "2018-06-01"
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Biên bản bàn giao giả lập ngày 30/12/2017 và hồ sơ đăng ký giả lập ngày 01/06/2018 xác nhận các mốc giao/nhận và hoàn thành đăng ký. Căn hộ thuộc tài sản phải đăng ký; dữ kiện về chuyển rủi ro được đối chiếu theo đúng nhánh và thỏa thuận hợp đồng."
+    },
+    "TC_PV_DS442_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "cost_allocation_agreed": true,
+        "synthetic_non_applicability_reason": "Đã có thỏa thuận phân bổ chi phí, không kích hoạt nhánh mặc định do thiếu thỏa thuận."
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Bảng phân bổ chi phí giả lập xác nhận các bên đã thỏa thuận rõ chi phí giao nhận, thuế/phí và đăng ký trong hợp đồng; không phải trường hợp thiếu thỏa thuận chi phí."
+    },
+    "TC_PV_DS443_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Phiếu giao nhận giả lập 30/12/2017 liệt kê hướng dẫn vận hành căn hộ, hướng dẫn thiết bị, an toàn điện/nước và PCCC/thoát hiểm đã giao bên mua; thông tin tương ứng đúng tài sản thực tế trong kịch bản."
+    },
+    "TC_PV_DS444_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Tra cứu và hồ sơ quyền bán giả lập tại ngày giao kết xác định quyền của chủ đầu tư và không có tranh chấp quyền sở hữu của bên thứ ba đối với căn hộ này. Đây là giả định có chứng từ của đồ án."
+    },
+    "TC_PV_DS444_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "third_party_claim_exists": false,
+        "synthetic_non_applicability_reason": "Không có yêu cầu quyền của bên thứ ba trong kịch bản; nhánh xử lý tranh chấp/ngoại lệ không kích hoạt."
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Nhật ký tranh chấp giả lập không ghi nhận bên thứ ba yêu cầu quyền đối với căn hộ và không có sự kiện bên mua biết hoặc phải biết một quyền đang tranh chấp."
+    },
+    "TC_PV_DS445_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Biên bản kiểm tra giả lập ngày 30/12/2017 đã đối chiếu căn hộ bàn giao với mô tả, danh mục vật liệu/thiết bị Phụ lục 4 và mẫu các bên lựa chọn; không ghi nhận sai khác trong kịch bản."
+    },
+    "TC_PV_HYC015_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Nhật ký công bố điều kiện giao dịch chung giả lập GT-2017-01 ngày 10/02/2017, trước giao kết 16/02/2017; bên mua được tiếp cận tài liệu tại điểm giao dịch."
+    },
+    "TC_PV_HYC015_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Tài liệu điều kiện giao dịch chung giả lập GT-2017-01 ghi thời điểm áp dụng 10/02/2017; hồ sơ giả lập có bản lưu đúng phiên bản áp dụng cho giao dịch này."
+    },
+    "TC_PV_HYC015_03": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Nhật ký/biên bản niêm yết giả lập ngày 10/02/2017 ghi bản GT-2017-01 được đặt tại bảng thông tin ngang tầm mắt ở sảnh điểm giao dịch, để khách hàng có thể nhìn thấy trước giao kết."
+    },
+    "TC_PV_HYC016_01": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Hồ sơ đăng ký mẫu giả lập GT-2017-01 có xác nhận hoàn thành thủ tục đăng ký ngày 01/02/2017, trước ngày bắt đầu sử dụng 10/02/2017. Không phải xác nhận thực của cơ quan nhà nước."
+    },
+    "TC_PV_HYC016_02": {
+      "local_applicability": "MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": true,
+        "registered_template_source_sha256": "1f420ef80cc594887c24e82c1f102bbb39423ee98cc394344863c059bb6cde3a"
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Biên bản đối chiếu mẫu giả lập xác định các điều khoản nền của HD360_001 trùng mẫu GT-2017-01 đã đăng ký; khác biệt chỉ là thông tin giao dịch cá biệt và phần chứng từ synthetic, không thay đổi điều khoản nền."
+    },
+    "TC_PV_HYC017_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "seller_small_scale_individual": false,
+        "synthetic_non_applicability_reason": "Bên bán là doanh nghiệp/chủ đầu tư; điều kiện hộ gia đình/cá nhân bán nhỏ lẻ của criterion không kích hoạt."
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Hồ sơ chủ thể giả lập và C02 xác nhận bên bán là doanh nghiệp/chủ đầu tư, không phải hộ gia đình/cá nhân bán nhỏ lẻ không thường xuyên."
+    },
+    "TC_PV_HYC041_02": {
+      "local_applicability": "NO_MATCH",
+      "exceptions_checked": true,
+      "document_set_complete": true,
+      "facts": {
+        "evaluation_target": "PERFORMANCE",
+        "condition_triggered": false,
+        "state_price_regulated": false,
+        "synthetic_non_applicability_reason": "Không thuộc nhánh Nhà nước ấn định giá trong kịch bản."
+      },
+      "external_text": "[SYNTHETIC - CHỈ DÙNG CHO KỊCH BẢN ĐỒ ÁN] Hồ sơ giao dịch giả lập xác nhận căn hộ thương mại không thuộc nhánh Nhà nước quy định giá cụ thể; các bên tự thỏa thuận giá."
+    }
+  },
+  "revision": "COMPLETE_SOURCE_R4_20261108",
+  "derived_from_source_sha256": "c7949fa0075311d280aa455694c637551c6038e4332fb3ffee643b683a4c1ffc"
+}

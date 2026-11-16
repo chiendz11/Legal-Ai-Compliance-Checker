@@ -235,6 +235,54 @@ def test_satisfied_requires_structured_proposal_and_verified_attributable_eviden
     assert result.legal_basis_ids == ["VERSION_1", "ARTICLE_1", "DOCUMENT_1"]
 
 
+@pytest.mark.parametrize(
+    "target,expected", [("CONTRACT_CONTENT", "UNKNOWN"), ("PERFORMANCE", "UNKNOWN")]
+)
+def test_performance_only_violation_cannot_be_proved_by_contract_clause(
+    reasoning_case, target, expected
+):
+    knowledge, data = reasoning_case
+    rule = knowledge.decision("CRITERION_1", "VIOLATED")
+    rule["dieu_kien_json"].update(
+        conclusion_scope_required=True,
+        allowed_evaluation_targets=["PERFORMANCE"],
+        performance_requires_receipt_evidence=True,
+    )
+    observation = data["payload"]["observations"][0]
+    observation.update(
+        proposed_finding="VIOLATED", facts_verified=True, facts={"evaluation_target": target}
+    )
+    result = only_result(knowledge, data)
+    assert result.finding == expected
+    assert (
+        "does not permit" if target == "CONTRACT_CONTENT" else "external evidence"
+    ) in result.uncertainty_reason
+
+
+@pytest.mark.parametrize(
+    "targets",
+    [[], "PERFORMANCE", ["OTHER"], ["PERFORMANCE", "PERFORMANCE"], [None], [{"malformed": True}]],
+)
+def test_invalid_target_allowlist_is_rejected(reasoning_case, targets):
+    knowledge, data = reasoning_case
+    knowledge.decision("CRITERION_1", "SATISFIED")["dieu_kien_json"].update(
+        conclusion_scope_required=True, allowed_evaluation_targets=targets
+    )
+    assert_unknown(only_result(knowledge, data), "allowed_evaluation_targets")
+
+
+def test_allowlisted_content_keeps_positive_gate_requirements(reasoning_case):
+    knowledge, data = reasoning_case
+    knowledge.decision("CRITERION_1", "SATISFIED")["dieu_kien_json"].update(
+        conclusion_scope_required=True, allowed_evaluation_targets=["CONTRACT_CONTENT"]
+    )
+    observation = data["payload"]["observations"][0]
+    observation.update(facts_verified=True, facts={"evaluation_target": "CONTRACT_CONTENT"})
+    assert only_result(knowledge, data).finding == "SATISFIED"
+    observation["gates"]["source_verified"] = False
+    assert only_result(knowledge, data).finding == "UNKNOWN"
+
+
 def test_result_preserves_provenance_and_does_not_mutate_inputs(reasoning_case):
     knowledge, data = reasoning_case
     request = ReasoningRequest.model_validate(data)

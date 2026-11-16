@@ -7,6 +7,32 @@ from legal_checker.shared.contracts.citation import CitationExtraction
 from legal_checker.shared.contracts.common import Model
 
 
+class DocumentReadCoverage(Model):
+    """Read availability from one exact extraction, not a semantic absence attestation.
+
+    Text on every page does not prove OCR accuracy, complete reading order, or receipt of
+    all related annexes. A verifier needs independent checks before asserting absence.
+    """
+
+    hop_dong_id: str = Field(min_length=1)
+    source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    extraction_version: str = Field(min_length=1)
+    page_count: int = Field(ge=1)
+    unreadable_pages: list[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def valid_pages(self):
+        if len(self.unreadable_pages) != len(set(self.unreadable_pages)) or any(
+            page < 1 or page > self.page_count for page in self.unreadable_pages
+        ):
+            raise ValueError("Unreadable pages must be unique physical pages in this extraction")
+        return self
+
+    @property
+    def all_pages_have_text(self) -> bool:
+        return not self.unreadable_pages
+
+
 class Chunk(Model):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
 
@@ -80,6 +106,9 @@ class ProfileFields(Model):
     don_vi_tien: str | None = None
     tinh_trang_tai_san: str | None = None
     la_nha_o_xa_hoi: bool | None = Field(default=None, strict=True)
+    la_giao_dich_dien_tu: bool | None = Field(default=None, strict=True)
+    co_thoa_thuan_trong_tai: bool | None = Field(default=None, strict=True)
+    co_thoa_thuan_dat_coc: bool | None = Field(default=None, strict=True)
     la_hop_dong_theo_mau: bool | None = Field(default=None, strict=True)
     la_nha_xay_moi: bool | None = Field(default=None, strict=True)
     che_do_giao_dich: str | None = None

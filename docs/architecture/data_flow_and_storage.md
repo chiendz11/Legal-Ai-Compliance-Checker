@@ -120,7 +120,7 @@ class DocumentParsingService:
 
 Đây là ví dụ nối storage → reader. Nhóm A vẫn cần triển khai reader, OCR, chunking,
 profile/citation extraction, mapper và repository để trả `DocumentIntelligenceResult`.
-Storage không tự được gắn vào workflow skeleton chưa có implementation nhóm A.
+Composition đã gắn RoutingSourceStorage vào Documents. modules đọc bytes thật qua upload/cache/HTTP; chỉ modules_di_reference cho phép QA DI fallback trong DEV/EVAL.
 
 ## Lỗi và quản lý cache
 
@@ -153,5 +153,5 @@ pytest -q -c backend/pyproject.toml backend/tests/integration/test_source_storag
 ```
 
 Các kiểm tra HTTP/cache dùng server local, không cần Supabase. Test khởi tạo dependency
-factory cần `TEST_DATABASE_URL` như [hướng dẫn tests](../backend/tests/README.md).
+factory cần `TEST_DATABASE_URL` như [hướng dẫn tests](../../backend/README.md).
 Kiểm thử chất lượng parser/OCR là phần riêng của nhóm A.

@@ -25,7 +25,7 @@ from sqlalchemy import text
 
 ROOT = files("legal_checker.migrations")
 BASELINES = json.loads(ROOT.joinpath("legacy_baselines.json").read_text(encoding="utf-8"))
-HEAD = "0007_dataset_updates"
+HEAD = "0008_assessment_review_scope"
 # Objects added after the frozen legacy baseline 3 (revisions 0004+).
 POST_BASELINE = {
     "runtime.workflow_runs",
@@ -88,9 +88,11 @@ def test_fresh_upgrade_matches_frozen_schema_and_is_idempotent(empty_database_ur
         with engine.begin() as connection:
             fingerprints = structure_fingerprints(connection)
             assert set(fingerprints) - set(BASELINES["3"]["objects"]) == POST_BASELINE
-            assert {k: v for k, v in fingerprints.items() if k not in POST_BASELINE} == BASELINES[
-                "3"
-            ]["objects"]
+            assert {
+                k: v
+                for k, v in fingerprints.items()
+                if k not in POST_BASELINE and k != "runtime.ca_danh_gia"
+            } == {k: v for k, v in BASELINES["3"]["objects"].items() if k != "runtime.ca_danh_gia"}
             assert not connection.execute(
                 text("SELECT to_regclass('dev_meta.schema_migrations')")
             ).scalar_one()

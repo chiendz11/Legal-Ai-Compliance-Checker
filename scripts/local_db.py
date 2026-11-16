@@ -15,9 +15,7 @@ from legal_checker.migrations.manager import upgrade_database
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-DEFAULT_DATABASE_URL = (
-    "postgresql://legal_checker:legal_checker_local_only@127.0.0.1:5433/legal_checker_dev"
-)
+DEFAULT_DATABASE_URL = "postgresql://legal_checker:legal_checker_local_only@127.0.0.1:5433/legal_checker_dev_pdfv4r2_20261110"
 
 
 def main() -> None:
@@ -40,10 +38,29 @@ def main() -> None:
     update.add_argument("--knowledge-snapshot-sha256")
     update.add_argument("--dry-run", action="store_true", help="Plan in a rolled-back transaction")
     commands.add_parser("check", help="Show record counts and sample case IDs")
+    commands.add_parser("align-runtime", help="Create additive TEAM catalog revision for runtime")
+    defaults = commands.add_parser(
+        "align-content-defaults", help="Create source-checked Civil Code default-rule revision"
+    )
+    defaults.add_argument("--parent-sha256", required=True)
     args = parser.parse_args()
     manifest = json.loads(
         (Path(__file__).resolve().parents[1] / "configs/dataset_dev_validation.json").read_text()
     )
+    if args.command == "align-runtime":
+        from legal_checker.modules.legal_knowledge.runtime_alignment import (
+            apply_revision,
+        )
+
+        print(json.dumps(apply_revision(args.database_url), indent=2))
+        return
+    if args.command == "align-content-defaults":
+        from legal_checker.modules.legal_knowledge.content_defaults_revision import (
+            apply_revision,
+        )
+
+        print(json.dumps(apply_revision(args.database_url, args.parent_sha256), indent=2))
+        return
     if args.command == "init":
         database = conninfo_to_dict(args.database_url).get("dbname")
         if not database or database in ("postgres", "template0", "template1"):
@@ -63,8 +80,52 @@ def main() -> None:
     elif args.command in ("seed", "preview"):
         if args.workbook is None:
             parser.error("Provide --workbook or SEED_WORKBOOK_PATH in .env")
-        seed = read_workbook(args.workbook)
         pinned = manifest if args.workbook.name == manifest["workbook"] else {}
+        if args.command == "preview" and args.workbook.stat().st_size > 64 * 1024 * 1024:
+            from devtools.database_schema import BY_NAME
+            from devtools.qa_schema import QA_TABLES
+            from devtools.workbook_stream import StreamWorkbook
+
+            with StreamWorkbook(args.workbook) as workbook:
+                if pinned and workbook.sha256 != pinned["required_files"][pinned["workbook"]]:
+                    parser.error("Workbook checksum differs from the pinned release")
+                counts = {
+                    table.name: sum(1 for _ in workbook.records(table.name, table))
+                    for table in BY_NAME.values()
+                }
+                qa_counts = {
+                    table.name: sum(1 for _ in workbook.records(sheet, table))
+                    for table in QA_TABLES
+                    if (sheet := "QA_" + table.name.upper()) in workbook.sheets
+                }
+                print(
+                    json.dumps(
+                        {
+                            "source_sha256": workbook.sha256,
+                            "tables": counts,
+                            "qa_tables": qa_counts,
+                            "streaming": True,
+                        },
+                        indent=2,
+                    )
+                )
+            return
+        if args.command == "seed" and args.workbook.stat().st_size > 64 * 1024 * 1024:
+            from devtools.database_stream_seed import seed_large_workbook
+
+            result = seed_large_workbook(
+                args.database_url,
+                args.workbook,
+                expected_source_sha256=pinned.get("required_files", {}).get(pinned.get("workbook")),
+                expected_knowledge_sha256=pinned.get("knowledge_snapshot_sha256"),
+                knowledge_review_status=pinned.get(
+                    "knowledge_review_status",
+                    "HUMAN_VERIFIED" if pinned.get("review_revision") else "DEV_UNVERIFIED",
+                ),
+            )
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        seed = read_workbook(args.workbook)
         if pinned and seed.source_sha256 != pinned["required_files"][pinned["workbook"]]:
             parser.error("Workbook checksum differs from the pinned release")
         if args.command == "preview":
@@ -89,6 +150,10 @@ def main() -> None:
                             if pinned.get("review_revision")
                             else None
                         ),
+                        expected_knowledge_sha256=pinned.get("knowledge_snapshot_sha256"),
+                        knowledge_review_status=pinned.get(
+                            "knowledge_review_status", "DEV_UNVERIFIED"
+                        ),
                     ),
                     indent=2,
                 )
@@ -97,6 +162,11 @@ def main() -> None:
         if args.workbook is None:
             parser.error("Provide --workbook or SEED_WORKBOOK_PATH in .env")
         pinned = manifest if args.workbook.name == manifest["workbook"] else {}
+        if pinned.get("migration_strategy") == "FRESH_DATABASE_REQUIRED":
+            parser.error(
+                "This release rebuilds requirement/runtime identities. "
+                "Seed a fresh local database and keep the old database/history."
+            )
         version = args.legal_knowledge_version or pinned.get("legal_knowledge_version")
         if not version:
             parser.error("Provide --legal-knowledge-version or use the pinned release workbook")

@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C12",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "$defs": {
     "ReviewTarget": {
       "additionalProperties": false,
@@ -87,8 +90,5 @@
     "phien_ban_id"
   ],
   "title": "HumanReview",
-  "type": "object",
-  "x-contract-id": "C12",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

@@ -134,3 +134,46 @@ def test_output_validates_as_document_intelligence_result():
         citations=[r.to_contract() for r in records],
     )
     validate_document(case, result)
+
+
+def test_citation_split_by_chunker_is_joined_with_exact_source_mentions():
+    import hashlib
+    from dataclasses import replace
+
+    from legal_checker.modules.documents.chunker import ChunkRecord
+
+    left = "Căn cứ Luật Kinh doanh"
+    right = " Bất động sản số 66/2014/QH13 ngày 25/11/2014;"
+
+    def chunk(key, text, start, order):
+        return ChunkRecord(
+            key,
+            HD,
+            order,
+            1,
+            1,
+            None,
+            text,
+            hashlib.sha256(text.encode()).hexdigest(),
+            start,
+            start + len(text),
+        )
+
+    a, b = chunk("A", left, 0, 1), chunk("B", right, len(left), 2)
+    [record] = extract_citations([a, b], version="new")
+    assert record.so_hieu == "66/2014/QH13"
+    assert record.ten_van_ban == "Luật Kinh doanh Bất động sản"
+    assert record.raw_text == "Luật Kinh doanh" + right[: right.index(" ngày")]
+    assert {m.doan_id for m in record.mentions} == {"A", "B"}
+    chunks = {c.doan_id: c for c in [a, b]}
+    assert all(chunks[m.doan_id].noi_dung[m.start : m.end] == m.quote for m in record.mentions)
+    separate = extract_citations(
+        [a, replace(b, global_start=500, global_end=500 + len(right))], version="new"
+    )
+    assert not any(r.so_hieu and r.ten_van_ban for r in separate)
+
+
+def test_dynamic_and_static_name_references_keep_distinct_context():
+    _, records = _citations("Theo Luật Nhà ở hiện hành; theo Luật Nhà ở và thỏa thuận này.")
+    assert len(records) == 2
+    assert any("hiện hành" in r.raw_text for r in records)

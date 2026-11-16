@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from legal_checker.shared.contracts.common import Model
 
@@ -24,6 +24,17 @@ class ApplicableRequirement(Model):
     nguon_snapshot_json: dict[str, Any] = Field(default_factory=dict)
     phien_ban_id: str
     reason: dict[str, str] = Field(default_factory=dict)
+    assessment_review: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Backend review-purpose receipt; separate from legal scope/source snapshots.",
+    )
+
+    @model_serializer(mode="wrap")
+    def preserve_legacy_receipt_absence(self, handler):
+        data = handler(self)
+        if "assessment_review" not in self.model_fields_set:
+            data.pop("assessment_review", None)
+        return data
 
     @property
     def confirmed(self) -> bool:

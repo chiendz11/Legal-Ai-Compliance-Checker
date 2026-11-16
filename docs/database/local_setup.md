@@ -1,19 +1,21 @@
 # PostgreSQL local và seed từ workbook
 
+Baseline hiện hành: [PDF360 v4 r2 — runtime và knowledge đã duyệt](../guides/dataset_pdf360_v4r2_runtime_20261110.md). Manifest LOCAL_ARCHIVE_READY dùng --archive với đúng ZIP mới.
+
 Nếu chưa có môi trường Python của repo, làm theo [hướng dẫn tạo/kích hoạt `.venv`](../guides/dev_setup.md) trước.
 
 Mỗi dev có **một PostgreSQL riêng trên máy**, cùng cấu trúc bảng và cùng workbook seed.
 Không cần Supabase để phát triển từng module.
 
 ```text
-legal_checker_dev_v750_r2_supabase
+legal_checker_dev_team_20261107
 ├── knowledge    22 bảng workbook: luật, criteria, rules, templates và quản trị
 ├── runtime      28 bảng workbook: hợp đồng, chunks, evidence và kết quả
 ├── qa           6 bảng: split, payload/assertions tham chiếu và kiểm tra nguồn
 └── dev_meta     alembic_version và checksum lần seed
 ```
 
-Các migrations bổ sung immutable knowledge snapshots, run snapshots và DTO lineage ngoài 50 bảng workbook. Bộ hiện tại là **v7.5.0-source-pdf360-r2-structured**, storage revision **supabase-public-v1**. Gói DEV_VALIDATION có **240 DEV + 60 VALIDATION**, **32 ca regression riêng trong QA**, 277.370 dòng nghiệp vụ và các dòng QA multipart theo manifest của release reviewed.
+Các migrations bổ sung immutable knowledge snapshots, run snapshots và DTO lineage ngoài 50 bảng workbook. Bộ hiện tại là **v7.5.0-pdf360-v4r2-runtime-20261110**, storage revision **bundled-pdf-v4r2**. Gói DEV_VALIDATION có **240 DEV + 60 VALIDATION**, **32 ca regression riêng trong QA**, các dòng nghiệp vụ/QA theo manifest PDF360_V4R2_20261110.
 
 Mỗi thành viên tải cùng gói DEV_VALIDATION rồi seed vào DB local riêng. MASTER chứa đáp án TEST dành cho evaluator; TEST_INPUTS có 60 ca chỉ PDF/intake. Xem [dataset hiện tại](dataset_and_corpus.md).
 
@@ -26,19 +28,20 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e './backend[dev,dataset]' -c constraints.txt
 cp .env.example .env
-python -m scripts.dataset pull
+python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
 python -m scripts.dataset check
+python -m scripts.dataset cache-sources
 ```
 
-Script tải tự tạo `data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/`. Workbook dùng để seed là:
+Script tải tự tạo `data/private/v750_pdf360_v4r2_runtime_20261110/`. Workbook dùng để seed là:
 
 ```text
-data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx
+data/private/v750_pdf360_v4r2_runtime_20261110/bang_du_lieu_v7_5_0_PDF360_V4R2_20261110_DEV_VALIDATION.xlsx
 ```
 
 `.env.example` đã đặt `SEED_WORKBOOK_PATH` và `DATABASE_URL` cho bộ này. Nếu `.env` đã tồn tại, cập nhật hai biến tương ứng thay vì ghi đè cấu hình riêng. CLI đọc `.env`; biến môi trường đã export được ưu tiên.
 
-Repo giữ code và manifest, không giữ dataset. `.env`, workbook, dữ liệu DB và log trong `data/private/` được Git bỏ qua. ZIP tải từ Drive; PDF public URL nằm trong `runtime.tep_nguon.object_uri`. Gói local chứa workbook/text references, không tự tải 300 PDF. [Cách tải và xử lý Drive/quota](dataset_and_corpus.md).
+Repo giữ code và manifest, không giữ dataset. `.env`, workbook, dữ liệu DB và log trong `data/private/` được Git bỏ qua. ZIP mới được bàn giao local; link Drive chỉ dùng sau khi xuất bản đúng bytes. Gói có 300 PDF v4 r2; `runtime.tep_nguon.object_uri` là dataset URI, chạy `cache-sources` để đọc qua cache đã kiểm hash. [Cách tải và xử lý Drive/quota](dataset_and_corpus.md).
 
 ## 2. Bật PostgreSQL — chọn một cách
 
@@ -77,7 +80,7 @@ python -m scripts.local_db check
 ```
 
 - `init`: tạo database nếu chưa có, chạy Alembic tới head: 50 bảng workbook, 78 FK nền và các bảng snapshot/run lineage/QA. DB cũ được kiểm tra trước khi tiếp nhận lịch sử.
-- `preview`: đọc workbook, kiểm tra tên sheet/cột, PK/FK, JSON, kiểu số/ngày, số dòng và QA manifest/multipart checksum.
+- `preview`: đọc schema, kiểu dữ liệu và số dòng. Workbook nhỏ được kiểm PK/FK/QA đầy đủ trong bộ đọc; workbook lớn dùng streaming, còn FK và QA multipart được kiểm khi seed trong cùng transaction. Receipt VALIDATION của release bổ sung kiểm tra spans/hash/split.
   Không ghi DB.
 - `seed`: kiểm tra như preview, chạy Alembic tới head trước, rồi nhập cả 50 bảng nghiệp vụ và 6 bảng QA trong **một transaction dữ liệu riêng**.
   Các bảng có vòng tham chiếu được xử lý bằng deferred foreign keys.
@@ -87,13 +90,13 @@ python -m scripts.local_db check
 Có thể chỉ rõ workbook từng lần:
 
 ```bash
-python -m scripts.local_db seed --workbook '/path/to/bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx'
+python -m scripts.local_db seed --workbook '/path/to/bang_du_lieu_v7_5_0_PDF360_V4R2_20261110_DEV_VALIDATION.xlsx'
 ```
 
 Seed lại đúng file trả `already_seeded`, không thêm dòng trùng, không ghi đè dòng dev
 đã sửa/thêm/xóa. Nếu một PK đã tồn tại trước lần seed đầu, seed cũng giữ dòng đó và
 báo `skipped_existing`. Dùng DB mới khi muốn trở về toàn bộ baseline sạch.
-Workbook khác checksum bị từ chối bởi `seed`. Với revision reviewed hiện tại, dùng [luồng update có kiểm soát](reviewed_dataset_update.md); dùng DB riêng cho dataset khác không cùng baseline.
+Workbook khác checksum bị từ chối bởi seed. PDF360_V4R2_20261110 dựng lại identities/output nên seed DB mới; luồng [reviewed update](reviewed_dataset_update.md) chỉ dành revision tương thích, không áp dụng cho release này.
 CLI không tự drop/truncate bảng.
 
 Ngày Excel dạng số được chuyển theo epoch của workbook; ngày nghiệp vụ dùng `DATE`,
@@ -114,7 +117,7 @@ Dùng DBeaver, pgAdmin hoặc công cụ PostgreSQL quen thuộc với cấu hì
 |---|---|
 | Host | `127.0.0.1` |
 | Port | `5433` |
-| Database | `legal_checker_dev_v750_r2_supabase` |
+| Database | `legal_checker_dev_team_20261107` |
 | User | `legal_checker` |
 | Password local | `legal_checker_local_only` |
 
@@ -222,10 +225,10 @@ sau khi chạy; không ghi DB dev hiện tại. Tên DB trong biến test phải
 CI luôn bật PostgreSQL service và chạy nhóm test này bằng workbook nhỏ tổng hợp,
 không phụ thuộc workbook riêng của bạn.
 
-## 8. Revision tri thức đã được duyệt
+## 8. Revision tri thức hiện hành
 
-Bản đang phân phối là `user-reviewed-20261105`, có cùng 240 DEV + 60 VALIDATION và 32 ca regression. Tri thức mang nhãn `V750_LEGAL_KNOWLEDGE_USER_REVIEWED_20261105`; SHA nội dung là `df6ed7aa9f5100bfe68430b950d55542db752e7255c324e18be171ce0d0d3ade`.
+Bản hiện hành là `v7.5.0-pdf360-v4r2-runtime-20261110`, có 240 DEV + 60 VALIDATION và 32 ca regression. Tri thức mang nhãn `V750_TEAM_KNOWLEDGE_20261107`; SHA nội dung là `39d823fb72b886d88d55367e928f96a39218d16e4287899fc1a163d25458bc4d`.
 
-`seed` nhận diện workbook đúng manifest và lưu review status của snapshot là `HUMAN_VERIFIED`. Các flags được duyệt trong fixture vẫn mang nguồn synthetic; dữ kiện thiếu, kết luận `UNKNOWN`/`INSUFFICIENT`, output chờ review và các ca regression cố tình chưa xác minh được giữ nguyên. Các lần trích xuất từ PDF mới không được tự động gán đã được con người duyệt.
+`seed` nhận diện workbook đúng manifest và pin snapshot `HUMAN_VERIFIED`: chủ dự án đã chấp nhận 479 criteria, 1.916 decision rules và 9 ngoại lệ. Dữ kiện extraction và kết quả AI có review riêng. Runtime/QA dựng lại theo cùng PDF v4 r2 và snapshot; reference engine vẫn là SILVER. Xem [baseline guide](../guides/dataset_pdf360_v4r2_runtime_20261110.md).
 
-DB đã seed bản cũ không reset hoặc seed đè. Làm theo [quy trình cập nhật](reviewed_dataset_update.md) để giữ dữ liệu và báo cáo đang có.
+DB đã seed bản cũ được giữ nguyên. Với PDF360_V4R2_20261110, tạo DB mới theo guide hiện hành; không seed đè hoặc chạy reviewed update lên DB cũ.

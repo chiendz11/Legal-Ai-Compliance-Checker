@@ -8,7 +8,14 @@ from legal_checker.shared.contracts.temporal import ApplicableRequirement
 # runtime.yeu_cau_ap_dung
 def map_requirement(row):
     # Chỉ lấy những cột DTO nhận.
-    data = {name: row[name] for name in ApplicableRequirement.model_fields if name != "reason"}
+    # assessment_review belongs to a run snapshot, not the workbook's normalized C05 table.
+    data = {
+        name: row[name]
+        for name in ApplicableRequirement.model_fields
+        if name not in {"reason", "assessment_review"}
+    }
+    if "assessment_review" in row:
+        data["assessment_review"] = row["assessment_review"]
 
     # SQL dùng ly_do, DTO dùng reason dạng dictionary.
     raw_reason = row["ly_do"]

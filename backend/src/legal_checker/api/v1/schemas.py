@@ -7,10 +7,18 @@ from pydantic import Field
 
 from legal_checker.shared.contracts.assessment import AssessmentCase, SourceDocument
 from legal_checker.shared.contracts.common import Context, Model
+from legal_checker.shared.contracts.presentation import ReportPresentation
 from legal_checker.shared.contracts.report import FinalReport
 from legal_checker.workflows.states import RunStatus, Stage, StageStatus
 
 T = TypeVar("T")
+
+
+class KnowledgeInfo(Model):
+    schema_version: str
+    knowledge_snapshot_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    counts: dict[str, int]
+    review_status: Literal["HUMAN_VERIFIED", "SOURCE_CHECKED", "PENDING_HUMAN_REVIEW"]
 
 
 class Page(Model, Generic[T]):
@@ -37,6 +45,8 @@ class CaseCreate(Model):
     ngay_danh_gia: date
     moc_ap_dung: date | None = None
     loai_moc_ap_dung: str | None = None
+    review_mode: Literal["FULL_ASSESSMENT", "DRAFT_REVIEW"] = "FULL_ASSESSMENT"
+    document_set_complete: bool = False
     phien_ban_id: str | None = Field(
         default=None, description="Omit to let backend select an allowed deployment release."
     )
@@ -112,3 +122,4 @@ class ReportRecord(Model):
     run_id: str = Field(min_length=1)
     review_revision: str = Field(min_length=1)
     report: FinalReport
+    presentation: ReportPresentation | None = None

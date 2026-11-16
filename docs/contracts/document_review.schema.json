@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "DocumentReviewCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "tieu_chi_id": {
+          "title": "Tieu Chi Id",
+          "type": "string"
+        },
+        "assessment": {
+          "enum": [
+            "PRESENT",
+            "ABSENT",
+            "UNCERTAIN"
+          ],
+          "title": "Assessment",
+          "type": "string"
+        },
+        "candidate_chunk_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Candidate Chunk Ids",
+          "type": "array"
+        },
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tieu_chi_id",
+        "assessment",
+        "explanation"
+      ],
+      "title": "DocumentReviewCheck",
+      "type": "object"
+    },
+    "DocumentReviewPart": {
+      "additionalProperties": false,
+      "properties": {
+        "batch_id": {
+          "title": "Batch Id",
+          "type": "string"
+        },
+        "read_chunk_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Read Chunk Ids",
+          "type": "array"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/DocumentReviewCheck"
+          },
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "batch_id",
+        "read_chunk_ids",
+        "checks"
+      ],
+      "title": "DocumentReviewPart",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "ca_id": {
+      "minLength": 1,
+      "title": "Ca Id",
+      "type": "string"
+    },
+    "phien_ban_id": {
+      "minLength": 1,
+      "title": "Phien Ban Id",
+      "type": "string"
+    },
+    "rule_version": {
+      "minLength": 1,
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "legal_knowledge_version": {
+      "minLength": 1,
+      "title": "Legal Knowledge Version",
+      "type": "string"
+    },
+    "knowledge_snapshot_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Knowledge Snapshot Sha256",
+      "type": "string"
+    },
+    "run_id": {
+      "minLength": 1,
+      "title": "Run Id",
+      "type": "string"
+    },
+    "trace_id": {
+      "minLength": 1,
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "hop_dong_id": {
+      "title": "Hop Dong Id",
+      "type": "string"
+    },
+    "source_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Sha256",
+      "type": "string"
+    },
+    "extraction_version": {
+      "title": "Extraction Version",
+      "type": "string"
+    },
+    "criterion_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Criterion Ids",
+      "type": "array"
+    },
+    "chunk_manifest": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "minProperties": 1,
+      "title": "Chunk Manifest",
+      "type": "object"
+    },
+    "parts": {
+      "items": {
+        "$ref": "#/$defs/DocumentReviewPart"
+      },
+      "minItems": 1,
+      "title": "Parts",
+      "type": "array"
+    },
+    "model_versions": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Model Versions",
+      "type": "array"
+    },
+    "prompt_version": {
+      "title": "Prompt Version",
+      "type": "string"
+    },
+    "conclusion_text": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Conclusion Text",
+      "type": "object"
+    },
+    "review_kind": {
+      "const": "MACHINE_FULL_TEXT",
+      "default": "MACHINE_FULL_TEXT",
+      "title": "Review Kind",
+      "type": "string"
+    }
+  },
+  "required": [
+    "ca_id",
+    "phien_ban_id",
+    "rule_version",
+    "legal_knowledge_version",
+    "knowledge_snapshot_sha256",
+    "run_id",
+    "trace_id",
+    "hop_dong_id",
+    "source_sha256",
+    "extraction_version",
+    "criterion_ids",
+    "chunk_manifest",
+    "parts",
+    "model_versions",
+    "prompt_version",
+    "conclusion_text"
+  ],
+  "title": "DocumentReviewArtifact",
+  "type": "object"
+}

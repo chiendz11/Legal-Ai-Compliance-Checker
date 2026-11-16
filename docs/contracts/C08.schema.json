@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C08",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "additionalProperties": false,
   "properties": {
     "tuan_thu_id": {
@@ -63,8 +66,5 @@
     "coverage_complete"
   ],
   "title": "RequirementResult",
-  "type": "object",
-  "x-contract-id": "C08",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

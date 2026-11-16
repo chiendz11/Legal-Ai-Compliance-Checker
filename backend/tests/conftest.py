@@ -2,7 +2,6 @@ import os
 import uuid
 from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import replace
 from pathlib import Path
 
 import psycopg
@@ -21,7 +20,9 @@ from psycopg.conninfo import conninfo_to_dict, make_conninfo
 def app_factory(database_url):
     def build(*, settings=None, services=None):
         if settings is None:
-            settings = replace(Settings.from_env(), database_url=database_url)
+            # Test DBs contain their own tiny snapshot. Never inherit a developer's
+            # .env pins, live LLM, Celery or synthetic scenario configuration.
+            settings = Settings(database_url=database_url)
         return create_app(settings=settings, services=services)
 
     return build

@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "Context": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "ca_id": {
+          "minLength": 1,
+          "title": "Ca Id",
+          "type": "string"
+        },
+        "phien_ban_id": {
+          "minLength": 1,
+          "title": "Phien Ban Id",
+          "type": "string"
+        },
+        "rule_version": {
+          "minLength": 1,
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "legal_knowledge_version": {
+          "minLength": 1,
+          "title": "Legal Knowledge Version",
+          "type": "string"
+        },
+        "knowledge_snapshot_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Knowledge Snapshot Sha256",
+          "type": "string"
+        },
+        "run_id": {
+          "minLength": 1,
+          "title": "Run Id",
+          "type": "string"
+        },
+        "trace_id": {
+          "minLength": 1,
+          "title": "Trace Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ca_id",
+        "phien_ban_id",
+        "rule_version",
+        "legal_knowledge_version",
+        "knowledge_snapshot_sha256",
+        "run_id",
+        "trace_id"
+      ],
+      "title": "Context",
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "description": "Required live C09 pins. Legacy records remain readable through CitationValidation.\n\nAdditional source checks are allowed; the producer validates these pins before handoff.\nThis object proves ownership/version identity, not legal correctness of a finding.",
+  "properties": {
+    "knowledge_snapshot_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Knowledge Snapshot Sha256",
+      "type": "string"
+    },
+    "context": {
+      "$ref": "#/$defs/Context"
+    },
+    "hop_dong_id": {
+      "minLength": 1,
+      "title": "Hop Dong Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "knowledge_snapshot_sha256",
+    "context",
+    "hop_dong_id"
+  ],
+  "title": "CitationProvenance",
+  "type": "object"
+}

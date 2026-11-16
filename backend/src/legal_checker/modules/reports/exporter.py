@@ -14,6 +14,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from legal_checker.modules.reports.assessment_status import (
+    criterion_display_status,
+    requirement_display_status,
+)
+from legal_checker.modules.reports.presentation import build_presentation
 from legal_checker.shared.contracts.report import FinalReport
 
 MEDIA_TYPES = {
@@ -90,6 +95,7 @@ def verification_stamp(
         "rule_version": case.deployment.rule_version,
         "legal_knowledge_version": case.deployment.legal_knowledge_version,
         "module_source": report.report_json.audit.get("module_source"),
+        "evidence_mode": report.report_json.audit.get("evidence_mode", "SOURCE_ONLY"),
         "published_by": publication.get("published_by"),
         "published_at": publication.get("published_at"),
         "exported_by": exported_by,
@@ -119,9 +125,16 @@ STAMP_ROWS = [
 
 def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) -> Document:
     content = report.report_json
+    presentation = build_presentation(content)
     case = content.case
     doc = Document()
     doc.heading(f"Báo cáo đánh giá hợp đồng {case.hop_dong_id}")
+    if content.audit.get("evidence_mode") == "SYNTHETIC":
+        doc.paragraph(
+            "SYNTHETIC / ĐỒ ÁN: có dữ kiện và chứng từ hư cấu; kết quả được "
+            "tính theo kịch bản đã ghi trong audit.",
+            emphasis=True,
+        )
     if report.report_status != "PUBLISHED":
         doc.paragraph(
             f"{report.report_status} / review {report.review_status}: kết quả máy, chưa được "
@@ -162,8 +175,10 @@ def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) ->
 
     compliance = content.compliance
     doc.heading("Tổng quan", 2)
-    requirement_counts = Counter(r.status for r in compliance.requirement_results)
-    finding_counts = Counter(c.finding for c in compliance.criterion_results)
+    requirement_counts = Counter(
+        requirement_display_status(r) for r in compliance.requirement_results
+    )
+    finding_counts = Counter(criterion_display_status(c) for c in compliance.criterion_results)
     citation_counts = Counter(f.status for f in content.citation_validation.findings)
     doc.table(
         ["Nhóm", "Số lượng theo trạng thái"],
@@ -194,7 +209,7 @@ def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) ->
             [
                 r.requirement_id,
                 r.scope_status,
-                f"{r.version_status} {_v(r.requirement_version_id)}",
+                presentation.applicability_versions[r.yeu_cau_ca_id],
                 r.applicability_status,
                 f"{_v(r.loai_moc)} {_v(r.moc_ap_dung)}",
             ]
@@ -209,21 +224,26 @@ def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) ->
     for requirement in compliance.requirement_results:
         version = requirement.requirement_snapshot_json.get("version", {})
         doc.heading(
-            f"[{requirement.status}] {version.get('noi_dung') or requirement.yeu_cau_ca_id}", 3
+            f"[{requirement_display_status(requirement)}; C08={requirement.status}] "
+            f"{version.get('noi_dung') or requirement.yeu_cau_ca_id}",
+            3,
         )
         doc.paragraph(
             f"{requirement.giai_thich} (đã đánh giá {requirement.so_tieu_chi_da_danh_gia}/"
             f"{requirement.so_tieu_chi_ap_dung}, chưa xác định {requirement.so_unknown})"
         )
+        doc.paragraph(presentation.requirements[requirement.tuan_thu_id].coverage.explanation)
         for criterion in criteria_by_requirement.get(requirement.yeu_cau_ca_id, []):
+            crit_view = presentation.criteria.get(criterion.ket_qua_id)
+            crit_text = (
+                crit_view.explanation
+                if crit_view and crit_view.explanation
+                else criterion.giai_thich
+            )
             text = criterion.tieu_chi_snapshot_json.get("criterion", {}).get("noi_dung")
             doc.paragraph(
-                f"• [{criterion.finding}] {text or criterion.tieu_chi_id}: {criterion.giai_thich}"
-                + (
-                    f" — chưa chắc chắn: {criterion.uncertainty_reason}"
-                    if criterion.uncertainty_reason
-                    else ""
-                )
+                f"• [{criterion_display_status(criterion)}; C07={criterion.finding}] "
+                f"{text or criterion.tieu_chi_id}: {crit_text}"
             )
             for evidence in criterion.evidence:
                 doc.quote(
@@ -278,7 +298,8 @@ def report_document(report: FinalReport, stamp: dict[str, Any] | None = None) ->
     for recommendation in content.recommendations:
         doc.paragraph(
             f"• [{recommendation.uu_tien}] {recommendation.loai_hanh_dong}: "
-            f"{recommendation.noi_dung} (review {recommendation.review_status})"
+            f"{presentation.recommendations[recommendation.khuyen_nghi_ca_id].text} "
+            f"(review {recommendation.review_status})"
         )
 
     review = content.audit.get("review")

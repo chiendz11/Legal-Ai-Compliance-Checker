@@ -9,10 +9,18 @@ from legal_checker.modules.citation_validation.domain_validator import (
     DEFAULT_DOMAIN_PREFIXES,
     validate_domain,
 )
-from legal_checker.modules.citation_validation.identity_validator import validate_identity
+from legal_checker.modules.citation_validation.identity_validator import (
+    IDENTITY_POLICY,
+    numbered_anchors,
+    validate_identity,
+)
 from legal_checker.modules.citation_validation.temporal_validator import validate_temporal
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
-from legal_checker.shared.contracts.citation import CitationExtraction, CitationValidation
+from legal_checker.shared.contracts.citation import (
+    CitationExtraction,
+    CitationProvenance,
+    CitationValidation,
+)
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.document_intelligence import ContractProfile
 from legal_checker.shared.ids import citation_finding_id
@@ -38,7 +46,7 @@ class CatalogCitationValidator:
     """Classify each contract-authored citation occurrence against the legal catalog.
 
     One C09 finding per C03 occurrence. `finding_verified` is true only when the catalog
-    has verified identity, temporal and domain metadata for a number-matched document;
+    has verified identity, temporal and domain metadata for a policy-resolved document;
     downstream risk rules treat unverified findings as review items.
     """
 
@@ -58,9 +66,10 @@ class CatalogCitationValidator:
         relations = knowledge.tables["quan_he_van_ban"]
         contract_types = {r["loai_hop_dong_id"]: r for r in knowledge.tables["loai_hop_dong"]}
         day = relevant_date(profile)
+        anchors = numbered_anchors(citations, knowledge.documents)
         findings = []
         for citation in citations:
-            identity = validate_identity(citation, knowledge.documents)
+            identity = validate_identity(citation, knowledge.documents, anchors=anchors)
             document = identity.document
             temporal = validate_temporal(document, relations, day) if document else None
             domain_status, domain_detail = (
@@ -72,7 +81,13 @@ class CatalogCitationValidator:
             verified = bool(
                 document
                 and identity.status == "MATCHED"
-                and citation.extraction.status == "EXTRACTED"
+                and (
+                    citation.extraction.status == "EXTRACTED"
+                    or identity.reason_code == "CONTRACT_NUMBER_ANCHOR_MATCH"
+                )
+                and temporal is not None
+                and temporal.status != "UNKNOWN"
+                and domain_status != "UNKNOWN"
                 and all(
                     document.get(flag) is True
                     for flag in ("identity_verified", "temporal_verified", "domain_verified")
@@ -98,39 +113,52 @@ class CatalogCitationValidator:
                         (temporal and temporal.replacement_van_ban_id)
                         or (document.get("van_ban_thay_the_id") if document else None)
                     ),
-                    source_snapshot_json={
-                        "catalog_number_matched": identity.status != "UNKNOWN"
-                        or identity.reason_code == "MULTIPLE_CATALOG_CANDIDATES",
-                        "evidence_ids": [e.doan_id for e in citation.evidence],
-                        "legal_gold": False,
-                        "reviewed_knowledge": verified,
-                        "source_occurrence": {
-                            "vien_dan_id": citation.vien_dan_id,
-                            "observed_number": normalized.so_hieu,
-                            "observed_title": normalized.ten_van_ban,
-                            "dieu": normalized.dieu,
-                            "khoan": normalized.khoan,
-                            "extraction_status": citation.extraction.status,
-                        },
-                        "checks": {
-                            "identity": {
-                                "status": identity.status,
-                                "reason_code": identity.reason_code,
-                                "candidates": identity.candidates,
-                                "detail": identity.detail,
-                            },
-                            "temporal": (
-                                {
-                                    "status": temporal.status,
-                                    "reason_code": temporal.reason_code,
-                                    "detail": temporal.detail,
-                                }
-                                if temporal
-                                else None
+                    source_snapshot_json=CitationProvenance(
+                        knowledge_snapshot_sha256=knowledge.sha256,
+                        context=context,
+                        hop_dong_id=profile.hop_dong_id,
+                        **{
+                            "identity_policy_id": IDENTITY_POLICY,
+                            "catalog_identity_matched": identity.status == "MATCHED",
+                            "catalog_number_matched": bool(normalized.so_hieu)
+                            and (
+                                identity.status != "UNKNOWN"
+                                or identity.reason_code == "MULTIPLE_CATALOG_CANDIDATES"
                             ),
-                            "domain": {"status": domain_status, "detail": domain_detail},
+                            "evidence_ids": [e.doan_id for e in citation.evidence],
+                            "legal_gold": False,
+                            "reviewed_knowledge": getattr(knowledge, "review_status", None)
+                            == "HUMAN_VERIFIED",
+                            "finding_checks_verified": verified,
+                            "source_occurrence": {
+                                "vien_dan_id": citation.vien_dan_id,
+                                "observed_number": normalized.so_hieu,
+                                "observed_title": normalized.ten_van_ban,
+                                "dieu": normalized.dieu,
+                                "khoan": normalized.khoan,
+                                "extraction_status": citation.extraction.status,
+                            },
+                            "checks": {
+                                "identity": {
+                                    "status": identity.status,
+                                    "reason_code": identity.reason_code,
+                                    "candidates": identity.candidates,
+                                    "detail": identity.detail,
+                                    "anchor_citation_ids": identity.anchor_citation_ids,
+                                },
+                                "temporal": (
+                                    {
+                                        "status": temporal.status,
+                                        "reason_code": temporal.reason_code,
+                                        "detail": temporal.detail,
+                                    }
+                                    if temporal
+                                    else None
+                                ),
+                                "domain": {"status": domain_status, "detail": domain_detail},
+                            },
                         },
-                    },
+                    ).model_dump(mode="json"),
                     lan_chay_id=context.run_id,
                     knowledge_version=context.legal_knowledge_version,
                 )

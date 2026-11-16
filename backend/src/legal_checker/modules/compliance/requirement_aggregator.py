@@ -106,6 +106,12 @@ def requirement_exclusion_reason(
                 and exclusion.get("evidence")
             ):
                 return "C05 scope exclusion: " + explanation
+        from legal_checker.modules.applicable_law.historical_coverage import (
+            historical_exclusion_valid,
+        )
+
+        if historical_exclusion_valid(requirement, knowledge):
+            return "C05 historical obligation covered by legacy equivalent: " + explanation
         # The temporal resolver only excludes a family before its introduction
         # when that family has ONE version. A missing older catalog chain is UNKNOWN.
         family = [
@@ -281,6 +287,17 @@ def aggregate(
         ):
             raise ValueError("C08 expected checklist contains duplicate or foreign criteria")
         results = grouped[requirement.yeu_cau_ca_id]
+        from legal_checker.modules.compliance.review_scope import (
+            family_outside_scope,
+            outside_reason,
+            scope_receipt,
+        )
+
+        receipt = scope_receipt(
+            requirement,
+            Context(**{k: getattr(request, k) for k in Context.model_fields}),
+            knowledge,
+        )
         if set(results) - set(expected_ids):
             raise ValueError("C08 result is outside the expected version checklist")
         policy_id = version.get("quy_tac_tong_hop_id") if version else None
@@ -302,6 +319,16 @@ def aggregate(
             for key, result in results.items()
             if requirement.confirmed and _valid_local_exclusion(result)
         }
+        review_excluded = {
+            key: result.exclusion_reason
+            for key, result in results.items()
+            if receipt
+            and result.excluded
+            and result.finding == "UNKNOWN"
+            and result.exclusion_reason == outside_reason(receipt, key)
+            and result.tieu_chi_snapshot_json.get("assessment_review") == receipt
+        }
+        local_excluded.update(review_excluded)
         invalid_exclusions = [
             key for key, result in results.items() if result.excluded and key not in local_excluded
         ]
@@ -326,6 +353,41 @@ def aggregate(
         coverage = (
             not blockers and finding_coverage and evidence_coverage and not findings["UNKNOWN"]
         )
+        not_triggered = bool(
+            requirement.confirmed
+            and expected
+            and not missing_ids
+            and not applicable_ids
+            and local_excluded
+            and not invalid_exclusions
+            and blockers == ["No applicable mandatory criterion remains for aggregation"]
+        )
+        disposition = (
+            "NOT_TRIGGERED"
+            if not_triggered
+            else (
+                "LEGAL_SCOPE_UNRESOLVED"
+                if not requirement.confirmed
+                else "NEEDS_EVIDENCE"
+                if status == "INSUFFICIENT"
+                else "ASSESSED"
+            )
+        )
+        if (
+            not expected
+            and requirement.version_status != "RESOLVED"
+            and family_outside_scope(receipt)
+        ) or (
+            expected
+            and not missing_ids
+            and not applicable_ids
+            and review_excluded
+            and not invalid_exclusions
+        ):
+            disposition = "OUTSIDE_REVIEW_SCOPE"
+            explanation = (
+                "Outside caller-selected DRAFT_REVIEW; execution/legal applicability not decided"
+            )
         snapshot = {
             "applicable_requirement": requirement.model_dump(mode="json"),
             "requirement_version": deepcopy(version),
@@ -349,6 +411,10 @@ def aggregate(
             "finding_coverage_complete": finding_coverage,
             "evidence_coverage_complete": evidence_coverage,
             "diagnostics": blockers,
+            "assessment_disposition": disposition,
+            "conclusion_scope": "CONTRACT_CONTENT_ONLY" if receipt else "FULL_ASSESSMENT",
+            "outside_review_scope_criterion_ids": sorted(review_excluded),
+            "review_scope_policy": receipt["policy_id"] if receipt else None,
         }
         outputs.append(
             RequirementResult(

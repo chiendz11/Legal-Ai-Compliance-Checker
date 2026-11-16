@@ -1,27 +1,23 @@
-# Cấu hình dùng chung của repo
+# Manifest dataset dùng chung
 
-`dataset_dev_validation.json` là manifest của dataset đã chốt:
-**v7.5.0-source-pdf360-r2-structured / supabase-public-v1**,
-review revision **user-reviewed-20261105**, gồm 240 DEV + 60 VALIDATION và 32 ca regression QA.
+`dataset_dev_validation.json` pin release `v7.5.0-pdf360-v4r2-runtime-20261110`:
+240 DEV + 60 VALIDATION, 32 regression trong QA, workbook đầy đủ và PDF v4 r2.
+Snapshot knowledge `HUMAN_VERIFIED` theo quyết định chủ dự án. Runtime references
+vẫn là SILVER; literal reference độc lập có phạm vi cụ thể.
 
-Manifest cung cấp:
-
-- Link Drive, kích thước và SHA-256 của gói ZIP.
-- Đường dẫn cài dataset local và tên workbook đầy đủ dùng để seed.
-- SHA-256 của từng file bắt buộc để kiểm tra đúng phiên bản.
-- Knowledge snapshot hash và URL gốc của PDF public trên Supabase.
-
-Hai lệnh sau đọc manifest mặc định từ folder này:
+Manifest ghi hash/kích thước ZIP và từng file, tên workbook, destination,
+knowledge hash/version/review status và `bundled_sources_index`. Chỉ metadata
+được commit; PDF/workbook/cache nằm trong `data/private/` ngoài Git.
 
 ```bash
-python -m scripts.dataset pull
+python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
 python -m scripts.dataset check
+python -m scripts.dataset cache-sources
 ```
 
-Manifest được commit cùng code; dataset tải về nằm trong `data/private/` ngoài Git.
-Khi thay release dataset, cập nhật manifest theo gói thực tế và review các checksum.
-Xem [hướng dẫn tải dataset](../docs/database/dataset_and_corpus.md) và [cập nhật DB đã seed](../docs/database/reviewed_dataset_update.md).
+`LOCAL_ARCHIVE_READY` nghĩa ZIP mới sẵn trên máy maintainer, chưa được khẳng định
+đã xuất bản tại URL. Không thay checksum mới nhưng giữ URL trỏ gói cũ. Khi upload
+đúng ZIP, cập nhật URL và publication status, giữ checksum theo bytes thực tế.
+`cache-sources` kiểm PDF và điền cache theo hash, không thay DB.
 
-Cấu hình riêng của mỗi máy như DB URL và cache PDF đặt trong `.env`, theo
-`.env.example` và `legal_checker.core.config.Settings`. Mỗi module tự cấu hình
-LLM/embeddings theo nhu cầu; không lưu API key hoặc thông tin đăng nhập trong `configs/`.
+Xem [hướng dẫn release và seed DB mới](../docs/guides/dataset_pdf360_v4r2_runtime_20261110.md).

@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C10",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "$defs": {
     "RiskSource": {
       "additionalProperties": false,
@@ -136,8 +139,5 @@
     "legal_basis_ids"
   ],
   "title": "RiskResult",
-  "type": "object",
-  "x-contract-id": "C10",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

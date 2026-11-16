@@ -1,5 +1,5 @@
 {
-  "catalog_version": "1.0",
+  "catalog_version": "1.2",
   "schema_dialect": "JSON Schema 2020-12",
   "validation": {
     "json_schema": "Structural validation only; not all Pydantic validators export to JSON Schema.",
@@ -11,7 +11,8 @@
     "identity": "Separate contract ID, assessment case ID, run ID and knowledge snapshot hash.",
     "lineage": "Filter by case/run and immutable input/output lineage; do not mix seeded and live outputs.",
     "knowledge": "Inject a read-only KnowledgeSnapshot; never import devtools into a business module.",
-    "review": "Machine findings stay immutable; human decisions form a separate effective-result view."
+    "review": "Machine findings stay immutable; human decisions form a separate effective-result view.",
+    "legal_version_policy": "LEGAL_VERSION_POLICY_V1: distinguish contract-at-conclusion regime selection from later performance; see knowledge_applicability_policy.md"
   },
   "contracts": [
     {
@@ -30,7 +31,7 @@
         "runtime.tep_nguon",
         "runtime.ca_danh_gia"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "At least one source URI/URL is nonempty; read bytes must match source.sha256.",
         "Pin deployment and knowledge before processing; never silently change a started case."
@@ -41,12 +42,15 @@
       "schema": "C02.schema.json",
       "record_model": "ContractProfile",
       "python_import": "legal_checker.shared.contracts.document_intelligence.ContractProfile",
-      "version": "1.0",
+      "version": "1.2",
       "producer": "documents",
       "consumers": [
         "applicable_law",
         "citation_validation",
-        "reports"
+        "reports",
+        "retrieval",
+        "compliance.verification",
+        "compliance.observations"
       ],
       "handoff_cardinality": "one",
       "tables": [
@@ -57,10 +61,11 @@
         "runtime.bang_chung_ho_so",
         "runtime.moc_thoi_gian_hop_dong"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Unknown extracted facts remain null; values need attributable source evidence.",
-        "Facts are extraction results, not legal conclusions."
+        "Facts are extraction results, not legal conclusions.",
+        "Optional electronic-transaction and arbitration-agreement facts require provenance; null is not false. Historical can_danh_gia_trong_tai is not an assessment switch."
       ]
     },
     {
@@ -79,7 +84,7 @@
         "runtime.vien_dan_phap_ly_hop_dong",
         "runtime.bang_chung_vien_dan"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Preserve each citation occurrence and source position, including ambiguous citations.",
         "Contract-authored citations do not choose applicable requirements."
@@ -101,9 +106,12 @@
       "tables": [
         "runtime.yeu_cau_ap_dung"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Resolve scope from profile and knowledge independently of contract citations."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -116,16 +124,21 @@
       "consumers": [
         "retrieval",
         "compliance",
-        "reports"
+        "reports",
+        "risks",
+        "recommendations"
       ],
       "handoff_cardinality": "many",
       "tables": [
         "runtime.yeu_cau_ap_dung"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "CONFIRMED requires MATCH, RESOLVED, requirement_version_id and relevant date.",
         "Do not turn unresolved dates/scope into CONFIRMED to improve metrics."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -142,10 +155,13 @@
       "tables": [
         "runtime.ket_qua_truy_xuat"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Selected evidence must reference a chunk of the same contract and criterion/version.",
         "No selected evidence is not proof of MISSING."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -158,7 +174,8 @@
       "consumers": [
         "compliance.aggregation",
         "risks",
-        "reports"
+        "reports",
+        "reviews"
       ],
       "handoff_cardinality": "many",
       "tables": [
@@ -167,11 +184,14 @@
         "runtime.bang_chung_ngoai",
         "runtime.chung_tu_bo_sung"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "MISSING requires reliability, complete coverage and verified absence gates.",
         "SATISFIED/VIOLATED require reliable attributable evidence and legal basis.",
         "UNKNOWN requires uncertainty_reason; quote offsets must match actual source text."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -183,16 +203,20 @@
       "producer": "compliance.aggregation",
       "consumers": [
         "risks",
-        "reports"
+        "reports",
+        "reviews"
       ],
       "handoff_cardinality": "many",
       "tables": [
         "runtime.ket_qua_tuan_thu"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Aggregate the applicable criterion set with the pinned rule, not status majority.",
         "Preserve excluded requirements and insufficiency rather than reporting compliance."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -204,16 +228,22 @@
       "producer": "citation_validation",
       "consumers": [
         "risks",
-        "reports"
+        "reports",
+        "reviews"
       ],
       "handoff_cardinality": "many",
       "tables": [
         "runtime.phat_hien_vien_dan"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Preserve relevant-date status separately from current status.",
-        "Unverified identity/time/domain stays uncertain and cannot alter C05/C08."
+        "Unverified identity/time/domain stays uncertain and cannot alter C05/C08.",
+        "Live producer must validate CitationProvenance: context, knowledge_snapshot_sha256, hop_dong_id. Legacy dicts remain read-only compatible."
+      ],
+      "live_provenance_schema": "citation_provenance.schema.json",
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -225,16 +255,20 @@
       "producer": "risks",
       "consumers": [
         "recommendations",
-        "reports"
+        "reports",
+        "reviews"
       ],
       "handoff_cardinality": "many",
       "tables": [
         "runtime.ket_qua_rui_ro"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Exactly one source: criterion finding or citation finding; same case/run.",
         "UNKNOWN may produce VERIFICATION risk, not automatically a proven violation."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -252,10 +286,13 @@
       "tables": [
         "runtime.khuyen_nghi_danh_gia"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Link a risk instance, evidence and legal basis; status alone is not a recommendation.",
         "Current DTO uses template-engine metadata; LLM-backed metadata needs a reviewed change."
+      ],
+      "operational_tables": [
+        "runtime.workflow_runs"
       ]
     },
     {
@@ -274,12 +311,15 @@
         "runtime.nhat_ky_review",
         "runtime.phan_quyen_danh_gia"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Append review events; preserve original machine output.",
         "Authorize actor and pin target to a specific run/output/report version."
       ],
-      "known_gap": "SQL/C12 have no dedicated run_id; writer must validate target/run linkage explicitly."
+      "known_gap": "C12 itself has no run_id; live review_events envelope binds case/run/seq/target hash, and nhat_ky_review is only a mirror.",
+      "operational_tables": [
+        "runtime.review_events"
+      ]
     },
     {
       "id": "C13",
@@ -296,12 +336,17 @@
       "tables": [
         "runtime.bao_cao_danh_gia"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Keep compliance, citation and verification risk sections distinct.",
-        "PUBLISHED requires authorized review of the exact outputs/version, not any old case review."
+        "PUBLISHED requires authorized review of the exact outputs/version, not any old case review.",
+        "REVIEW_ALL_FINDINGS_V1 requires a decisive review for every target; COMMENT is not approval. Preserve diagnostics and actual checklist IDs."
       ],
-      "known_gap": "DTO report version is string; SQL phien_ban_bao_cao is INTEGER. Agree mapping/migration first."
+      "known_gap": "Live report_versions is authoritative; bao_cao_danh_gia remains a workbook projection; no implicit cast of string report version to INTEGER.",
+      "operational_tables": [
+        "runtime.report_versions",
+        "runtime.workflow_runs"
+      ]
     },
     {
       "id": "X01",
@@ -318,12 +363,15 @@
         "knowledge.phien_ban_trien_khai",
         "runtime.ca_danh_gia"
       ],
-      "implementation_status": "PARTIAL_OR_SKELETON",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Deployment/release contract is distinct from knowledge.knowledge_snapshots content.",
         "Use the existing content SHA-256 to replay; never hash the Excel as a knowledge snapshot."
       ],
-      "known_gap": "DeploymentSnapshot is a release DTO, not the full KnowledgeSnapshot protocol."
+      "known_gap": "DeploymentSnapshot is a release DTO, not the full KnowledgeSnapshot protocol.",
+      "operational_tables": [
+        "knowledge.knowledge_snapshots"
+      ]
     },
     {
       "id": "X02",
@@ -339,7 +387,7 @@
       "tables": [
         "runtime.nhat_ky_goi_llm"
       ],
-      "implementation_status": "IMPLEMENTED",
+      "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "SUCCESS requires output hash and no error code; ERROR requires a safe error code.",
         "Unknown token usage/cost stays null; known cost needs currency.",
@@ -358,7 +406,13 @@
         "C03",
         "chunks"
       ],
-      "input_schema": "module_contracts.schema.json#/$defs/DocumentInput"
+      "input_schema": "module_contracts.schema.json#/$defs/DocumentInput",
+      "owner": "P2",
+      "runtime_port": "legal_checker.modules.documents.service.DocumentIntelligenceService.extract",
+      "call_parameters": [
+        "case"
+      ],
+      "composition_owner": "P5"
     },
     {
       "module": "applicable_law.scope",
@@ -369,7 +423,16 @@
       "output": [
         "C04"
       ],
-      "input_schema": "module_contracts.schema.json#/$defs/ScopeInput"
+      "input_schema": "module_contracts.schema.json#/$defs/ScopeInput",
+      "owner": "P3",
+      "runtime_port": "legal_checker.modules.applicable_law.scope_resolver.ScopeResolver.resolve",
+      "call_parameters": [
+        "context",
+        "profile",
+        "knowledge"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "applicable_law.temporal",
@@ -381,7 +444,17 @@
       "output": [
         "C05"
       ],
-      "input_schema": "module_contracts.schema.json#/$defs/TemporalInput"
+      "input_schema": "module_contracts.schema.json#/$defs/TemporalInput",
+      "owner": "P3",
+      "runtime_port": "legal_checker.modules.applicable_law.temporal_resolver.TemporalResolver.resolve",
+      "call_parameters": [
+        "context",
+        "profile",
+        "scope",
+        "knowledge"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "citation_validation",
@@ -394,7 +467,17 @@
       "output": [
         "C09"
       ],
-      "input_schema": "module_contracts.schema.json#/$defs/CitationInput"
+      "input_schema": "module_contracts.schema.json#/$defs/CitationInput",
+      "owner": "P3",
+      "runtime_port": "legal_checker.modules.citation_validation.service.CitationValidator.validate",
+      "call_parameters": [
+        "context",
+        "profile",
+        "citations",
+        "knowledge"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "retrieval",
@@ -406,7 +489,17 @@
       "output": [
         "C06"
       ],
-      "input_schema": "module_contracts.schema.json#/$defs/RetrievalInput"
+      "input_schema": "module_contracts.schema.json#/$defs/RetrievalInput",
+      "owner": "P3",
+      "runtime_port": "legal_checker.modules.retrieval.service.RetrievalService.retrieve",
+      "call_parameters": [
+        "context",
+        "requirements",
+        "chunks",
+        "knowledge"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "compliance",
@@ -421,21 +514,37 @@
         "C07",
         "C08"
       ],
-      "input_schema": "module_contracts.schema.json#/$defs/ReasoningRequest"
+      "input_schema": "module_contracts.schema.json#/$defs/ReasoningRequest",
+      "owner": "P4",
+      "runtime_port": "legal_checker.modules.compliance.service.evaluate_compliance",
+      "call_parameters": [
+        "request",
+        "knowledge"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "risks",
       "input": [
         "C05",
         "C07",
-        "C08",
         "C09",
         "knowledge"
       ],
       "output": [
         "C10"
       ],
-      "note": "Current RiskRequest carries C05/C07/C09, not a C08 field."
+      "note": "RiskRequest has no C08 field; C08 is displayed in reports, not an executable risk input.",
+      "owner": "P4",
+      "runtime_port": "legal_checker.modules.risks.service.evaluate_risks",
+      "call_parameters": [
+        "request",
+        "knowledge",
+        "diagnostics"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "recommendations",
@@ -446,7 +555,16 @@
       ],
       "output": [
         "C11"
-      ]
+      ],
+      "owner": "P4",
+      "runtime_port": "legal_checker.modules.recommendations.service.generate_recommendations",
+      "call_parameters": [
+        "request",
+        "knowledge",
+        "diagnostics"
+      ],
+      "composition_owner": "P5",
+      "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
     },
     {
       "module": "reviews",
@@ -457,6 +575,19 @@
       ],
       "output": [
         "C12"
+      ],
+      "composition_owner": "P5",
+      "owner": "P5",
+      "runtime_port": "legal_checker.modules.assessments.service.AssessmentService.add_review",
+      "call_parameters": [
+        "ca_id",
+        "run_id",
+        "actor",
+        "target",
+        "action",
+        "after",
+        "reason",
+        "expected_target_sha256"
       ]
     },
     {
@@ -478,7 +609,15 @@
       "output": [
         "C13"
       ],
-      "note": "Current builder only assembles DRAFT; reviewed publishing is not implemented."
+      "note": "build_run_report assembles machine DRAFT; review/effective results, publication and export are implemented by the review/report use cases with exact revision checks.",
+      "owner": "P5",
+      "runtime_port": "legal_checker.modules.reports.service.build_run_report",
+      "call_parameters": [
+        "draft",
+        "knowledge",
+        "module_source"
+      ],
+      "composition_owner": "P5"
     }
   ],
   "persistence": {
@@ -497,6 +636,91 @@
       "runtime.assessment_runs",
       "runtime.assessment_output_lineage"
     ],
-    "knowledge_content_table": "knowledge.knowledge_snapshots"
+    "knowledge_content_table": "knowledge.knowledge_snapshots",
+    "operational_catalog": "database_catalog.json#operational_tables",
+    "table_list_semantics": "contracts[].tables are workbook projections; operational_tables list live app storage. Migrations/repositories are authoritative; see integration_spec.md section 7."
+  },
+  "integration_spec": "integration_spec.md",
+  "data_dictionary": "data_dictionary.json",
+  "integration_policy": "integration_policy.json",
+  "team_delivery_baseline": "PDF360_V4R2_20261110",
+  "acceptance_matrix": "handoff_acceptance.json",
+  "verification_schemas": [
+    "criterion_verification.schema.json",
+    "document_read_coverage.schema.json"
+  ],
+  "dataset_manifest": "../../configs/dataset_dev_validation.json",
+  "version_semantics": {
+    "wire_contract_version": "1.0",
+    "C02_catalog_revision": "1.1, additive fields; not a wire enum",
+    "dataset_version": "v7.5.0-pdf360-team-baseline-20261107",
+    "schema_version": "v7.4.9; SQL/workbook lineage, not legal freshness"
+  },
+  "auxiliary_ports": [
+    {
+      "id": "criterion_verification",
+      "owner": "P4",
+      "composition_owner": "P5",
+      "runtime_port": "legal_checker.modules.compliance.verification.CriterionVerificationProvider.verify",
+      "call_parameters": [
+        "context",
+        "profile",
+        "requirements",
+        "chunks",
+        "knowledge",
+        "coverage"
+      ],
+      "schema": "criterion_verification.schema.json",
+      "note": "coverage is keyword-only; retrieval/registry are not call arguments; inject source readers by constructor"
+    },
+    {
+      "id": "external_registry",
+      "owner": "P4",
+      "composition_owner": "P5",
+      "source_owner": "P2",
+      "runtime_port": "legal_checker.modules.compliance.verification.EvidenceRegistryProvider.load",
+      "call_parameters": [
+        "context",
+        "case",
+        "knowledge"
+      ],
+      "note": "Context-bound registrations; same source IDs/SHA as verifier excerpts; checked before analysis"
+    },
+    {
+      "id": "observations",
+      "owner": "P4",
+      "composition_owner": "P5",
+      "runtime_port": "legal_checker.modules.compliance.observations.ObservationProvider.observe",
+      "call_parameters": [
+        "context",
+        "profile",
+        "requirements",
+        "retrieval",
+        "chunks",
+        "knowledge"
+      ]
+    },
+    {
+      "id": "full_steps_5_7",
+      "owner": "P4",
+      "composition_owner": "P5",
+      "runtime_port": "legal_checker.workflows.steps_5_7.evaluate",
+      "call_parameters": [
+        "request",
+        "knowledge"
+      ],
+      "note": "PipelineRequest includes C09; PipelineResponse merges both branches. evaluate_compliance is compliance-only"
+    }
+  ],
+  "supporting_document_review": {
+    "schema": "document_review.schema.json",
+    "python_import": "legal_checker.shared.contracts.document_review.DocumentReviewArtifact",
+    "producer": "compliance.document_review",
+    "consumers": [
+      "retrieval.refinement",
+      "compliance.review_admission",
+      "reports.audit"
+    ],
+    "semantics": "MACHINE_FULL_TEXT coverage proof bound to context, source SHA and exact active chunk manifest. Does not set C12 human approval."
   }
 }

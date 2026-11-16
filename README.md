@@ -11,19 +11,20 @@ Knowledge, runtime và snapshot lịch sử nằm trong DB; repo không chứa b
 - `workflows/`: điều phối và kiểm tra các điểm bàn giao.
 
 Luồng C07 có provider tạo Observation cho checklist, client OpenAI tùy chọn, bốn findings,
-grounding và 12 numeric schema có allowlist. Runner mặc định offline, không phát sinh phí API;
+grounding và 8 numeric kinds (10 shapes gồm legacy) có allowlist. Runner mặc định offline, không phát sinh phí API;
 xem [cách chạy và giới hạn](backend/src/legal_checker/modules/compliance/README.md).
 C07 → C08 → C10 → C11 đã có engines thuần, workflow/DI và runner offline/replay.
 C10 giữ hai nhánh compliance/citation độc lập; C11 dùng template đã pin và luôn chờ review.
 Runner hỗ trợ save/read/export với PostgreSQL, kiểm tra đúng case/run, snapshots,
 normalized rows và lineage. `--read-run` đọc output đã lưu, không chạy lại engines.
 Xem [bàn giao nhóm C](docs/group_c_handoff.md) và [hướng dẫn chạy](backend/src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57).
-Các route HTTP chạy riêng bước 5–7 đã bỏ. Bước 1–4, C12 review, API khởi chạy toàn bộ
-assessment, report export/UI và worker vẫn cần implementations thật.
+Các route HTTP chạy riêng bước 5–7 đã bỏ. Bước 1–9, UI, review/report và worker đã có implementation với giới hạn còn cần nghiệm thu. Đọc [INTEGRATION_V1](docs/contracts/integration_spec.md) và [changelog tích hợp](docs/guides/integration_alignment_changes_20261105.md) trước khi ghép module.
 
 ## Bắt đầu
 
 [Hướng dẫn tạo môi trường ảo cho Linux/macOS/Windows](docs/guides/dev_setup.md) có đầy đủ lệnh activate, cài dependencies, tải/seed và chạy API. [Danh sách scripts và trạng thái](scripts/README.md).
+
+[Sổ tay triển khai song song](docs/guides/parallel_development_playbook.md) chốt các quy ước và acceptance.
 
 [Bàn giao main và việc tiếp theo cho 5 người](docs/guides/team_onboarding_and_next_steps.md) hướng dẫn đồng bộ code/dataset/DB và các điểm tích hợp cần hoàn thiện.
 
@@ -34,28 +35,36 @@ pip install -e './backend[dev,dataset]' -c constraints.txt
 cp .env.example .env
 ```
 
-Tải gói DEV_VALIDATION bằng một lệnh; manifest trong repo pin link Drive, phiên bản
-và SHA-256 của **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**, review revision **user-reviewed-20261105**:
+Baseline hiện hành là **PDF360_V4R2_20261110**: knowledge, runtime và QA cùng
+snapshot HUMAN_VERIFIED theo quyết định chủ dự án. Gói có PDF v4 r2 và reference runtime dựng lại; xem [phạm vi gold/reference và cách cài](docs/guides/dataset_pdf360_v4r2_runtime_20261110.md).
+
+Đáp án đã đối chiếu riêng được mô tả tại [Gold Answer Set và coverage](docs/guides/gold_answer_set_20261110.md).
+Đợt [biên soạn Gold trực tiếp bằng suy luận AI](docs/guides/gold_direct_curation_20261110.md)
+bổ sung các target pháp lý, identity và evidence có phạm vi. Full Gold toàn pipeline
+vẫn chưa hoàn tất; chưa dùng để công bố accuracy end-to-end cho toàn hệ thống.
+Trong lúc manifest còn `LOCAL_ARCHIVE_READY`, cài ZIP đã được bàn giao:
 
 ```bash
-python -m scripts.dataset pull
+python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
 python -m scripts.dataset check
+python -m scripts.dataset cache-sources
 ```
 
-Script tự tạo `data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/`, cài 337 file gồm workbook
+Script tự tạo `data/private/v750_pdf360_v4r2_runtime_20261110/`, cài các file được pin trong manifest gồm workbook
 đầy đủ và các references, bỏ qua nếu đã đúng bản và giữ nguyên folder hiện có
 nếu phát hiện file khác hash. Gói chứa **240 DEV + 60 VALIDATION**; mỗi dev dùng DB
 local riêng và cùng workbook. Script tải không tự seed hoặc thay đổi DB.
 
 Drive yêu cầu đăng nhập hoặc hết quota: tải ZIP trong trình duyệt rồi dùng
 `python -m scripts.dataset pull --archive /path/to/DEV_VALIDATION.zip`.
-Xem [hướng dẫn tải dataset](docs/database/dataset_and_corpus.md). DB đã seed bản cũ dùng [quy trình update](docs/database/reviewed_dataset_update.md) để giữ lịch sử, không seed đè.
+Xem [hướng dẫn baseline mới](docs/guides/dataset_pdf360_v4r2_runtime_20261110.md).
+Release này dùng DB mới; giữ DB cũ và lịch sử, không chạy reviewed-flags update.
 
 Dataset nằm ngoài Git. `data/private/` và `.env` được bỏ qua bởi Git; thư mục private
 cũng được loại khỏi Docker build context. Các workbook chia nhỏ chỉ dùng để xem,
-seed DB vẫn dùng `bang_du_lieu_runtime_v7_5_0_360_STRUCTURED_R2_SUPABASE_DEV_VALIDATION_USER_REVIEWED_20261105.xlsx`.
-PDF có URL public trong `tep_nguon.object_uri`; text/controlled references đọc từ
-`sources/` của gói local. Xem [cách tổ chức data local](data/README.md).
+seed DB dùng `bang_du_lieu_v7_5_0_PDF360_V4R2_20261110_DEV_VALIDATION.xlsx`.
+PDF v4 r2 nằm trong ZIP; `tep_nguon.object_uri` dùng dataset URI. Chạy
+`cache-sources` trước khi đọc PDF bằng shared storage. Controlled references đọc từ `sources/`. Xem [cách tổ chức data local](data/README.md).
 
 ```bash
 docker compose up -d --wait postgres
@@ -65,7 +74,7 @@ uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/database/local_setup.md).
-Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_v750_r2_supabase`;
+Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_team_20261107`;
 Swagger: http://127.0.0.1:8000/docs.
 
 ```bash
@@ -95,7 +104,7 @@ Run đi qua `workflows/runner.py` → `DraftAssessmentWorkflow` → `build_draft
 API (`ASSESSMENT_QUEUE=inline`) hoặc Celery worker (`celery`). Khi chưa có module bước 1–7,
 run kết thúc FAILED với lý do `MODULE_NOT_IMPLEMENTED`; `ASSESSMENT_MODULES=reference` phát lại
 tham chiếu QA để kiểm thử tích hợp và báo cáo được gắn nhãn `REFERENCE_REPLAY`.
-Chưa có xác thực/phân quyền tenant: các route này chỉ dùng cho môi trường local.
+Auth/tenant đã có: AUTH_MODE=on dùng cookie/Bearer và tài khoản có roles; off chỉ dành local development. modules xử lý bytes thật, modules_di_reference/reference chỉ dành DEV/EVAL.
 [Kịch bản demo](docs/guides/demo.md).
 Input dùng contracts trong code và schema runtime tại `/openapi.json` khi chạy backend,
 cần đúng hash/case/run.
@@ -139,8 +148,7 @@ CI luôn có PostgreSQL service và check **CI / required**.
 [Contracts máy đọc được](docs/contracts/README.md) có schema riêng C01–C13/X01/X02 và catalog module/DB.
 [OpenAPI thiết kế UI](docs/architecture/openapi.design.json) phục vụ frontend mock và backend triển khai;
 Backend đang chạy cung cấp `/openapi.json` để xem routes thực tế; không lưu thêm bản JSON runtime trong repo.
-Các endpoints dự kiến trong bản thiết kế được đánh dấu rõ,
-chưa tự hoạt động chỉ vì đã có đặc tả JSON.
+Bản thiết kế hiện khớp 26 method/path đã có handler; metadata và semantic policy được quản lý cùng INTEGRATION_V1. Schema hợp lệ không tự chứng minh quality hoặc release readiness.
 
 Đặc tả JSON đã được xuất và giữ trong repo; công cụ sinh đã xóa. Khi đổi contract,
 cập nhật JSON, model/backend và hướng dẫn liên quan trong cùng PR. Tests kiểm tra

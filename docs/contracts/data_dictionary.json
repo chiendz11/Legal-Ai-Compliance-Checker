@@ -1,0 +1,1390 @@
+{
+  "dictionary_version": "1.4",
+  "status": "INTEGRATION_V1",
+  "profile_fields": {
+    "loai_hop_dong_id": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.loai_hop_dong_id",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "doi_tuong": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.doi_tuong",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "linh_vuc": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.linh_vuc",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "he_phap_luat": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.he_phap_luat",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "muc_dich_giao_dich": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.muc_dich_giao_dich",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ngay_giao_ket": {
+      "type": "datetime.date | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ngay_giao_ket",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ngay_giao_ket_raw": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ngay_giao_ket_raw",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "do_chinh_xac_ngay": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.do_chinh_xac_ngay",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "trang_thai_ngay": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.trang_thai_ngay",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "loai_moc_ap_dung": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.loai_moc_ap_dung",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ngay_hieu_luc_hop_dong": {
+      "type": "datetime.date | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ngay_hieu_luc_hop_dong",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ngay_ban_giao_du_kien": {
+      "type": "datetime.date | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ngay_ban_giao_du_kien",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "quan_he_chu_the": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.quan_he_chu_the",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ben_ban_co_von_nuoc_ngoai": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ben_ban_co_von_nuoc_ngoai",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ben_ban_la_chu_dau_tu": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ben_ban_la_chu_dau_tu",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ben_ban_la_ca_nhan": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ben_ban_la_ca_nhan",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "ben_mua_la_ca_nhan": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.ben_mua_la_ca_nhan",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "gia_tri_hop_dong": {
+      "type": "decimal.Decimal | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.gia_tri_hop_dong",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "don_vi_tien": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.don_vi_tien",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "tinh_trang_tai_san": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.tinh_trang_tai_san",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "la_nha_o_xa_hoi": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.la_nha_o_xa_hoi",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "la_hop_dong_theo_mau": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.la_hop_dong_theo_mau",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "la_nha_xay_moi": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.la_nha_xay_moi",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "che_do_giao_dich": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.che_do_giao_dich",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "muc_dich_su_dung_can_ho": {
+      "type": "str | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "citation",
+        "report"
+      ],
+      "evidence_fact_key": "profile.muc_dich_su_dung_can_ho",
+      "unknown": "null",
+      "source": "document evidence or explicitly reviewed classification; not inferred from absence"
+    },
+    "la_giao_dich_dien_tu": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "reports"
+      ],
+      "evidence_fact_key": "profile.la_giao_dich_dien_tu",
+      "unknown": "null",
+      "source": "Document clause or reviewed source classification with evidence; never infer false from no match. Persist in trich_xuat_truong plus bang_chung_truong; no new ho_so_hop_dong SQL column."
+    },
+    "co_thoa_thuan_trong_tai": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "reports"
+      ],
+      "evidence_fact_key": "profile.co_thoa_thuan_trong_tai",
+      "unknown": "null",
+      "source": "Document clause or reviewed source classification with evidence; never infer false from no match. Persist in trich_xuat_truong plus bang_chung_truong; no new ho_so_hop_dong SQL column.",
+      "draft_source_binding": "Only complete supplied DRAFT_REVIEW with operative court clause and no arbitration mention may derive false; DERIVED_REVIEW_PENDING/COMPLETE_DRAFT_COURT_ONLY_V1; no assertion about external agreements."
+    },
+    "co_thoa_thuan_dat_coc": {
+      "type": "bool | None",
+      "producer": "person_2",
+      "consumers": [
+        "scope",
+        "temporal",
+        "compliance",
+        "report"
+      ],
+      "evidence_fact_key": "profile.co_thoa_thuan_dat_coc",
+      "unknown": "null",
+      "source": "Explicit agreement-presence declaration; no deposit payment is not evidence of no agreement."
+    }
+  },
+  "subject_fields": [
+    "chu_the_id",
+    "vai_tro",
+    "ten_chu_the",
+    "loai_chu_the",
+    "la_thuong_nhan",
+    "la_chu_the_kinh_doanh",
+    "human_verified",
+    "doan_bang_chung_id"
+  ],
+  "scope_unmapped_fields": {},
+  "numeric_fact_fields": {
+    "apartment_value": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "apartment_value_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "application_submitted": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "before_certificate": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "before_handover": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "buyer_voluntarily_self_files": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "contract_price": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "contract_price_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "cumulative_payment": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "cumulative_payment_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "denominator_definition_review_reference": {
+      "type": "nonempty string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "denominator_definition_reviewed": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "deposit": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "deposit_included_in_first_payment": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "deposit_inclusion_review_reference": {
+      "type": "nonempty string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "deposit_inclusion_reviewed": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "deposit_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "eligible_before_collection": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "first_payment_excluding_deposit": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "first_payment_excluding_deposit_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "foreign_seller_art10_4": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "ho_so_hop_dong.ben_ban_co_von_nuoc_ngoai": {
+      "type": "boolean",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "included_in_sale_payment": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "maintenance_amount": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "maintenance_amount_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "maintenance_base": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "maintenance_base_kind": {
+      "type": "string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "maintenance_base_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "numeric_scope": {
+      "type": "string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "numeric_target": {
+      "type": "string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "numeric_target_review_reference": {
+      "type": "nonempty string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "numeric_target_reviewed": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "sale_price": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "sale_price_stated_in_agreement": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "sale_price_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "separate_from_sale_price": {
+      "type": "boolean",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "submission_elapsed_days": {
+      "type": "nonnegative Decimal; money denominator strictly positive",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "submission_event": {
+      "type": "string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "submission_start": {
+      "type": "string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "submission_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "warranty_months": {
+      "type": "nonnegative Decimal duration in months; not a law issue day or article number",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "warranty_start": {
+      "type": "string",
+      "producer": "person_4_verified_mapping",
+      "consumer": "compliance.numeric_rules",
+      "source": "explicit criterion-bound backend/reviewer attestation with reference",
+      "missing": "UNKNOWN; never default zero/false or fabricate review"
+    },
+    "warranty_unit": {
+      "type": "string",
+      "producer": "person_2_extraction_then_person_4_verification",
+      "consumer": "compliance.numeric_rules",
+      "source": "attributed source fact; no conversion from AI candidate fact without independent check",
+      "missing": "UNKNOWN; never default zero/false or fabricate review",
+      "allowed_values": [
+        "MONTH"
+      ],
+      "normalization": "Normalize an explicitly sourced month-duration unit; keep the original words and evidence. A day/month/year date is not a duration."
+    }
+  },
+  "numeric_fact_groups": {
+    "deposit_lte_ratio": [
+      "deposit",
+      "deposit_unit",
+      "sale_price",
+      "sale_price_unit",
+      "eligible_before_collection",
+      "sale_price_stated_in_agreement",
+      "numeric_target",
+      "numeric_target_reviewed",
+      "numeric_target_review_reference"
+    ],
+    "first_payment_including_deposit_lte_ratio": [
+      "numeric_scope",
+      "first_payment_excluding_deposit",
+      "first_payment_excluding_deposit_unit",
+      "deposit",
+      "deposit_unit",
+      "contract_price",
+      "contract_price_unit"
+    ],
+    "first_payment_lte_ratio": [
+      "numeric_scope",
+      "first_payment_excluding_deposit",
+      "first_payment_excluding_deposit_unit",
+      "deposit",
+      "deposit_unit",
+      "contract_price",
+      "contract_price_unit",
+      "deposit_inclusion_reviewed",
+      "deposit_inclusion_review_reference",
+      "deposit_included_in_first_payment"
+    ],
+    "prehandover_cumulative_lte_ratio": [
+      "numeric_scope",
+      "contract_price",
+      "contract_price_unit",
+      "cumulative_payment",
+      "cumulative_payment_unit",
+      "before_handover",
+      "foreign_seller_art10_4",
+      "ho_so_hop_dong.ben_ban_co_von_nuoc_ngoai"
+    ],
+    "before_certificate_cumulative_lte_ratio": [
+      "numeric_scope",
+      "contract_price",
+      "contract_price_unit",
+      "cumulative_payment",
+      "cumulative_payment_unit",
+      "before_certificate"
+    ],
+    "maintenance_ratio": [
+      "numeric_scope",
+      "maintenance_amount",
+      "maintenance_amount_unit",
+      "maintenance_base",
+      "maintenance_base_unit",
+      "maintenance_base_kind",
+      "separate_from_sale_price",
+      "apartment_value",
+      "apartment_value_unit",
+      "included_in_sale_payment",
+      "denominator_definition_reviewed",
+      "denominator_definition_review_reference",
+      "numeric_target",
+      "numeric_target_reviewed",
+      "numeric_target_review_reference"
+    ],
+    "warranty_min_months": [
+      "numeric_scope",
+      "warranty_months",
+      "warranty_unit",
+      "warranty_start"
+    ],
+    "application_submission_max_days": [
+      "submission_elapsed_days",
+      "submission_unit",
+      "submission_start",
+      "submission_event",
+      "buyer_voluntarily_self_files",
+      "application_submitted"
+    ]
+  },
+  "numeric_group_semantics": "SAFE_SUPERSET: conditional/legacy fields and shared numeric_target require criterion binding by person 4. This is not an assertion that every listed field applies to every criterion.",
+  "aliases": {
+    "gia_tri_hop_dong -> contract_price": "reviewed mapping only; check price basis, currency, taxes and conflicts",
+    "gia_tri_hop_dong -> sale_price": "not automatic; criterion may require a different basis",
+    "maintenance_base -> apartment_value": "not automatic; legacy rule requires expert denominator review"
+  },
+  "time_markers": {
+    "SIGNING": "agreement execution date from source",
+    "EXPECTED_HANDOVER": "planned date, not actual handover",
+    "COLLECTION": "actual collection event with evidence; never substituted by signing date",
+    "PRE_HANDOVER_COLLECTION": "collection before actual handover; requires event/boundary evidence",
+    "PRE_CERTIFICATE_COLLECTION": "collection before certificate; requires event/boundary evidence",
+    "TEMPLATE_USE": "Source-dependent actual template use/publication date; not guaranteed by FULL90. Never substitute SIGNING.",
+    "DEPOSIT_AGREEMENT": "Source-dependent date of the deposit agreement being assessed; not guaranteed by FULL90. Never substitute the sale-contract signing date."
+  },
+  "owners": {
+    "person_1": "dataset/catalog/migrations/platform",
+    "person_2": "source extraction and normalized writer",
+    "person_3": "scope/version/citation/retrieval",
+    "person_4": "criterion verification/compliance/risks/recommendations",
+    "person_5": "composition/run lifecycle/review/report/API/UI"
+  },
+  "verification_control_fields": {
+    "evaluation_target": {
+      "type": "CONTRACT_CONTENT | PERFORMANCE",
+      "producer": "person_4_backend_verifier",
+      "source": "reviewed current-criterion conclusion scope; never inferred from an AI gate",
+      "consumers": [
+        "criterion_reasoner"
+      ],
+      "missing": "UNKNOWN when target is required by criterion type/rule"
+    },
+    "condition_triggered": {
+      "type": "strict boolean",
+      "producer": "person_4_backend_verifier",
+      "source": "source-backed condition occurrence for current criterion",
+      "consumers": [
+        "criterion_reasoner"
+      ],
+      "missing": "UNKNOWN for conditional criterion; never default true"
+    },
+    "optional_choice_confirmed": {
+      "type": "strict boolean",
+      "producer": "person_4_backend_verifier",
+      "source": "reviewed local applicability/choice policy with reference",
+      "consumers": [
+        "criterion_reasoner"
+      ],
+      "missing": "UNKNOWN; false permits exclusion only under explicit supported policy"
+    }
+  },
+  "verification_schema": "criterion_verification.schema.json",
+  "document_read_coverage_schema": "document_read_coverage.schema.json",
+  "criterion_type_recipes": {
+    "CONTRACT_CONTENT": {
+      "proof": "selected attributable contract evidence; reviewed predicate; local facts if required"
+    },
+    "NOI_DUNG_BAT_BUOC": {
+      "proof": "mandatory-content policy; MISSING only with whole-document absence attestation"
+    },
+    "PROHIBITED_CLAUSE": {
+      "proof": "actual clause for VIOLATED; reviewed coverage/absence for SATISFIED"
+    },
+    "PERFORMANCE_WITH_DOCUMENTS": {
+      "proof": "registered external evidence and verified source contents"
+    },
+    "PERFORMANCE_OR_CONDITIONAL": {
+      "proof": "verified evaluation_target and condition_triggered; contract promise cannot establish performance SATISFIED"
+    },
+    "DOI_CHIEU_CO_DIEU_KIEN": {
+      "proof": "verified target/condition/local applicability and proof appropriate to target"
+    },
+    "CONTRACT_CLAUSE_AND_PERFORMANCE": {
+      "proof": "explicit verified target; contract or external evidence accordingly; no scope substitution"
+    }
+  },
+  "numeric_schema_counts": {
+    "kinds": 8,
+    "shapes_including_legacy": 10
+  },
+  "scope_field_aliases": {
+    "can_danh_gia_trong_tai": {
+      "canonical": "co_thoa_thuan_trong_tai",
+      "policy": "Rename catalog field for an evidenced agreement; do not interpret it as a backend switch. Original snapshot is unchanged.",
+      "workbook_records": 5
+    }
+  },
+  "legal_version_policy": {
+    "schema": "legal_version_policy.schema.json",
+    "storage": "knowledge.phien_ban_yeu_cau.quy_tac_chuyen_tiep TEXT holding versioned JSON",
+    "policy_id": "LEGAL_VERSION_POLICY_V1",
+    "scope": "CONTRACT_AT_CONCLUSION",
+    "source_of_truth": "pinned immutable knowledge snapshot; no policy lookup from arbitrary runtime QA",
+    "transition_fact": "transition.future_sale_eligible_before_20240801",
+    "transition_fact_proof": "C02 reviewed boolean fact with attributable evidence IDs; null/conflict keeps UNKNOWN",
+    "performance": "Performance events belong to criterion verification; selecting signing regime is not proof of actual collection/handover."
+  },
+  "transition_fact_fields": {
+    "transition.future_sale_eligible_before_20240801": {
+      "type": "bool | None",
+      "producer": "person_2_document_extraction_then_review_or_person_3_legal_case_review",
+      "consumers": [
+        "temporal"
+      ],
+      "source": "Dated eligibility/authority documents; not merely a contract promise or construction-start date.",
+      "required_when": "CONTRACT_AT_CONCLUSION, KDBDS_83, HTTTL and selection date >= 2024-08-01; Article 6 disclosure exception is handled separately.",
+      "missing": "UNKNOWN; absence of a document is not proof of false.",
+      "true": "Only declared sale-procedure branches may use the pre-cutoff regime; other contract terms need case review.",
+      "proof": "human_verified C02 boolean fact, accepted extraction status, nonempty evidence_ids resolving to C02 evidence."
+    },
+    "transition.housing_social_process_before_20240801": {
+      "type": "bool | None",
+      "producer": "person_2_document_extraction_then_person_3_legal_case_review",
+      "consumers": [
+        "temporal"
+      ],
+      "source": "Records identifying the particular social-housing procedure and its state before 2024-08-01, Article 198(5)(e).",
+      "required_when": "HOUSING_198, social housing positively known and selection date >= 2024-08-01.",
+      "missing": "UNKNOWN; never infer false from the PDF not mentioning transition.",
+      "true": "Keep UNKNOWN pending case-specific legacy branch review; do not automatically select all old rules.",
+      "proof": "Same reviewed, evidenced boolean requirement as the eligibility fact."
+    }
+  },
+  "source_corpus_baseline": {
+    "baseline_id": "SOURCE_FULL90_V2_20261107",
+    "spec": "source_observed_extraction_baseline.md",
+    "source_scope": "Fixed existing PDF360 source-v2; FULL90 is filled-source data, not a promise of all legal fields or all-compliant labels.",
+    "source_pdfs": 90,
+    "physical_pages": 4305,
+    "observation_method": "Fresh PDF text reading and source-hash checks; literal field presence verified in each FULL90. Original body keyword counts are candidates, not semantic gold.",
+    "literal_fields": [
+      {
+        "field": "contract_number",
+        "label": "Số hợp đồng",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.so_hop_dong",
+        "consumer": "report,identity"
+      },
+      {
+        "field": "signing_date",
+        "label": "Ngày giao kết",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "profile.ngay_giao_ket + SIGNING",
+        "consumer": "scope,temporal,citation"
+      },
+      {
+        "field": "buyer_name",
+        "label": "Họ tên bên mua",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "subjects.BEN_MUA + facts.ten_ben_mua",
+        "consumer": "scope,party_identity,report"
+      },
+      {
+        "field": "buyer_id",
+        "label": "Mã định danh bên mua",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional criterion fact",
+        "consumer": "party_identity_if_required"
+      },
+      {
+        "field": "buyer_birth",
+        "label": "Ngày sinh bên mua",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional criterion fact",
+        "consumer": "party_identity_if_required"
+      },
+      {
+        "field": "buyer_address",
+        "label": "Địa chỉ liên hệ bên mua",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional criterion fact",
+        "consumer": "party_identity,notices_if_required"
+      },
+      {
+        "field": "buyer_phone",
+        "label": "Điện thoại bên mua",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional criterion fact",
+        "consumer": "contact_if_required"
+      },
+      {
+        "field": "buyer_email",
+        "label": "Email bên mua",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional criterion fact",
+        "consumer": "contact_if_required"
+      },
+      {
+        "field": "apartment_code",
+        "label": "Mã căn hộ",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.ma_can_ho",
+        "consumer": "retrieval,property_identity,report"
+      },
+      {
+        "field": "floor",
+        "label": "Tầng",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.tang_toa (retain original combined text)",
+        "consumer": "property_identity,report"
+      },
+      {
+        "field": "tower",
+        "label": "Tòa",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.tang_toa (retain original combined text)",
+        "consumer": "property_identity,report"
+      },
+      {
+        "field": "area",
+        "label": "Diện tích sử dụng",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.dien_tich; raw unit/type evidence",
+        "consumer": "property_identity,price_consistency"
+      },
+      {
+        "field": "unit_price",
+        "label": "Đơn giá",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.don_gia; retain VND/m² denominator",
+        "consumer": "price_consistency"
+      },
+      {
+        "field": "sale_price",
+        "label": "Giá bán căn hộ",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.gia_ban + profile.gia_tri_hop_dong/don_vi_tien",
+        "consumer": "scope_context,compliance_numeric,report"
+      },
+      {
+        "field": "price_words",
+        "label": "Giá bán bằng chữ",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional consistency fact",
+        "consumer": "price_consistency_if_required"
+      },
+      {
+        "field": "expected_handover",
+        "label": "Ngày bàn giao dự kiến",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "profile.ngay_ban_giao_du_kien + EXPECTED_HANDOVER",
+        "consumer": "handover_content,payment_context,report"
+      },
+      {
+        "field": "payment_method",
+        "label": "Phương thức thanh toán",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "CORE",
+        "route": "facts.phuong_thuc_thanh_toan",
+        "consumer": "payment_content"
+      },
+      {
+        "field": "recipient_bank",
+        "label": "Ngân hàng nhận tiền",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional payment fact",
+        "consumer": "payment_content_if_required"
+      },
+      {
+        "field": "recipient_account",
+        "label": "Tài khoản nhận tiền",
+        "observed_pdfs": 90,
+        "total_pdfs": 90,
+        "tier": "TARGETED",
+        "route": "original chunk/evidence; optional payment fact",
+        "consumer": "payment_content_if_required"
+      }
+    ],
+    "tiers": {
+      "CORE": "Normalize when present; on FULL90 observed source must be read. Schema remains nullable for missing/conflicting variants and other PDFs.",
+      "TARGETED": "Always preserve source text/evidence; emit a separate fact only for an assigned criterion/function. Do not add typed profile columns by default."
+    },
+    "consumer_policy": {
+      "documents": "Only source-supported values; do not read generator metadata or expected QA as extractor input.",
+      "scope_temporal": "Use C02 plus pinned knowledge; unavailable classification/date stays UNKNOWN with reason.",
+      "retrieval": "Use original chunks and C05; do not require every clause to be pre-extracted as a scalar fact.",
+      "compliance": "P4 binds facts/units/predicate and independently verifies. Missing evidence does not remove a requirement from the checklist.",
+      "risk_recommendation": "Consume C07/C08/C09 and provenance, not pre-labelled risks from the PDF.",
+      "report": "Show the actual run profile/results and unresolved source limitations."
+    },
+    "fixed_source_constraint": "No new clauses, assumptions, annexes or receipts are required to make the present corpus satisfy extra legal fields. Preserve source; report unavailable facts under the applicable policy.",
+    "original_body_observations": {
+      "counts_are_candidates_not_gold": true,
+      "observed_pdf_counts": {
+        "seller_identity_or_role": 90,
+        "price_tax_fee_context": 90,
+        "payment_schedule_context": 85,
+        "maintenance_context": 89,
+        "handover_context": 90,
+        "warranty_context": 89,
+        "contract_effectiveness_clause": 85,
+        "breach_or_termination": 89,
+        "dispute_resolution": 90,
+        "numeric_warranty_candidate": 79
+      }
+    },
+    "acceptance_requirements_not_run_results": [
+      "Read CORE from its real source on independently annotated DEV/VAL examples.",
+      "Preserve TARGETED source text; do not treat absence of optional structured facts as missing PDF content.",
+      "Preserve missing/conflicting inputs and attribution; never invent dates/booleans/labels.",
+      "Do not parse a law issue day as warranty months or a sample form as actual performance.",
+      "Source legal scope and legal checklist remain independent of whether a retrieval match was found."
+    ],
+    "common_field_evidence_source": "Existing PHỤ LỤC THÔNG TIN GIAO DỊCH in each current PDF. Presence does not assert every original inline placeholder was filled. No new source content is added."
+  },
+  "dataset_baseline": {
+    "dataset_version": "v7.5.0-pdf360-v4r2-runtime-20261110",
+    "knowledge_version": "V750_KNOWLEDGE_OWNER_APPROVED_20261110",
+    "knowledge_snapshot_sha256": "4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a",
+    "spec": "../guides/dataset_pdf360_v4r2_runtime_20261110.md",
+    "assessment_profile": "FULL_CATALOG_DRAFT_REFERENCE_V1",
+    "reference_atomic_requirements": 323,
+    "topic_mapping": "legal_topic_mapping.json",
+    "source_reference_policy": "source_reference_policy.json",
+    "review_status": "HUMAN_VERIFIED",
+    "new_criteria_human_verified": true,
+    "independent_legal_gold": false,
+    "fixed_source_pdf_unchanged": false,
+    "source_pdf_revision": "PDF360_DRAFT_GTC_V4_R2_20261110",
+    "source_reference_scope": "36 appendix literal fields per PDF; C02-C13 engine outputs remain SILVER"
+  },
+  "synthetic_control_fields": {
+    "synthetic_evaluation": {
+      "type": "boolean",
+      "owner": "person_1_scenario_and_person_4_verifier",
+      "source": "SYNTHETIC_SCENARIO_PATH after exact PDF/knowledge SHA checks",
+      "meaning": "Explicit study attestation; never supplied or approved by the LLM; not human approval"
+    },
+    "scenario_document_set": {
+      "type": "string",
+      "owner": "person_1",
+      "source": "hash-bound synthetic scenario",
+      "meaning": "Document set identity for this study case"
+    },
+    "synthetic_non_applicability_reason": {
+      "type": "string",
+      "owner": "person_1_scenario_and_person_4_verifier",
+      "source": "explicit current-criterion scenario record",
+      "meaning": "Reason for local NO_MATCH; does not change C05 or create a fifth finding"
+    }
+  },
+  "document_review_schema": "document_review.schema.json",
+  "source_text_fact_fields": {
+    "maintenance_account_number": {
+      "producer": "person_2",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "reports"
+      ],
+      "type": "str | null",
+      "source": "Exact maintenance-account literal from active C02 extraction; no substitution from purchase payment account.",
+      "extraction_version": "documents.rules-v10",
+      "source_labels": [
+        "Tài khoản bảo trì",
+        "Số tài khoản bảo trì"
+      ],
+      "evidence_requirement": "Full role label and literal value, or full legacy maintenance-account statement; exact active-chunk offsets. No substitution from sale-payment account."
+    },
+    "maintenance_account_holder": {
+      "producer": "person_2",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "reports"
+      ],
+      "type": "str | null",
+      "source": "Exact maintenance-account literal from active C02 extraction; no substitution from purchase payment account.",
+      "extraction_version": "documents.rules-v10",
+      "source_labels": [
+        "Tên tài khoản bảo trì",
+        "Chủ tài khoản bảo trì"
+      ],
+      "evidence_requirement": "Full role label and literal value, or full legacy maintenance-account statement; exact active-chunk offsets. No substitution from sale-payment account."
+    },
+    "maintenance_bank": {
+      "producer": "person_2",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "reports"
+      ],
+      "type": "str | null",
+      "source": "Exact maintenance-account literal from active C02 extraction; no substitution from purchase payment account.",
+      "extraction_version": "documents.rules-v10",
+      "source_labels": [
+        "Ngân hàng tài khoản bảo trì",
+        "Tổ chức tín dụng mở tài khoản bảo trì"
+      ],
+      "evidence_requirement": "Full role label and literal value, or full legacy maintenance-account statement; exact active-chunk offsets. No substitution from sale-payment account."
+    }
+  },
+  "document_review_control_fields": {
+    "full_document_review_required": "Explicit trusted-verifier opt-in for supported mandatory content; not provider-controlled.",
+    "document_review_sha256": "Immutable MACHINE_FULL_TEXT JSON artifact hash; source/context/manifest pinned.",
+    "document_review_complete": "Backend validated every active chunk and criterion per batch; does not itself assert semantic absence.",
+    "visual_absence_reviewed": "Source-pinned actual visual inspection of declared execution pages; not a signature or human approval.",
+    "assessment_disposition": "C08 operational metadata ASSESSED/NEEDS_EVIDENCE/LEGAL_SCOPE_UNRESOLVED/NOT_TRIGGERED/OUTSIDE_REVIEW_SCOPE; formal status unchanged.",
+    "content_subject_validated": "False blocks admission when a reviewed positive referenced the wrong legal subject; never inferred true by mere quote presence.",
+    "local_condition_policy": "DRAFT_LOCAL_CONDITIONS_V1; only registered source-bound draft condition questions.",
+    "condition_review_sha256": "Immutable complete-source review artifact SHA; required for a backend local exclusion.",
+    "condition_review_assessment": "PRESENT | ABSENT | UNCERTAIN about a triggering condition, not a compliance finding.",
+    "local_non_applicability_reason": "Backend explanation of source-bound local NO_MATCH, not a change to C05 legal applicability.",
+    "numeric_binding_authority": "BACKEND_SOURCE_CHECK_DRAFT_ONLY is a machine source binding, never human approval."
+  },
+  "content_fact_fields": {
+    "dia_chi_ben_ban": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "dia_chi_ben_mua": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "land_address": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "land_parcel_no": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "land_map_sheet": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "land_area_m2": {
+      "type": "Decimal encoded as string",
+      "unit": "M2",
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "maintenance_amount": {
+      "type": "Decimal encoded as string",
+      "unit": "VND",
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "maintenance_percent": {
+      "type": "Decimal encoded as string",
+      "unit": "PERCENT (2 means 2%)",
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "warranty_start_date": {
+      "type": "ISO date string",
+      "unit": "DAY",
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "acceptance_date": {
+      "type": "ISO date string",
+      "unit": "DAY",
+      "producer": "documents.rules-v6",
+      "consumers": [
+        "retrieval",
+        "compliance.content_verifier",
+        "report"
+      ],
+      "source": "Explicit role-specific C02 literal with exact active chunk quote/offset; conflict remains unresolved."
+    },
+    "gross_area_m2": {
+      "type": "Decimal encoded as string",
+      "unit": "M2",
+      "producer": "documents.rules-v7",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "report"
+      ],
+      "source": "Explicit apartment gross floor area; separate from usable area and land area; exact quote/offset, conflicts unresolved"
+    },
+    "document_stage": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v7",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "report"
+      ],
+      "source": "Source-declared DRAFT_REVIEW; never changes assessment scope; exact quote/offset, conflicts unresolved"
+    },
+    "warranty_subject": {
+      "type": "string",
+      "unit": null,
+      "producer": "documents.rules-v7",
+      "consumers": [
+        "retrieval",
+        "compliance",
+        "report"
+      ],
+      "source": "BUILDING only from explicit dwelling warranty source; exact quote/offset, conflicts unresolved"
+    },
+    "maintenance_base_reference": {
+      "type": "STATED_SALE_PRICE",
+      "unit": null,
+      "producer": "documents.rules-v8",
+      "consumers": [
+        "compliance.source_bindings",
+        "retrieval"
+      ],
+      "source": "Explicit source quote states maintenance denominator has the same basis as the stated sale price; no inferred tax/performance certification."
+    }
+  },
+  "assessment_intake_fields": {
+    "review_mode": {
+      "type": "FULL_ASSESSMENT | DRAFT_REVIEW",
+      "owner": "person_5",
+      "source": "Caller selection persisted in C01; not extracted from a PDF"
+    },
+    "document_set_complete": {
+      "type": "boolean",
+      "default": false,
+      "source": "Caller declaration of contract/annex set; does not prove absence"
+    },
+    "moc_ap_dung": {
+      "type": "ISO date | null",
+      "source": "Persisted caller declaration; only used with matching loai_moc_ap_dung; a conflicting C02 date blocks resolution."
+    },
+    "loai_moc_ap_dung": {
+      "type": "string | null",
+      "source": "Explicit legal event kind. TEMPLATE_USE in DRAFT_REVIEW may be a planned scenario, not an actual execution date."
+    }
+  },
+  "review_scope_policy": "draft_review_policy.json",
+  "criterion_fact_bindings": {
+    "TC_PV_DS446_02": [
+      "warranty_months",
+      "warranty_start"
+    ]
+  }
+}

@@ -267,7 +267,9 @@ class Store:
                 "SELECT * FROM runtime.yeu_cau_ap_dung WHERE yeu_cau_ca_id=%s",
                 (requirement.yeu_cau_ca_id,),
             ).fetchone()
-            if row is None or map_requirement(row) != requirement:
+            if row is None or map_requirement(row).model_dump(
+                exclude={"assessment_review"}
+            ) != requirement.model_dump(exclude={"assessment_review"}):
                 raise ValueError("Stored normalized requirement differs from the run snapshot")
         for retrieval in request.payload.retrieval:
             values = retrieval.model_dump()
@@ -466,10 +468,14 @@ class Store:
             if existing is not None:
                 # Seed ly_do may be plain text while the DTO carries {summary: text}.
                 # Compare the typed projection, preserving every original column/text.
-                if map_requirement(existing) != requirement:
+                if map_requirement(existing).model_dump(
+                    exclude={"assessment_review"}
+                ) != requirement.model_dump(exclude={"assessment_review"}):
                     raise ConflictError("Existing yeu_cau_ap_dung identity has different contents")
                 continue
-            data = requirement.model_dump()
+            # Per-run review receipts are protected by the immutable input snapshot/hash.
+            # Keep the shared legal resolution row identical across review purposes/runs.
+            data = requirement.model_dump(exclude={"assessment_review"})
             data.pop("reason")
             # Mốc ID must refer to a real DI marker, not fabricated by a reasoning request.
             insert(

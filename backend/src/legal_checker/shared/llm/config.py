@@ -48,6 +48,7 @@ class OpenAISettings:
     max_attempts: int = 2
     max_retry_delay_seconds: float = 10.0
     total_timeout_seconds: float = 120.0
+    min_request_interval_seconds: float = 0.0
 
     def __post_init__(self):
         if not isinstance(self.api_key, str) or not self.api_key.strip():
@@ -62,8 +63,9 @@ class OpenAISettings:
             raise LlmConfigurationError("OPENAI_MODEL is required and must be a model ID")
         for attr, name, lower, upper in (
             ("timeout_seconds", "C07_LLM_TIMEOUT_SECONDS", 0.1, 300.0),
-            ("max_retry_delay_seconds", "C07_LLM_MAX_RETRY_DELAY_SECONDS", 0.0, 30.0),
+            ("max_retry_delay_seconds", "C07_LLM_MAX_RETRY_DELAY_SECONDS", 0.0, 120.0),
             ("total_timeout_seconds", "C07_LLM_TOTAL_TIMEOUT_SECONDS", 0.1, 600.0),
+            ("min_request_interval_seconds", "C07_LLM_MIN_REQUEST_INTERVAL_SECONDS", 0.0, 60.0),
         ):
             object.__setattr__(self, attr, _float(getattr(self, attr), name, lower, upper))
         object.__setattr__(
@@ -134,4 +136,5 @@ class OpenAISettings:
             max_attempts=environ.get("C07_LLM_MAX_ATTEMPTS", "2"),
             max_retry_delay_seconds=environ.get("C07_LLM_MAX_RETRY_DELAY_SECONDS", "10"),
             total_timeout_seconds=environ.get("C07_LLM_TOTAL_TIMEOUT_SECONDS", "120"),
+            min_request_interval_seconds=environ.get("C07_LLM_MIN_REQUEST_INTERVAL_SECONDS", "0"),
         )

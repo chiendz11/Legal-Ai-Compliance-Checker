@@ -66,6 +66,30 @@ def test_run_retry_serialized_and_normalized_lineage(
         )
 
 
+def test_run_review_receipts_survive_without_changing_shared_c05_rows(
+    database_url, request_factory, response_factory
+):
+    """Purpose metadata is run-specific; normalized legal provenance stays unchanged."""
+    from devtools.qa_runs import new_run
+
+    Knowledge(database_url)
+    original = request_factory()
+    original.payload.requirements[0].assessment_review = {"test_run": original.run_id}
+    store = Store(database_url)
+    store.save(original, response_factory(original))
+    second = new_run(original.model_dump(mode="json"), "OTHER_REVIEW_RUN")
+    second.payload.requirements[0].assessment_review = {"test_run": second.run_id}
+    store.save(second, response_factory(second))
+    assert store.get_input(original.ca_id, original.run_id) == original
+    assert store.get_input(second.ca_id, second.run_id) == second
+    with connect_postgres(database_url) as connection:
+        row = connection.execute("SELECT * FROM runtime.yeu_cau_ap_dung").fetchone()
+        assert "assessment_review" not in row
+        assert (
+            row["profile_snapshot_json"] == original.payload.requirements[0].profile_snapshot_json
+        )
+
+
 def test_foreign_output_failure_rolls_back_case_and_run(
     database_url, request_factory, response_factory
 ):

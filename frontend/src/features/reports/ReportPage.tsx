@@ -20,6 +20,7 @@ import { LegalBasisContext } from "./legalBasis";
 import { focusDomId, TABS, useReportNav } from "./nav";
 import { buildIndex, ReportIndexContext } from "./reportIndex";
 import { SummaryTiles } from "./SummaryTiles";
+import { ReportPresentationContext } from "./assessmentStatus";
 
 export function ReportPage() {
   const { baoCaoId = "" } = useParams();
@@ -50,6 +51,7 @@ function ReportView({ record }: { record: ReportRecord }) {
   }, [tab, focus]);
 
   return (
+    <ReportPresentationContext.Provider value={record.presentation ?? null}>
     <ReportIndexContext.Provider value={index}>
       <LegalBasisContext.Provider value={basisById}>
         <EvidenceProvider
@@ -70,6 +72,7 @@ function ReportView({ record }: { record: ReportRecord }) {
         </EvidenceProvider>
       </LegalBasisContext.Provider>
     </ReportIndexContext.Provider>
+    </ReportPresentationContext.Provider>
   );
 }
 
@@ -155,6 +158,12 @@ function ReportBody({ record }: { record: ReportRecord }) {
   return (
     <>
       <ReportHeader record={record} />
+      {content.audit.evidence_mode === "SYNTHETIC" && (
+        <Notice tone="info">
+          Chế độ đồ án: có chứng từ và dữ kiện synthetic. Xem mã kịch bản và nguồn
+          giả lập trong tab Audit; kết quả được tính theo kịch bản này.
+        </Notice>
+      )}
       <ReportBanners report={report} />
       <SummaryTiles content={content} />
       <TabBar />
@@ -205,12 +214,19 @@ function ReportHeader({ record }: { record: ReportRecord }) {
           Run <code>{record.run_id}</code>
         </span>
         <span>Ngày đánh giá {kase.assessment_context.ngay_danh_gia}</span>
+        {kase.assessment_context.review_mode === "DRAFT_REVIEW" && (
+          <span className="tag">Rà soát dự thảo trước khi ký</span>
+        )}
         <span>
-          Mốc áp dụng {kase.assessment_context.moc_ap_dung ?? "chưa rõ"} (
-          {kase.assessment_context.loai_moc_ap_dung
-            ? label("anchor", kase.assessment_context.loai_moc_ap_dung).text
-            : "chưa rõ loại mốc"}
-          )
+          {kase.assessment_context.moc_ap_dung ? (
+            <>
+              Mốc khai báo ở intake {kase.assessment_context.moc_ap_dung} (
+              {kase.assessment_context.loai_moc_ap_dung
+                ? label("anchor", kase.assessment_context.loai_moc_ap_dung).text
+                : "chưa khai báo loại mốc"}
+              )
+            </>
+          ) : "Intake chưa khai báo mốc; xem thời điểm đã phân giải của từng yêu cầu"}
         </span>
       </div>
       {!mockEnabled && (

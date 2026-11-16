@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "policy_id": {
+      "const": "LEGAL_VERSION_POLICY_V1",
+      "title": "Policy Id",
+      "type": "string"
+    },
+    "review_scope": {
+      "const": "CONTRACT_AT_CONCLUSION",
+      "title": "Review Scope",
+      "type": "string"
+    },
+    "selection_marker": {
+      "enum": [
+        "SIGNING",
+        "TEMPLATE_USE",
+        "DEPOSIT_AGREEMENT",
+        "COLLECTION"
+      ],
+      "title": "Selection Marker",
+      "type": "string"
+    },
+    "performance_events": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Performance Events",
+      "type": "array"
+    },
+    "transition": {
+      "enum": [
+        "KDBDS_83",
+        "CONSUMER_80",
+        "HOUSING_198",
+        "CIVIL_688",
+        "SOURCE_INTERVAL"
+      ],
+      "title": "Transition",
+      "type": "string"
+    },
+    "grandfathering": {
+      "default": "NONE",
+      "enum": [
+        "NONE",
+        "SALE_PROCEDURE_ONLY",
+        "CASE_REVIEW"
+      ],
+      "title": "Grandfathering",
+      "type": "string"
+    },
+    "source_article_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Source Article Ids",
+      "type": "array"
+    },
+    "source_urls": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Source Urls",
+      "type": "array"
+    },
+    "criteria_ready": {
+      "title": "Criteria Ready",
+      "type": "boolean"
+    },
+    "notes": {
+      "minLength": 1,
+      "title": "Notes",
+      "type": "string"
+    },
+    "historical_equivalent_family_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Historical Equivalent Family Id"
+    },
+    "historical_basis_article_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Historical Basis Article Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "policy_id",
+    "review_scope",
+    "selection_marker",
+    "transition",
+    "source_article_ids",
+    "source_urls",
+    "criteria_ready",
+    "notes"
+  ],
+  "title": "LegalVersionPolicy",
+  "type": "object"
+}

@@ -65,12 +65,23 @@ class PdfDocumentIntelligence:
         # Đổi file, parser, chunker hoặc quy tắc trích xuất → version mới → ID mới, nên
         # kết quả cũ trong DB không bị giữ lại âm thầm (writer dùng ON CONFLICT DO NOTHING).
         pipeline = f"{parser_version}|{EXTRACTOR_VERSION}|{PROFILE_EXTRACTOR_VERSION}"
+        complete_draft = (
+            case.assessment_context.review_mode == "DRAFT_REVIEW"
+            and case.assessment_context.document_set_complete
+            and all(p.readable and p.text.strip() for p in document.pages)
+        )
+        pipeline += f"|complete-draft={complete_draft}"
         version = extraction_version(document.source_sha256, pipeline)
         hop_dong_id = case.hop_dong_id
 
         chunks = chunk_document(document, hop_dong_id=hop_dong_id, version=version)
-        citations = extract_citations(chunks, version=version)
-        profile = extract_profile(chunks, hop_dong_id=hop_dong_id, version=version)
+        citations = extract_citations(chunks, version=version, document=document)
+        profile = extract_profile(
+            chunks,
+            hop_dong_id=hop_dong_id,
+            version=version,
+            complete_draft_source=complete_draft,
+        )
         result = DocumentIntelligenceResult(
             contract_profile=profile,
             chunks=[c.to_contract() for c in chunks],

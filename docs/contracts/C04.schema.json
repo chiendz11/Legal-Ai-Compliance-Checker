@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C04",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "additionalProperties": false,
   "properties": {
     "yeu_cau_ca_id": {
@@ -59,8 +62,5 @@
     "scope_reason"
   ],
   "title": "ScopeResolution",
-  "type": "object",
-  "x-contract-id": "C04",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

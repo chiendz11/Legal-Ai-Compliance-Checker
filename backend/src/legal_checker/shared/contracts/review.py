@@ -7,6 +7,8 @@ from pydantic import Field
 
 from legal_checker.shared.contracts.common import Model
 
+REVIEW_POLICY = "REVIEW_ALL_FINDINGS_V1"
+
 
 class ReviewTarget(Model):
     doi_tuong_loai: str

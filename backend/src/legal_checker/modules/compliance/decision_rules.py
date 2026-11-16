@@ -97,6 +97,7 @@ def load_decision_rule(
         "human_approval_required_for_final",
         "conclusion_scope_required",
         "performance_requires_receipt_evidence",
+        "allowed_evaluation_targets",
     }
     if set(conditions) - allowed:
         issues.append("Unsupported decision rule conditions")
@@ -119,6 +120,15 @@ def load_decision_rule(
         "conclusion_scope_required"
     ):
         issues.append("Receipt-evidence rule requires an explicit conclusion scope policy")
+    targets = conditions.get("allowed_evaluation_targets")
+    if "allowed_evaluation_targets" in conditions and (
+        not isinstance(targets, list)
+        or not targets
+        or any(t not in ("CONTRACT_CONTENT", "PERFORMANCE") for t in targets)
+        or len(set(targets)) != len(targets)
+        or conditions.get("conclusion_scope_required") is not True
+    ):
+        issues.append("Invalid allowed_evaluation_targets or missing conclusion scope policy")
     if not isinstance(conditions.get("gate"), dict):
         issues.append("Invalid decision rule gate object")
     else:
