@@ -84,6 +84,19 @@ npm --prefix frontend run dev
 
 Mở http://localhost:5173. Windows: nếu test/seed báo lỗi giải mã ký tự, đặt `PYTHONUTF8=1`.
 
+### Để báo cáo có kết luận của AI
+
+Ca thường (`FULL_ASSESSMENT`) chỉ kết luận khi có dữ kiện đã xác minh; với knowledge hiện tại
+AI gần như không được tự kết luận. Muốn demo kết luận nội dung, tải hợp đồng với chế độ
+**Rà soát dự thảo trước khi ký** (`DRAFT_REVIEW`, đánh dấu bộ hồ sơ đầy đủ). Đo ngày 17/11 trên
+PDF HD360_013 với `OPENAI_MODEL=gpt-6-luna`, `ASSESSMENT_LLM_MAX_CALLS=120`: 43 lượt gọi, khoảng
+0,09 USD, 16 kết luận (12 không có điều khoản bị cấm, ngôn ngữ, giải quyết tranh chấp, 2 thiếu
+thông tin tài khoản kinh phí bảo trì vì hợp đồng để trống). Mặc định 20 lượt đủ cho thử nhanh
+nhưng nhiều điểm kiểm tra sẽ báo "hết lượt gọi". Model suy luận (gpt-6) cần
+`C07_LLM_MAX_OUTPUT_TOKENS=12000`, `C07_LLM_TIMEOUT_SECONDS=180`,
+`C07_LLM_TOTAL_TIMEOUT_SECONDS=400`. Máy không có PDF gốc của ca dataset thì dùng
+`ASSESSMENT_MODULES=modules_di_reference`.
+
 ## 3. Kịch bản trình bày (~5 phút)
 
 1. (AUTH_MODE=on) **Đăng nhập** bằng tài khoản trưởng nhóm; góc phải hiện tên và vai trò.

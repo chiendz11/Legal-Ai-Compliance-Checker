@@ -407,3 +407,29 @@ def test_google_retry_info_duration_is_respected_without_exposing_body():
     assert sleeps == [45]
     assert len(sink.events) == 2
     assert all("PRIVATE" not in e.model_dump_json() for e in sink.events)
+
+
+def test_strict_schema_lists_every_property_and_keeps_optional_fields_nullable():
+    from legal_checker.modules.compliance.llm_contracts import SemanticProposal
+    from legal_checker.shared.llm.client import strict_json_schema
+
+    original = SemanticProposal.model_json_schema()
+    strict = strict_json_schema(original)
+
+    def objects(node):
+        if isinstance(node, dict):
+            if isinstance(node.get("properties"), dict):
+                yield node
+            for value in node.values():
+                yield from objects(value)
+        elif isinstance(node, list):
+            for value in node:
+                yield from objects(value)
+
+    for node in objects(strict):
+        assert node["required"] == list(node["properties"])
+        assert node["additionalProperties"] is False
+        assert all("default" not in prop for prop in node["properties"].values())
+    quote = strict["$defs"]["ProposedQuote"]["properties"]["quote_id"]
+    assert {"type": "null"} in quote["anyOf"]  # optional stays nullable
+    assert "default" in str(original)  # the input schema itself is not modified

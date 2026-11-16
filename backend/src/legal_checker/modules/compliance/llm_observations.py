@@ -758,15 +758,13 @@ class LLMObservationProvider:
 
         def concludable(criterion_id):
             """Some AI answer could become a finding: reviewed, attested or admissible."""
-            if criterion_id in reviews or criterion_id in verifications:
+            if criterion_id in reviews:
                 return True
             if not self.automatic_draft_review:
                 return False
-            from legal_checker.modules.compliance.automatic_review import (
-                admissible_without_verification,
-            )
+            from legal_checker.modules.compliance.automatic_review import could_admit
 
-            return admissible_without_verification(criterion_id, request, knowledge)
+            return could_admit(criterion_id, request, knowledge, verifications.get(criterion_id))
 
         def ask(package):
             return self.client.complete(

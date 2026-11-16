@@ -731,15 +731,33 @@ def test_hint_only_criteria_get_no_call_when_hints_are_off(reasoning_case):
     assert "chuyên viên" in batch.observations[0].giai_thich
 
 
-def test_attested_criteria_are_still_called_when_hints_are_off(reasoning_case):
+@pytest.mark.parametrize(
+    "local,exceptions_resolved,called",
+    [("MATCH", True, True), ("UNKNOWN", True, False), ("MATCH", False, False)],
+)
+def test_attestation_is_called_only_when_it_could_be_admitted(
+    reasoning_case, local, exceptions_resolved, called
+):
+    """An attestation whose local applicability or exceptions are open cannot conclude."""
     knowledge, data = reasoning_case
     request = ReasoningRequest.model_validate(data)
-    verification = prior_verification(request, facts={"x": True}, facts_verified=True)
-    client = FakeClient([semantic(data)])
-    LLMObservationProvider(client, verifications=[verification], call_unconcludable=False).analyze(
-        request, knowledge
+    verification = prior_verification(
+        request,
+        facts={"evaluation_target": "CONTRACT_CONTENT"},
+        facts_verified=True,
+        local_applicability=local,
+        gates={"exceptions_resolved": exceptions_resolved},
     )
-    assert len(client.calls) == 1
+    client = FakeClient([semantic(data)] * 2)
+    batch = LLMObservationProvider(
+        client,
+        verifications=[verification],
+        automatic_draft_review=True,
+        call_unconcludable=False,
+    ).analyze(request, knowledge)
+    assert bool(client.calls) is called
+    if not called:
+        assert batch.analyses[0].error_code == "NOT_CONCLUDABLE"
 
 
 @pytest.mark.parametrize(

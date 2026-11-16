@@ -35,13 +35,14 @@ DIMENSIONS = ("scope", "applicability", "requirement", "criterion")
 
 
 def build_source(settings, with_llm: bool):
-    from legal_checker.api.dependencies import llm_client_factory
+    """The same module source the API builds (verifier, OCR, reference policy, C07 options)."""
+    from legal_checker.api.dependencies import module_source
     from legal_checker.modules.assessments.cases import CaseRepository
-    from legal_checker.modules.documents.ocr import build_ocr_engine
     from legal_checker.shared.storage.http import CachedHttpSourceStorage
     from legal_checker.shared.storage.uploads import LocalUploadStorage, RoutingSourceStorage
-    from legal_checker.workflows.integrated import IntegratedModulesSource
 
+    if settings.assessment_modules not in {"modules", "modules_di_reference"}:
+        raise SystemExit("Set ASSESSMENT_MODULES=modules or modules_di_reference in .env")
     storage = RoutingSourceStorage(
         LocalUploadStorage(settings.upload_dir, max_bytes=settings.source_max_bytes),
         CachedHttpSourceStorage(
@@ -50,23 +51,10 @@ def build_source(settings, with_llm: bool):
             max_bytes=settings.source_max_bytes,
         ),
     )
-    return IntegratedModulesSource(
-        settings.database_url,
-        CaseRepository(settings.database_url),
-        storage=storage,
-        upload_dir=settings.upload_dir,
-        source_cache_dir=settings.source_cache_dir,
-        llm_client_factory=llm_client_factory(settings) if with_llm else None,
-        llm_max_calls=settings.assessment_llm_max_calls,
-        llm_parallel=settings.assessment_llm_parallel,
-        llm_agreement=settings.assessment_llm_agreement,
-        ocr=build_ocr_engine(
-            settings.document_ocr,
-            command=settings.tesseract_cmd,
-            language=settings.ocr_language,
-            tessdata_dir=settings.tessdata_dir,
-        ),
-    )
+    source = module_source(settings, CaseRepository(settings.database_url), storage)
+    if not with_llm:
+        source.llm_client_factory = None  # offline: no paid call, whatever .env says
+    return source
 
 
 def case_context(database_url: str, source, knowledge, ca_id: str, stamp: str):
