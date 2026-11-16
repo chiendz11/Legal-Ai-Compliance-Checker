@@ -79,6 +79,9 @@ seed DB local mới của đợt 07/11. Đã được thay bởi [release PDF360
 ### 1. Yêu cầu Nghiệp vụ (`business/`)
 * **[Kế hoạch Triển khai 10 Tuần (W4–W13)](business/roadmap_10_weeks.md)** ([Bản Excel XLSX](business/ke_hoach_10_tuan.xlsx) · [Bản CSV](business/ke_hoach_10_tuan.csv)): Phân công trách nhiệm 5 workstreams, lộ trình 3 giai đoạn và tiêu chuẩn hoàn thành (Definition of Done).
 * **[Báo cáo Tiến độ Tuần 9 (PPTX)](business/bao_cao_tien_do_tuan_9.pptx)** ([Thư mục Slides](business/slides/bao_cao_tien_do_tuan_9.pptx)): Bản trình chiếu tiến độ/mục tiêu Tuần 9; các tỷ lệ kỳ vọng không thay bằng chứng nghiệm thu (Cột mốc First Working Inference E2E, Cụm K3d GitOps, Async Task Queue và Reviewer Workbench).
+* **[Báo cáo Tuần 10 điều chỉnh](business/bao_cao_tien_do_tuan_10.md)** ([PPTX](business/slides/bao_cao_tien_do_tuan_10.pptx), [PDF](business/slides/bao_cao_tien_do_tuan_10.pdf)): Bám workbook kế hoạch: Inference MVP, phần việc năm người, smoke/regression trên DEV, nguồn của kết luận và danh sách lỗi ưu tiên.
+* **[Báo cáo Tuần 11 — kế hoạch và thực tế](business/bao_cao_tien_do_tuan_11.md)** ([PPTX](business/slides/bao_cao_tien_do_tuan_11.pptx), [PDF](business/slides/bao_cao_tien_do_tuan_11.pdf)): Đối chiếu nhiệm vụ năm người, bằng chứng hiện có và các bước còn lại để nghiệm thu Inference STABLE.
+* **[Mục lục và trạng thái các slide](business/slides/README.md)**: Phân biệt báo cáo tuần đã điều chỉnh với bản nháp lịch sử về tri thức/công nghệ/Gold có nhận định chưa nghiệm thu.
 * **[Business Requirements Document (BRD v1.1)](business/BRD_v1.1.pdf)**: Đặc tả yêu cầu nghiệp vụ gốc, quy tắc thẩm định pháp lý và xử lý trường hợp bất định.
 
 ### 2. Kiến trúc & Thiết kế Kỹ thuật (`architecture/`)

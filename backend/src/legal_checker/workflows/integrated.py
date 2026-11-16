@@ -23,6 +23,7 @@ from legal_checker.modules.compliance.verification import (
 )
 from legal_checker.modules.documents.parser import UnsupportedDocumentError
 from legal_checker.modules.documents.repository import DocumentRepository
+from legal_checker.modules.documents.semantic_extractor import SemanticDocumentExtractor
 from legal_checker.modules.documents.service import PdfDocumentIntelligence, SourceMismatchError
 from legal_checker.modules.legal_knowledge.repository import Knowledge
 from legal_checker.modules.retrieval.coverage import add_review_candidates
@@ -69,6 +70,7 @@ class IntegratedModulesSource:
         cases: CaseRepository,
         *,
         storage: SourceStorage | None = None,
+        document_semantic_extractor: SemanticDocumentExtractor | None = None,
         upload_dir: Path | None = None,
         source_cache_dir: Path | None = None,
         llm_client_factory: Callable[[], object] | None = None,
@@ -83,6 +85,7 @@ class IntegratedModulesSource:
         self.database_url = database_url
         self.cases = cases
         self.storage = storage
+        self.document_semantic_extractor = document_semantic_extractor
         self.upload_dir = upload_dir
         self.source_cache_dir = source_cache_dir
         self.llm_client_factory = llm_client_factory
@@ -112,13 +115,15 @@ class IntegratedModulesSource:
             else MODULE_SOURCE
         )
 
-    def _extract(self, case: AssessmentCase):
+    def _extract(self, case: AssessmentCase, *, context: Context | None = None):
         if self.storage is None:
             raise DocumentReadError(
                 "DOCUMENT_INTELLIGENCE_UNAVAILABLE", "Source storage is not configured"
             )
         try:
-            extraction = PdfDocumentIntelligence(self.storage).run(case)
+            extraction = PdfDocumentIntelligence(
+                self.storage, semantic=self.document_semantic_extractor
+            ).run(case, context=context)
         except UnsupportedDocumentError as error:
             raise DocumentReadError("DOCUMENT_FORMAT_UNSUPPORTED", str(error)) from error
         except (SourceMismatchError, SourceIntegrityError) as error:
@@ -206,7 +211,8 @@ class IntegratedModulesSource:
                 result = self._reference(item)
                 diagnostics.append({"module": "C02", "code": "REFERENCE_DOCUMENT_USED"})
             else:
-                extraction = self._extract(item)
+                extraction = self._extract(item, context=context)
+                diagnostics.extend({"module": "C02", **d} for d in extraction.semantic_diagnostics)
                 result = extraction.result
                 read_coverage = DocumentReadCoverage(
                     hop_dong_id=item.hop_dong_id,
