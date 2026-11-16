@@ -34,6 +34,7 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
     NGAY_GIAO_KET: "Ngày ký hợp đồng",
     NGAY_HIEU_LUC: "Ngày hợp đồng có hiệu lực",
     NGAY_SU_KIEN: "Ngày phát sinh sự kiện",
+    TEMPLATE_USE: "Ngày sử dụng hợp đồng mẫu",
   },
   do_chinh_xac_ngay: { DAY: "Theo ngày", MONTH: "Theo tháng", YEAR: "Chỉ biết năm" },
   trang_thai_ngay: {

@@ -5,6 +5,7 @@ re-queuing rows that never started. Workers claim with a row lock; a RUNNING row
 heartbeat is older than the lease can be reclaimed after a worker crash.
 """
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -132,8 +133,12 @@ class RunRepository:
                 (stage, status, stamp, now, ca_id, run_id),
             )
 
-    def complete(self, ca_id: str, run_id: str, draft: AssessmentDraft) -> None:
-        with connect_postgres(self.database_url) as connection:
+    def complete(self, ca_id: str, run_id: str, draft: AssessmentDraft, *, connection=None) -> None:
+        with (
+            nullcontext(connection)
+            if connection is not None
+            else connect_postgres(self.database_url)
+        ) as connection:
             updated = connection.execute(
                 """UPDATE runtime.workflow_runs
                    SET status='COMPLETED', draft_json=%s, updated_at=now()

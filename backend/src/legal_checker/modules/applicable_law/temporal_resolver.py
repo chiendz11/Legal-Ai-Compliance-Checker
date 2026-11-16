@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from datetime import date
 from typing import Any, Protocol
 
+from legal_checker.modules.applicable_law.catalog_policy import MARKERS, read_policy, selection_date
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.document_intelligence import ContractProfile, ProfileTimeMarker
@@ -23,9 +24,11 @@ class TemporalResolver(Protocol):
 
 RESOLUTION_METHOD = "CATALOG_MARKER_VERSION_INTERVAL"
 _UNVERIFIED_MARKER = "CHUA_XAC_MINH"
-# phien_ban_yeu_cau.loai_moc_ap_dung → C02 time marker. Signing never stands in for an event
-# date: payment rules use the collection marker even when the signing date is known.
+# phien_ban_yeu_cau.loai_moc_ap_dung → C02 marker. Legacy payment rules keep their
+# collection semantics. Versioned contract-review policies explicitly separate the date
+# selecting the legal regime from evidence of later payment/performance.
 DEFAULT_MARKER_TYPES: dict[str, str] = {
+    **{name: name for name in MARKERS},
     "NGAY_XAC_LAP_HOAC_SU_DUNG_MAU": "SIGNING",
     "NGAY_THOA_THUAN_VA_NGAY_THU_TIEN": "COLLECTION",
     "NGAY_GIAO_KET_VA_MOC_GIAO_THU_NHAN_TIEN": "COLLECTION",
@@ -52,8 +55,9 @@ def in_force(version: Mapping[str, Any], day: date) -> bool:
 class CatalogTemporalResolver:
     """Pick the requirement version in force at the obligation's own time marker.
 
-    Scope-owned fields and the checklist are copied unchanged. Several versions in force,
-    an unknown date or an unverified marker type stay UNKNOWN; nothing picks "the first".
+    Scope-owned fields and the checklist are copied unchanged. Concurrent sources in a
+    versioned policy, an unknown date or an unverified marker stay UNKNOWN; nothing picks
+    "the first". Legacy catalogs retain their existing single-confirmed-group behavior.
     A requirement with no version yet in force at a known date is NOT_APPLICABLE.
     """
 
@@ -61,9 +65,11 @@ class CatalogTemporalResolver:
         self,
         marker_types: Mapping[str, str] | None = None,
         family_events: Mapping[str, str] | None = None,
+        case=None,
     ):
         self.marker_types = DEFAULT_MARKER_TYPES if marker_types is None else marker_types
         self.family_events = DEFAULT_FAMILY_EVENTS if family_events is None else family_events
+        self.case = case
 
     def marker_type(self, requirement_id: str, versions: list[dict]) -> str | None:
         """One marker type per family; old versions marked CHUA_XAC_MINH inherit it."""
@@ -86,16 +92,25 @@ class CatalogTemporalResolver:
         scope: list[ScopeResolution],
         knowledge: KnowledgeSnapshot,
     ) -> list[ApplicableRequirement]:
+        if self.case and (
+            self.case.ca_id != context.ca_id or self.case.hop_dong_id != profile.hop_dong_id
+        ):
+            raise ValueError("Declared C01 marker belongs to another assessment")
         versions_by_family: dict[str, list[dict]] = {}
         for version in knowledge.versions.values():
             versions_by_family.setdefault(version["requirement_id"], []).append(version)
         markers: dict[str, list[ProfileTimeMarker]] = {}
         for marker in profile.time_markers:
             markers.setdefault(marker.loai_moc, []).append(marker)
-        return [
+        from legal_checker.modules.applicable_law.historical_coverage import (
+            resolve_historical_branches,
+        )
+
+        rows = [
             self.resolve_one(context, profile, item, versions_by_family, markers, knowledge)
             for item in scope
         ]
+        return resolve_historical_branches(rows, knowledge)
 
     def resolve_one(
         self,
@@ -121,6 +136,47 @@ class CatalogTemporalResolver:
         found = markers.get(marker_type, []) if marker_type else []
         marker = found[0] if len(found) == 1 else None
         day = marker.ngay if marker else None
+        declared = None
+        declared_conflict = None
+        if self.case:
+            timing = self.case.assessment_context
+            kind = {"NGAY_GIAO_KET": "SIGNING", "NGAY_SU_DUNG_MAU": "TEMPLATE_USE"}.get(
+                timing.loai_moc_ap_dung, timing.loai_moc_ap_dung
+            )
+            if timing.moc_ap_dung is not None and kind == marker_type:
+                declared = {
+                    "source": "C01_DECLARED",
+                    "marker_type": kind,
+                    "date": timing.moc_ap_dung.isoformat(),
+                    "basis": "PLANNED_DRAFT_SCENARIO"
+                    if timing.review_mode == "DRAFT_REVIEW"
+                    else "CALLER_DECLARED",
+                    "declared_by": self.case.created_by,
+                    "ca_id": context.ca_id,
+                }
+                if day is not None and day != timing.moc_ap_dung:
+                    declared_conflict = "C01 date conflicts with evidenced C02 marker"
+                    day = None
+                else:
+                    day = timing.moc_ap_dung
+                    # Do not pretend a caller declaration was extracted from the PDF.
+                    marker = None
+
+        policy_issue = declared_conflict
+        policies = []
+        basis_day = day
+        try:
+            policies = [p for v in candidates if (p := read_policy(v)) is not None]
+            if policies and (
+                len(policies) != len(candidates)
+                or any(p.selection_marker != marker_type for p in policies)
+            ):
+                policy_issue = "inconsistent versioned legal policy within family"
+            elif policies and day is not None:
+                basis_day, selection_issue = selection_date(profile, day, policies)
+                policy_issue = policy_issue or selection_issue
+        except (ValueError, TypeError):
+            policy_issue = "invalid or unsupported versioned legal policy"
 
         version: dict | None = None
         version_status, applicability = "UNKNOWN", "UNKNOWN"
@@ -132,29 +188,43 @@ class CatalogTemporalResolver:
             details["version"] = "no requirement version for an open scope group"
         elif marker_type is None:
             details["version"] = "marker type unverified for every version of this family"
-        elif marker is None:
+        elif declared_conflict:
+            details["version"] = declared_conflict
+        elif marker is None and declared is None:
             details["version"] = f"{len(found)} {marker_type} markers in C02; need exactly one"
         elif day is None:
             details["version"] = (
                 f"{marker_type} date unknown; another marker is not used as a substitute"
             )
+        elif policy_issue:
+            details["version"] = policy_issue
         else:
-            active = [v for v in candidates if in_force(v, day)]
+            active = [v for v in candidates if in_force(v, basis_day)]
             confirmed = [v for v in active if group_of(v) == "MATCH"]
             starts = [as_date(v.get("hieu_luc_tu")) for v in candidates]
-            if len(active) == 1 or len(confirmed) == 1:
+            if len(active) == 1 or (len(confirmed) == 1 and not policies):
                 version = active[0] if len(active) == 1 else confirmed[0]
                 version_status = "RESOLVED"
                 if item.scope_status == "MATCH" and group_of(version) == "MATCH":
                     applicability = "CONFIRMED"
                 details["version"] = (
-                    f"{version['requirement_version_id']} in force on {day} "
+                    f"{version['requirement_version_id']} in force on {basis_day} "
                     f"[{version.get('hieu_luc_tu')}, {version.get('hieu_luc_den') or '∞'})"
                 )
                 if applicability != "CONFIRMED":
                     details["applicability"] = (
                         f"version group {version.get('nhom_phien_ban')} scope is "
                         f"{group_of(version)}"
+                    )
+                policy = read_policy(version)
+                if policy is not None and not policy.criteria_ready:
+                    version = None
+                    version_status, applicability = "UNKNOWN", "UNKNOWN"
+                    details["version"] = "catalog version has no approved executable criteria"
+                if basis_day != day:
+                    details["transition"] = (
+                        f"Article 83(5): signing/event date {day}; grandfathered regime "
+                        f"selected at {basis_day}; no substitute for performance evidence"
                     )
             elif not active and all(s is not None and day < s for s in starts):
                 if len(family_versions) == 1:
@@ -207,6 +277,9 @@ class CatalogTemporalResolver:
                 "candidate_version_ids": [v["requirement_version_id"] for v in candidates],
                 "version_group": pointer.get("nhom_phien_ban") if pointer else None,
                 "marker_evidence": marker.trich_xuat_id if marker else None,
+                **({"assessment_marker": declared} if declared else {}),
+                "legal_policy_id": policies[0].policy_id if policies else None,
+                "regime_selection_date": basis_day.isoformat() if policies and basis_day else None,
                 "version_basis": (
                     {
                         "source_van_ban_id": version.get("source_van_ban_id"),
@@ -224,5 +297,10 @@ class CatalogTemporalResolver:
             },
             phien_ban_id=context.phien_ban_id,
             reason={"mode": RESOLUTION_METHOD, "summary": summary, "scope": item.scope_reason}
+            | (
+                {"date_source": "C01 caller declaration; not proof of actual execution"}
+                if declared
+                else {}
+            )
             | details,
         )

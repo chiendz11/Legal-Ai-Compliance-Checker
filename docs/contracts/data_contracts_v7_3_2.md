@@ -1,4 +1,10 @@
 # DATA CONTRACTS GIỮA CÁC MODULE
+
+> Tài liệu nguồn lịch sử v7.3.2, giữ để truy vết thiết kế. Quyết định thực thi hiện hành
+> nằm ở [INTEGRATION_V1](integration_spec.md), [catalog](catalog.json), schemas và
+> [playbook](../guides/parallel_development_playbook.md). Enum/chữ ký hàm/table authority
+> trong bản nguồn không được dùng thay các đặc tả đã cập nhật.
+
 ## AI Legal Compliance Checker
 ### Baseline: BRD v1.1 + Data Model v7.3.2
 

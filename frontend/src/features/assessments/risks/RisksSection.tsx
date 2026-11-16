@@ -1,27 +1,38 @@
 import type { Recommendation, RiskResult } from "../../../shared/api/client";
 import { StatusBadge } from "../../../shared/components/ui";
+import { shortCitationId } from "../../../shared/labels";
+import { useReportPresentation } from "../../reports/assessmentStatus";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { readRecommendation } from "../../reports/recommendation";
 import { criterionText, riskTitle, useReportIndex } from "../../reports/reportIndex";
 
-const ACTION_LABELS: Record<string, string> = {
-  REQUEST_VERIFICATION: "Việc cần làm",
-  REQUEST_EVIDENCE: "Cần bổ sung chứng cứ",
-};
+// Actions that ask for a check, not a change to the contract (docs/contracts/integration_policy.json).
+const VERIFICATION_ACTIONS = new Set([
+  "VERIFY", "VERIFY_REFERENCE", "REQUEST_VERIFICATION", "REQUEST_EVIDENCE",
+]);
 
+function actionLabel(code: string): string {
+  if (code === "REQUEST_EVIDENCE") return "Cần bổ sung chứng cứ";
+  return VERIFICATION_ACTIONS.has(code) ? "Cần xác minh" : "Cách sửa";
+}
 
 /** One line saying what to do; the template's full text stays one click away. */
 export function RecommendationBlock({ recommendation }: { recommendation: Recommendation }) {
   const { focus } = useReportNav();
-  const view = readRecommendation(recommendation.noi_dung);
+  // The report's presentation binds draft slots to observed values and withholds a draft whose
+  // values are missing; the stored template text is only a fallback for older reports.
+  const presentation = useReportPresentation();
+  const text =
+    presentation?.recommendations[recommendation.khuyen_nghi_ca_id]?.text ?? recommendation.noi_dung;
+  const view = readRecommendation(text);
   return (
     <div
       className={`recommendation${focus === recommendation.khuyen_nghi_ca_id ? " focused" : ""}`}
       id={focusDomId(recommendation.khuyen_nghi_ca_id)}
     >
       <span className="recommendation-label">
-        {ACTION_LABELS[recommendation.loai_hanh_dong] ?? "Việc cần làm"}
+        {actionLabel(recommendation.loai_hanh_dong)}
       </span>
       <p>{view.action}</p>
       {view.details.length > 0 && (
@@ -79,8 +90,13 @@ export function RiskCard({
           </button>
         )}
         {finding && (
-          <button type="button" className="link" onClick={() => go("citations", finding.finding_id)}>
-            Xem trích dẫn <code>{finding.vien_dan_id}</code> (
+          <button
+            type="button"
+            className="link"
+            onClick={() => go("citations", finding.finding_id)}
+            title={finding.vien_dan_id}
+          >
+            Xem {shortCitationId(finding.vien_dan_id)} (
             <StatusBadge kind="citation" code={finding.status} />)
           </button>
         )}

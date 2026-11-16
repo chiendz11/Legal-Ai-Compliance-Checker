@@ -47,8 +47,13 @@ def _case_record(row: CaseRow) -> CaseRecord:
 
 
 def report_record(stored: StoredReport) -> ReportRecord:
+    from legal_checker.modules.reports.presentation import build_presentation
+
     return ReportRecord(
-        run_id=stored.run_id, review_revision=stored.review_revision, report=stored.report
+        run_id=stored.run_id,
+        review_revision=stored.review_revision,
+        report=stored.report,
+        presentation=build_presentation(stored.report.report_json),
     )
 
 
@@ -123,6 +128,8 @@ def create_case(body: CaseCreate, services: ServicesDependency, actor: ActorDepe
             ngay_danh_gia=body.ngay_danh_gia,
             moc_ap_dung=body.moc_ap_dung,
             loai_moc_ap_dung=body.loai_moc_ap_dung,
+            review_mode=body.review_mode,
+            document_set_complete=body.document_set_complete,
         ),
         deployment,
         actor,

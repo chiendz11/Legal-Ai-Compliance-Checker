@@ -11,6 +11,7 @@ const MAX_MB = 100;
 const MARKER_TYPES = [
   ["", "Tự động"],
   ["NGAY_GIAO_KET", "Ngày giao kết hợp đồng"],
+  ["TEMPLATE_USE", "Ngày sử dụng mẫu (dự kiến nếu rà soát dự thảo)"],
   ["NGAY_HIEU_LUC", "Ngày hợp đồng có hiệu lực"],
   ["NGAY_SU_KIEN", "Ngày phát sinh sự kiện"],
 ] as const;
@@ -43,6 +44,8 @@ export function UploadPage() {
   const [relevantDate, setRelevantDate] = useState("");
   const [markerType, setMarkerType] = useState("");
   const [runNow, setRunNow] = useState(true);
+  const [reviewMode, setReviewMode] = useState<"DRAFT_REVIEW" | "FULL_ASSESSMENT">("DRAFT_REVIEW");
+  const [documentSetComplete, setDocumentSetComplete] = useState(false);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -76,6 +79,8 @@ export function UploadPage() {
         ngay_danh_gia: assessedOn,
         moc_ap_dung: relevantDate || null,
         loai_moc_ap_dung: markerType || null,
+        review_mode: reviewMode,
+        document_set_complete: documentSetComplete,
         phien_ban_id: null, // backend selects the allowed deployment release
       });
       const caId = created.case.ca_id;
@@ -196,8 +201,33 @@ export function UploadPage() {
           </div>
           <p className="small muted">
             Mốc áp dụng luật: để trống nếu chưa chắc. Hệ thống tự đọc ngày ký trong hợp đồng và không
-            lấy ngày hôm nay làm mốc.
+            lấy ngày hôm nay làm mốc. Mốc chỉ dùng cho đúng loại đã chọn; khi rà soát dự thảo, đây là
+            thời điểm dự kiến, không chứng minh hợp đồng đã được ký.
           </p>
+          <label className="field">
+            <span>Phạm vi đánh giá</span>
+            <select
+              value={reviewMode}
+              disabled={busy}
+              onChange={(e) => setReviewMode(e.target.value as typeof reviewMode)}
+            >
+              <option value="DRAFT_REVIEW">Rà soát dự thảo trước khi ký</option>
+              <option value="FULL_ASSESSMENT">Đánh giá cả việc ký kết và thực hiện hợp đồng</option>
+            </select>
+          </label>
+          <p className="small muted">
+            Rà soát dự thảo chỉ kiểm tra nội dung các điều khoản. Việc đã ký, thu tiền, bàn giao và
+            giấy tờ bên ngoài được ghi là ngoài phạm vi, không được coi là đã đáp ứng.
+          </p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={documentSetComplete}
+              disabled={busy}
+              onChange={(e) => setDocumentSetComplete(e.target.checked)}
+            />
+            Tệp tải lên đã gồm đủ thân hợp đồng và các phụ lục cần rà soát
+          </label>
           <label className="check">
             <input
               type="checkbox"

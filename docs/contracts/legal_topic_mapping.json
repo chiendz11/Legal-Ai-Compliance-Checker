@@ -1,0 +1,201 @@
+{
+  "policy": "LEGAL_SOURCE_ATOMS_V1",
+  "items": [
+    {
+      "topic_id": "FAM_PARTY_IDENTITY",
+      "requirement_id": "FAM_PARTY_IDENTITY",
+      "legal_source_group": "BVNTD",
+      "version_ids": [
+        "PV_GYC005"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PARTY_IDENTITY",
+      "requirement_id": "FAM_PARTY_IDENTITY__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC018"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PARTY_IDENTITY",
+      "requirement_id": "FAM_PARTY_IDENTITY__NHAO",
+      "legal_source_group": "NHAO",
+      "version_ids": [
+        "PV_HYC039"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PROPERTY_INFO",
+      "requirement_id": "FAM_PROPERTY_INFO",
+      "legal_source_group": "BVNTD",
+      "version_ids": [
+        "PV_GYC006"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PROPERTY_INFO",
+      "requirement_id": "FAM_PROPERTY_INFO__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC019"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PAYMENT_METHOD_DEADLINE",
+      "requirement_id": "FAM_PAYMENT_METHOD_DEADLINE",
+      "legal_source_group": "BVNTD",
+      "version_ids": [
+        "PV_GYC008"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PAYMENT_METHOD_DEADLINE",
+      "requirement_id": "FAM_PAYMENT_METHOD_DEADLINE__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC021"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PAYMENT_METHOD_DEADLINE",
+      "requirement_id": "FAM_PAYMENT_METHOD_DEADLINE__NHAO",
+      "legal_source_group": "NHAO",
+      "version_ids": [
+        "PV_HYC042"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_RIGHTS_OBLIGATIONS",
+      "requirement_id": "FAM_RIGHTS_OBLIGATIONS",
+      "legal_source_group": "BVNTD",
+      "version_ids": [
+        "PV_GYC010"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_RIGHTS_OBLIGATIONS",
+      "requirement_id": "FAM_RIGHTS_OBLIGATIONS__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC024"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_RIGHTS_OBLIGATIONS",
+      "requirement_id": "FAM_RIGHTS_OBLIGATIONS__NHAO",
+      "legal_source_group": "NHAO",
+      "version_ids": [
+        "PV_HYC044"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_TERMINATION",
+      "requirement_id": "FAM_TERMINATION",
+      "legal_source_group": "BVNTD",
+      "version_ids": [
+        "PV_GYC012"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_TERMINATION",
+      "requirement_id": "FAM_TERMINATION__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC027"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_DISPUTE",
+      "requirement_id": "FAM_DISPUTE",
+      "legal_source_group": "BVNTD",
+      "version_ids": [
+        "PV_GYC014"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_DISPUTE",
+      "requirement_id": "FAM_DISPUTE__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC028"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PRICE",
+      "requirement_id": "FAM_PRICE__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC020"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PRICE",
+      "requirement_id": "FAM_PRICE",
+      "legal_source_group": "MAU_CAN_HO",
+      "version_ids": [
+        "PV_GYC096"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_PRICE",
+      "requirement_id": "FAM_PRICE__NHAO",
+      "legal_source_group": "NHAO",
+      "version_ids": [
+        "PV_HYC041"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_EFFECTIVE_TIME",
+      "requirement_id": "FAM_EFFECTIVE_TIME__KDBDS",
+      "legal_source_group": "KDBDS",
+      "version_ids": [
+        "PV_HYC029"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_EFFECTIVE_TIME",
+      "requirement_id": "FAM_EFFECTIVE_TIME",
+      "legal_source_group": "MAU_CAN_HO",
+      "version_ids": [
+        "PV_GYC192"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    },
+    {
+      "topic_id": "FAM_EFFECTIVE_TIME",
+      "requirement_id": "FAM_EFFECTIVE_TIME__NHAO",
+      "legal_source_group": "NHAO",
+      "version_ids": [
+        "PV_HYC046"
+      ],
+      "report_policy": "DISPLAY_ATOMIC_FINDINGS; TOPIC_COUNTS_DISTINCT_TOPIC_ID; DO_NOT_SUM_LEGAL_SOURCES_AS_INDEPENDENT_INCIDENTS"
+    }
+  ],
+  "semantics": {
+    "topic_id": "Reporting topic, not an executable parent requirement row. Original parent requirement_id is an anchor atomic family.",
+    "requirement_id": "Executable C05 family; exactly one legal source group.",
+    "join": "C05.requirement_id -> mapping.items.requirement_id; C07/C08 use requirement_version_id unchanged.",
+    "counting": "COUNT(DISTINCT topic_id) for topic totals; show atomic findings/source groups separately. C10 incident dedup requires the same fact/predicate, not topic equality alone.",
+    "no_default": "Families absent from items map to their own requirement_id as topic_id."
+  }
+}

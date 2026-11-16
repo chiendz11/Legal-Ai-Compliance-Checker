@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import type { FinalReport, ReportContent } from "../../shared/api/client";
 import { fieldLabel } from "../../shared/fieldLabels";
 import { label } from "../../shared/labels";
+import { requirementDisplayStatus } from "./assessmentStatus";
 import { NEXT_STEP, useInsufficientCauses } from "./causes";
 import { aiUsage, type Cause, CAUSES, viDate } from "./explain";
 import { useReportNav } from "./nav";
@@ -18,8 +19,11 @@ type Tone = "good" | "warn" | "bad" | "unknown";
 /** One headline from the stored statuses; nothing is scored or recomputed. */
 function verdict(content: ReportContent): { tone: Tone; title: string; text: string } {
   const results = content.compliance.requirement_results;
-  const n = (code: string) => results.filter((r) => r.status === code).length;
+  const shown = results.map(requirementDisplayStatus);
+  const n = (code: string) => shown.filter((s) => s === code).length;
   const [bad, partial, ok, unknown] = [n("NON_COMPLIANT"), n("PARTIAL"), n("COMPLIANT"), n("INSUFFICIENT")];
+  // Rows outside the chosen review scope or not triggered are neither met nor missing.
+  const assessed = results.length - n("OUTSIDE_REVIEW_SCOPE") - n("NOT_TRIGGERED");
   if (results.length === 0)
     return {
       tone: "unknown",
@@ -38,13 +42,19 @@ function verdict(content: ReportContent): { tone: Tone; title: string; text: str
       title: `${partial} quy định chỉ được tuân thủ một phần`,
       text: "Xem mục “Cần chú ý” để biết phần nào còn thiếu.",
     };
-  if (ok === results.length)
+  if (assessed === 0)
+    return {
+      tone: "unknown",
+      title: "Không có quy định nào cần kết luận trong phạm vi đã chọn",
+      text: "Các quy định được xét đều nằm ngoài phạm vi rà soát hoặc không phát sinh nghĩa vụ.",
+    };
+  if (ok === assessed)
     return {
       tone: "good",
       title: `Hợp đồng đáp ứng cả ${ok} quy định đã kiểm tra`,
       text: "Kết quả vẫn cần chuyên viên duyệt trước khi dùng chính thức.",
     };
-  if (unknown === results.length)
+  if (unknown === assessed)
     return {
       tone: "unknown",
       title: "Chưa đủ căn cứ để kết luận",
@@ -73,7 +83,7 @@ export function OverviewSection({ report }: { report: FinalReport }) {
   const index = useReportIndex();
   const toAttention = () =>
     document.getElementById("attention-block")?.scrollIntoView({ block: "start", behavior: "smooth" });
-  const insufficient = results.filter((r) => r.status === "INSUFFICIENT").length;
+  const insufficient = results.filter((r) => requirementDisplayStatus(r) === "INSUFFICIENT").length;
   const causes = useInsufficientCauses(content);
   const head = verdict(content);
 
@@ -213,12 +223,33 @@ function ResultNotes({ report }: { report: FinalReport }) {
     );
   if (content.audit.module_source === "REFERENCE_REPLAY")
     notes.push("Bản chạy thử tích hợp (phát lại đáp án mẫu), không phải kết quả đánh giá hợp đồng.");
+  if (content.audit.evidence_mode === "SYNTHETIC")
+    notes.push(
+      "Ca này dùng chứng từ và dữ kiện giả lập (chế độ đồ án); kết quả được tính theo kịch bản giả lập đó.",
+    );
+  const shown = content.compliance.requirement_results.map(requirementDisplayStatus);
+  const outside = shown.filter((s) => s === "OUTSIDE_REVIEW_SCOPE").length;
+  const notTriggered = shown.filter((s) => s === "NOT_TRIGGERED").length;
+  if (assessed.review_mode === "DRAFT_REVIEW")
+    notes.push(
+      `Đây là rà soát dự thảo trước khi ký: hệ thống chỉ kiểm tra nội dung các điều khoản.${
+        outside
+          ? ` ${outside} quy định cần giấy tờ về việc thực hiện hợp đồng (đã ký, thu tiền, bàn giao…) nên chưa được đánh giá và không được coi là đã đáp ứng.`
+          : ""
+      }`,
+    );
+  else if (outside)
+    notes.push(`${outside} quy định nằm ngoài phạm vi đánh giá đã chọn và không được coi là đã đáp ứng.`);
+  if (notTriggered)
+    notes.push(
+      `${notTriggered} quy định không phát sinh nghĩa vụ cho hợp đồng này sau khi xét điều kiện riêng.`,
+    );
   const signed = content.contract_profile.profile.ngay_giao_ket;
   notes.push(
     assessed.moc_ap_dung
-      ? `Quy định được chọn theo luật có hiệu lực tại ngày ${viDate(assessed.moc_ap_dung)}.`
+      ? `Quy định được chọn theo luật có hiệu lực tại ngày ${viDate(assessed.moc_ap_dung)} (mốc khai báo khi tải lên).`
       : signed
-        ? `Quy định được chọn theo luật có hiệu lực tại ngày ký ${viDate(signed)} (đọc từ hợp đồng).`
+        ? `Không khai báo mốc áp dụng khi tải lên; hệ thống tự xác định mốc thời gian cho từng quy định (thường là ngày ký ${viDate(signed)}, đọc từ hợp đồng).`
         : "Không đọc được ngày ký trong hợp đồng, nên một số quy định chưa rõ có áp dụng hay không.",
   );
   return (

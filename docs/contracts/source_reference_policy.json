@@ -1,0 +1,84 @@
+{
+  "policy_id": "V4R2_RUNTIME_REFERENCE_V1",
+  "dataset_version": "v7.5.0-pdf360-v4r2-runtime-20261110",
+  "knowledge_snapshot_sha256": "4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a",
+  "knowledge_review_status": "HUMAN_VERIFIED",
+  "fixture_only": true,
+  "legal_gold": false,
+  "independent_quality_metric_eligible": false,
+  "source_literals": {
+    "artifact": "ExtractionReference",
+    "reader": "PyMuPDF; separate from production pypdf/rules-v10",
+    "field_count_per_pdf": 36,
+    "scope": "Authored synthetic transaction appendix",
+    "withheld_means": "Withheld in this appendix, not absence from the entire source",
+    "quality": "SOURCE_LITERAL_VERIFIED; full-document legal gold not asserted"
+  },
+  "pipeline_reference": {
+    "profile": "FULL_CATALOG_DRAFT_REFERENCE_V1",
+    "catalog_families": 323,
+    "producer": "Current engines; downstream recomputed after owner-approved snapshot",
+    "new_llm_calls": 0,
+    "quality": "SILVER_GUARD_REFERENCE",
+    "cannot_measure": "Accuracy of the same engine against its own generated labels"
+  },
+  "controlled_rule_specs": {
+    "count": 32,
+    "oracle": "Independent pre-existing expected assertions and arithmetic, qualified against pinned knowledge",
+    "not_equivalent_to": "Legal adjudication on the 360 PDFs"
+  },
+  "guards": [
+    "Exact PDF SHA and case/run/knowledge ownership.",
+    "Preserve unknown/conflicting source values and original quote offsets.",
+    "No expected-output fallback in live modules mode.",
+    "Owner approval covers knowledge, while new runtime output retains separate review."
+  ],
+  "legacy_core_reference_20261107": {
+    "policy_id": "SOURCE_CORE_REFERENCE_V1",
+    "fixture_only": true,
+    "legal_gold": false,
+    "independent_quality_metric_eligible": false,
+    "supported_criterion_bindings": {
+      "TC_PV_HYC018_01": [
+        "ten_ben_ban",
+        "ten_ben_mua"
+      ],
+      "TC_PV_HYC039_01": [
+        "ten_ben_ban",
+        "ten_ben_mua"
+      ],
+      "TC_PV_GYC005_01": [
+        "ten_ben_ban",
+        "ten_ben_mua"
+      ],
+      "TC_PV_HYC019_01": [
+        "ma_can_ho",
+        "tang_toa"
+      ],
+      "TC_PV_HYC019_02": [
+        "dien_tich_thong_thuy (retain actual source label, not a claimed technical measurement method)"
+      ],
+      "TC_PV_HYC053_01": [
+        "warranty_months",
+        "warranty_unit=MONTH",
+        "warranty_start",
+        "numeric_scope",
+        "evaluation_target=CONTRACT_CONTENT",
+        "condition_triggered"
+      ],
+      "TC_PV_HYC053_02": [
+        "warranty_start",
+        "evaluation_target=CONTRACT_CONTENT",
+        "condition_triggered"
+      ]
+    },
+    "guards": [
+      "Exact original quote/offset and correct case/chunk ownership.",
+      "Known source values only; missing/conflict preserved.",
+      "Warranty quotation must identify housing, duration in months and acceptance commencement; law issue dates are not durations.",
+      "C06 source-span reference rows are explicitly labelled, not a BM25 quality gold set.",
+      "This private source reference builder is not the production CriterionVerificationProvider.",
+      "All other predicates need independent annotation or the module owner implementation; no blanket gates."
+    ]
+  }
+}

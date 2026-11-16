@@ -15,6 +15,11 @@ import {
   Section,
   StatusBadge,
 } from "../../../shared/components/ui";
+import {
+  criterionDisplayStatus,
+  requirementDisplayStatus,
+  useReportPresentation,
+} from "../../reports/assessmentStatus";
 import { useInsufficientCauses } from "../../reports/causes";
 import { RequirementDistribution } from "../../reports/distributions";
 import {
@@ -49,10 +54,15 @@ const GATE_LABELS: Record<string, string> = {
   version_resolved: "Đã chọn được điều luật có hiệu lực",
   evidence_validated: "Trích dẫn khớp nguyên văn hợp đồng",
   source_verified: "Nguồn luật đã xác minh",
-  coverage_complete: "Đã đọc đủ phần hợp đồng liên quan",
+  coverage_complete: "Đã đối chiếu toàn văn hợp đồng",
   absence_verified: "Đã xác minh hợp đồng thật sự thiếu nội dung",
   exceptions_resolved: "Đã xét các trường hợp ngoại lệ",
   evidence_conflict: "Bằng chứng mâu thuẫn nhau",
+};
+
+const INFO_GATES: Record<string, string> = {
+  coverage_complete: "Chưa đối chiếu toàn văn hợp đồng",
+  absence_verified: "Chưa xác minh hợp đồng thật sự thiếu nội dung",
 };
 
 export function useRequirementReason() {
@@ -65,7 +75,14 @@ export function useRequirementReason() {
     );
 }
 
-const STATUS_ORDER = ["NON_COMPLIANT", "PARTIAL", "INSUFFICIENT", "COMPLIANT"];
+const STATUS_ORDER = [
+  "NON_COMPLIANT",
+  "PARTIAL",
+  "INSUFFICIENT",
+  "COMPLIANT",
+  "NOT_TRIGGERED",
+  "OUTSIDE_REVIEW_SCOPE",
+];
 
 /** Every requirement to check, grouped by topic so a reader can go through the contract area by area. */
 export function TopicsSection({ content }: { content: ReportContent }) {
@@ -78,7 +95,7 @@ export function TopicsSection({ content }: { content: ReportContent }) {
   const causes = useInsufficientCauses(content);
   const selected = params.get("cause") as Cause | null;
   const shown = selected ? results.filter((r) => reasonOf(r).cause === selected) : results;
-  const statuses = new Set(results.map((r) => r.status));
+  const statuses = new Set(results.map(requirementDisplayStatus));
   // Requirements in scope without a stored result must show as "not run", never as compliant.
   const withoutResult = content.applicable_legal_scope.filter(
     (a) =>
@@ -133,7 +150,8 @@ export function TopicsSection({ content }: { content: ReportContent }) {
       <div className="stack">
         {ordered.map(([topic, items]) => {
           const counts = STATUS_ORDER.map(
-            (code) => [code, items.filter((r) => r.status === code).length] as const,
+            (code) =>
+              [code, items.filter((r) => requirementDisplayStatus(r) === code).length] as const,
           ).filter(([, n]) => n > 0);
           const containsFocus = items.some(
             (r) =>
@@ -142,7 +160,9 @@ export function TopicsSection({ content }: { content: ReportContent }) {
                 (c) => c.ket_qua_id === focus,
               ),
           );
-          const flagged = items.some((r) => r.status === "NON_COMPLIANT" || r.status === "PARTIAL");
+          const flagged = items.some((r) =>
+            ["NON_COMPLIANT", "PARTIAL"].includes(requirementDisplayStatus(r)),
+          );
           return (
             <details
               key={topic}
@@ -194,6 +214,10 @@ export function RequirementCard({
     focus === requirement.yeu_cau_ca_id || criteria.some((c) => c.ket_qua_id === focus);
   const version = requirementVersion(requirement);
   const name = nameOf(requirementId);
+  const shown = requirementDisplayStatus(requirement);
+  const assessed = shown !== "OUTSIDE_REVIEW_SCOPE" && shown !== "NOT_TRIGGERED";
+  // Backend projection: whether criterion results and full-text evidence coverage are complete.
+  const coverage = useReportPresentation()?.requirements[requirement.tuan_thu_id]?.coverage;
 
   return (
     <details
@@ -202,7 +226,7 @@ export function RequirementCard({
       open={containsFocus || undefined}
     >
       <summary className="card-summary">
-        <StatusBadge kind="requirement" code={requirement.status} />
+        <StatusBadge kind="requirement" code={shown} />
         <span className="card-title">
           <RequirementTitle
             name={name ?? (version?.noi_dung ? requirementText(requirement) : null)}
@@ -233,17 +257,31 @@ export function RequirementCard({
           <div>
             <dt>Điểm kiểm tra</dt>
             <dd>
-              {requirement.so_tieu_chi_ap_dung === 0
-                ? "Chưa có (quy định chưa được xác nhận áp dụng)"
-                : `${requirement.so_tieu_chi_ap_dung} điểm: ${concludedCount(requirement)} có kết luận${
-                    requirement.so_unknown > 0 ? `, ${requirement.so_unknown} chưa xác định` : ""
-                  }`}
+              {shown === "OUTSIDE_REVIEW_SCOPE"
+                ? "Không đánh giá trong phạm vi đã chọn"
+                : requirement.so_tieu_chi_ap_dung === 0
+                  ? shown === "NOT_TRIGGERED"
+                    ? "Không có điểm kiểm tra bắt buộc nào phát sinh"
+                    : "Chưa có (quy định chưa được xác nhận áp dụng)"
+                  : `${requirement.so_tieu_chi_ap_dung} điểm: ${concludedCount(requirement)} có kết luận${
+                      requirement.so_unknown > 0 ? `, ${requirement.so_unknown} chưa xác định` : ""
+                    }`}
             </dd>
           </div>
+          {assessed && coverage && (
+            <div>
+              <dt>Mức độ đầy đủ</dt>
+              <dd>{coverage.explanation}</dd>
+            </div>
+          )}
         </dl>
         <h3 className="subhead">Điểm kiểm tra ({criteria.length})</h3>
         {criteria.length === 0 && (
-          <Empty>Chưa có điểm kiểm tra nào vì quy định chưa được xác nhận áp dụng.</Empty>
+          <Empty>
+            {assessed
+              ? "Chưa có điểm kiểm tra nào vì quy định chưa được xác nhận áp dụng."
+              : "Không có điểm kiểm tra nào cần đánh giá."}
+          </Empty>
         )}
         <div className="stack">
           {criteria.map((c) => (
@@ -259,6 +297,10 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
   const index = useReportIndex();
   const { focus, go } = useReportNav();
   const openEvidence = useOpenEvidence();
+  // Backend projection: plain explanation (numbers only as observed, never filled in) and the
+  // engine traces it replaced.
+  const view = useReportPresentation()?.criteria[criterion.ket_qua_id];
+  const shown = criterionDisplayStatus(criterion);
   const risks = index.risksByCriterion.get(criterion.ket_qua_id) ?? [];
   const snapshot = criterionSnapshot(criterion);
   const basisText = typeof snapshot?.can_cu_cu_the === "string" ? snapshot.can_cu_cu_the : null;
@@ -275,15 +317,15 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
       id={focusDomId(criterion.ket_qua_id)}
     >
       <header className="criterion-head">
-        <StatusBadge kind="criterion" code={criterion.finding} />
+        <StatusBadge kind="criterion" code={shown} />
         <strong>{criterionText(criterion)}</strong>
         {criterion.mandatory && <span className="tag">bắt buộc</span>}
-        {criterion.excluded && <span className="tag">loại trừ: {criterion.exclusion_reason}</span>}
+        {shown === "EXCLUDED" && <span className="tag">loại trừ: {criterion.exclusion_reason}</span>}
       </header>
       {why ? (
         <p className="uncertain">Vì sao chưa kết luận: {why}</p>
       ) : (
-        <MachineText text={criterion.giai_thich} />
+        <MachineText text={view?.explanation ?? criterion.giai_thich} />
       )}
       <AiSuggestionNote reason={criterion.uncertainty_reason} />
 
@@ -309,6 +351,11 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
             }
           />
         ))
+      ) : criterion.external_evidence?.length ? (
+        <Notice tone="info">
+          Kết quả này dựa trên chứng từ hoặc biên bản rà soát liệt kê bên dưới, không kèm đoạn trích
+          hợp đồng.
+        </Notice>
       ) : (
         <Empty>
           Chưa chọn được đoạn hợp đồng nào làm bằng chứng. Điều này không có nghĩa là hợp đồng thiếu
@@ -317,7 +364,14 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
       )}
       {criterion.external_evidence?.map((e) => (
         <p key={e.bang_chung_id} className="small">
-          Chứng từ ngoài <code>{e.bang_chung_id}</code> {e.verified ? "(đã xác minh)" : "(chưa xác minh)"}
+          <span title={e.bang_chung_id}>
+            {e.bang_chung_id.startsWith("DOCREVIEW_")
+              ? "Biên bản máy rà soát toàn văn hợp đồng"
+              : e.bang_chung_id.startsWith("SYNTHETIC_")
+                ? "Chứng từ giả lập"
+                : "Chứng từ bên ngoài hợp đồng"}
+          </span>{" "}
+          {e.verified ? "(đã kiểm tra nguồn)" : "(chưa kiểm tra nguồn)"}
         </p>
       ))}
 
@@ -369,19 +423,32 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
 
       <Disclosure summary="Các điều kiện hệ thống đã kiểm tra">
         <p className="small muted">
-          Kết luận chỉ được chấp nhận khi đủ các điều kiện dưới đây. ✗ là điều kiện còn thiếu.
+          Kết luận chỉ được chấp nhận khi đủ các điều kiện dưới đây. ✗ là điều kiện còn thiếu; ○ là
+          thông tin thêm, không bắt buộc cho mọi kết luận (riêng kết luận “thiếu nội dung” vẫn cần
+          xác minh hợp đồng thật sự thiếu).
         </p>
         <div className="gates" aria-label="Điều kiện kiểm tra">
           {gates.map(([gate, ok]) => {
             // A conflict flag is "good" when false, every other gate when true.
             const good = gate === "evidence_conflict" ? !ok : ok;
+            // Full-text coverage and verified absence are recorded apart, not general conditions.
+            const info = !ok && INFO_GATES[gate];
             return (
-              <span key={gate} className={`gate ${good ? "ok" : "no"}`}>
-                {good ? "✓" : "✗"} {GATE_LABELS[gate] ?? gate}
+              <span key={gate} className={`gate ${info ? "" : good ? "ok" : "no"}`}>
+                {info ? `○ ${info}` : `${good ? "✓" : "✗"} ${GATE_LABELS[gate] ?? gate}`}
               </span>
             );
           })}
         </div>
+        {view?.audit_trace?.length ? (
+          <ul className="small muted">
+            {view.audit_trace.map((trace) => (
+              <li key={trace}>
+                <code>{trace}</code>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <p className="small muted">
           {criterion.model_version === "NO_LLM_CALL"
             ? "Điểm này chưa được AI đọc."

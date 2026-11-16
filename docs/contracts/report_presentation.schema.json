@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CoverageView": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_complete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finding Complete"
+        },
+        "full_text_complete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Full Text Complete"
+        },
+        "conclusion_complete": {
+          "title": "Conclusion Complete",
+          "type": "boolean"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "conclusion_complete",
+        "explanation"
+      ],
+      "title": "CoverageView",
+      "type": "object"
+    },
+    "FindingView": {
+      "additionalProperties": false,
+      "properties": {
+        "raw_status": {
+          "title": "Raw Status",
+          "type": "string"
+        },
+        "display_status": {
+          "title": "Display Status",
+          "type": "string"
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CoverageView"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Explanation"
+        },
+        "audit_trace": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Audit Trace",
+          "type": "array"
+        }
+      },
+      "required": [
+        "raw_status",
+        "display_status"
+      ],
+      "title": "FindingView",
+      "type": "object"
+    },
+    "RecommendationView": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "unresolved_bindings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolved Bindings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "RecommendationView",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "policy_id": {
+      "const": "REPORT_PRESENTATION_V1",
+      "default": "REPORT_PRESENTATION_V1",
+      "title": "Policy Id",
+      "type": "string"
+    },
+    "requirements": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FindingView"
+      },
+      "title": "Requirements",
+      "type": "object"
+    },
+    "criteria": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FindingView"
+      },
+      "title": "Criteria",
+      "type": "object"
+    },
+    "applicability_versions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Applicability Versions",
+      "type": "object"
+    },
+    "diagnostics": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Diagnostics",
+      "type": "array"
+    },
+    "recommendations": {
+      "additionalProperties": {
+        "$ref": "#/$defs/RecommendationView"
+      },
+      "title": "Recommendations",
+      "type": "object"
+    }
+  },
+  "required": [
+    "requirements",
+    "criteria",
+    "applicability_versions",
+    "diagnostics",
+    "recommendations"
+  ],
+  "title": "ReportPresentation",
+  "type": "object"
+}

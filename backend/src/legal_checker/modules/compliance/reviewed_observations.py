@@ -124,8 +124,11 @@ def build_verified_observation(
                 if proposal.proposed_finding != "UNKNOWN"
                 else ""
             )
+            detail = review.facts.get("content_subject_validation_reason")
             output.giai_thich = (
-                f"Semantic predicate has not been reviewed{proposed}: " + proposal.giai_thich
+                f"Unverified content subject{proposed}: " + str(detail) + "; " + proposal.giai_thich
+                if detail and review.facts.get("content_subject_validated") is False
+                else f"Semantic predicate has not been reviewed{proposed}: " + proposal.giai_thich
             )
     else:
         output.proposed_finding = "UNKNOWN"

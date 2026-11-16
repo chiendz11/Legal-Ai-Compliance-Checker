@@ -107,6 +107,8 @@ function Row({ requirement: a }: { requirement: ApplicableRequirement }) {
   const index = useReportIndex();
   const nameOf = useRequirementName();
   const { go } = useReportNav();
+  const reason = a.reason ?? {};
+  const trace = reason.summary || [...new Set(Object.values(reason))].join(" · ") || "—";
   const title = <RequirementTitle name={nameOf(a.requirement_id)} code={a.requirement_id} />;
   return (
     <tr>
@@ -132,10 +134,17 @@ function Row({ requirement: a }: { requirement: ApplicableRequirement }) {
           <summary>Chi tiết kỹ thuật</summary>
           <p>
             <StatusBadge kind="scope" code={a.scope_status} />{" "}
-            <StatusBadge kind="version" code={a.version_status} />{" "}
-            <code>{a.requirement_version_id ?? ""}</code>
+            {a.applicability_status === "NOT_APPLICABLE" && !a.requirement_version_id ? (
+              "Không chọn phiên bản vì không áp dụng"
+            ) : (
+              <>
+                <StatusBadge kind="version" code={a.version_status} />{" "}
+                <code>{a.requirement_version_id ?? ""}</code>
+                {a.version_status !== "RESOLVED" && a.requirement_version_id && " (ứng viên)"}
+              </>
+            )}
           </p>
-          <p>{Object.values(a.reason ?? {}).join(" · ") || "—"}</p>
+          <p>{trace}</p>
         </details>
       </td>
     </tr>

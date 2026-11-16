@@ -4,6 +4,10 @@
  * saying what to do, with the rest on demand; the engine trace and the repeated reference
  * text are dropped from display (the stored report is unchanged).
  */
+// The report presentation replaces a draft whose slots have no observed value with this line
+// (naming the missing slots by their engine names); the draft is withheld, never filled in.
+const UNBOUND_DRAFT = "Chưa tạo câu sửa gợi ý";
+
 const LABELS = [
   "Yêu cầu hồ sơ để làm rõ đúng tiêu chí",
   "Yêu cầu bổ sung thông tin còn thiếu",
@@ -13,6 +17,7 @@ const LABELS = [
   "Thông tin cần làm rõ",
   "Nội dung tham chiếu để đối chiếu khi áp dụng",
   "Dự thảo gợi ý",
+  UNBOUND_DRAFT,
   "Bằng chứng cần lưu",
   "Kiểm tra sau khắc phục",
 ];
@@ -20,6 +25,7 @@ const LABELS = [
 /** Parts shown under "Xem gợi ý đầy đủ", with friendlier titles. */
 const DETAIL_TITLES: Record<string, string> = {
   "Dự thảo gợi ý": "Gợi ý xử lý",
+  [UNBOUND_DRAFT]: "Gợi ý xử lý",
   "Bằng chứng cần lưu": "Bằng chứng cần lưu",
   "Kiểm tra sau khắc phục": "Kiểm tra lại sau khi sửa",
 };
@@ -74,7 +80,13 @@ export function readRecommendation(text: string): RecommendationView {
       : firstSentence(readable(text) || text);
   const details = parts
     .filter((p) => p.label && DETAIL_TITLES[p.label])
-    .map((p) => ({ title: DETAIL_TITLES[p.label!]!, text: readable(p.body) }))
+    .map((p) => ({
+      title: DETAIL_TITLES[p.label!]!,
+      text:
+        p.label === UNBOUND_DRAFT
+          ? "Chưa soạn được câu sửa vì thiếu dữ kiện từ hợp đồng; chuyên viên soạn trực tiếp."
+          : readable(p.body),
+    }))
     .filter((d) => d.text);
   return { action, details };
 }

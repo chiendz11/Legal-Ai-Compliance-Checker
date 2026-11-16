@@ -106,13 +106,13 @@ if (-not (Test-Path .env)) {
 Tải gói DEV_VALIDATION và kiểm tra checksum:
 
 ```bash
-python -m scripts.dataset pull
+python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
 python -m scripts.dataset check
 ```
 
-Script tạo `data/private/v750_source_pdf360_r2_supabase_user_reviewed_20261105/`. Dataset hiện tại có 240 DEV + 60 VALIDATION; workbook đầy đủ được dùng để seed, các workbook chia nhỏ chỉ dùng để xem. `.env`, `.venv` và `data/private/` đều được Git bỏ qua.
+Script tạo `data/private/v750_pdf360_v4r2_runtime_20261110/`. Dataset hiện tại có 240 DEV + 60 VALIDATION; workbook đầy đủ được dùng để seed, các workbook chia nhỏ chỉ dùng để xem. `.env`, `.venv` và `data/private/` đều được Git bỏ qua.
 
-Drive private/hết quota hoặc đã tải ZIP bằng trình duyệt: xem [hướng dẫn dataset](dataset_download.md).
+Drive private/hết quota hoặc đã tải ZIP bằng trình duyệt: xem [hướng dẫn dataset](../database/dataset_and_corpus.md).
 
 ## 5. Bật PostgreSQL và seed DB local
 
@@ -139,7 +139,7 @@ python -m scripts.local_db seed
 python -m scripts.local_db check
 ```
 
-`init` dùng Alembic để cập nhật schema. `preview` chỉ đọc/validate workbook; `seed` đảm bảo schema đã tới head, rồi nạp dữ liệu trong transaction riêng. Nếu seed lỗi, dữ liệu nhập bị rollback, schema đã cập nhật vẫn giữ. Đọc thêm [DB local và seed](local_database.md) và [cách tạo/chạy Alembic revisions](database_migrations.md).
+`init` dùng Alembic để cập nhật schema. `preview` chỉ đọc/validate workbook; `seed` đảm bảo schema đã tới head, rồi nạp dữ liệu trong transaction riêng. Nếu seed lỗi, dữ liệu nhập bị rollback, schema đã cập nhật vẫn giữ. Đọc thêm [DB local và seed](../database/local_setup.md) và [cách tạo/chạy Alembic revisions](../database/migrations.md).
 
 ## 6. Chạy API và bắt đầu module
 
@@ -150,9 +150,9 @@ python -m uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --por
 Mở Swagger tại `http://127.0.0.1:8000/docs`, health tại `http://127.0.0.1:8000/health`. API cần DB đã migrate/seed để khởi tạo Knowledge reader.
 
 Khi bắt đầu module, tự viết query và mapper để dựng input đúng contract từ dữ liệu DB.
-Chọn case/run và JOIN theo [hướng dẫn triển khai sau seed](huong_dan_trien_khai_module_sau_seed.md).
+Chọn case/run và JOIN theo [hướng dẫn triển khai sau seed](../huong_dan_trien_khai_module_sau_seed.md).
 
-Bước 5–7 hiện là skeleton nội bộ; không có POST riêng cho reasoning/aggregation/risks/recommendations/pipeline. GET knowledge và run đã lưu vẫn dùng được. API khởi chạy assessment toàn bộ đã có (`POST /api/v1/cases/{ca_id}/runs`, nhóm D); khi chưa có module bước 1–7, run kết thúc FAILED với `MODULE_NOT_IMPLEMENTED`; implementation các module cần được bổ sung theo thiết kế. Người phụ trách dùng tests của module khi có implementation thật.
+Bước 1–9 đã có implementation với giới hạn nêu trong [kiến trúc](../architecture/system_architecture.md). Không có POST chạy riêng từng engine. Dùng POST /api/v1/cases/{ca_id}/runs; modules đọc bytes thật, modules_di_reference cho DEV/EVAL, none báo chưa cấu hình. C07 cần verifier nghiệp vụ được inject để có các attestation; schema pass không tự xác nhận quality.
 
 ## 7. Kiểm tra code
 
@@ -211,7 +211,7 @@ Khi pull code có revision schema mới, cài lại dependencies nếu thay đ�
 | `No module named gdown` khi tải dataset | Cài extra `[dev,dataset]` theo bước 3 |
 | `No module named scripts` | Chạy lệnh từ root repo |
 | DB connection refused | Bật PostgreSQL và đối chiếu `DATABASE_URL`/port |
-| Workbook thiếu hoặc sai checksum | Chạy `scripts.dataset check`, xem [hướng dẫn dataset](dataset_download.md) |
+| Workbook thiếu hoặc sai checksum | Chạy `scripts.dataset check`, xem [hướng dẫn dataset](../database/dataset_and_corpus.md) |
 | Gọi POST chạy riêng bước 5–7 bị 404 | Các routes nội bộ này đã xóa; module gọi qua hàm Python; chạy toàn bộ bằng `POST /api/v1/cases/{ca_id}/runs` |
 
-Các script và trạng thái của chúng: [scripts/README](../scripts/README.md). Khi bắt đầu module, đọc [hướng dẫn JOIN và bàn giao theo nhóm](huong_dan_trien_khai_module_sau_seed.md).
+Các script và trạng thái của chúng: [scripts/README](../../scripts/README.md). Khi bắt đầu module, đọc [hướng dẫn JOIN và bàn giao theo nhóm](../huong_dan_trien_khai_module_sau_seed.md).

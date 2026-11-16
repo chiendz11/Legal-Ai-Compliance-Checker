@@ -4,6 +4,7 @@ import type {
   ReportContent,
 } from "../../../shared/api/client";
 import { Empty, Section, StatusBadge } from "../../../shared/components/ui";
+import { label } from "../../../shared/labels";
 import { displayText } from "../../../shared/text";
 import { CitationDistribution } from "../../reports/distributions";
 import { viDate } from "../../reports/explain";
@@ -55,6 +56,13 @@ const CURRENT_STATUS: Record<string, string> = {
   CURRENT: "Hiện nay văn bản này vẫn còn hiệu lực.",
   IN_FORCE: "Hiện nay văn bản này vẫn còn hiệu lực.",
 };
+
+function currentStatus(code: string | null | undefined): string | null {
+  if (!code) return null;
+  if (CURRENT_STATUS[code]) return CURRENT_STATUS[code];
+  const known = label("docStatus", code).text;
+  return known !== code ? `Hiện trạng văn bản: ${known.toLowerCase()}.` : null;
+}
 
 function CitationCard({
   citation,
@@ -114,7 +122,7 @@ function FindingBlock({ finding }: { finding: CitationValidation }) {
   const index = useReportIndex();
   const { focus, go } = useReportNav();
   const risks = index.risksByFinding.get(finding.finding_id) ?? [];
-  const current = finding.current_status ? CURRENT_STATUS[finding.current_status] : null;
+  const current = currentStatus(finding.current_status);
   return (
     <div
       className={`finding${focus === finding.finding_id ? " focused" : ""}`}

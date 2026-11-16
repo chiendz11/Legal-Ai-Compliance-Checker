@@ -161,6 +161,24 @@ class SyncQueue:
             self.runner.execute(ca_id, run_id)
 
 
+def test_initial_report_and_completion_roll_back_together(env, monkeypatch):
+    save = env.reports.save_version
+
+    def fail_after_insert(*args, **kwargs):
+        save(*args, **kwargs)
+        raise ValueError("simulated report finalization failure")
+
+    monkeypatch.setattr(env.reports, "save_version", fail_after_insert)
+    accepted = env.client.post(
+        f"/api/v1/cases/{CASE}/runs", headers={"Idempotency-Key": "atomic-report"}
+    )
+    assert accepted.status_code == 202
+    record = env.runs.get(CASE, accepted.json()["context"]["run_id"])
+    assert record.status == "FAILED"
+    assert env.runs.draft(CASE, record.run_id) is None
+    assert env.reports.list_for_run(CASE, record.run_id, offset=0, limit=10)[1] == 0
+
+
 @pytest.fixture
 def env(database_url, request_factory, tmp_path):
     register_case(database_url)
@@ -226,6 +244,29 @@ def start(client, key="key-1"):
     response = client.post(f"/api/v1/cases/{CASE}/runs", headers={"Idempotency-Key": key})
     assert response.status_code == 202, response.text
     return response.json()
+
+
+def test_review_scope_round_trips_api_database_and_document_intake(env):
+    from legal_checker.modules.documents.repository import DocumentRepository
+
+    response = env.client.post(
+        "/api/v1/cases",
+        json={
+            "hop_dong_id": "HD_TEST",
+            "ngay_danh_gia": "2026-11-09",
+            "review_mode": "DRAFT_REVIEW",
+            "document_set_complete": True,
+        },
+    )
+    assert response.status_code == 201, response.text
+    case = AssessmentCase.model_validate(response.json()["case"])
+    assert case.assessment_context.review_mode == "DRAFT_REVIEW"
+    assert case.assessment_context.document_set_complete
+    loaded = DocumentRepository(env.database_url).load_case(case.ca_id)
+    assert loaded == case
+    legacy = env.client.get(f"/api/v1/cases/{CASE}").json()["case"]["assessment_context"]
+    assert legacy["review_mode"] == "FULL_ASSESSMENT"
+    assert legacy["document_set_complete"] is False
 
 
 def test_run_completes_with_progress_results_and_one_report(env):

@@ -29,6 +29,12 @@ import { AiSuggestionNote } from "../assessments/compliance/ComplianceSection";
 import { readableReason } from "../reports/explain";
 import { type TabTarget, useReportNav } from "../reports/nav";
 import { criterionText, requirementText, riskTitle } from "../reports/reportIndex";
+import {
+  criterionDisplayStatus,
+  requirementDisplayStatus,
+  type ReportPresentation,
+} from "../reports/assessmentStatus";
+import { readRecommendation } from "../reports/recommendation";
 
 type Field = { name: string; title: string; options?: readonly string[]; labels?: LabelKind };
 type Kind = {
@@ -103,10 +109,18 @@ const ACTIONS: { action: ReviewAction; text: string }[] = [
   { action: "COMMENT", text: "Ghi chú" },
 ];
 
-type Machine = { title: string; values: Record<string, unknown>; focus: string };
+type Machine = {
+  title: string;
+  values: Record<string, unknown>;
+  focus: string;
+  /** Status as presented (review-scope dispositions applied); the stored one stays in values. */
+  displayStatus?: string;
+  /** Field values as presented (e.g. recommendation text with bound slots). */
+  displayValues?: Record<string, unknown>;
+};
 
 /** Machine values of each target, read from the report (which never contains reviewer edits). */
-function machineIndex(content: ReportContent) {
+function machineIndex(content: ReportContent, presentation?: ReportPresentation | null) {
   const map = new Map<string, Machine>();
   const put = (kind: string, id: string, machine: Machine) => map.set(`${kind}/${id}`, machine);
   for (const r of content.compliance.requirement_results)
@@ -114,12 +128,16 @@ function machineIndex(content: ReportContent) {
       title: requirementText(r),
       values: r,
       focus: r.yeu_cau_ca_id,
+      displayStatus:
+        presentation?.requirements[r.tuan_thu_id]?.display_status ?? requirementDisplayStatus(r),
     });
   for (const c of content.compliance.criterion_results)
     put("ket_qua_tieu_chi", c.ket_qua_id, {
       title: criterionText(c),
       values: c,
       focus: c.ket_qua_id,
+      displayStatus:
+        presentation?.criteria[c.ket_qua_id]?.display_status ?? criterionDisplayStatus(c),
     });
   for (const f of content.citation_validation.findings)
     put("phat_hien_vien_dan", f.finding_id, {
@@ -137,12 +155,15 @@ function machineIndex(content: ReportContent) {
       values: r,
       focus: r.ket_qua_rui_ro_id,
     });
-  for (const k of content.recommendations)
+  for (const k of content.recommendations) {
+    const text = presentation?.recommendations[k.khuyen_nghi_ca_id]?.text ?? k.noi_dung;
     put("khuyen_nghi_danh_gia", k.khuyen_nghi_ca_id, {
-      title: k.noi_dung,
+      title: readRecommendation(text).action,
       values: k,
       focus: k.khuyen_nghi_ca_id,
+      displayValues: { noi_dung: text },
     });
+  }
   return map;
 }
 
@@ -160,7 +181,10 @@ const PAGE = 50;
 export function ReviewWorkbench({ record }: { record: ReportRecord }) {
   const caId = record.report.ca_id;
   const state = useReviewState(caId, record.run_id);
-  const machine = useMemo(() => machineIndex(record.report.report_json), [record]);
+  const machine = useMemo(
+    () => machineIndex(record.report.report_json, record.presentation),
+    [record],
+  );
   const [filter, setFilter] = useState<Filter>("all");
   // A run can have hundreds of findings; render them a page at a time.
   const [limit, setLimit] = useState(PAGE);
@@ -276,8 +300,8 @@ function PublishPanel({
         </Notice>
       ) : blockers > 0 ? (
         <Notice tone="warn">
-          Còn {blockers} mục chặn phát hành: kết luận không tuân thủ / tuân thủ một phần, rủi ro
-          cao chưa xác nhận, hoặc đang yêu cầu bổ sung / bị bác bỏ.
+          Còn {blockers} mục chặn phát hành. Mỗi kết quả cần được Xác nhận hoặc Chỉnh sửa; Ghi chú
+          chưa phải là duyệt. Mục đang Yêu cầu bổ sung hoặc bị Bác bỏ vẫn chặn phát hành.
         </Notice>
       ) : revision === "none" ? (
         <Notice tone="info">Cần rà soát ít nhất một mục trước khi phát hành.</Notice>
@@ -356,12 +380,27 @@ function TargetCard({
       <dl className="fields compact">
         {kind?.fields.map((field) => {
           const before = machine?.values[field.name];
+          const isStatus = field.name === "status" || field.name === "finding";
+          const shown =
+            (isStatus ? machine?.displayStatus : machine?.displayValues?.[field.name]) ?? before;
           const after = overrides[field.name];
           return (
             <div key={field.name}>
               <dt>{field.title}</dt>
               <dd>
-                <FieldValue field={field} value={before} />
+                <FieldValue field={field} value={shown} />
+                {isStatus && shown !== before && (
+                  <span className="small muted">
+                    {" "}
+                    · kết quả gốc của máy: <FieldValue field={field} value={before} />
+                  </span>
+                )}
+                {!isStatus && shown !== before && (
+                  <details className="small muted">
+                    <summary>Nội dung gốc máy đã lưu</summary>
+                    <FieldValue field={field} value={before} />
+                  </details>
+                )}
                 {after !== undefined && (
                   <>
                     {" → "}

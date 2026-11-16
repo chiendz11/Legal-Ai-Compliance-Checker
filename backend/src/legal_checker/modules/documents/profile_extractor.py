@@ -29,7 +29,7 @@ from legal_checker.shared.contracts.document_intelligence import (
     ProfileTimeMarker,
 )
 
-PROFILE_EXTRACTOR_VERSION = "rules-v5"
+PROFILE_EXTRACTOR_VERSION = "rules-v12"
 LITERAL = "LABEL_REGEX"
 PHRASE = "PHRASE_REGEX"  # giá trị ghi nguyên văn trong câu (không có nhãn "X:")
 DERIVED = "RULE_DERIVED"
@@ -167,25 +167,105 @@ def _parse_number(text: str) -> Decimal | None:
 
 def _parse_text(text: str) -> str | None:
     value = text.strip().rstrip(".;,").strip()
-    # Ô mẫu để trống ("……", "....", "[ ]") không phải giá trị.
-    return value if value and not re.fullmatch(r"[.…_\[\]\s]+", value) else None
+    # Ô mẫu để trống ("……", "....", "[ ]", "[*]", "[Tên Dự án]") không phải giá trị.
+    if not value or re.fullmatch(
+        r"[:.…_\[\]*\s-]+|:\s*\[[^\]]*\]|\[(?:[._*\s-]*|Tên[^\]]*)\]",
+        value,
+        flags=re.I,
+    ):
+        return None
+    return value
 
 
-# Nhãn ở đầu dòng → (tên fact, hàm chuẩn hóa). Không trích dữ liệu định danh cá nhân
-# (số giấy tờ, điện thoại, email, địa chỉ, ngày sinh, tài khoản) vì profile không dùng.
+def _parse_rep_name(text: str) -> str | None:
+    cleaned = re.sub(r"\s*\(nhân vật giả lập\)\s*$", "", text.strip(), flags=re.I)
+    return _parse_text(cleaned)
+
+
+def _parse_map_sheet(text: str) -> str | None:
+    val = _parse_text(text)
+    if val and ("cấp bởi" in val.casefold() or len(val) > 40):
+        return None
+    return val
+
+
+def _parse_payment_method(text: str) -> str | None:
+    val = _parse_text(text)
+    if val and ("hoặc" in val.casefold() or len(val) > 45):
+        return None
+    return val
+
+
+def _parse_bool(text: str) -> bool | None:
+    value = text.strip().casefold()
+    if value in {"có", "co", "true", "yes"}:
+        return True
+    if value in {"không", "khong", "false", "no"}:
+        return False
+    return None
+
+
+# Nhãn ở đầu dòng → (tên fact, hàm chuẩn hóa).
 _LABELS: tuple[tuple[str, str, Callable[[str], object]], ...] = (
     ("ngay_giao_ket", r"Ngày giao kết", _parse_date),
     ("ngay_ky_nam", r"Ngày ký \(năm\)", _parse_year),
     ("ngay_ban_giao_du_kien", r"Ngày bàn giao dự kiến", _parse_date),
     ("gia_ban", r"Giá bán căn hộ[^:\n]*", _parse_money),
     ("don_gia", r"Đơn giá[^:\n]*", _parse_money),
+    ("ten_ben_ban", r"Tên bên bán", _parse_text),
     ("ten_ben_mua", r"Họ tên bên mua", _parse_text),
-    ("dai_dien_ben_ban", r"Đại diện bên bán", _parse_text),
+    ("dai_dien_ben_ban", r"(?:Người đại diện|Đại diện) bên bán", _parse_rep_name),
+    ("buyer_identity", r"Mã định danh bên mua", _parse_text),
+    ("buyer_birth", r"Ngày sinh bên mua", _parse_date),
+    ("buyer_phone", r"Điện thoại bên mua", _parse_text),
+    ("buyer_email", r"Email bên mua", _parse_text),
+    ("project_name", r"Dự án", _parse_text),
     ("ma_can_ho", r"(?:Mã căn hộ|Căn hộ)", _parse_text),
     ("tang_toa", r"Tầng / Tòa", _parse_text),
     ("dien_tich", r"Diện tích(?: sử dụng)?", _parse_number),
+    ("gross_area_m2", r"Diện tích sàn xây dựng căn hộ", _parse_number),
+    ("document_stage", r"Trạng thái", _parse_text),
     ("so_hop_dong", r"Số hợp đồng", _parse_text),
-    ("phuong_thuc_thanh_toan", r"Phương thức thanh toán", _parse_text),
+    ("phuong_thuc_thanh_toan", r"Phương thức thanh toán", _parse_payment_method),
+    ("purchase_bank", r"Ngân hàng nhận tiền mua nhà", _parse_text),
+    ("purchase_account", r"Tài khoản nhận tiền mua nhà", _parse_text),
+    ("la_nha_o_xa_hoi", r"Là nhà ở xã hội", _parse_bool),
+    ("ben_ban_co_von_nuoc_ngoai", r"Bên bán có vốn nước ngoài", _parse_bool),
+    ("la_giao_dich_dien_tu", r"Là giao dịch điện tử", _parse_bool),
+    ("co_thoa_thuan_trong_tai", r"Có thỏa thuận trọng tài", _parse_bool),
+    ("la_hop_dong_theo_mau", r"Là hợp đồng theo mẫu", _parse_bool),
+    ("co_thoa_thuan_dat_coc", r"Có thỏa thuận đặt cọc", _parse_bool),
+    ("dia_chi_ben_ban", r"Địa chỉ(?: trụ sở| liên hệ)? bên bán", _parse_text),
+    ("dia_chi_ben_mua", r"Địa chỉ(?: liên hệ)? bên mua", _parse_text),
+    ("land_address", r"Vị trí thửa đất", _parse_text),
+    ("land_parcel_no", r"Số thửa đất", _parse_text),
+    ("land_map_sheet", r"Tờ bản đồ số", _parse_map_sheet),
+    ("land_area_m2", r"Diện tích thửa đất", _parse_number),
+    ("maintenance_amount", r"Số tiền kinh phí bảo trì", _parse_number),
+    ("maintenance_percent", r"Tỷ lệ kinh phí bảo trì", _parse_number),
+    (
+        "maintenance_account_number",
+        r"(?i:(?:số[ \t]+)?tài[ \t]+khoản[ \t]+bảo[ \t]+trì)",
+        _parse_text,
+    ),
+    (
+        "maintenance_account_holder",
+        r"(?i:(?:tên|chủ)[ \t]+tài[ \t]+khoản[ \t]+bảo[ \t]+trì)",
+        _parse_text,
+    ),
+    (
+        "maintenance_bank",
+        r"(?i:ngân[ \t]+hàng[ \t]+tài[ \t]+khoản[ \t]+bảo[ \t]+trì|"
+        r"tổ[ \t]+chức[ \t]+tín[ \t]+dụng[ \t]+mở[ \t]+tài[ \t]+khoản[ \t]+bảo[ \t]+trì)",
+        _parse_text,
+    ),
+    ("warranty_start_date", r"Ngày bắt đầu bảo hành", _parse_date),
+    ("acceptance_date", r"Ngày nghiệm thu hoàn thành đưa vào sử dụng", _parse_date),
+    ("ngay_hieu_luc_hop_dong", r"Ngày hiệu lực hợp đồng", _parse_date),
+    ("COLLECTION", r"Ngày thu tiền thực tế", _parse_date),
+    ("PRE_HANDOVER_COLLECTION", r"Ngày thu tiền trước bàn giao", _parse_date),
+    ("PRE_CERTIFICATE_COLLECTION", r"Ngày thu tiền trước cấp giấy chứng nhận", _parse_date),
+    ("TEMPLATE_USE", r"Ngày sử dụng hợp đồng theo mẫu", _parse_date),
 )
 _LABEL_RES = tuple(
     (name, re.compile(rf"^[ \t]*{label}[ \t]*:[ \t]*(?P<value>[^\n]*?)[ \t]*$", re.M), parse)
@@ -244,6 +324,47 @@ def _signing_phrase_candidates(chunks: Sequence[ChunkRecord]) -> list[Candidate]
     return found
 
 
+def _account_continuations(chunks: Sequence[ChunkRecord]) -> list[Candidate]:
+    """Join a wrapped account field only up to the next explicit account label.
+
+    Do not borrow another paragraph, cross a heading/footer, or scan unbounded text.
+    The full original span is retained even when its canonical value joins lines.
+    """
+    fields = {"maintenance_account_number", "maintenance_account_holder", "maintenance_bank"}
+    result = []
+    stop = re.compile(r"^(?:Điều\s+\d+|Trang\s+\d+|DỰ THẢO|Thông tin|Không|Ghi chú|Đây là)", re.I)
+    for chunk in chunks:
+        matches = sorted(
+            (
+                (m.start(), name, m)
+                for name, pattern, _ in _LABEL_RES
+                if name in fields
+                for m in pattern.finditer(chunk.noi_dung)
+            ),
+            key=lambda row: row[0],
+        )
+        for (_, name, match), (next_start, _, _) in zip(matches, matches[1:], strict=False):
+            continuation = chunk.noi_dung[match.end() : next_start].strip()
+            if not continuation:
+                continue
+            lines = continuation.splitlines()
+            if len(lines) > 3 or any(
+                not line.strip() or ":" in line or stop.match(line.strip()) for line in lines
+            ):
+                continue
+            end = next_start
+            while end > match.end() and chunk.noi_dung[end - 1].isspace():
+                end -= 1
+            raw = chunk.noi_dung[match.start("value") : end]
+            if len(raw) > 512:
+                continue
+            value = _parse_text(" ".join(raw.split()))
+            if value is not None:
+                start = match.start() + len(match.group(0)) - len(match.group(0).lstrip())
+                result.append(Candidate(name, value, raw, Span(chunk, start, end)))
+    return result
+
+
 def _drop_truncated(candidates: list[Candidate]) -> list[Candidate]:
     """Bỏ ứng viên chữ bị cắt do xuống dòng trong ô hẹp ("Đinh" so với "Đinh Tường Nam")."""
     texts = [c.value for c in candidates if isinstance(c.value, str)]
@@ -289,21 +410,39 @@ def _find(chunks: Sequence[ChunkRecord], pattern: re.Pattern[str]) -> Span | Non
     return None
 
 
-_TITLE = re.compile(r"HỢP ĐỒNG MUA BÁN CĂN HỘ(?: CHUNG CƯ)?(?![^\n]*\.{4,})")
+_TITLE = re.compile(
+    r"HỢP\s+ĐỒNG\s+MUA\s+BÁN\s+(?:CĂN\s+HỘ(?:\s+CHUNG\s+CƯ)?|NHÀ\s+Ở(?:\s+XÃ\s+HỘI)?)"
+    r"(?![^\n]*\.{4,})"
+)
 _FUTURE = re.compile(r"hình thành trong tương lai")
-# "Mục đích sử dụng Căn Hộ: chỉ dùng để ở", "... của Căn hộ: để ở", "...: Dùng làm nhà ở".
+_NEW_BUILDING = re.compile(
+    r"hình\s+thành\s+trong\s+tương\s+lai"
+    r"|nhà\s+chung\s+cư\s+do\s+(?:Bên\s+Bán|Chủ\s+đầu\s+tư)\s+đầu\s+tư\s+xây\s+dựng"
+    r"|nghiệm\s+thu\s+hoàn\s+thành\s+đưa\s+nhà\s+ở\s+vào\s+sử\s+dụng",
+    re.I,
+)
 _PURPOSE_HOME = re.compile(
-    r"Mục đích sử dụng(?: của)?(?: Căn [Hh]ộ)?:\s*(?:chỉ\s+)?(?:dùng\s+)?(?:để ở|làm nhà ở)",
+    r"M(?:ụ|u\s*/)c\s+đích\s+sử\s+d(?:ụ|u\s*/)ng(?:\s+Căn\s+[Hh]ộ)?:\s*(?:[Dd]ùng\s+)?để\s+ở"
+    r"|Sử\s+d(?:ụ|u\s*/)ng\s+Căn\s+hộ\s+đúng\s+m(?:ụ|u\s*/)c\s+đích\s+để\s+ở"
+    r"|m(?:ụ|u\s*/)c\s+đích\s+sử\s+d(?:ụ|u\s*/)ng[^.\n]{0,30}(?:để\s+ở|làm\s+nhà\s+ở)",
     re.I,
 )
 _VN_LAW = re.compile(r"pháp luật Việt Nam|CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", re.I)
 _REAL_ESTATE_LAW = re.compile(r"Luật Kinh [Dd]oanh [Bb]ất [Đđ]ộng [Ss]ản")
 _SELLER_IS_INVESTOR = re.compile(
     r"“Chủ đầu tư”,\s*“Bên Bán”|“Bên Bán”,\s*“Chủ đầu tư”"
-    # "... Nhà Chung Cư nơi có Căn Hộ do Bên Bán làm chủ đầu tư"
-    r"|do\s+Bên\s+Bán\s+(?:làm|là)\s+chủ\s+đầu\s+tư"
-    # "I. BÊN BÁN CĂN HỘ (...):" rồi ngay dòng sau "Chủ đầu tư: <tên>"
-    r"|BÊN BÁN[^\n]*\n[ \t]*Chủ đầu tư[ \t]*:",
+    r"|nhà\s+chung\s+cư\s+do\s+(?:Bên\s+Bán|Chủ\s+đầu\s+tư)\s+đầu\s+tư\s+xây\s+dựng"
+    r"|do\s+Bên\s+Bán\s+làm\s+chủ\s+đầu\s+tư"
+    # Only the seller itself: "Dự án do Công ty X làm chủ đầu tư" names some company, which
+    # _find_named_investor compares with the seller's name instead.
+    r"|Bên\s+Bán[^.\n]{0,60}?làm\s+(?:đồng\s+|Liên\s+danh\s+)?chủ\s+đầu\s+tư"
+    r"|“Chủ\s+đầu\s+tư\s*”\s+là\s+Công\s+ty"
+    r"|Ngày\s+Chủ\s+đầu\s+tư\s+ban\s+hành\s+nội\s+quy"
+    r"|Chủ\s+đầu\s+tư\s*:"
+    r"|công\s+nhận\s+chủ\s+đầu\s+tư"
+    r"|Chủ\s+đầu\s+tư[^\n()]{0,40}\(sau đây gọi tắt là[^)]*Bên\s+Bán\)"
+    r"|Bên\s+Bán\s+là\s+Chủ\s+đầu\s+tư"
+    r"|do\s+Bên\s+Bán\s+là\s+chủ\s+đầu\s+tư",
     re.I,
 )
 # "Dự án ... do Công ty Cổ phần X làm chủ đầu tư": khớp khi X đúng là tên bên bán.
@@ -314,6 +453,14 @@ _NAMED_INVESTOR = re.compile(
 )
 # Tiêu đề hợp đồng nói rõ là nhà ở xã hội: yêu cầu chỉ dành cho nhà ở thương mại bị loại.
 _SOCIAL_HOUSING_TITLE = re.compile(r"HỢP ĐỒNG (?:MUA BÁN|THUÊ MUA) NHÀ Ở XÃ HỘI")
+_WARRANTY_APPENDIX_SUPERSEDES = re.compile(
+    r"Điều\s+khoản\s+bảo\s+hành\s+nhà\s+ở\s+của\s+phụ\s+lục\s+này\s+thay\s+thế\s+thời\s+hạn\s+bảo\s+hành\s+nhà\s+ở",
+    re.I,
+)
+_WARRANTY_APPENDIX_LABEL = re.compile(
+    r"^[ \t]*Thời\s+hạn\s+bảo\s+hành\s+nhà\s+ở[ \t]*:[ \t]*(?P<months>\d{1,3})\s*tháng",
+    re.I | re.M,
+)
 # Tiêu đề "BÊN BÁN" ở đầu dòng, có thể có số thứ tự thường/La Mã ("1.", "I.") hoặc nhãn
 # "BÊN A:" phía trước ("I. BÊN A: BÊN BÁN NHÀ Ở ...").
 # Tên công ty có thể nằm ngay sau trên cùng dòng ("BÊN BÁN: CÔNG TY ...").
@@ -329,6 +476,22 @@ _ORG_NAME = re.compile(
     r"|(?:Tổng[ \t]+)?Công[ \t]+[Tt]y[ \t]+(?:[A-ZĐ]|cổ phần|trách nhiệm|TNHH)[^\n]*)"
 )
 _SELLER_WINDOW_LINES = 4
+
+_WARRANTY = re.compile(
+    r"(?:[Tt]hời\s+(?:gian|hạn)\s+)?bảo\s+hành\s+(?:nhà\s+ở|căn\s+hộ|nhà\s+chung\s+cư)"
+    r"\s*(?:là|:)?\s*(?P<months>\d{1,3})\s*tháng",
+    re.I,
+)
+_WARRANTY_START = re.compile(
+    r"(?:(?:tính|kể)\s+từ|Mốc\s+bắt\s+đầu\s+bảo\s+hành\s*:\s*Từ)"
+    r"[^.;]{0,130}nghiệm\s+thu[^.;]{0,90}đưa\s+nhà\s+ở\s+vào\s+sử\s+dụng",
+    re.I,
+)
+_MAINTENANCE_ACCOUNT = re.compile(
+    r"Tài\s+khoản\s+bảo\s+trì(?:\s+giả\s+lập)?\s*:\s*(?P<number>[^;\n]+);\s*"
+    r"tên\s+tài\s+khoản\s+(?P<holder>[^;\n]+);\s*tổ\s+chức\s+tín\s+dụng\s+(?P<bank>[^.\n]+)",
+    re.I,
+)
 
 
 def _find_seller(chunks: Sequence[ChunkRecord]) -> tuple[str, Span] | None:
@@ -376,7 +539,11 @@ def _find_named_investor(chunks: Sequence[ChunkRecord], seller_name: str) -> Spa
 
 
 def extract_profile(
-    chunks: Sequence[ChunkRecord], *, hop_dong_id: str, version: str
+    chunks: Sequence[ChunkRecord],
+    *,
+    hop_dong_id: str,
+    version: str,
+    complete_draft_source: bool = False,
 ) -> ContractProfile:
     b = _Builder(hop_dong_id, version)
     found = _label_candidates(chunks)
@@ -396,11 +563,168 @@ def extract_profile(
     year_only = _resolve(b, "ngay_ky_nam", found.get("ngay_ky_nam", []))
     handover = _resolve(b, "ngay_ban_giao_du_kien", found.get("ngay_ban_giao_du_kien", []))
     price = _resolve(b, "gia_ban", found.get("gia_ban", []))
-    for name in ("don_gia", "dai_dien_ben_ban", "ma_can_ho", "tang_toa", "dien_tich"):
+    for name in (
+        "don_gia",
+        "dai_dien_ben_ban",
+        "ma_can_ho",
+        "tang_toa",
+        "dien_tich",
+        "gross_area_m2",
+    ):
         _resolve(b, name, found.get(name, []))
+    stages = [c for c in found.get("document_stage", []) if "DRAFT_REVIEW" in c.raw]
+    for candidate in stages:
+        candidate.value = "DRAFT_REVIEW"
+    _resolve(b, "document_stage", stages)
     _resolve(b, "so_hop_dong", found.get("so_hop_dong", []))
     _resolve(b, "phuong_thuc_thanh_toan", found.get("phuong_thuc_thanh_toan", []))
+    project_candidates = found.get("project_name", [])
+    unbulleted_projects = [
+        c for c in project_candidates if not c.span.quote.lstrip().startswith("-")
+    ]
+    appendix_projects = [c for c in unbulleted_projects if "(giả lập)" in str(c.value).casefold()]
+    _resolve(
+        b,
+        "project_name",
+        appendix_projects or unbulleted_projects or project_candidates,
+    )
+    for name in (
+        "dia_chi_ben_ban",
+        "dia_chi_ben_mua",
+        "buyer_identity",
+        "buyer_birth",
+        "buyer_phone",
+        "buyer_email",
+        "purchase_bank",
+        "purchase_account",
+        "land_address",
+        "land_parcel_no",
+        "land_map_sheet",
+        "land_area_m2",
+        "maintenance_amount",
+        "maintenance_percent",
+        "warranty_start_date",
+        "acceptance_date",
+    ):
+        _resolve(b, name, found.get(name, []))
     buyer = _resolve(b, "ten_ben_mua", found.get("ten_ben_mua", []))
+    for name in (
+        "la_nha_o_xa_hoi",
+        "ben_ban_co_von_nuoc_ngoai",
+        "la_giao_dich_dien_tu",
+        "co_thoa_thuan_trong_tai",
+        "co_thoa_thuan_dat_coc",
+        "la_hop_dong_theo_mau",
+        "ngay_hieu_luc_hop_dong",
+    ):
+        value = _resolve(b, name, found.get(name, []))
+        if value is not None:
+            set_field(name, value, [c.span for c in found[name]], LITERAL)
+    # A source-limited draft observation, never a statement about other agreements.
+    # The caller supplies completeness from persisted C01 + physical read coverage.
+    text = "\n".join(c.noi_dung for c in chunks)
+    court = re.compile(
+        r"(?:các|hai|một\s+trong\s+hai)\s+bên[^.?!]{0,180}"
+        r"(?:yêu\s+cầu|lựa\s+chọn|chọn)\s+(?:Tòa|Toà)\s+án\s+giải\s+quyết",
+        re.I,
+    )
+    court_span = _find(chunks, court)
+    if (
+        complete_draft_source
+        and court_span
+        and "co_thoa_thuan_trong_tai" not in profile
+        and not re.search(r"trọng\s+tài", text, re.I)
+    ):
+        profile["co_thoa_thuan_trong_tai"] = False
+        b.fact(
+            "profile.co_thoa_thuan_trong_tai",
+            False,
+            [court_span],
+            status=REVIEW_PENDING,
+            method="COMPLETE_DRAFT_COURT_ONLY_V1",
+        )
+    warranty = []
+    if _find(chunks, _WARRANTY_APPENDIX_SUPERSEDES) is not None:
+        for chunk in chunks:
+            for match in _WARRANTY_APPENDIX_LABEL.finditer(chunk.noi_dung):
+                warranty.append(
+                    Candidate(
+                        "warranty_months",
+                        Decimal(match["months"]),
+                        match["months"],
+                        Span(chunk, match.start(), match.end()),
+                    )
+                )
+    if not warranty:
+        for chunk in chunks:
+            for match in _WARRANTY.finditer(chunk.noi_dung):
+                warranty.append(
+                    Candidate(
+                        "warranty_months",
+                        Decimal(match["months"]),
+                        match["months"],
+                        Span(chunk, match.start(), match.end()),
+                    )
+                )
+    months = _resolve(b, "warranty_months", warranty)
+    if months is not None:
+        spans = [c.span for c in warranty]
+        b.fact("warranty_unit", "MONTH", spans, status=EXTRACTED, method=LITERAL)
+        if all(re.search(r"nhà ở|căn hộ|nhà chung cư", span.quote, re.I) for span in spans):
+            b.fact("warranty_subject", "BUILDING", spans, status=EXTRACTED, method=LITERAL)
+        # A duration alone does not establish the commencement event.
+        if start := _find(chunks, _WARRANTY_START):
+            b.fact(
+                "warranty_start",
+                "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+                [start],
+                status=EXTRACTED,
+                method=LITERAL,
+            )
+
+    account_candidates = {
+        key: list(found.get(key, []))
+        for key in (
+            "maintenance_account_number",
+            "maintenance_account_holder",
+            "maintenance_bank",
+        )
+    }
+    for candidate in _account_continuations(chunks):
+        # Replace only the truncated view of this exact physical field. A second
+        # occurrence with a different value remains a genuine conflict.
+        account_candidates[candidate.name] = [
+            c
+            for c in account_candidates[candidate.name]
+            if (c.span.chunk.doan_id, c.span.start)
+            != (candidate.span.chunk.doan_id, candidate.span.start)
+        ]
+        account_candidates[candidate.name].append(candidate)
+    for chunk in chunks:
+        for match in _MAINTENANCE_ACCOUNT.finditer(chunk.noi_dung):
+            for key, group in (
+                ("maintenance_account_number", "number"),
+                ("maintenance_account_holder", "holder"),
+                ("maintenance_bank", "bank"),
+            ):
+                value = match[group].strip()
+                account_candidates[key].append(
+                    Candidate(key, value, value, Span(chunk, match.start(), match.end()))
+                )
+    for key, candidates in account_candidates.items():
+        _resolve(b, key, candidates)
+    base_link = _find(
+        chunks,
+        re.compile(r"giá trị căn cứ(?: giả định)? cùng phạm vi\s+giá nêu trên", re.I),
+    )
+    if base_link:
+        b.fact(
+            "maintenance_base_reference",
+            "STATED_SALE_PRICE",
+            [base_link],
+            status=EXTRACTED,
+            method=LITERAL,
+        )
 
     if signing is not None and (year_only is None or year_only == signing.year):
         spans = [c.span for c in found["ngay_giao_ket"]]
@@ -438,10 +762,18 @@ def extract_profile(
     if future := _find(chunks, _FUTURE):
         set_field("tinh_trang_tai_san", "HINH_THANH_TRONG_TUONG_LAI", [future], DERIVED)
         set_field("la_nha_xay_moi", True, [future], DERIVED)
+    elif new_bldg := _find(chunks, _NEW_BUILDING):
+        set_field("la_nha_xay_moi", True, [new_bldg], DERIVED)
     if social := _find(chunks, _SOCIAL_HOUSING_TITLE):
         set_field("la_nha_o_xa_hoi", True, [social], DERIVED)
 
-    seller = _find_seller(chunks)
+    seller_from_label = _resolve(b, "ten_ben_ban", found.get("ten_ben_ban", []))
+    if seller_from_label is not None and found.get("ten_ben_ban"):
+        seller = (str(seller_from_label), found["ten_ben_ban"][0].span)
+    else:
+        seller = _find_seller(chunks)
+        if seller and not found.get("ten_ben_ban"):
+            b.fact("ten_ben_ban", seller[0], [seller[1]], status=EXTRACTED, method=LITERAL)
     if investor := _find(chunks, _SELLER_IS_INVESTOR):
         set_field("ben_ban_la_chu_dau_tu", True, [investor], DERIVED)
     elif seller and (named := _find_named_investor(chunks, seller[0])):
@@ -450,7 +782,6 @@ def extract_profile(
     subjects: list[ProfileSubject] = []
     if seller:
         seller_name, seller_span = seller
-        b.fact("ten_ben_ban", seller_name, [seller_span], status=EXTRACTED, method=LITERAL)
         set_field("ben_ban_la_ca_nhan", False, [seller_span], DERIVED)
         subjects.append(
             ProfileSubject(
@@ -498,15 +829,25 @@ def extract_profile(
             facts_by_name,
         ),
     ]
-    markers += [
-        ProfileTimeMarker(
-            moc_id=f"{hop_dong_id}_MOC_{version}_{kind}",
-            loai_moc=kind,
-            do_chinh_xac="UNKNOWN",
-            trang_thai="UNKNOWN",
+    for kind in (
+        "COLLECTION",
+        "PRE_HANDOVER_COLLECTION",
+        "PRE_CERTIFICATE_COLLECTION",
+        "TEMPLATE_USE",
+    ):
+        day = _resolve(b, kind, found.get(kind, []))
+        markers.append(
+            ProfileTimeMarker(
+                moc_id=f"{hop_dong_id}_MOC_{version}_{kind}",
+                loai_moc=kind,
+                ngay=day,
+                gia_tri_raw=day.isoformat() if day else None,
+                do_chinh_xac="DAY" if day else "UNKNOWN",
+                trang_thai=EXTRACTED if day else "UNKNOWN",
+                duoc_dung_phan_giai=day is not None,
+                trich_xuat_id=f"{hop_dong_id}_TX_{version}_{kind}" if day else None,
+            )
         )
-        for kind in ("COLLECTION", "PRE_HANDOVER_COLLECTION", "PRE_CERTIFICATE_COLLECTION")
-    ]
 
     return ContractProfile(
         hop_dong_id=hop_dong_id,

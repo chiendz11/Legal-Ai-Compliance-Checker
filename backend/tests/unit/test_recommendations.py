@@ -390,7 +390,7 @@ def test_required_elements_render_only_available_bindings_and_preserve_quote(rec
     assert "Phiên bản VERSION_A" in result.noi_dung
 
 
-def test_seed_style_prose_lists_are_context_with_preserved_placeholders(recommendation_case):
+def test_seed_style_lists_remain_context_but_unbound_drafts_are_withheld(recommendation_case):
     risks = mapped_risks(recommendation_case)
     template = recommendation_case[1].recommendations["TEMPLATE_A"]
     # The seed uses a JSON list of requested prose, not a dictionary of facts.
@@ -400,7 +400,9 @@ def test_seed_style_prose_lists_are_context_with_preserved_placeholders(recommen
     result = generate(recommendation_case, risks)[0]
     assert "Nội dung tham chiếu để đối chiếu khi áp dụng" in result.noi_dung
     assert "Tên bên bán theo hồ sơ" in result.noi_dung
-    assert "[tên theo hồ sơ], [nếu áp dụng]" in result.noi_dung
+    assert "[tên theo hồ sơ]" not in result.noi_dung
+    assert "Cần bổ sung dữ kiện" in result.noi_dung
+    assert result.template_snapshot_json["mau_sua_goi_y"] == template["mau_sua_goi_y"]
     assert "Invented" not in result.noi_dung
 
 

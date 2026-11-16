@@ -27,6 +27,7 @@ include = ["legal_checker*", "devtools*"]
 
 [tool.setuptools.package-data]
 "legal_checker.migrations" = ["sql/*.sql", "legacy_baselines.json", "script.py.mako"]
+"legal_checker.modules.compliance" = ["scenarios/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

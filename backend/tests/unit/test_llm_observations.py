@@ -323,7 +323,8 @@ def test_context_and_call_budgets_never_truncate_or_call(reasoning_case, max_cal
     assert client.calls == [] and batch.analyses[0].error_code == code
 
 
-def test_candidate_facts_remain_unverified(reasoning_case):
+@pytest.mark.parametrize("source_id", ["CHUNK_1", "Q1"])
+def test_candidate_facts_remain_unverified(reasoning_case, source_id):
     knowledge, data = reasoning_case
     proposal = semantic(
         data,
@@ -332,7 +333,7 @@ def test_candidate_facts_remain_unverified(reasoning_case):
                 "name": "contract_price",
                 "value": "1000",
                 "unit": "VND",
-                "evidence_ids": ["CHUNK_1"],
+                "evidence_ids": [source_id],
             }
         ],
     )
@@ -340,7 +341,23 @@ def test_candidate_facts_remain_unverified(reasoning_case):
         ReasoningRequest.model_validate(data), knowledge
     )
     assert batch.analyses[0].proposal.candidate_facts[0].value == "1000"
+    assert batch.analyses[0].error_code is None
     assert batch.observations[0].facts == {} and not batch.observations[0].facts_verified
+
+
+def test_candidate_fact_quote_alias_outside_current_catalog_is_rejected(reasoning_case):
+    knowledge, data = reasoning_case
+    proposal = semantic(
+        data,
+        candidate_facts=[
+            dict(name="contract_price", value="1000", unit="VND", evidence_ids=["Q99999"])
+        ],
+    )
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert batch.analyses[0].error_code == "FOREIGN_FACT_EVIDENCE"
+    assert not batch.observations[0].facts_verified
 
 
 def test_claimed_positive_with_missing_conditions_stays_unknown(reasoning_case):
@@ -768,3 +785,373 @@ def test_hint_calls_are_off_unless_configured(monkeypatch, value, expected):
     else:
         monkeypatch.setenv("ASSESSMENT_LLM_HINTS", value)
     assert Settings.from_env().assessment_llm_hints is expected
+
+
+def test_quote_id_restores_original_text_even_if_model_does_not_copy_it(reasoning_case):
+    knowledge, data = reasoning_case
+    client = FakeClient(
+        [
+            semantic(
+                data,
+                evidence=[
+                    {
+                        "doan_id": "CHUNK_1",
+                        "trich_dan": "",
+                        "ky_tu_bat_dau": None,
+                        "quote_id": "Q1",
+                    }
+                ],
+            )
+        ]
+    )
+    batch = LLMObservationProvider(client).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert batch.analyses[0].error_code is None
+    quote = batch.analyses[0].observation_proposal.evidence[0]
+    assert quote.trich_dan == data["payload"]["chunks"][0]["noi_dung"]
+    assert quote.ky_tu_bat_dau == 0
+
+
+def test_unknown_quote_id_cannot_select_another_source(reasoning_case):
+    knowledge, data = reasoning_case
+    client = FakeClient(
+        [
+            semantic(
+                data,
+                evidence=[
+                    {
+                        "doan_id": "CHUNK_1",
+                        "trich_dan": "",
+                        "ky_tu_bat_dau": None,
+                        "quote_id": "Q999_1",
+                    }
+                ],
+            )
+        ]
+    )
+    batch = LLMObservationProvider(client).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert batch.analyses[0].error_code == "FOREIGN_QUOTE_ID"
+
+
+def test_whitespace_normalization_restores_source_without_paraphrasing(reasoning_case):
+    knowledge, data = reasoning_case
+    original = data["payload"]["chunks"][0]["noi_dung"]
+    data["payload"]["chunks"][0]["noi_dung"] = original.replace("Bên bán", "Bên\n bán")
+    data["payload"]["observations"] = []
+    value = {
+        "tieu_chi_id": "CRITERION_1",
+        "proposed_finding": "SATISFIED",
+        "giai_thich": "Test source offsets",
+        "checked_conditions": [],
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "external_evidence_ids": [],
+        "candidate_facts": [],
+        "evidence": [
+            {
+                "doan_id": "CHUNK_1",
+                "trich_dan": "Bên bán và bên mua đã được xác định.",
+                "ky_tu_bat_dau": None,
+            }
+        ],
+    }
+    batch = LLMObservationProvider(FakeClient([value])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert batch.analyses[0].error_code is None
+    assert "Bên\n bán" in batch.analyses[0].observation_proposal.evidence[0].trich_dan
+
+
+def test_batched_calls_preserve_criterion_budget_and_ownership(reasoning_case):
+    knowledge, data = reasoning_case
+    client = FakeClient([{"proposals": [semantic(data)]}])
+    batch = LLMObservationProvider(client, batch_size=4, max_calls=1).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert len(client.calls) == 1
+    assert len(client.calls[0][1]["payload"]["criteria"]) == 1
+    assert batch.analyses[0].error_code is None
+
+
+def test_batch_cannot_return_duplicate_or_foreign_criterion(reasoning_case):
+    knowledge, data = reasoning_case
+    foreign = semantic(data, tieu_chi_id="FOREIGN")
+    client = FakeClient([{"proposals": [foreign]}])
+    batch = LLMObservationProvider(client, batch_size=4, max_calls=1).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert len(client.calls) == 1
+    assert batch.analyses[0].error_code == "INVALID_BATCH_RESPONSE"
+
+
+def test_compact_batch_quote_references_restore_server_owned_chunk(reasoning_case):
+    knowledge, data = reasoning_case
+    row = {
+        "tieu_chi_id": "CRITERION_1",
+        "proposed_finding": "SATISFIED",
+        "giai_thich": "Compact semantic response",
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "quote_ids": ["Q1"],
+        "external_ids": [],
+    }
+    client = FakeClient([{"proposals": [row]}])
+    batch = LLMObservationProvider(client, batch_size=4).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    proposal = batch.analyses[0].observation_proposal
+    assert batch.analyses[0].error_code is None
+    assert proposal.evidence[0].doan_id == "CHUNK_1"
+    assert proposal.evidence[0].trich_dan == data["payload"]["chunks"][0]["noi_dung"]
+
+
+@pytest.mark.parametrize("months,finding", [("59", "VIOLATED"), ("60", "SATISFIED")])
+def test_verified_numeric_predicate_runs_without_a_model_call(reasoning_case, months, finding):
+    knowledge, data = reasoning_case
+    for rule in knowledge.tables["quy_tac_quyet_dinh"]:
+        rule["dieu_kien_json"]["numeric_rule"] = {
+            "warranty_min_months": "60",
+            "scope": "NEW_PROJECT",
+            "start": "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+        }
+    request = ReasoningRequest.model_validate(data)
+    verification = CriterionVerification(
+        **{key: getattr(request, key) for key in Context.model_fields},
+        hop_dong_id=request.payload.hop_dong_id,
+        yeu_cau_ca_id="CASE_REQUIREMENT_1",
+        tieu_chi_id="CRITERION_1",
+        verification_reference="backend://literal-test",
+        local_applicability="MATCH",
+        facts_verified=True,
+        gates={"source_verified": True, "exceptions_resolved": True},
+        facts={
+            "warranty_months": months,
+            "warranty_unit": "MONTH",
+            "numeric_scope": "NEW_PROJECT",
+            "warranty_start": "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+        },
+    )
+    client = FakeClient([])
+    batch = LLMObservationProvider(
+        client, verifications=[verification], automatic_draft_review=True, max_calls=0, batch_size=4
+    ).analyze(request, knowledge)
+    assert client.calls == []
+    assert batch.analyses[0].model_version == "BACKEND_NUMERIC_V1"
+    assert "Backend đối chiếu bằng Decimal" not in batch.observations[0].giai_thich
+    assert "Thời hạn bảo hành" in batch.observations[0].giai_thich
+    data["payload"]["observations"] = [x.model_dump() for x in batch.observations]
+    assert reason(ReasoningRequest.model_validate(data), knowledge)[0].finding == finding
+
+
+def test_numeric_rule_micro_nlg_calls_llm_when_budget_available(reasoning_case):
+    knowledge, data = reasoning_case
+    knowledge.decision("CRITERION_1", "SATISFIED")["dieu_kien_json"]["numeric_rule"] = {
+        "warranty_min_months": 60,
+        "scope": "NEW_PROJECT",
+        "start": "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+    }
+    request = ReasoningRequest.model_validate(data)
+    verification = CriterionVerification(
+        **{key: getattr(request, key) for key in Context.model_fields},
+        hop_dong_id=request.payload.hop_dong_id,
+        yeu_cau_ca_id="CASE_REQUIREMENT_1",
+        tieu_chi_id="CRITERION_1",
+        verification_reference="backend://literal-test",
+        local_applicability="MATCH",
+        facts_verified=True,
+        gates={"source_verified": True, "exceptions_resolved": True},
+        facts={
+            "warranty_months": "36",
+            "warranty_unit": "MONTH",
+            "numeric_scope": "NEW_PROJECT",
+            "warranty_start": "COMPLETION_AND_ACCEPTANCE_INTO_USE",
+        },
+    )
+    nlg_sentence = "Thời hạn bảo hành 36 tháng không đạt mức tối thiểu 60 tháng theo luật định."
+    client = FakeClient([{"giai_thich": nlg_sentence}])
+    batch = LLMObservationProvider(
+        client, verifications=[verification], automatic_draft_review=True, max_calls=1, batch_size=4
+    ).analyze(request, knowledge)
+    assert len(client.calls) == 1
+    assert batch.analyses[0].model_version == "BACKEND_NUMERIC_V1"
+    assert batch.analyses[0].proposal.giai_thich == nlg_sentence
+    assert nlg_sentence in batch.observations[0].giai_thich
+
+
+def test_invalid_batch_is_repaired_once_per_affected_criterion(reasoning_case):
+    knowledge, data = reasoning_case
+    repaired = {
+        "item_id": "C1",
+        "proposed_finding": "SATISFIED",
+        "giai_thich": "Correct isolated response",
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "quote_ids": ["Q1"],
+        "external_ids": [],
+    }
+    client = FakeClient([{"proposals": [{"item_id": "FOREIGN"}]}, {"proposals": [repaired]}])
+    batch = LLMObservationProvider(
+        client, batch_size=4, max_calls=1, repair_invalid_batches=True
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert len(client.calls) == 2
+    assert client.calls[1][1]["prompt_version"].endswith("_REPAIR")
+    assert batch.analyses[0].error_code is None
+    assert batch.analyses[0].prompt_version.endswith("_REPAIR")
+    assert batch.observations[0].prompt_version.endswith("_REPAIR")
+
+
+def test_repair_never_turns_an_unknown_quote_into_a_real_quote(reasoning_case):
+    knowledge, data = reasoning_case
+    invalid = {
+        "item_id": "C1",
+        "proposed_finding": "SATISFIED",
+        "giai_thich": "Bad quote",
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "quote_ids": ["Q999"],
+        "external_ids": [],
+    }
+    client = FakeClient([{"proposals": [invalid]}, {"proposals": [invalid]}])
+    batch = LLMObservationProvider(
+        client, batch_size=4, max_calls=1, repair_invalid_batches=True
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert len(client.calls) == 2
+    assert batch.analyses[0].error_code == "FOREIGN_QUOTE_ID"
+    assert batch.observations[0].proposed_finding == "UNKNOWN"
+
+
+@pytest.mark.parametrize("finding", ["SATISFIED", "VIOLATED"])
+def test_positive_batch_without_support_is_repaired_with_real_quote(reasoning_case, finding):
+    knowledge, data = reasoning_case
+    unsupported = {
+        "item_id": "C1",
+        "proposed_finding": finding,
+        "giai_thich": "A conclusion alone is not evidence",
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "quote_ids": [],
+        "external_ids": [],
+    }
+    supported = {**unsupported, "quote_ids": ["Q1"]}
+    client = FakeClient([{"proposals": [unsupported]}, {"proposals": [supported]}])
+    result = LLMObservationProvider(
+        client, batch_size=4, max_calls=1, repair_invalid_batches=True
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert len(client.calls) == 2
+    assert "MISSING_SUPPORTING_EVIDENCE" in client.calls[1][1]["instructions"]
+    assert result.analyses[0].error_code is None
+    assert result.analyses[0].observation_proposal.evidence
+
+
+def test_missing_support_after_bounded_repair_stays_unknown(reasoning_case):
+    knowledge, data = reasoning_case
+    unsupported = {
+        "item_id": "C1",
+        "proposed_finding": "SATISFIED",
+        "giai_thich": "Unsupported conclusion",
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "quote_ids": [],
+        "external_ids": [],
+    }
+    client = FakeClient([{"proposals": [unsupported]}, {"proposals": [unsupported]}])
+    result = LLMObservationProvider(
+        client, batch_size=4, max_calls=1, repair_invalid_batches=True
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert len(client.calls) == 2
+    assert result.analyses[0].error_code == "MISSING_SUPPORTING_EVIDENCE"
+    assert result.observations[0].proposed_finding == "UNKNOWN"
+
+
+def test_large_context_compaction_preserves_all_source_characters_and_quote_ids(reasoning_case):
+    from legal_checker.modules.compliance.llm_observations import (
+        _compact_source_view,
+        _package,
+        _quote_catalog,
+    )
+
+    knowledge, data = reasoning_case
+    request = ReasoningRequest.model_validate(data)
+    chunk = request.payload.chunks[0]
+    chunk.noi_dung = "Nội dung nguồn hợp đồng.\n\nx\n" + (
+        "Một dòng điều khoản đủ dài để có quote ID.\n" * 250
+    )
+    before = request.model_dump()
+    requirement = request.payload.requirements[0]
+    payload, selected = _package(
+        request, knowledge, requirement, knowledge.criteria["CRITERION_1"], None
+    )
+    compact = _compact_source_view(payload, selected)
+    assert len(json.dumps(compact, ensure_ascii=False)) < len(
+        json.dumps(payload, ensure_ascii=False)
+    )
+    assert compact["source_text_representation"] == "ORDERED_QUOTE_LINES_V1"
+    assert "noi_dung" not in compact["selected_contract_evidence"][0]
+    lines = compact["quote_catalog"][0]["quotes"]
+    assert "".join(line[1] for line in lines) == chunk.noi_dung
+    original_quotes = _quote_catalog(selected)
+    assert {line[0]: line[1] for line in lines if line[0]} == {
+        key: row["trich_dan"] for key, row in original_quotes.items()
+    }
+    limit = len(json.dumps(payload, ensure_ascii=False)) - 1
+    bounded, _ = _package(
+        request,
+        knowledge,
+        requirement,
+        knowledge.criteria["CRITERION_1"],
+        None,
+        max_context_chars=limit,
+    )
+    assert bounded == compact
+    assert request.model_dump() == before
+
+
+@pytest.mark.parametrize("foreign", [False, True])
+def test_batch_accepts_compacted_source_but_rejects_foreign_quote_ids(reasoning_case, foreign):
+    from legal_checker.modules.compliance.batching import complete_batch
+    from legal_checker.modules.compliance.llm_contracts import SemanticProposal
+    from legal_checker.modules.compliance.llm_observations import (
+        INSTRUCTIONS,
+        PROMPT_VERSION,
+        SCHEMA_VERSION,
+        _compact_source_view,
+        _package,
+        _proposal_observation,
+    )
+
+    knowledge, data = reasoning_case
+    request = ReasoningRequest.model_validate(data)
+    request.payload.chunks[0].noi_dung += "\n\nx\n"
+    requirement = request.payload.requirements[0]
+    payload, selected = _package(
+        request, knowledge, requirement, knowledge.criteria["CRITERION_1"], None
+    )
+    compact = _compact_source_view(payload, selected)
+    row = {
+        "item_id": "C1",
+        "proposed_finding": "SATISFIED",
+        "giai_thich": "Attributable source proposal",
+        "missing_conditions": [],
+        "verification_requirements": [],
+        "quote_ids": ["Q999" if foreign else "Q1"],
+        "external_ids": [],
+    }
+    responses = complete_batch(
+        FakeClient([{"proposals": [row]}]),
+        Context(**request.model_dump(include=set(Context.model_fields))),
+        [compact],
+        instructions=INSTRUCTIONS,
+        prompt_version=PROMPT_VERSION,
+        schema_version=SCHEMA_VERSION,
+    )
+    response = responses["CRITERION_1"]
+    if foreign:
+        assert isinstance(response, LlmClientError)
+        assert response.code == "FOREIGN_QUOTE_ID"
+    else:
+        proposal = SemanticProposal.model_validate_json(response.content)
+        result = _proposal_observation(proposal, selected, request, "TEST")
+        evidence = result.evidence[0]
+        assert (
+            request.payload.chunks[0].noi_dung[evidence.ky_tu_bat_dau : evidence.ky_tu_ket_thuc]
+            == evidence.trich_dan
+        )

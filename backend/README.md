@@ -1,90 +1,54 @@
 # Backend theo module
 
-Package Python là `legal_checker`, nằm tại `backend/src/legal_checker/`. Mỗi module giữ logic, repository và interfaces của mình. `core` cung cấp cấu hình/kết nối chung; `shared` cung cấp contracts và các công cụ được nhiều module sử dụng.
+Package `legal_checker` ở `backend/src/legal_checker/`. Kiến trúc hiện hành:
+[system_architecture](../docs/architecture/system_architecture.md). Quyết định dữ liệu
+và ownership năm người: [INTEGRATION_V1](../docs/contracts/integration_spec.md).
 
-## Các phần chính
+| Folder | Trách nhiệm và hiện trạng |
+|---|---|
+| api/v1 | 26 operations: upload, case/run/status/results, auth, review/report/export, health/knowledge |
+| core | Config/PostgreSQL connection, logging/metrics, errors/security primitives |
+| shared/contracts | C01–C13/X01/X02 và envelopes; live C09 provenance |
+| shared/storage | Upload + cached HTTP(S), kiểm SHA và giới hạn nguồn |
+| shared/llm | Types/config/client/audit; prompt và quyết định thuộc module |
+| modules/documents | PDF text parser/chunker/profile/citations/writer; OCR/DOCX parser chưa có |
+| modules/legal_knowledge | SQL reader và immutable snapshots |
+| modules/applicable_law | Catalog scope/temporal; field/marker gaps giữ UNKNOWN |
+| modules/citation_validation | Identity/temporal/domain/classifier; C09 pins |
+| modules/retrieval | BM25 và tùy chọn hybrid/rerank; active chunk/fact metadata |
+| modules/compliance | C07/C08, grounding/Decimal; verification provider do owner 4 cung cấp |
+| modules/risks, recommendations | C10 hai nhánh và C11 templates, provenance/dedup |
+| modules/assessments | Case/run lifecycle, Store standalone group C; không trộn hai loại run |
+| modules/reviews, reports | Append-only review, immutable report versions, publish và export |
+| workflows | Compose/run/validate DTO; completion và initial report cùng transaction |
+| worker | Inline/Celery queue, Beat recovery, heartbeat/lease |
+| migrations | Alembic revisions và SQL baselines |
+| src/devtools | Dataset/QA/seed/update/read-only integration audit; không import vào business modules |
 
-| Folder | Trách nhiệm | Hiện trạng |
-|---|---|---|
-| `api/v1` | Nhận HTTP, parse contracts, gọi service/workflow, ánh xạ lỗi | Auth, contracts (upload/nguồn), cases, runs (khởi chạy/trạng thái/kết quả), reports, review/publish, knowledge và health; không có POST riêng bước 5–7 |
-| `core` | Settings, tạo kết nối PostgreSQL, lỗi, security/logging chung | Config/database/exceptions và log JSON vận hành đang chạy; xác thực ở `api/auth.py`, `core/security` giữ interface phân quyền |
-| `shared/contracts` | Schemas C01–C13/X01/X02 và input/output bàn giao | Đang dùng trong API, modules và tests |
-| `shared/llm` | Audit X02, types/config và transport client dùng chung | PostgreSQL audit sink và client OpenAI tùy chọn; module sở hữu prompt/schema/provider; runner nhóm C không tạo paid client |
-| `shared/storage` | Đọc bytes tài liệu nguồn | `CachedHttpSourceStorage`: HTTP(S), SHA-256 và cache local; [cách dùng cho nhóm A](../docs/architecture/data_flow_and_storage.md) |
-| `modules/documents` | Intake, parser/OCR, chia đoạn, trích profile/viện dẫn, lưu metadata | Intake, parser PDF (pypdf + OCR Tesseract cho trang scan) và DOCX, chunker, profile/citation extractor, DocumentRepository |
-| `modules/legal_knowledge` | Đọc/quản lý knowledge và phiên bản | Repository SQL + immutable snapshots đang chạy |
-| `modules/applicable_law` | Scope, checklist, phiên bản pháp luật áp dụng | `CatalogScopeResolver` (C04, gồm policy tư cách các bên) và `CatalogTemporalResolver` (C05) theo catalog |
-| `modules/citation_validation` | Chuẩn hóa, xác thực và phân loại viện dẫn C09 | `CatalogCitationValidator` đối chiếu catalog văn bản |
-| `modules/retrieval` | Index, tìm evidence, rerank và tạo C06 | `LexicalRetrievalService` (BM25) đọc section paths/fact evidence; embedding/rerank là tùy chọn |
-| `modules/compliance` | Đánh giá criterion C07, tổng hợp C08, kiểm tra provenance | Provider/review độc lập, bốn findings, 7 loại criterion, 12 numeric schema và AGG_CAN_HO_V1; service compliance-only đã triển khai |
-| `modules/risks` | Map hai nguồn compliance/citation rồi tổng hợp C10 | Rules/catalog đã pin, guards, source XOR, severity và dedup giữ provenance; UNKNOWN chỉ verification theo policy |
-| `modules/recommendations` | Chọn template C11 và kiểm tra C10 | Generator/validator/service dùng template, selection policy ALL, facts/limits và diagnostics; luôn PENDING |
-| `modules/assessments` | Lưu/đọc run, checksum audit và runner nhóm C | PostgreSQL transaction giữ normalized rows/full DTO/pins/lineage; CLI offline/replay/save/read/export; service full assessment (khởi chạy, trạng thái, rebuild, publish) |
-| `modules/reviews` | Human review C12 và lưu events | Ghi C12 append-only theo run, đồng bộ bảng C12 của workbook |
-| `modules/reports` | Dựng report, lưu phiên bản và export | Builder C13 nhận C10/C11 đã cung cấp, không tính risk/actions; lưu phiên bản và xuất PDF/DOCX/JSON có dấu xác thực |
-| `workflows` | Điều phối module, kiểm tra bàn giao | Steps 5–7 đã chạy; DraftAssessmentWorkflow ghép upstream được inject; thiếu retrieval/observations/citation giữ diagnostics; states còn interface |
-| `worker` | Chạy services/workflow trong background | Celery + Redis (`ASSESSMENT_QUEUE=celery`), Beat khôi phục run bị mất lease |
-| `migrations` | Alembic revisions, SQL baseline và kiểm tra tiếp nhận DB cũ | `scripts.local_db init` chạy Alembic tới head; cấu hình tại `backend/alembic.ini` |
-| `tests` | Unit, integration, contract, E2E | Regression suite trên PostgreSQL test riêng |
-| `src/devtools` | Tải dataset, đọc/validate và seed Excel | Development helpers; runtime không import package này |
-
-Các file chỉ có docstring mô tả trách nhiệm ở phần upstream/review/report/worker còn là
-vị trí chờ triển khai, không tự trả kết quả thành công. Không suy từ trạng thái này sang
-các engines C07/C08/C10/C11 đã triển khai. [Bàn giao nhóm C](../docs/modules/group_c_compliance_and_risk.md)
-ghi luồng dữ liệu, mapping DB, bằng chứng checks và các phụ thuộc còn lại.
-
-## Cài và chạy
-
-[Hướng dẫn tạo/kích hoạt môi trường ảo](../docs/guides/dev_setup.md) trình bày lệnh cho Linux/macOS và Windows, cùng setup dataset/DB.
-
-Từ root repo:
+## Chạy từ root repo
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e './backend[dev]' -c constraints.txt
-uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
-pytest -q -c backend/pyproject.toml
+python -m pip install -e './backend[dev,dataset]' -c constraints.txt
+python -m uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Từ folder `backend`, sau khi activate môi trường:
+[Dev setup](../docs/guides/dev_setup.md) và [DB local](../docs/database/local_setup.md)
+có bước cấu hình `.env`, download và seed/update. Giữ DB/workbook/PDF/API keys ngoài Git.
+modules dùng bytes thật, modules_di_reference chỉ DEV/EVAL; reference replay QA.
+Live verifier/external source registry có port riêng, không default bật mọi gate.
+
+## Kiểm tra
 
 ```bash
-pip install -e '.[dev]' -c ../constraints.txt
-uvicorn legal_checker.main:create_app --factory
-pytest -q
+ruff check --config backend/pyproject.toml .
+pytest -q -c backend/pyproject.toml
+python -m devtools.integration_audit --output data/private/integration_audit
 ```
 
-Cấu hình bằng `DATABASE_URL` và optional `KNOWLEDGE_SNAPSHOT_SHA256`.
-Workbook gốc và DB native nằm trong `data/private/`, được Git bỏ qua.
-Dựng DB/seed theo [hướng dẫn local](../docs/database/local_setup.md) trước khi chạy API.
-Khi thay đổi bảng/cột, thêm revision theo [hướng dẫn Alembic](../docs/database/migrations.md); seed workbook vẫn là bước riêng.
-Docker build dùng root context; truyền DATABASE_URL tới PostgreSQL có thể truy cập
-bên trong container, không dùng loopback host làm địa chỉ DB của container.
-
-## Dependency và khởi tạo
-
-`main.create_app()` gọi `api.dependencies.build_services()`. Hàm này đọc knowledge PostgreSQL qua `modules/legal_knowledge/repository.py` và khởi tạo run store qua `modules/assessments/repository.py`.
-
-```text
-GET run → assessments repository → core/postgres.py → PostgreSQL
-GET knowledge → legal_knowledge repository → core/postgres.py → PostgreSQL
-```
-
-Module sở hữu queries và transactions trong repository; `core/postgres.py` dùng chung việc tạo connection. Các hàm đánh giá thuần nhận knowledge/evidence qua tham số. Module tự cấu hình LLM/embeddings, client/provider/prompt; dùng audit sink trong `shared/llm/audit.py` để ghi X02 theo cùng quy ước. Xem [audit LLM](../docs/guides/llm_audit.md).
-
-`compliance.service.evaluate_compliance` chỉ tạo C10/C11 từ nguồn compliance.
-`workflows.steps_5_7.evaluate` nhận thêm C09 để hợp nhất cả hai nhánh. Không có default
-OCR/Scope/Temporal/Retrieval/Citation hoặc review giả. Runner
-`python -m legal_checker.modules.assessments.run_group_c` hỗ trợ offline, replay,
-`--save`, `--read-run` và export; mặc định không gọi API trả phí.
-Xem [các lệnh PowerShell](src/legal_checker/modules/compliance/README.md#runner-nhóm-c-bước-57).
-
-`Store.get`, `get_input`, `get_lineage` đọc đúng case/run đã lưu, kiểm tra checksum,
-pins, knowledge snapshot và normalized rows/lineage trong transaction đọc nhất quán;
-không chạy reasoning/risk/recommendation. Report/nhóm D cần dùng các outputs này,
-giữ diagnostics, UNKNOWN/INSUFFICIENT và trạng thái DRAFT/PENDING.
-
-Các interfaces đã chuyển tới nơi sử dụng: `KnowledgeSnapshot` ở `modules/legal_knowledge/models.py`, `AssessmentStore` ở `modules/assessments/interfaces.py`, reader ở `modules/documents/parser.py`, storage ở `shared/storage/source.py`, authorization ở `core/security.py`. Không còn package `app` hoặc lớp import chuyển tiếp.
-
-Xem [khởi tạo](../docs/guides/startup.md), [nối modules](../docs/modules/README.md) và [hướng dẫn phát triển module](../docs/modules/README.md).
+Tests DB cần TEST_DATABASE_URL có dbname legal_checker_test; tests tạo DB con riêng.
+Schema/unit/handoff pass không chứng minh OCR/LLM/legal quality toàn corpus. Xem
+[changelog](../docs/guides/integration_alignment_changes_20261105.md) cho bằng chứng và
+các phần owner còn cần hoàn thiện/nghiệm thu. Thay schema dùng Alembic; thay dataset
+là release dữ liệu riêng, không seed lại chỉ vì đổi code.

@@ -1,15 +1,18 @@
 # Kịch bản demo: từ ca đánh giá tới báo cáo C13
 
+Baseline TEAM và quy trình k3d hiện hành: [demo_team_k3d_20261107.md](demo_team_k3d_20261107.md).
+Sửa .env host không đổi DB/LLM của pods; cần chuyển Secret/ConfigMap và rollout đúng image.
+
 Demo đi qua luồng thật của nhóm D: tải hợp đồng → API → hàng đợi → runner →
 `DraftAssessmentWorkflow` → báo cáo C13 → rà soát (C12) → phát hành → export có dấu xác thực.
 
 Chọn nguồn module bằng `ASSESSMENT_MODULES`:
 
-- `modules`: module thật của cả ba nhóm. Hợp đồng có tệp gốc trên máy chủ (tải lên qua UI, hoặc
-  PDF đã nạp vào cache bằng `python -m scripts.seed_source_cache <thư mục PDF>`) được đọc bằng
-  module nhóm A, báo cáo ghi `MODULES`. Ca dataset chỉ có PDF trên máy chủ lưu trữ ngoài thì
-  bước 1–2 lấy từ dataset tham chiếu, báo cáo ghi `MODULES_DI_REFERENCE`. Với
-  `ASSESSMENT_LLM=offline` (mặc định) tiêu chí C07 là UNKNOWN.
+- `modules`: đọc bytes PDF thật từ upload/cache/HTTP(S), kiểm SHA và persist extraction
+  trước Retrieval. Không fallback QA nếu URL/PDF lỗi. Report ghi `MODULES`.
+- `modules_di_reference`: DEV/EVAL cho phép dùng frozen C02/chunks/C03 khi PDF chưa
+  có local bytes; report ghi `MODULES_DI_REFERENCE`. Không dùng ở đường khách hàng.
+- `ASSESSMENT_LLM=offline` vẫn không gọi AI và giữ các kết luận cần semantic analysis UNKNOWN.
 - `reference`: **phát lại tham chiếu QA** qua luồng điều phối thật; báo cáo ghi `REFERENCE_REPLAY`.
 - `none`: run thất bại với `MODULE_NOT_IMPLEMENTED` (minh họa xử lý lỗi).
 
@@ -28,9 +31,13 @@ Trong `.env` của bạn (hoặc cấu hình K8s ConfigMap/Secret):
   ASSESSMENT_MODULES=modules
   ASSESSMENT_QUEUE=inline
   ASSESSMENT_LLM=offline
+  DOCUMENTS_EXTRACTOR=rules
   ```
 
-- **Chế độ Live AI với Groq (siêu nhanh, miễn phí):**
+- **Tùy chọn Document Intelligence hybrid với Qwen/Ollama local (tách riêng với `ASSESSMENT_LLM` của C07):**
+  Xem [documents_local_llm.md](../modules/documents_local_llm.md). Đặt `DOCUMENTS_EXTRACTOR=hybrid`, bật sẵn Ollama local (`qwen3.5:9b-q4_K_M` tại `DOCUMENTS_OLLAMA_URL`) trước khi khởi động API/worker; các fact đề xuất giữ `DERIVED_REVIEW_PENDING` và ghi X02 `OLLAMA_LOCAL`.
+
+- **Chế độ Live AI với Groq (cần tài khoản/model đã cấu hình):**
   ```bash
   ASSESSMENT_MODULES=modules
   ASSESSMENT_QUEUE=inline
@@ -98,12 +105,13 @@ Mở http://localhost:5173. Windows: nếu test/seed báo lỗi giải mã ký t
    có bằng chứng) → server từ chối. Hai người cùng sửa một mục → người sau nhận `STALE_REVIEW`
    và trạng thái tự tải lại.
 8. **Tạo phiên bản báo cáo từ review** → phiên bản mới (IN_REVIEW). Nếu còn mục chặn (yêu cầu bổ
-   sung, rủi ro cao chưa xác nhận...) nút **Phát hành** bị khóa; xử lý xong thì phát hành →
+   sung, bất kỳ target nào chưa có CONFIRM/OVERRIDE...) nút **Phát hành** bị khóa; xử lý xong thì phát hành →
    phiên bản PUBLISHED/APPROVED mới, bản cũ giữ nguyên.
 9. Tab **Audit**: run ID, snapshot tri thức, rule version, lịch sử review (C12), thông tin phát hành.
 10. **Tải PDF/DOCX/JSON**: cuối file có bảng **Dấu xác thực** (SHA-256 báo cáo, run, review
     revision, phiên bản tri thức, người/giờ xuất). File JSON chứa đúng đối tượng báo cáo đã lưu:
-    tính lại SHA-256 sẽ khớp `report_sha256`.
+    export là envelope `verification` + `report`. Đối chiếu report_sha256 bằng
+    report_digest trên FinalReport từ field report; không hash toàn file có stamp.
 11. Bấm chạy lại cùng ca: tạo run mới; gửi lại cùng `Idempotency-Key` trả đúng run cũ.
 
 Lỗi minh họa: đặt `ASSESSMENT_MODULES=none`, khởi động lại API, chạy một ca → run FAILED với
@@ -136,10 +144,10 @@ api (`ASSESSMENT_QUEUE=celery`), worker (Celery + beat khôi phục run bị m�
   được khung xem song song.
 - C07 mặc định chỉ gọi AI cho các điểm kiểm tra có thể thành kết luận; bật `ASSESSMENT_LLM_HINTS=on`
   nếu muốn AI gợi ý cả các điểm kiểm tra chờ chuyên viên (khoảng 8 lần số lượt gọi).
-- Ca dataset có sẵn dùng hồ sơ/đoạn văn tham chiếu khi PDF gốc không có trên máy chủ.
-- C09 có chẩn đoán `C09_PROVENANCE_UNAVAILABLE` (khoảng trống tích hợp nhóm B/C).
+- Chỉ modules_di_reference/reference mới được dùng reference; modules đọc HTTP/upload thật và dừng nếu lỗi nguồn.
+- Live C09 đã có provenance. C09_PROVENANCE_UNAVAILABLE dành legacy/đầu vào thiếu pin, không còn là mô tả mọi live finding.
+- SOURCE_CHECKED của TEAM baseline chưa là HUMAN_VERIFIED; C10 có thể chặn citation risk bằng CITATION_PRODUCTION_GATE. Verifier nghiệp vụ cần được inject; LLM online chưa tự mở mọi gate.
 - PDF gốc của các ca seed nằm trên host lưu trữ của dataset; khi host đó không truy cập được,
   khung xem song song báo lỗi rõ ràng (báo cáo vẫn dùng được). Hợp đồng tải lên thì xem được.
 - Tài khoản quản lý bằng CLI `scripts.users`, chưa có màn hình quản trị.
-- Báo cáo lưu ở `runtime.report_versions`; bảng workbook `bao_cao_danh_gia` chưa được ghi vì
-  `phien_ban_bao_cao` INTEGER vs chuỗi `draft-v1` cần nhóm thống nhất cách ánh xạ.
+- Báo cáo live lưu ở `runtime.report_versions`; dùng version_no số riêng và DTO string. `bao_cao_danh_gia` được giữ làm projection seed, không cần thêm writer/cast chuỗi draft-v1 sang INTEGER.

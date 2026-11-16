@@ -25,6 +25,12 @@ export const FIELD_LABELS: Record<string, string> = {
   la_nha_xay_moi: "Là nhà xây mới",
   che_do_giao_dich: "Hình thức giao dịch",
   muc_dich_su_dung_can_ho: "Mục đích sử dụng căn hộ",
+  dien_tich: "Diện tích sử dụng căn hộ (m²)",
+  gross_area_m2: "Diện tích sàn xây dựng căn hộ (m²)",
+  land_area_m2: "Diện tích thửa đất (m²)",
+  document_stage: "Trạng thái tài liệu",
+  warranty_subject: "Đối tượng bảo hành",
+  warranty_months: "Thời hạn bảo hành (tháng)",
   // Conditions the legal catalogue checks but the profile does not (yet) extract.
   loai_chu_the: "Tư cách các bên",
   la_chu_the_kinh_doanh: "Bên bán là chủ thể kinh doanh bất động sản",

@@ -71,6 +71,7 @@ def _retry_after(value: str | None) -> float | None:
 
 def _http_error(response: httpx.Response) -> LlmClientError:
     status = response.status_code
+    detail = {}
     try:
         body = response.json()
         detail = body.get("error", {}) if isinstance(body, dict) else {}
@@ -95,10 +96,26 @@ def _http_error(response: httpx.Response) -> LlmClientError:
     if status == 404:
         return LlmClientError("MODEL_NOT_FOUND")
     if status in {408, 409, 429} or status >= 500:
+        retry_after = _retry_after(response.headers.get("retry-after"))
+        # OpenAI-compatible Gemini responses can put RetryInfo in the JSON body
+        # instead of an HTTP header. Keep only the numeric duration, never message/key.
+        if isinstance(detail, dict):
+            for item in (
+                detail.get("details", []) if isinstance(detail.get("details"), list) else []
+            ):
+                if not isinstance(item, dict) or not str(item.get("@type", "")).endswith(
+                    "google.rpc.RetryInfo"
+                ):
+                    continue
+                delay = item.get("retryDelay")
+                if isinstance(delay, str) and re.fullmatch(r"\d+(?:\.\d+)?s", delay):
+                    seconds = float(delay[:-1])
+                    if math.isfinite(seconds):
+                        retry_after = max(retry_after or 0, seconds)
         return LlmClientError(
             "RATE_LIMIT" if status == 429 else "TEMPORARY_HTTP_ERROR",
             retryable=True,
-            retry_after=_retry_after(response.headers.get("retry-after")),
+            retry_after=retry_after,
         )
     return LlmClientError("INVALID_REQUEST")
 
@@ -183,6 +200,7 @@ class OpenAIResponsesClient:
         self._sleep = sleep
         self._monotonic = monotonic
         self._jitter = jitter
+        self._last_attempt_started = None
 
     def close(self) -> None:
         if self._owns_client:
@@ -280,6 +298,14 @@ class OpenAIResponsesClient:
                     2 ** (attempt - 1) + min(1.0, max(0.0, float(self._jitter()))),
                     self.settings.max_retry_delay_seconds,
                 )
+                if error.code == "RATE_LIMIT" and self.settings.min_request_interval_seconds:
+                    delay = max(
+                        delay,
+                        min(
+                            3 * self.settings.min_request_interval_seconds,
+                            self.settings.max_retry_delay_seconds,
+                        ),
+                    )
                 if error.retry_after is not None:
                     if error.retry_after > self.settings.max_retry_delay_seconds:
                         raise
@@ -291,6 +317,16 @@ class OpenAIResponsesClient:
 
     def _attempt(self, context, body, prompt_version, schema_version, attempt, timeout):
         """Audit precisely one HTTP call; semantic parsing never replays a paid call."""
+        if self._last_attempt_started is not None:
+            delay = self.settings.min_request_interval_seconds - (
+                self._monotonic() - self._last_attempt_started
+            )
+            if delay > 0:
+                if delay >= timeout:
+                    raise LlmClientError("DEADLINE_EXCEEDED")
+                self._sleep(delay)
+                timeout -= delay
+        self._last_attempt_started = self._monotonic()
         base = self.settings.base_url.rstrip("/")
         if self.settings.api_mode == "chat_completions":
             url = base if base.endswith("/chat/completions") else f"{base}/chat/completions"

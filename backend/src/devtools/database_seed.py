@@ -200,9 +200,36 @@ def insert_table(connection, table: Table, rows: list[dict[str, Any]]) -> int:
         return cursor.rowcount
 
 
-def _reviewed_snapshot(connection, expected_sha256: str) -> None:
+def restore_case_review_context(connection) -> int:
+    """Restore explicit C01 fields carried inside the frozen workbook schema.
+
+    Older workbooks have no such receipt and retain database defaults. Never infer
+    draft mode from a PDF label or treat a string such as "false" as a boolean.
+    """
+    updated = 0
+    for row in connection.execute(
+        "SELECT ca_id, profile_snapshot_json FROM runtime.ca_danh_gia"
+    ).fetchall():
+        receipt = row["profile_snapshot_json"]
+        if not isinstance(receipt, dict) or "review_mode" not in receipt:
+            continue
+        mode = receipt["review_mode"]
+        complete = receipt.get("document_set_complete", False)
+        if mode not in {"DRAFT_REVIEW", "FULL_ASSESSMENT"} or type(complete) is not bool:
+            raise SeedError("Invalid explicit case review context in workbook snapshot")
+        connection.execute(
+            "UPDATE runtime.ca_danh_gia SET review_mode=%s,document_set_complete=%s WHERE ca_id=%s",
+            (mode, complete, row["ca_id"]),
+        )
+        updated += 1
+    return updated
+
+
+def _pin_snapshot(connection, expected_sha256: str, review_status: str) -> None:
     from legal_checker.modules.legal_knowledge.repository import TABLE_KEYS, canonical
 
+    if review_status not in {"DEV_UNVERIFIED", "SOURCE_CHECKED", "HUMAN_VERIFIED"}:
+        raise SeedError("Unsupported knowledge review status")
     tables = {
         name: connection.execute(
             sql.SQL("SELECT * FROM {} ORDER BY {}").format(
@@ -216,28 +243,45 @@ def _reviewed_snapshot(connection, expected_sha256: str) -> None:
     content = json.loads(canonical({"schema_version": "v7.4.9", "tables": tables}))
     actual = hashlib.sha256(canonical(content).encode()).hexdigest()
     if actual != expected_sha256:
-        raise SeedError("Seeded knowledge differs from the pinned reviewed release hash")
-    for name in ("tieu_chi_danh_gia", "quy_tac_quyet_dinh", "ngoai_le_ap_dung"):
-        if any(row.get("human_verified") is not True for row in tables[name]):
-            raise SeedError("The pinned reviewed release contains unverified knowledge")
+        kind = "reviewed release" if review_status == "HUMAN_VERIFIED" else "release"
+        raise SeedError(f"Seeded knowledge differs from the pinned {kind} hash")
+    if review_status == "HUMAN_VERIFIED":
+        for name in ("tieu_chi_danh_gia", "quy_tac_quyet_dinh", "ngoai_le_ap_dung"):
+            if any(row.get("human_verified") is not True for row in tables[name]):
+                raise SeedError("The pinned reviewed release contains unverified knowledge")
     connection.execute(
         """INSERT INTO knowledge.knowledge_snapshots
             (sha256,schema_version,content,review_status)
-            VALUES (%s,'v7.4.9',%s,'HUMAN_VERIFIED') ON CONFLICT DO NOTHING""",
-        (actual, Jsonb(content)),
+            VALUES (%s,'v7.4.9',%s,%s) ON CONFLICT DO NOTHING""",
+        (actual, Jsonb(content), review_status),
     )
     if (
         connection.execute(
             "SELECT review_status FROM knowledge.knowledge_snapshots WHERE sha256=%s", (actual,)
         ).fetchone()["review_status"]
-        != "HUMAN_VERIFIED"
+        != review_status
     ):
-        raise SeedError("Existing immutable snapshot lacks reviewed release metadata")
+        raise SeedError("Existing immutable snapshot has different review metadata")
+
+
+def _reviewed_snapshot(connection, expected_sha256: str) -> None:
+    _pin_snapshot(connection, expected_sha256, "HUMAN_VERIFIED")
 
 
 def seed_database(
-    database_url: str, seed: WorkbookSeed, *, reviewed_knowledge_sha256: str | None = None
+    database_url: str,
+    seed: WorkbookSeed,
+    *,
+    reviewed_knowledge_sha256: str | None = None,
+    expected_knowledge_sha256: str | None = None,
+    knowledge_review_status: str = "DEV_UNVERIFIED",
 ) -> dict:
+    if (
+        reviewed_knowledge_sha256
+        and expected_knowledge_sha256
+        and reviewed_knowledge_sha256 != expected_knowledge_sha256
+    ):
+        raise SeedError("Conflicting expected knowledge hashes")
     validate_references(seed)
     if seed.qa_tables:
         from devtools.qa_validation import validate_qa
@@ -274,8 +318,11 @@ def seed_database(
             for table in QA_TABLES
         )
         connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        restore_case_review_context(connection)
         if reviewed_knowledge_sha256:
             _reviewed_snapshot(connection, reviewed_knowledge_sha256)
+        elif expected_knowledge_sha256:
+            _pin_snapshot(connection, expected_knowledge_sha256, knowledge_review_status)
         connection.execute(
             "INSERT INTO dev_meta.seed_imports VALUES (%s, %s, now())",
             (

@@ -25,6 +25,7 @@ Q10_INTAKE = """
 SELECT ca.ca_id, ca.hop_dong_id, ca.tenant_id, ca.created_by,
        ca.ngay_danh_gia, ca.moc_ap_dung, ca.loai_moc_ap_dung,
        ca.phien_ban_id, ca.rule_version, ca.legal_knowledge_version,
+       ca.review_mode, ca.document_set_complete,
        t.tep_id, t.object_uri, t.url_nguon, t.mime_type, t.sha256
 FROM runtime.ca_danh_gia ca
 JOIN runtime.hop_dong h ON h.hop_dong_id = ca.hop_dong_id
@@ -106,6 +107,8 @@ def case_from_row(row: dict) -> AssessmentCase:
             "ngay_danh_gia": _to_date(row["ngay_danh_gia"]),
             "moc_ap_dung": _to_date(row["moc_ap_dung"]),
             "loai_moc_ap_dung": row["loai_moc_ap_dung"],
+            "review_mode": row.get("review_mode", "FULL_ASSESSMENT"),
+            "document_set_complete": row.get("document_set_complete", False),
         },
         deployment=DeploymentPin(
             phien_ban_id=row["phien_ban_id"],

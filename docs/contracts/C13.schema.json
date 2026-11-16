@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C13",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "$defs": {
     "ApplicableRequirement": {
       "additionalProperties": false,
@@ -143,6 +146,12 @@
           },
           "title": "Reason",
           "type": "object"
+        },
+        "assessment_review": {
+          "additionalProperties": true,
+          "description": "Backend review-purpose receipt; separate from legal scope/source snapshots.",
+          "title": "Assessment Review",
+          "type": "object"
         }
       },
       "required": [
@@ -230,6 +239,20 @@
           ],
           "default": null,
           "title": "Loai Moc Ap Dung"
+        },
+        "review_mode": {
+          "default": "FULL_ASSESSMENT",
+          "enum": [
+            "FULL_ASSESSMENT",
+            "DRAFT_REVIEW"
+          ],
+          "title": "Review Mode",
+          "type": "string"
+        },
+        "document_set_complete": {
+          "default": false,
+          "title": "Document Set Complete",
+          "type": "boolean"
         }
       },
       "required": [
@@ -1238,6 +1261,42 @@
           "default": null,
           "title": "La Nha O Xa Hoi"
         },
+        "la_giao_dich_dien_tu": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "La Giao Dich Dien Tu"
+        },
+        "co_thoa_thuan_trong_tai": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Co Thoa Thuan Trong Tai"
+        },
+        "co_thoa_thuan_dat_coc": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Co Thoa Thuan Dat Coc"
+        },
         "la_hop_dong_theo_mau": {
           "anyOf": [
             {
@@ -2086,8 +2145,5 @@
     "review_status"
   ],
   "title": "FinalReport",
-  "type": "object",
-  "x-contract-id": "C13",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

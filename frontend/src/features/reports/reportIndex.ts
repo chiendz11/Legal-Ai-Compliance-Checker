@@ -90,14 +90,26 @@ export function requirementVersion(
   return version && typeof version === "object" ? (version as Record<string, unknown>) : undefined;
 }
 
+/** Human-readable requirement text from the knowledge snapshot pinned with the result. */
 export function requirementText(requirement: RequirementResult): string {
   const text = requirementVersion(requirement)?.noi_dung;
   return typeof text === "string" && text ? text : requirement.yeu_cau_ca_id;
 }
 
 export function riskTitle(risk: RiskResult): string {
-  const snapshot = risk.risk_snapshot as { ten_rui_ro?: string };
-  return snapshot.ten_rui_ro ?? risk.rui_ro_id;
+  const snapshot = risk.risk_snapshot as { ten_rui_ro?: string; mo_ta?: string } | undefined;
+  if (snapshot?.ten_rui_ro) return snapshot.ten_rui_ro;
+  if (snapshot?.mo_ta) return snapshot.mo_ta;
+  if (risk.rui_ro_id === "RR_CITATION_UNKNOWN") {
+    return "Viện dẫn pháp lý chưa xác định rõ phiên bản hiệu lực";
+  }
+  if (risk.rui_ro_id.includes("VIOLATED")) {
+    return "Phát hiện có dấu hiệu không tuân thủ quy định pháp luật";
+  }
+  if (risk.rui_ro_id.includes("UNKNOWN")) {
+    return "Cần xác minh và làm rõ điều khoản hợp đồng";
+  }
+  return risk.rui_ro_id;
 }
 
 /** requirement_id → plain-language name and topic, from the report's pinned knowledge snapshot. */

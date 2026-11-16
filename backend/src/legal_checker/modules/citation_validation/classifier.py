@@ -9,8 +9,10 @@ from legal_checker.modules.citation_validation.temporal_validator import Tempora
 CitationStatus = Literal["VALID", "STALE", "INVALID", "UNKNOWN"]
 
 _LY_DO = {
-    "NAME_ONLY_VERSION_IDENTITY_AMBIGUOUS": "Viện dẫn chỉ có tên văn bản, không có số hiệu/năm; "
-    "không đủ để xác định văn bản và phiên bản.",
+    "NAME_ONLY_VERSION_IDENTITY_AMBIGUOUS": "Chưa định danh được phiên bản từ tên luật; "
+    "cần năm/số hiệu hoặc dẫn chiếu cùng tên đến số hiệu rõ ràng trong hợp đồng.",
+    "TITLE_YEAR_IDENTITY_UNRESOLVED": "Tên và năm chưa khớp duy nhất một văn bản trong catalog.",
+    "NUMBER_YEAR_MISMATCH": "Năm viện dẫn mâu thuẫn với năm trong số hiệu văn bản.",
     "NUMBER_NOT_IN_CATALOG": "Số hiệu không có trong danh mục văn bản đã thu thập; chưa xác minh "
     "được, không kết luận là sai.",
     "MULTIPLE_CATALOG_CANDIDATES": "Số hiệu khớp nhiều văn bản trong danh mục; chưa chọn được.",
@@ -21,6 +23,7 @@ _LY_DO = {
     "REPLACED_BEFORE_DATE": "Văn bản đã bị thay thế trước ngày giao kết.",
     "EXPIRED_BEFORE_DATE": "Văn bản đã hết hiệu lực trước ngày giao kết.",
     "DOMAIN_MISMATCH": "Văn bản thuộc lĩnh vực không phù hợp với hợp đồng.",
+    "DOMAIN_UNKNOWN": "Chưa đủ dữ kiện xác định văn bản phù hợp lĩnh vực của hợp đồng.",
     "IN_FORCE_AT_DATE": "Văn bản có hiệu lực tại ngày giao kết và phù hợp lĩnh vực.",
 }
 
@@ -55,4 +58,6 @@ def classify(
         return Classification("STALE", code, f"{_LY_DO[code]} ({temporal.detail})")
     if domain_status == "MISMATCH":
         return Classification("INVALID", "DOMAIN_MISMATCH", _LY_DO["DOMAIN_MISMATCH"])
+    if domain_status != "MATCH":
+        return Classification("UNKNOWN", "DOMAIN_UNKNOWN", _LY_DO["DOMAIN_UNKNOWN"])
     return Classification("VALID", code, _LY_DO[code])

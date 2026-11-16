@@ -25,4 +25,15 @@ Xem [hướng dẫn contracts máy đọc được](../docs/contracts/README.md)
 `docs/architecture/openapi.design.json` là đặc tả API được commit cùng tài liệu. Backend không đọc
 file này để chạy handlers. Công cụ sinh contracts/OpenAPI đã được xóa sau khi xuất đặc tả.
 
-`local_db update` áp dụng revision workbook mới lên baseline đúng checksum trong một transaction; giữ hợp đồng upload, lịch sử run/report và snapshot cũ. Xem [cách cập nhật DB đã seed](../docs/database/reviewed_dataset_update.md).
+`local_db update` dành cho các revision tương thích như reviewed-flags, áp dụng trên
+baseline đúng checksum trong một transaction. TEAM_BASELINE_20261107 thay identities
+và runtime nên CLI yêu cầu DB mới, giữ DB/lịch sử cũ. Xem
+[hướng dẫn baseline](../docs/guides/dataset_team_baseline_20261107.md).
+
+`python -m scripts.local_db align-runtime` tạo snapshot catalog bổ sung bất biến
+từ đúng TEAM 20261107 đã seed; lệnh in SHA mới để cấu hình API/worker. Không ghi
+đè workbook, snapshot hoặc reports cũ. [Chi tiết](../docs/guides/complete_runtime_alignment_20261108.md).
+
+`python -m scripts.local_db align-content-defaults --parent-sha256 <SHA>` tạo
+revision source-checked cho rule phương thức bàn giao/bảo lưu sở hữu. Parent hash
+và source binding được kiểm tra; không đổi pin lịch sử. Xem [hướng dẫn v4](../docs/guides/baseline_v4_civil_defaults_20261109.md).

@@ -1,69 +1,51 @@
 # Tải dataset cho mỗi thành viên
 
-Nếu chưa có môi trường Python của repo, làm theo [hướng dẫn tạo/kích hoạt `.venv`](../guides/dev_setup.md) trước.
+Baseline hiện hành: [PDF360 v4 r2 — runtime và knowledge đã duyệt](../guides/dataset_pdf360_v4r2_runtime_20261110.md).
+Gồm 240 DEV + 60 VALIDATION và 32 ca regression trong QA. Mỗi người dùng DB local
+riêng; MASTER/TEST labels dành cho evaluator. Các biến thể cùng một họ PDF giữ
+cùng split để tránh rò rỉ giữa DEV và TEST.
 
-Repo giữ script và manifest chứa link/phiên bản/hash; dataset ở Drive và Supabase.
-Mỗi thành viên tải về thư mục local được Git bỏ qua, rồi seed DB riêng như hiện tại.
-Không cần API key Google Drive cho link ZIP public.
+## Cài đặt
 
-## Bắt đầu
-
-Từ root repo, trong môi trường Python đã activate:
+Chạy tại root repo, trong [môi trường Python đã activate](../guides/dev_setup.md):
 
 ```bash
 pip install -e './backend[dev,dataset]' -c constraints.txt
-cp .env.example .env
-python -m scripts.dataset pull
+python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
 python -m scripts.dataset check
+python -m scripts.dataset cache-sources
 python -m scripts.local_db init
 python -m scripts.local_db seed
+python -m scripts.local_db check
 ```
 
-Nếu đã có `.env`, giữ cấu hình của mình và đối chiếu SEED_WORKBOOK_PATH với manifest.
-Lệnh tải chỉ chuẩn bị files; init/seed là các lệnh riêng, vẫn nhận workbook đầy đủ.
-Không dùng các workbook chia nhỏ để seed.
+Trước khi init/seed, đặt `DATABASE_URL` sang DB mới và `SEED_WORKBOOK_PATH` sang
+workbook trong release. Không chép đè `.env` đã có credentials. Xem đầy đủ giá
+trị trong [hướng dẫn release](../guides/dataset_pdf360_v4r2_runtime_20261110.md#5-cài-vào-máy-thành-viên).
 
-## Lệnh tải làm gì?
+## Từng lệnh làm gì?
 
-1. Đọc `configs/dataset_dev_validation.json` và chọn folder từ SEED_WORKBOOK_PATH.
-2. Nếu đủ 337 file và tất cả hash đúng: trả `already_present`, không tải lại.
-3. Tải ZIP đúng link Drive vào thư mục tạm dưới `data/private/`.
-4. Kiểm tra kích thước/SHA-256 ZIP, rồi kiểm tra các đường dẫn và file required.
-5. Cài workbook, 300 text references, 32 controlled sources, README, CSV URL PDF và hai báo cáo review/validation.
-6. Kiểm tra SHA-256 từng file và chuyển thư mục tạm thành folder dataset hoàn chỉnh.
-7. Xóa ZIP/thư mục tạm; không ghi đè folder cũ hoặc thay đổi DB.
+1. `pull` đọc manifest, kiểm ZIP/hash và từng file required. Dùng thư mục tạm rồi
+   mới chuyển thành folder hoàn chỉnh; phát hiện file local khác hash sẽ giữ nguyên.
+2. `check` kiểm hash file đã cài, không thay dữ liệu.
+3. `cache-sources` đọc index đã pin, kiểm PDF/SHA-256 và tạo cache theo hash.
+   Nhóm A lấy bytes qua shared storage. Không dùng URL Supabase cũ chứa PDF v2.
+4. `init` chạy Alembic trên DB local riêng. `seed` nhập workbook đầy đủ và pin
+   snapshot đã duyệt; gọi lại đúng workbook không ghi trùng.
+5. `check` của local_db đọc tình trạng DB đã seed. Các lệnh tải/cache không tự sửa DB.
 
-PDF không được giải nén bởi lệnh này. Nhóm A query `tep_nguon.object_uri` để tải PDF
-public từ Supabase và kiểm tra `sha256`; gói DEV_VALIDATION không đóng kèm PDF để giảm dung lượng.
-Text `dataset://` ánh xạ theo thư mục dataset local như hướng dẫn hiện tại.
+Gói hiện `LOCAL_ARCHIVE_READY`. Sau khi maintainer upload đúng ZIP, link public
+có thể tải tự động bằng `python -m scripts.dataset pull`. Nếu Drive yêu cầu đăng
+nhập hoặc hết quota, tải bằng trình duyệt rồi dùng `--archive`. Downloader không
+đọc browser cookies. Dùng `--url` hoặc `DATASET_ARCHIVE_URL` chỉ thay nơi tải;
+checksum vẫn phải khớp cùng gói.
 
-## Drive private/quota hoặc dùng file đã tải
+## Giữ dữ liệu cũ và giới hạn đánh giá
 
-Link ZIP tự động cần cho phép "Anyone with the link → Viewer".
-Downloader xử lý trang xác nhận của Drive, timeout và retry. Script không đọc cookie
-đăng nhập trong trình duyệt. Với file chỉ chia sẻ theo email, hoặc Drive từ chối tải:
+Release đổi bytes PDF, chunks và output liên quan nên seed DB mới, không chạy
+reviewed-flags update vào DB đang phát triển. Giữ folder/DB cũ và lịch sử. Không
+sửa hash để vượt kiểm tra khi gói khác phiên bản.
 
-```bash
-python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_STRUCTURED_R2_SUPABASE_DEV_VALIDATION.zip
-```
-
-Nếu đổi nơi lưu ZIP mà bytes không đổi, override link bằng `--url` hoặc biến
-DATASET_ARCHIVE_URL trong `.env`. Hash manifest vẫn được giữ để phát hiện sai gói:
-
-```bash
-python -m scripts.dataset pull --url 'https://drive.google.com/file/d/FILE_ID/view'
-```
-
-## Folder local khác bản
-
-Script giữ nguyên files và báo lỗi nếu folder đã có file thiếu/khác hash. Chọn folder
-riêng với `--destination`, rồi đặt SEED_WORKBOOK_PATH tương ứng nếu muốn dùng nó để seed.
-Không tự thay workbook của DB đã seed hoặc thay pin/hash để bỏ qua kiểm tra.
-
-## Khi phát hành dataset mới
-
-Maintainer upload ZIP đã chốt, cập nhật URL, hash archive, hash file required, phiên bản
-và destination trong manifest, rồi review/commit metadata. Link và hash đi cùng một bản.
-Manifest DEV_VALIDATION không chứa MASTER/TEST labels hoặc dữ liệu hợp đồng, chỉ metadata.
-Các regression tests của downloader dùng ZIP nhỏ tạo trong tests; CI không tải dataset
-từ Drive hoặc cần quyền truy cập Drive của nhóm.
+Knowledge HUMAN_VERIFIED không tự xác minh output runtime. Literal source
+reference hỗ trợ chấm 36 trường phụ lục; C02–C13 do engine sinh là reference
+regression, chưa phải đáp án pháp lý độc lập cho toàn bộ 360 hợp đồng.

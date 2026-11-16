@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://legal-checker.local/contracts/decision_rule_policy.schema.json",
+  "title": "Pinned decision rule conditions (not executable code)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["enabled", "predicate", "gate"],
+  "properties": {
+    "enabled": {"type": "boolean"},
+    "predicate": {"type": "string", "minLength": 1},
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "coverage_complete": {"type": "boolean"},
+        "absence_verified": {"type": "boolean"},
+        "evidence_validated": {"type": "boolean"},
+        "source_verified": {"type": "boolean"},
+        "scope_confirmed": {"type": "boolean"},
+        "version_resolved": {"type": "boolean"},
+        "evidence_conflict": {"type": "boolean"},
+        "exceptions_resolved": {"type": "boolean"},
+        "source_available": {"type": "boolean"},
+        "no_unresolved_conflict": {"type": "boolean"},
+        "facts_verified": {"type": "boolean"},
+        "all_pages_readable": {"type": "boolean"},
+        "all_related_documents_received": {"type": "boolean"},
+        "template_field_unfilled": {"type": "boolean"},
+        "mandatory_contract_content": {"type": "boolean"},
+        "criterion_content_absent": {"type": "boolean"},
+        "any_unresolved_fact": {"type": "boolean"},
+        "optional_choice_confirmed": {"type": "boolean"}
+      }
+    },
+    "numeric_rule": {"type": ["object", "null"]},
+    "scope_of_facts": {"const": "CURRENT_CRITERION"},
+    "criterion_target_only": {"const": true},
+    "template_output": {"const": "DRAFT"},
+    "human_approval_required_for_final": {"type": "boolean"},
+    "conclusion_scope_required": {"type": "boolean"},
+    "performance_requires_receipt_evidence": {"type": "boolean"},
+    "allowed_evaluation_targets": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"enum": ["CONTRACT_CONTENT", "PERFORMANCE"]}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"required": ["allowed_evaluation_targets"]},
+      "then": {"required": ["conclusion_scope_required"], "properties": {"conclusion_scope_required": {"const": true}}}
+    },
+    {
+      "if": {"required": ["performance_requires_receipt_evidence"], "properties": {"performance_requires_receipt_evidence": {"const": true}}},
+      "then": {"required": ["conclusion_scope_required"], "properties": {"conclusion_scope_required": {"const": true}}}
+    }
+  ]
+}

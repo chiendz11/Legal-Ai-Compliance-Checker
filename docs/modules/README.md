@@ -22,46 +22,50 @@ Tên bảng/kiểu cột lấy từ migrations PostgreSQL đang có trong repo. 
 Contract thực thi hiện tại lấy từ `backend/src/legal_checker/shared/contracts/`.
 Phụ lục BRD có các API/kiến trúc đề xuất; những đề xuất đó chưa tự trở thành code đã chạy.
 
-Dataset đang dùng: **v7.5.0-source-pdf360-r2-structured / supabase-public-v1**. Nhóm dev tải gói DEV_VALIDATION theo [hướng dẫn dataset](../database/dataset_and_corpus.md), rồi seed vào DB riêng. Bộ chunks/citations tham chiếu được giải thích tại [quy trình cập nhật reviewed](../database/reviewed_dataset_update.md).
+Dataset đang dùng: **TEAM_BASELINE_20261107 / supabase-public-v1**. [Guide baseline](../guides/dataset_team_baseline_20261107.md) chốt hash, scope 36 atomic requirements và DB mới. Quy trình reviewed-flags 05/11 là lịch sử, không dùng để nâng cấp baseline này.
 
-Các JOIN bên dưới dùng case/run r2: ví dụ `CA360_001` và `CA360_001_PDF360_LS2_REFERENCE`. Chọn IDs thực tế từ DB đã seed, giữ cùng knowledge hash và không trộn với IDs của dataset cũ.
+Các JOIN bên dưới dùng case/run r2: ví dụ `CA360_001` và `REF_TEAM_20261107_CA360_001`. Chọn IDs thực tế từ DB đã seed, giữ cùng knowledge hash và không trộn với IDs của dataset cũ.
 
 **Cập nhật ngày 05/11/2026:** đã có code cho intake/upload, parser PDF có text,
 scope/temporal/citation, BM25, C07–C11, orchestrator Celery, review/report và frontend.
 Các điểm nối và nghiệm thu còn thiếu được ghi trong
 [bàn giao cho 5 người](../guides/team_onboarding_and_next_steps.md).
 Có implementation không đồng nghĩa mọi nhánh đã đạt chất lượng nghiệm thu.
-Dataset đã có revision `user-reviewed-20261105`; DB cũ dùng `local_db update`,
-DB mới dùng `seed`. Giữ các recipe JOIN bên dưới để phát triển độc lập, sau đó
+Baseline 07/11 dùng snapshot SOURCE_CHECKED và DB mới; giữ DB cũ và lịch sử.
+Không dùng local_db update cho release thay identities/runtime này. Giữ các recipe JOIN để phát triển độc lập, sau đó
 đối chiếu với output thật và cùng case/run/hash khi tích hợp.
+
+Quy trình bàn giao từng người và acceptance: [playbook](../guides/parallel_development_playbook.md). Các bài JOIN trong tài liệu là recipe đọc input tham chiếu/standalone; live sources đã chốt ở mục 8.4.
+
+Quyết định hiện hành: [INTEGRATION_V1](../contracts/integration_spec.md) và [dictionary](../contracts/data_dictionary.md). Các ví dụ seed bên dưới không tự là live persistence.
 
 ## Mục lục
 
 1. [Hiểu đúng phần đã có](#1-hiểu-đúng-phần-đã-có)
 2. [Chuẩn bị chung và chọn ca mẫu](#2-chuẩn-bị-chung-và-chọn-ca-mẫu)
 3. [Cách viết một module](#3-cách-viết-một-module)
-4. [Nhóm A: bước 1–2](#4-nhóm-a-bước-12-tiếp-nhận-và-document-intelligence)
-5. [Nhóm B: bước 3–4](#5-nhóm-b-bước-34-applicable-law-citation-validation-và-retrieval)
-6. [Nhóm C: bước 5–7](#6-nhóm-c-bước-57-compliance-risk-và-recommendation)
-7. [Nhóm D: bước 9](#7-nhóm-d-bước-9-reportui-và-ghép-hệ-thống)
-8. [Các mapping cần thống nhất](#8-các-mapping-cần-thống-nhất)
+4. [Nhóm A: bước 1–2](group_a_document_intelligence.md#4-nhóm-a-bước-12-tiếp-nhận-và-document-intelligence)
+5. [Nhóm B: bước 3–4](group_b_legal_and_retrieval.md#5-nhóm-b-bước-34-applicable-law-citation-validation-và-retrieval)
+6. [Nhóm C: bước 5–7](group_c_compliance_and_risk.md#6-nhóm-c-bước-57-compliance-risk-và-recommendation)
+7. [Nhóm D: bước 9](group_d_report_and_frontend.md#7-nhóm-d-bước-9-reportui-và-ghép-hệ-thống)
+8. [Quy ước mapping hiện hành](#8-quy-ước-mapping-hiện-hành)
 9. [Thứ tự làm và cách bàn giao](#9-thứ-tự-làm-và-cách-bàn-giao)
 10. [Tiêu chí hoàn thành](#10-tiêu-chí-hoàn-thành-và-các-test-cần-có)
 
 Để bắt đầu viết repository, đọc [khóa JOIN/cách chạy SQL](#25-quy-ước-khóa-join-và-cách-chạy-sql-trong-tài-liệu)
 và [cách đọc QA payload](#26-hai-nguồn-đọc-bảng-chuẩn-hóa-và-dto-tham-chiếu-trong-qa), rồi mở recipe của nhóm mình:
 
-- [A — PDF/C01, profile, subjects, mốc, facts và citations](#46-recipe-đọcjoin-cho-nhóm-a-tách-pdf-input-khỏi-output-tham-chiếu)
-- [B — scope, versions, citation metadata và retrieval targets](#56-recipe-đọcjoin-cho-nhóm-b-c02--c04--c05--c06-nhánh-c03--c09)
-- [C — selected evidence, rules/basis, aggregation, risk và templates](#67-recipe-đọcjoin-cho-nhóm-c-từ-evidence-đến-findings-risks-và-actions)
-- [D — run snapshots, lineage, report sections và review/version](#77-recipe-đọcjoin-cho-nhóm-d-chọn-run-rồi-đọc-từng-section)
+- [A — PDF/C01, profile, subjects, mốc, facts và citations](group_a_document_intelligence.md#46-recipe-đọcjoin-cho-nhóm-a-tách-pdf-input-khỏi-output-tham-chiếu)
+- [B — scope, versions, citation metadata và retrieval targets](group_b_legal_and_retrieval.md#56-recipe-đọcjoin-cho-nhóm-b-c02--c04--c05--c06-nhánh-c03--c09)
+- [C — selected evidence, rules/basis, aggregation, risk và templates](group_c_compliance_and_risk.md#67-recipe-đọcjoin-cho-nhóm-c-từ-evidence-đến-findings-risks-và-actions)
+- [D — run snapshots, lineage, report sections và review/version](group_d_report_and_frontend.md#77-recipe-đọcjoin-cho-nhóm-d-chọn-run-rồi-đọc-từng-section)
 
 ## 1. Hiểu đúng phần đã có
 
 ### 1.1 DB đã giúp chúng ta điều gì?
 
 Mỗi dev có PostgreSQL local riêng trên máy mình. Với bộ 360 PDF, dùng workbook
-**DEV_VALIDATION** để seed, ví dụ đặt DB là `legal_checker_dev_v750_r2_supabase`:
+**DEV_VALIDATION** để seed, ví dụ đặt DB là `legal_checker_dev_team_20261107`:
 
 | Schema | Chứa gì? | Ví dụ |
 |---|---|---|
@@ -87,11 +91,11 @@ Khi ghép hệ thống, input đó được thay bằng output thật của các
 
 | Phần | Hiện trạng trong code | Cần hoàn thiện / nghiệm thu |
 |---|---|---|
-| PostgreSQL và dataset | Alembic, tải/seed/update, receipt và snapshot bất biến | Phân phối ZIP reviewed; kiểm tra restore và cùng release trên từng máy |
-| Bước 1–2 | Upload, PDF text parser, chunks, profile/facts và citation extractor; có DocumentRepository | Đã có OCR (Tesseract) và DOCX; extraction của hợp đồng upload được lưu trước Retrieval; còn đo chất lượng extraction |
-| Bước 3–4 | Catalog Scope/Temporal/Citation và BM25; có các tùy chọn embedding/reranking | Marker catalog còn thiếu/chồng lấn, profile không đủ, nối metadata evidence và C09 provenance |
-| Bước 5–7 | LLM proposals, grounding, rules/aggregation, risks/recommendations và persistence | Tạo/truyền CriterionVerification, xử lý quote/rate limit/budget, phân biệt lỗi kỹ thuật với thiếu nội dung |
-| Workflow | API khởi tạo run, Celery/Redis/Beat, lease/recovery, SSE/polling | Đóng các điểm nối Documents → Retrieval → verification; nghiệm thu nhiều PDF |
+| PostgreSQL và dataset | Alembic, streaming seed/preview, release pin và receipt | ZIP TEAM local sẵn sàng; chủ dự án upload Drive, publish code; nghiệm thu restore |
+| Bước 1–2 | Upload, PDF text parser, chunks/profile/facts/C03; integrated path đã lưu extraction trước Retrieval | OCR (Tesseract) và DOCX đã có; field coverage và chất lượng nguồn cần eval |
+| Bước 3–4 | Catalog Scope/Temporal/Citation/BM25, metadata active chunks và C09 provenance đã nối | Áp dụng catalog mới; giữ gaps theo ca, đo quality; không coi SOURCE_CHECKED là human approval |
+| Bước 5–7 | LLM proposals/batch, grounding/rules, C07–C11, source verifier và scenario verifier opt-in | Hoàn thiện binding nghiệp vụ ngoài scenario; đo quality; source verifier không bật mọi gate; mặc định chỉ gọi AI cho criterion có thể kết luận (`ASSESSMENT_LLM_HINTS`) |
+| Workflow | API/run/queue/recovery, persistence trước Retrieval, composition inject source verifier | Người 4 cung cấp checks nghiệp vụ sâu hơn, người 5 inject; nghiệm thu nhiều PDF |
 | Bước 8–9 | Review events, report versions, UI/history và export | Nghiệm thu quyền truy cập, review/publish/export và nguồn/provenance xuyên suốt |
 
 Snapshot knowledge và lịch sử run nằm trong PostgreSQL. Cấu hình bằng `DATABASE_URL`,
@@ -126,7 +130,7 @@ flowchart TD
     C --> K["Nhóm C — Bước 6: C10 risks"]
     V --> K
     K --> N["Nhóm C — Bước 7: C11 recommendations"]
-    N --> H["Bước 8: C12 review — khi được triển khai"]
+    N --> H["Bước 8: C12 review — append-only"]
     H --> P["Nhóm D — Bước 9: C13 report/UI"]
     B --> P
     T --> P
@@ -143,7 +147,7 @@ flowchart TD
     DB --> N
 ```
 
-Khi chưa có bước 8, nhóm D vẫn làm **report DRAFT/PENDING** từ kết quả máy.
+Khi chưa có review cho run mới, nhóm D giữ **report DRAFT/PENDING** từ kết quả máy.
 Báo cáo đã xác nhận cần review thật; không dùng một review seed để duyệt kết quả dev mới.
 
 ## 2. Chuẩn bị chung và chọn ca mẫu
@@ -159,7 +163,7 @@ python -m scripts.local_db check
 
 Cấu hình local đã dùng: host `127.0.0.1`, port `5433`, user `legal_checker`,
 password local `legal_checker_local_only`. Chọn đúng DB bằng `DATABASE_URL`; tên mặc định
-`legal_checker_dev_v750_r2_supabase` được đặt trong `.env.example`. Cách seed bộ hiện tại xem
+`legal_checker_dev_team_20261107` được đặt trong `.env.example`. Cách seed bộ hiện tại xem
 [hướng dẫn DB](../database/local_setup.md#3-tạo-bảng-kiểm-tra-và-seed).
 Dùng DBeaver/pgAdmin để xem bảng nếu chưa quen query trong Python.
 
@@ -179,7 +183,7 @@ ORDER BY a.ca_id, r.lan_chay_id;
 ```
 
 Một cặp trong bộ 360 PDF đã kiểm tra:
-`ca_id = 'CA360_001'`, `lan_chay_id = 'CA360_001_PDF360_LS2_REFERENCE'`.
+`ca_id = 'CA360_001'`, `lan_chay_id = 'REF_TEAM_20261107_CA360_001'`.
 Đây là ca mẫu đọc dữ liệu, không phải ca mới do module của bạn đã xử lý.
 
 Mỗi người ghi lại ít nhất: `ca_id`, `hop_dong_id`, `tenant_id`, `lan_chay_id`,
@@ -280,7 +284,7 @@ from legal_checker.core.postgres import connect_postgres
 load_dotenv(".env")
 params = {
     "case_id": "CA360_001",
-    "run_id": "CA360_001_PDF360_LS2_REFERENCE",  # Khi đọc baseline.
+    "run_id": "REF_TEAM_20261107_CA360_001",  # Khi đọc baseline.
 }
 sql_text = """
 SELECT * FROM runtime.yeu_cau_ap_dung
@@ -485,7 +489,7 @@ chạy khi đã cấu hình credentials và lưu version/log của lần gọi t
 
 ---
 
-## 8. Các mapping cần thống nhất
+## 8. Quy ước mapping hiện hành
 
 ### 8.1 SQL column và DTO có thể khác tên
 
@@ -506,8 +510,8 @@ chạy khi đã cấu hình credentials và lưu version/log của lần gọi t
 | `ket_qua_rui_ro.severity_snapshot` | `RiskResult.severity` | Giữ severity đã chọn |
 | `khuyen_nghi_danh_gia.noi_dung_snapshot` | `Recommendation.noi_dung` | Nội dung của lần đánh giá |
 | `khuyen_nghi_danh_gia.dieu_kien_snapshot` | `Recommendation.dieu_kien_snapshot` | SQL TEXT có cả prose; DTO cần dict, phải có mapper |
-| `bao_cao_danh_gia.phien_ban_bao_cao` | `FinalReport.phien_ban_bao_cao` | INTEGER ↔ string, thống nhất version policy |
-| Timestamp SQL của ngày đánh giá | `AssessmentTiming.ngay_danh_gia` | DTO cần date; mapper chuyển có policy timezone |
+| `bao_cao_danh_gia.phien_ban_bao_cao` | `FinalReport.phien_ban_bao_cao` | Projection seed INTEGER; live report_versions.version_no + C13 string, không cast ngầm |
+| Timestamp SQL của ngày đánh giá | `AssessmentTiming.ngay_danh_gia` | Date nghiệp vụ giữ YYYY-MM-DD; timestamp audit UTC; không dịch date theo timezone máy |
 
 Một số dữ liệu C07/C10 cần như `mandatory`, `excluded`, `evidence_ids`,
 `legal_basis_ids`, risk snapshot đầy đủ không có cột riêng tương ứng ở mọi bảng.
@@ -565,33 +569,28 @@ vì Python trả True; giá trị lạ phải báo lỗi thay vì tự đoán.
 
 Không sửa enum của một module riêng rồi để module kế tiếp nhận schema cũ.
 
-### 8.4 Run lineage và snapshot: phần đã có và phần còn phải bổ sung
+### 8.4 Run lineage và snapshot: quy ước live và standalone
 
-**Các bảng workbook không có run column ở mọi nơi; dùng snapshots/output lineage bổ sung để chọn đúng kết quả lịch sử.**
+Nguồn có thẩm quyền đã chốt ở [INTEGRATION_V1](../contracts/integration_spec.md#7-persistence-và-nguồn-đọc-thật).
+Không lấy việc bảng workbook không có run_id làm lý do JOIN output của run gần nhất.
 
-| Dữ liệu | Có run ID trực tiếp trong schema hiện tại? | Cách xử lý |
-|---|---|---|
-| Retrieval, C07, C09 | Có `lan_chay_id` | Luôn lọc cùng case/run và kiểm tra target IDs |
-| Evidence C07 | Không; có `ket_qua_id` | JOIN qua C07 đã chọn đúng run |
-| C08 | Không | Dùng membership và DTO trong assessment_output_lineage |
-| C10 | Không; có source C07 hoặc C09 | Theo finding nguồn đã pin hoặc assessment_output_lineage |
-| C11 | Không; có risk ID | Theo risk đã chọn đúng lineage |
-| C13 | Không; có report version | Report cần pin run/outputs trong snapshot hoặc metadata bổ sung |
-| Profile/subjects/time markers | Không có run/extraction version đầy đủ | Re-extraction cần version/snapshot trước khi giữ nhiều kết quả lịch sử |
-| C04/C05 checklist | Không có run ID | C05 trong assessment_runs input snapshot; full Temporal writer cần policy riêng |
+| Chế độ | Nguồn đọc kết quả đúng run |
+|---|---|
+| Dev độc lập bằng baseline | Bảng normalized + QA artifacts, role/reference run đã chọn; không gọi là output mới |
+| Standalone group C | Store.get/get_input/get_lineage, assessment_runs và assessment_output_lineage |
+| Full pipeline live | RunRepository.draft(ca_id, run_id) lấy workflow_runs.draft_json; C04/C05/C06/C07–C11 ở snapshot này |
+| Report live | PostgresReportStore, runtime.report_versions; version_no số + DTO string; projection bao_cao_danh_gia chưa ghi |
+| Review live | runtime.review_events và exact run/revision; nhat_ky_review có mirror |
+| Extraction metadata | DocumentRepository + active chunk IDs; profile DTO của run là nguồn cho Scope/verifier |
 
-Migration 002 đã bổ sung `runtime.assessment_case_pins`, `assessment_runs` và
-`assessment_output_lineage`: writer bước 5–7 lưu raw input/output và bản DTO bất biến,
-reader có thể truy membership theo case/run ngay cả khi bảng workbook không có run column.
-Các incoming IDs đã tồn tại nhưng khác nội dung bị conflict; khi đổi checklist/chunk
-hãy tạo IDs/version phù hợp thay vì ghi đè. Full DI/review/report writers vẫn cần lineage
-và extraction/report version policies riêng như bảng trên.
+Standalone normalized C08/C10/C11 không có run column thì chọn bằng lineage. Full
+pipeline không bắt buộc có Store row để mới đọc được; không fallback QA khi draft
+chưa tồn tại. C13 và review versions giữ cùng run; không rebuild bằng knowledge mới.
 
-`knowledge.knowledge_snapshots` lưu nội dung/hash của 18 bảng nghiệp vụ được capture
-hiện tại hoặc hash lịch sử đã có. `dev_meta.seed_imports.source_sha256` chỉ là hash Excel.
-Không mặc định hash lịch sử của một ca seed có snapshot tương ứng đã được nhập: reader
-chọn hash không tồn tại sẽ báo lỗi, không gán nội dung hiện tại vào hash cũ.
-Snapshot dev giữ status DEV_UNVERIFIED và flags nguồn; không tự biến dataset thành gold.
+Source SHA, extraction_version, workbook SHA, knowledge SHA, rule/model/prompt, migration
+và image revision là các pin khác nhau. Reader lấy snapshot hash không tồn tại phải
+báo lỗi, không gán source tables mới vào hash lịch sử. Snapshot chỉ HUMAN_VERIFIED khi
+release thực sự có review; runtime extraction/proposal mới cần kiểm riêng.
 
 ### 8.5 Điểm nối kiến trúc hiện tại
 
@@ -700,13 +699,13 @@ Riêng **test hiệu quả DI thật** cần PDF có annotation. **Test Retrieva
 cần evidence/finding đã annotation hoặc reviewer xác nhận. Các expected outputs seed
 có thể kiểm tra mapping/joins; việc dùng chúng làm gold về pháp lý cần xác nhận trước.
 
-### 9.2 Các phần chung nên chốt trước khi ghép
+### 9.2 Quy ước chung đã chốt trước khi ghép
 
 - Shared DTO/version và mapping khác biệt mục 8.
-- Dùng SQL snapshot reader/hash đã có; curation/release policy mới: nhóm C phối hợp người quản trị knowledge.
+- Snapshot reader/hash đã có; người 1 sở hữu curation/release với người 3/4 xác nhận nghiệp vụ.
 - Case/run/extraction/report lineage, transactions/idempotency: nhóm D phối hợp writers.
 - Quyền tenant/case, source storage và LLM audit transport: phần dùng chung, owner rõ.
-- Bước 8: owner/ports review và điều kiện report được publish; chưa có thì chỉ draft.
+- Người 5 sở hữu C12/review/publish; REVIEW_ALL_FINDINGS_V1 và exact revision; chưa đủ review giữ draft.
 
 Các phần này không ngăn viết unit logic song song; chúng là điều kiện để input/output
 thật ghép được mà không trộn dữ liệu hoặc sai snapshot.
@@ -721,7 +720,7 @@ thật ghép được mà không trộn dữ liệu hoặc sai snapshot.
 
 Khi ghép, thay từng implementation trong `DraftModules`, giữ các module còn lại bằng
 fake/fixtures để tìm lỗi interface; sau đó chạy cả upstream thật trên hợp đồng mới.
-Workflow hiện tạo draft C01–C11, chưa tự tạo/publish C13 hoặc persist full assessment.
+Workflow tạo draft C01–C11; runner persist draft và C13 đầu tiên nguyên tử. Review/publish là use case riêng. Nguồn live là workflow_runs/report_versions, khác Store standalone group C.
 
 ### 9.4 Tooling hiện có và cách dùng đúng
 

@@ -21,11 +21,14 @@ from legal_checker.shared.contracts.common import DeploymentPin
 _CASE_QUERY = """
 SELECT c.ca_id, c.hop_dong_id, c.ngay_danh_gia, c.moc_ap_dung, c.loai_moc_ap_dung,
        c.phien_ban_id, c.rule_version, c.legal_knowledge_version, c.tenant_id, c.created_by,
+       c.review_mode, c.document_set_complete,
        coalesce(h.ten_tai_lieu, c.hop_dong_id) AS ten_tai_lieu,
        t.tep_id, t.url_nguon, t.object_uri, t.mime_type, t.sha256,
        r.run_id AS latest_run_id, r.status AS latest_run_status, r.created_at AS latest_run_at,
        rep.bao_cao_id AS latest_report_id,
-       rep.report_json -> 'report_json' -> 'overall_summary' -> 'requirement_statuses'
+       COALESCE(
+           rep.report_json -> 'report_json' -> 'overall_summary' -> 'requirement_display_statuses',
+           rep.report_json -> 'report_json' -> 'overall_summary' -> 'requirement_statuses')
            AS requirement_statuses
 FROM runtime.ca_danh_gia c
 JOIN runtime.hop_dong h ON h.hop_dong_id = c.hop_dong_id
@@ -90,6 +93,8 @@ def _case(row) -> CaseRow:
                 ngay_danh_gia=row["ngay_danh_gia"].date(),
                 moc_ap_dung=row["moc_ap_dung"],
                 loai_moc_ap_dung=row["loai_moc_ap_dung"],
+                review_mode=row["review_mode"],
+                document_set_complete=row["document_set_complete"],
             ),
             deployment=DeploymentPin(
                 phien_ban_id=row["phien_ban_id"],
@@ -124,7 +129,9 @@ def _where(f: CaseFilter) -> tuple[str, dict]:
         params["run_status"] = f.run_status
     if f.requirement_status:
         clauses.append(
-            "rep.report_json -> 'report_json' -> 'overall_summary' -> 'requirement_statuses'"
+            "COALESCE(rep.report_json -> 'report_json' -> 'overall_summary' "
+            "-> 'requirement_display_statuses', rep.report_json -> 'report_json' "
+            "-> 'overall_summary' -> 'requirement_statuses')"
             " ? %(requirement_status)s"
         )
         params["requirement_status"] = f.requirement_status
@@ -190,8 +197,9 @@ class CaseRepository:
                 """INSERT INTO runtime.ca_danh_gia
                    (ca_id, hop_dong_id, ngay_danh_gia, moc_ap_dung, loai_moc_ap_dung,
                     phien_ban_id, rule_version, legal_knowledge_version, tenant_id, created_by,
-                    trang_thai, loai_du_lieu)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'CREATED', 'USER_UPLOAD')""",
+                    review_mode, document_set_complete, trang_thai, loai_du_lieu)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                           'CREATED', 'USER_UPLOAD')""",
                 (
                     ca_id,
                     hop_dong_id,
@@ -203,6 +211,8 @@ class CaseRepository:
                     deployment.legal_knowledge_version,
                     actor.tenant_id,
                     actor.actor_id,
+                    timing.review_mode,
+                    timing.document_set_complete,
                 ),
             )
         row = self.get(ca_id)

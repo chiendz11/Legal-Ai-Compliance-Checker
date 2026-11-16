@@ -1,6 +1,18 @@
 # Hướng dẫn Triển khai Nhóm A (Bước 1–2: Document Intelligence)
 
-> **Người phụ trách**: Người 2 · **Input**: PDF/DOCX file · **Output**: C01, C02 (ContractProfile), C03 (ExtractedCitations)
+Cập nhật tích hợp 09/11: Rules-v8 bổ sung `maintenance_base_reference` và suy luận trọng tài giới hạn trong bộ dự thảo đủ nguồn; không nâng `human_verified`. Không coi thiếu dữ kiện là false.
+Xem [đặc tả và kết quả sửa](../guides/remaining_verification_alignment_20261109.md).
+
+> **Người phụ trách**: Người 2; người 5 sở hữu HTTP upload/case · **Input**: C01 + bytes PDF có text · **Output**: C02/chunks/C03. OCR/DOCX là capability chưa implement, phải báo lỗi rõ.
+
+Đặc tả hiện hành: [INTEGRATION_V1](../contracts/integration_spec.md), [dictionary](../contracts/data_dictionary.md).
+
+Baseline theo nguồn đã chốt 07/11: [19 trường hiện có trong FULL90 và cách bàn giao](../contracts/source_observed_extraction_baseline.md).
+PDF đã điền là đầu vào cố định; không viết thêm điều khoản/chứng từ để lấp các
+field mà mẫu gốc không nêu. CORE cần được trích từ nguồn, các field khác chỉ
+cung cấp khi có căn cứ; thiếu giữ null/UNKNOWN và không hạ scope pháp lý.
+
+Bàn giao bắt buộc: [playbook năm người](../guides/parallel_development_playbook.md), [acceptance scenarios](../contracts/handoff_acceptance.json). Recipe SQL baseline/standalone bên dưới không thay source live workflow_runs/report_versions.
 
 Tài liệu chung: [Tổng quan module & Quy tắc JOIN](README.md)
 
@@ -45,20 +57,22 @@ nhưng không dùng decision/risk rules để tự kết luận tuân thủ.
    local hoặc object storage; lưu `tep_nguon` và metadata `hop_dong`.
 2. **Tạo C01:** sinh contract/case ID, ghi tenant/actor, ngày đánh giá và pin deployment.
    `SourceDocument` cần `object_uri` hoặc `url_nguon` truy cập được.
-   `IntakeService.register(case)` hiện nhận C01 đã dựng; phần upload/tạo C01 ban đầu
-   cần use case bổ sung ở API/service, không chỉ gọi Protocol rồi coi là đã upload.
-3. **Parser:** trích text theo trang; PDF có text dùng parser, trang scan/không đọc được
-   đi OCR. Ghi nhận chất lượng/những trang thiếu để bước sau biết giới hạn coverage.
+   `IntakeService.register(case)` nhận C01 đã dựng. API upload/tạo case và repository đã có do người 5 compose; người 2 cung cấp kiểm tra/đọc nguồn, không xây thêm route hoặc luồng tạo case trùng.
+3. **Parser:** hiện đọc PDF có text. Scan không có text/DOCX dừng với lỗi capability; OCR/DOCX chưa implement nên không mô tả như đã tự fallback. Khi bổ sung, giữ chất lượng/trang thiếu trong coverage của cùng extraction.
 4. **Chunker:** chia theo cấu trúc điều/khoản hoặc đoạn, giữ thứ tự, section/page và hash.
    Giữ nguyên text dùng làm evidence; nếu cần text sạch cho search, lưu nó riêng.
 5. **Profile extractor:** chọn loại giao dịch, đối tượng, chủ thể, giá trị và mốc thời gian;
    giữ raw/candidate/evidence bên cạnh giá trị được chọn. Không suy ra ngày ký đầy đủ
    từ một trường trống hoặc chỉ có năm.
+   Trên FULL90, đối chiếu các CORE trong source baseline: số/ngày hợp đồng, bên mua,
+   mã/tầng/tòa căn hộ, diện tích, đơn giá, giá bán, bàn giao dự kiến và phương thức
+   thanh toán. Giữ text các trường định danh/liên hệ/tài khoản; chỉ tạo fact riêng
+   khi criterion/chức năng cần. Không thêm cột ProfileFields chỉ vì PDF có ô đó.
 6. **Citation extractor:** nhận diện số hiệu/tên/loại văn bản và điều/khoản nếu có;
    ghi nguyên văn và vị trí. Citation mơ hồ giữ trạng thái AMBIGUOUS/UNKNOWN.
 7. **Dựng DTO:** `ContractProfile` + `list[Chunk]` + `list[CitationExtraction]`, validate
    bằng `DocumentIntelligenceResult`, rồi validate liên kết bằng `validate_document`.
-8. **Lưu kết quả:** commit profile/chunks/citations/extractions/evidence đồng bộ.
+8. **Lưu kết quả:** live composition đã gọi DocumentRepository trước downstream. Người 2 giữ writer idempotent; người 5 không gọi thêm lần thứ hai. Commit profile/chunks/citations/extractions/evidence đồng bộ.
    `hop_dong.tep_nguon_id` và `tep_nguon.hop_dong_id` có vòng FK: dùng một transaction.
    Hướng xử lý re-extraction và phiên bản chunks xem mục 8.4.
 
@@ -70,7 +84,8 @@ output tham khảo. Implementation phải đọc PDF để tạo output mới.
 ```sql
 SELECT t.tep_id, t.hop_dong_id, t.object_uri, t.url_nguon, t.mime_type, t.sha256
 FROM runtime.tep_nguon t
-JOIN runtime.ca_danh_gia ca ON ca.hop_dong_id = t.hop_dong_id
+JOIN runtime.hop_dong h ON h.tep_nguon_id=t.tep_id AND h.hop_dong_id=t.hop_dong_id
+JOIN runtime.ca_danh_gia ca ON ca.hop_dong_id=h.hop_dong_id
 WHERE ca.ca_id = 'CA360_001';
 
 SELECT d.doan_id, d.thu_tu, d.page_start, d.page_end, d.section_path, d.noi_dung
@@ -80,8 +95,7 @@ WHERE ca.ca_id = 'CA360_001'
 ORDER BY d.thu_tu, d.doan_id;
 ```
 
-Seed không tải PDF vào PostgreSQL. Bộ 360 có PDF đi kèm; ánh xạ URI `dataset://...`
-về thư mục đã giải nén và kiểm tra SHA256 trước khi đọc. Text sidecar/profile/chunks
+Seed không tải PDF vào PostgreSQL. Gói DEV/VAL hiện không chứa PDF; đọc URL Supabase trong tep_nguon và kiểm SHA256. URI dataset:// chủ yếu dành text/reference local. Text sidecar/profile/chunks
 là tham chiếu cho DEV, không thay parser của implementation. Giá trị literal trong
 phụ lục đã được đối chiếu; text layer, suy luận scope và citation regex chưa phải
 annotation gold độc lập của toàn bộ hợp đồng.
@@ -97,7 +111,7 @@ annotation gold độc lập của toàn bộ hợp đồng.
 
 Tái sử dụng các files `intake.py`, `parser.py`, `ocr.py`, `chunker.py`,
 `profile_extractor.py`, `citation_extractor.py`, `service.py`, `repository.py` trong
-`modules/documents/`. Phần lớn hiện vẫn là skeleton/interface.
+`modules/documents/`. Parser PDF text/chunker/profile/citations/writer đã có. OCR và parser DOCX còn thiếu; chất lượng extraction cần eval.
 
 ```bash
 pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -k document
@@ -147,7 +161,7 @@ Với upload mới, tính hash bytes mới và tạo rows mới; không tái dù
 Phần dùng chung đã có: `CachedHttpSourceStorage.read(case.source)` tải URL public,
 kiểm tra SHA-256 và cache local rồi trả nguyên bytes. Dependency factory cung cấp
 `Services.source_storage`; nhóm A inject qua interface `SourceStorage`.
-Xem [hướng dẫn, query lấy tệp chính và ví dụ nối parser](source_storage.md).
+Xem [hướng dẫn, query lấy tệp chính và ví dụ nối parser](../architecture/data_flow_and_storage.md).
 
 Đầu vào thật là C01 + file storage. Parser không cần JOIN bảng profile để biết phải trích
 xuất gì. Sau parser/chunker, lưu chunks vào `doan_hop_dong`. Khi đối chiếu DEV, đọc chunks
@@ -248,3 +262,15 @@ theo độ chắc chắn thực tế và giữ provenance ngoài enum.
 hash nguồn, version extraction/chunks. Người nhóm B nhận C02/C03/chunks đó; không phải tự
 đọc lại PDF để đoán profile mà nhóm A đã xử lý.
 
+
+Thử nghiệm hiện hành dùng chunker structural-sentences-v2 và citation source-spans-v5:
+tìm viện dẫn trên vùng text nguồn đọc được, sau đó ánh xạ vào chunk thật. Giữ quote/offset,
+không ghép qua trang không đọc được. Tham chiếu động vẫn tách khỏi tham chiếu tĩnh.
+Xem [phương pháp, giới hạn và kiểm tra](../guides/legal_document_methods_trial_20261109.md)
+và [policy máy đọc](../contracts/document_chunking_policy.json). Workbook seed cũ và
+output inference mới phải giữ đúng extraction/version của từng bên.
+
+## Trích xuất ngữ nghĩa bằng model local
+
+Xem [Documents hybrid với Qwen/Ollama](documents_local_llm.md): cấu hình độc lập
+với C07, facts chờ kiểm tra, quote/offset, versioning, audit và giới hạn v1.

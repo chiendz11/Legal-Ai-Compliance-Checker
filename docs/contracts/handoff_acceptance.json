@@ -1,0 +1,434 @@
+{
+  "baseline_id": "PDF360_V4R2_20261110",
+  "kind": "NORMATIVE_DELIVERY_REQUIREMENTS_NOT_RUN_RESULTS",
+  "integration_policy": "INTEGRATION_V1",
+  "playbook": "../guides/parallel_development_playbook.md",
+  "owners": {
+    "P1": "Data/schema/platform",
+    "P2": "Documents",
+    "P3": "Scope/temporal/citation/retrieval",
+    "P4": "Verification/compliance/risk/recommendation",
+    "P5": "Composition/API/FE/review/report"
+  },
+  "claim_rules": {
+    "port_is_not_implementation": true,
+    "tests_are_not_quality_evaluation": true,
+    "qualification_artifacts_cannot_be_replaced_by_fixture_runs": true,
+    "critical_handoff_tests_must_not_be_skipped": true,
+    "one_passed_case_is_not_corpus_qualification": true
+  },
+  "scenarios": [
+    {
+      "id": "A01_SOURCE_INTEGRITY",
+      "owners": [
+        "P1",
+        "P2",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Real bytes/hash checked; live mode cannot use QA on read failure",
+      "test_nodes": [
+        "backend/tests/integration/test_document_intelligence_runs.py::test_modules_never_uses_qa_when_source_is_unavailable",
+        "backend/tests/integration/test_document_intelligence_runs.py::test_live_run_persists_active_extraction_before_retrieval"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A02_UNSUPPORTED_SOURCE",
+      "owners": [
+        "P2",
+        "P5"
+      ],
+      "level": "fault",
+      "expected": "Unsupported scan/DOCX fails at DI with a reason, not empty successful findings",
+      "test_nodes": [
+        "backend/tests/integration/test_document_intelligence_runs.py::test_unreadable_docx_fails_with_a_clear_format_reason",
+        "backend/tests/integration/test_document_intelligence_runs.py::test_scanned_pdf_without_text_stops_instead_of_an_empty_assessment"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A03_UNKNOWN_SCOPE",
+      "owners": [
+        "P2",
+        "P3"
+      ],
+      "level": "pair",
+      "expected": "Missing boolean stays UNKNOWN, supported typed boolean maps explicitly",
+      "test_nodes": [
+        "backend/tests/unit/test_scope_resolver.py::test_missing_fact_is_unknown_not_no_match",
+        "backend/tests/unit/test_scope_resolver.py::test_profile_boolean_matches_catalog_co_and_json_false"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A04_TEMPORAL_BOUNDARY",
+      "owners": [
+        "P1",
+        "P3"
+      ],
+      "level": "pair",
+      "expected": "Half-open intervals, unknown/overlap/historical gaps remain distinct; no signing substitution",
+      "test_nodes": [
+        "backend/tests/unit/test_temporal_resolver.py::test_interval_is_half_open_at_both_boundaries",
+        "backend/tests/unit/test_temporal_resolver.py::test_event_rule_never_falls_back_to_signing_date",
+        "backend/tests/unit/test_temporal_resolver.py::test_overlapping_versions_stay_unknown"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A05_RETRIEVAL_OWNERSHIP",
+      "owners": [
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "level": "pair",
+      "expected": "Only current chunks/criterion/run selected FINAL; miss is not a legal finding",
+      "test_nodes": [
+        "backend/tests/unit/test_retrieval_service.py::test_criterion_without_hits_yields_no_rows_not_a_finding",
+        "backend/tests/unit/test_retrieval_service.py::test_chunks_of_another_contract_are_rejected"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A06_VERIFIER_CONNECTION",
+      "owners": [
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Call actual verifier after source persistence; foreign registry rejected before model",
+      "test_nodes": [
+        "backend/tests/integration/test_document_intelligence_runs.py::test_person_four_verifier_is_called_with_live_upstream",
+        "backend/tests/integration/test_document_intelligence_runs.py::test_external_source_registry_rejects_another_run_before_processing"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A07_SEMANTIC_GROUNDING",
+      "owners": [
+        "P3",
+        "P4"
+      ],
+      "level": "pair",
+      "expected": "Grounded reviewed content can yield a draft; fabricated quote stays UNKNOWN",
+      "test_nodes": [
+        "backend/tests/unit/test_automatic_draft_review.py::test_reviewed_catalog_and_grounded_content_can_produce_draft",
+        "backend/tests/unit/test_automatic_draft_review.py::test_fabricated_quote_stays_unknown_before_automatic_review"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A08_NUMERIC",
+      "owners": [
+        "P1",
+        "P4"
+      ],
+      "level": "pair",
+      "expected": "Below/equal/above, missing facts, unit/branch and source rule threshold checked",
+      "test_nodes": [
+        "backend/tests/unit/test_numeric_rules.py::test_below_equal_above_for_every_supported_schema",
+        "backend/tests/unit/test_numeric_rules.py::test_wrong_units_or_unresolved_branch_is_unknown",
+        "backend/tests/unit/test_numeric_rules.py::test_threshold_is_taken_from_pinned_rule_and_not_hardcoded"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A09_NO_FAKE_ATTESTATION",
+      "owners": [
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Automatic review does not invent coverage/facts/external proof",
+      "test_nodes": [
+        "backend/tests/unit/test_automatic_draft_review.py::test_automatic_review_never_invents_missing_attestations"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A10_CITATION_HISTORY_DOMAIN",
+      "owners": [
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "level": "pair",
+      "expected": "Historical VALID distinct from current; domain UNKNOWN not VALID; source pins required",
+      "test_nodes": [
+        "backend/tests/unit/test_citation_validator.py::test_valid_at_signing_stays_valid_after_later_replacement",
+        "backend/tests/unit/test_citation_validator.py::test_social_housing_decree_depends_on_contract_social_housing_status",
+        "backend/tests/contract/test_integration_alignment.py::test_live_c09_provenance_has_consistent_context_and_snapshot"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A11_AGGREGATION_RISK_REC",
+      "owners": [
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Consumer cores retain uncertainty and branch/source links; action taxonomy matches UI",
+      "test_nodes": [
+        "backend/tests/unit/test_group_c_core.py::test_real_core_outputs_feed_next_core_without_replacing_uncertainty",
+        "backend/tests/contract/test_integration_alignment.py::test_frontend_understands_all_verification_action_codes"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A12_RUN_REPORT_TRANSACTION",
+      "owners": [
+        "P5"
+      ],
+      "level": "fault",
+      "expected": "Initial report and completion roll back together",
+      "test_nodes": [
+        "backend/tests/integration/test_assessment_runs.py::test_initial_report_and_completion_roll_back_together"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A13_QUEUE_RETRY",
+      "owners": [
+        "P1",
+        "P5"
+      ],
+      "level": "fault",
+      "expected": "Same idempotency key returns original run; transient retry and recovery are scoped",
+      "test_nodes": [
+        "backend/tests/integration/test_assessment_runs.py::test_same_idempotency_key_returns_original_run_without_rerunning",
+        "backend/tests/integration/test_assessment_runs.py::test_transient_failure_releases_run_and_retry_completes",
+        "backend/tests/integration/test_assessment_runs.py::test_lost_enqueue_is_recovered_once_queued_long_enough"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A14_TENANT_AND_ROLE",
+      "owners": [
+        "P1",
+        "P5"
+      ],
+      "level": "fault",
+      "expected": "Signed session/Bearer, tenant reads and write roles enforced with auth on",
+      "test_nodes": [
+        "backend/tests/integration/test_auth.py::test_cookie_session_scopes_reads_to_the_users_tenant",
+        "backend/tests/integration/test_auth.py::test_roles_gate_writes"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A15_REVIEW_PUBLISH_EXPORT",
+      "owners": [
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Exact revision, decisive review on every target, immutable machine output and marked exports",
+      "test_nodes": [
+        "backend/tests/integration/test_reviews.py::test_publication_requires_complete_current_review",
+        "backend/tests/unit/test_report_export.py::test_unpublished_and_replayed_reports_are_marked_on_every_export"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A16_SUPPORTED_TRUE_PIPELINE",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "qualification",
+      "expected": "Real PDF, actual modules and verifier, at least one independently adjudicated substantive positive and violation case",
+      "test_nodes": [],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT",
+      "required_artifact": "Private run/report bundle with source/knowledge/code/model/prompt pins; expected source passages/labels and actual output; no reference replay"
+    },
+    {
+      "id": "A17_MISSING_AND_CONFLICT",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "qualification",
+      "expected": "Actual PDF missing/conflict cases give the independently reviewed expected uncertainty or supported MISSING, with no fabricated defaults",
+      "test_nodes": [],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT",
+      "required_artifact": "Reviewed missing/conflict case bundle, parsing coverage, verification checks, C05-C13 and target-level comparison"
+    },
+    {
+      "id": "A18_ACTUAL_PROVIDER_FAILURE",
+      "owners": [
+        "P4",
+        "P5"
+      ],
+      "level": "qualification",
+      "expected": "Real-provider quota/timeout/budget outcomes and recovery are visible; no missing-document claim solely due to HTTP/budget",
+      "test_nodes": [],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT",
+      "required_artifact": "Actual provider attempt audit and run diagnostics with model/budget; sanitized, no raw secrets; controlled simulated failures labeled separately"
+    },
+    {
+      "id": "A19_CORPUS_QUALITY",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "qualification",
+      "expected": "Independent labels, grouped split, class coverage, per-module metrics and no critical false-supported conclusions in curated acceptance cases",
+      "test_nodes": [],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT",
+      "required_artifact": "Locked DEV/VAL evaluation protocol; source-span gold; all target labels represented; corpus/per-class/processing metrics and adjudication"
+    },
+    {
+      "id": "A20_DATASET_DOCS_PIN",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "contract",
+      "expected": "Manifest, dictionary, policy, catalog and acceptance agree on TEAM baseline, snapshot, scope and review state",
+      "test_nodes": [
+        "backend/tests/contract/test_team_delivery_baseline.py::test_team_baseline_metadata_agrees_with_dataset_manifest"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A21_HTTP_MODEL_DRIFT",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "contract",
+      "expected": "Published FE/BE model graph includes current diagnostics and retains frontend schema aliases",
+      "test_nodes": [
+        "backend/tests/contract/test_team_delivery_baseline.py::test_frontend_design_models_match_runtime_models_including_diagnostics"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A22_DOCUMENTED_SQL",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "contract",
+      "expected": "Documented SELECT recipes compile against actual migrations; does not prove query relevance/tenant safety",
+      "test_nodes": [
+        "backend/tests/contract/test_team_delivery_baseline.py::test_documented_select_queries_compile_against_actual_migrations"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A23_PYTHON_PORTS",
+      "owners": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "contract",
+      "expected": "Documented Python port signatures resolve; envelope schemas are not assumed to be function arguments",
+      "test_nodes": [
+        "backend/tests/contract/test_team_delivery_baseline.py::test_documented_ports_match_the_actual_workflow_call_signatures"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A25_FULL_TEXT_COVERAGE",
+      "owners": [
+        "P2",
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "No absence conclusion from partial/foreign source matrix; source-bound review yields gated machine draft, never C12 approval.",
+      "test_nodes": [
+        "backend/tests/unit/test_full_document_review.py::test_partial_or_foreign_model_matrix_never_proves_absence",
+        "backend/tests/unit/test_full_document_review.py::test_complete_review_admits_draft_with_source_backed_proof"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A26_REFINED_C06_HANDOFF",
+      "owners": [
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Final evaluator and provider use returned refined C06; local copy mutations do not masquerade as persisted handoff.",
+      "test_nodes": [
+        "backend/tests/integration/test_draft_workflow.py::test_refinement_is_returned_authoritatively_before_observations"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A27_EXACT_CONTENT_FACTS",
+      "owners": [
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Complete facts must agree with exact source values and selected C06; missing/conflict/context mismatch fails closed.",
+      "test_nodes": [
+        "backend/tests/unit/test_content_verifier.py::test_source_content_produces_draft_without_model_or_fake_human_review",
+        "backend/tests/unit/test_content_verifier.py::test_c02_normalized_value_must_actually_match_the_quote"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A28_HISTORICAL_COVERAGE",
+      "owners": [
+        "P1",
+        "P3",
+        "P4"
+      ],
+      "level": "pair",
+      "expected": "Modern source exclusion requires explicit catalog binding and an actually confirmed, in-force legacy family.",
+      "test_nodes": [
+        "backend/tests/unit/test_historical_coverage.py::test_cannot_hide_catalog_gap_without_valid_legacy_coverage"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    },
+    {
+      "id": "A29_SEMANTIC_SOURCE_HANDOFF",
+      "owners": [
+        "P3",
+        "P4",
+        "P5"
+      ],
+      "level": "pair",
+      "expected": "Full-text presence contributes attributable C06 candidates, not a final legal finding. Semantic positive proposals without supporting evidence get one bounded batch repair, then explicit UNKNOWN.",
+      "test_nodes": [
+        "backend/tests/unit/test_full_document_review.py::test_present_candidates_reach_semantic_c07_with_real_c06",
+        "backend/tests/unit/test_llm_observations.py::test_positive_batch_without_support_is_repaired_with_real_quote",
+        "backend/tests/unit/test_llm_observations.py::test_missing_support_after_bounded_repair_stays_unknown",
+        "backend/tests/unit/test_full_document_review.py::test_prohibited_search_uses_violation_predicate_not_compliance_predicate"
+      ],
+      "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"
+    }
+  ],
+  "dataset_version": "v7.5.0-pdf360-v4r2-runtime-20261110",
+  "knowledge_snapshot_sha256": "4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a"
+}

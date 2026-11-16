@@ -1,0 +1,107 @@
+{
+  "policy_id": "INTEGRATION_V1",
+  "authority": {
+    "business": "BRD plus accepted decisions in integration_spec.md",
+    "module_structure": "shared/contracts Python models and matching JSON Schemas",
+    "semantics": "integration_spec.md + data_dictionary.json + catalog.json",
+    "database": "Alembic migrations, not the workbook catalog alone",
+    "evaluation": "pinned split and independently reviewed expected annotations",
+    "legal_version_selection": "knowledge_applicability_policy.md + legal_version_policy.schema.json + pinned catalog metadata"
+  },
+  "execution_modes": {
+    "modules": "real source bytes, including remote HTTP(S); stop on failure; no QA fallback",
+    "modules_di_reference": "explicit DEV/EVAL only: DI reference if bytes not local, real remaining modules",
+    "reference": "explicit QA replay only",
+    "none": "fail unconfigured"
+  },
+  "assessment_scope": {
+    "live": "FULL_PINNED_CATALOG",
+    "reference": "EXACT_REQUIREMENT_IDS_FROM_QA",
+    "comparison": "compare identical family set; report coverage outside annotated families separately"
+  },
+  "dataset_baseline": {
+    "dataset_version": "v7.5.0-pdf360-v4r2-runtime-20261110",
+    "knowledge_snapshot_sha256": "4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a",
+    "reference_profile": "FULL_CATALOG_DRAFT_REFERENCE_V1",
+    "atomic_requirement_count": 323,
+    "scope_authority": "ASSESSMENT_SCOPE.json: full catalog; case DRAFT_REVIEW narrows evaluation target, not legal applicability",
+    "topic_mapping": "legal_topic_mapping.json",
+    "reference_policy": "source_reference_policy.json",
+    "migration_strategy": "FRESH_DATABASE_REQUIRED",
+    "review_status": "HUMAN_VERIFIED",
+    "independent_legal_gold": false,
+    "knowledge_approval": {
+      "approved_by": "PROJECT_OWNER",
+      "recorded_by": "CODEX",
+      "date": "2026-11-10",
+      "basis": "Explicit owner instruction: hãy coi là tôi sẽ duyệt hết rồi đi",
+      "scope": "All knowledge rows in this pinned snapshot; disabled rules remain disabled",
+      "receipt": "KNOWLEDGE_ACCEPTANCE.json in the pinned dataset",
+      "runtime_output_approval_included": false
+    }
+  },
+  "review_policy": "REVIEW_ALL_FINDINGS_V1",
+  "unknown_policy": "Never change unknown facts into known values or legal noncompliance to increase metrics",
+  "verification_actions": [
+    "VERIFY",
+    "VERIFY_REFERENCE",
+    "REQUEST_VERIFICATION",
+    "REQUEST_EVIDENCE"
+  ],
+  "legal_remedy_actions": [
+    "ADD",
+    "AMEND_OR_PERFORM_CORRECTIVE_ACTION",
+    "CORRECT_REFERENCE"
+  ],
+  "required_live_c09_provenance": [
+    "knowledge_snapshot_sha256",
+    "context",
+    "hop_dong_id"
+  ],
+  "release_units": [
+    "PDF/source SHA",
+    "extraction/chunk version",
+    "dataset/workbook SHA",
+    "knowledge snapshot SHA",
+    "rule/model/prompt version",
+    "app/image/GitOps revision",
+    "migration revision",
+    "review/report revision"
+  ],
+  "team_delivery_baseline": "PDF360_V4R2_20261110",
+  "execution_semantics": {
+    "process": "One assessment job; in-process module calls; business branches are logically independent but currently sequenced",
+    "stage_status_is_not_legal_status": true,
+    "criterion_resume_implemented": false,
+    "retry": "Provider attempts, queue infrastructure recovery and explicit new run are separate mechanisms"
+  },
+  "knowledge_review_semantics": {
+    "SOURCE_CHECKED": "Source-curated, not human approval",
+    "HUMAN_VERIFIED": "Reviewed snapshot, not automatic approval of extracted runtime facts",
+    "c09_reviewed_knowledge": "True only for snapshot HUMAN_VERIFIED in current producer",
+    "c10_citation_gate": "Missing reviewed_knowledge or finding verification may yield CITATION_PRODUCTION_GATE diagnostic, not an asserted citation risk"
+  },
+  "synthetic_evidence_policy": {
+    "opt_in": "SYNTHETIC_SCENARIO_PATH",
+    "binding": [
+      "source_sha256",
+      "knowledge_snapshot_sha256",
+      "criterion_id",
+      "case/run/contract"
+    ],
+    "ordinary_input": "source-only verifier when source/snapshot do not match",
+    "knowledge_review": "unchanged; explicit scenario may authorize SOURCE_CHECKED draft inputs",
+    "report_audit": "evidence_mode=SYNTHETIC; scenario/source hashes; never human approval",
+    "independent_eval_gold": false
+  },
+  "document_review_purpose": {
+    "policy": "draft_review_policy.json",
+    "modes": [
+      "FULL_ASSESSMENT",
+      "DRAFT_REVIEW"
+    ],
+    "caller_declaration": "C01.assessment_context",
+    "outside_scope_disposition": "OUTSIDE_REVIEW_SCOPE",
+    "does_not_change_legal_applicability": true
+  }
+}

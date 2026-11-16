@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "C05",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "additionalProperties": false,
   "properties": {
     "yeu_cau_ca_id": {
@@ -141,6 +144,12 @@
       },
       "title": "Reason",
       "type": "object"
+    },
+    "assessment_review": {
+      "additionalProperties": true,
+      "description": "Backend review-purpose receipt; separate from legal scope/source snapshots.",
+      "title": "Assessment Review",
+      "type": "object"
     }
   },
   "required": [
@@ -153,8 +162,5 @@
     "phien_ban_id"
   ],
   "title": "ApplicableRequirement",
-  "type": "object",
-  "x-contract-id": "C05",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

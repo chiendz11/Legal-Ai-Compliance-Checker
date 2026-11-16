@@ -176,7 +176,8 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
               key={f.trich_xuat_id}
               summary={
                 <>
-                  <code>{f.ten_truong}</code> <Value value={f.gia_tri_chuan_json} />{" "}
+                  <span title={f.ten_truong}>{fieldName(f.ten_truong)}</span>{" "}
+                  <Value value={f.gia_tri_chuan_json} />{" "}
                   {!f.human_verified && <span className="tag">chưa xác minh</span>}
                 </>
               }

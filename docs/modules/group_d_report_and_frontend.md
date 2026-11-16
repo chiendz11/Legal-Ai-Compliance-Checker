@@ -1,6 +1,20 @@
 # Hướng dẫn Triển khai Nhóm D (Bước 8–9: Report Aggregation & UI/Frontend)
 
+Diễn giải báo cáo: dùng `ReportRecord.presentation` theo
+[REPORT_PRESENTATION_V1](../contracts/report_presentation.md) cho coverage, status,
+diagnostics và C11. Raw C13 giữ nguyên để review/hash/JSON export. Không tự gộp
+ngoài phạm vi vào thiếu căn cứ hoặc suy diễn từ `coverage_complete` chung.
+
+Cập nhật tích hợp 09/11: Intake hỗ trợ TEMPLATE_USE dự kiến; truyền persisted case vào Temporal Resolver. Giữ NOT_TRIGGERED, ngoài phạm vi và thiếu căn cứ riêng; report cũ không tính lại bằng policy mới.
+Xem [đặc tả và kết quả sửa](../guides/remaining_verification_alignment_20261109.md).
+
+Dataset hiện hành: [TEAM_BASELINE_20261107](../guides/dataset_team_baseline_20261107.md). Khi nhóm/đếm theo chủ đề, dùng topic mapping; giữ chi tiết từng source-group và không coi mỗi nguồn là một incident.
+
 > **Người phụ trách**: Người 5 · **Input**: C07, C08, C09, C10, C11 · **Output**: C12 (ReviewEvents), C13 (FinalReport), UI Dashboard
+
+Đặc tả hiện hành: [INTEGRATION_V1](../contracts/integration_spec.md), [dictionary](../contracts/data_dictionary.md).
+
+Bàn giao bắt buộc: [playbook năm người](../guides/parallel_development_playbook.md), [acceptance scenarios](../contracts/handoff_acceptance.json). Recipe SQL baseline/standalone bên dưới không thay source live workflow_runs/report_versions.
 
 Tài liệu chung: [Tổng quan module & Quy tắc JOIN](README.md)
 
@@ -21,9 +35,8 @@ Output: `FinalReport` / C13, bản report được lưu version và API/UI/expor
 
 Đọc ca/profile, applicable requirements, criterion/requirement results và evidence,
 citation findings, risks/recommendations; deployment metadata, quyền và review.
-Ghi `runtime.bao_cao_danh_gia`; export PDF/DOCX lưu file trong storage và ghi `report_uri`.
-Review events nếu nhóm D phụ trách thêm bước 8 thì ghi `runtime.nhat_ky_review`
-qua service riêng, không sửa trực tiếp output máy để bỏ mất lịch sử.
+Live ghi runtime.report_versions; runtime.bao_cao_danh_gia là projection seed chưa được live writer ghi. Export được ghi vào exports_json của report version.
+Review thật ghi runtime.review_events và mirror nhat_ky_review; thứ tự/revision lấy review_events, machine output không bị ghi đè.
 
 Không JOIN một câu toàn bộ bảng kết quả: nhiều C07 × nhiều C09 × nhiều risks sẽ
 nhân dòng. Đọc từng tập theo case/run rồi nhóm theo IDs để xây report.
@@ -36,7 +49,7 @@ SELECT k.ket_qua_id, k.tieu_chi_id, k.loai_phat_hien, k.giai_thich,
 FROM runtime.ket_qua_tieu_chi k
 LEFT JOIN runtime.bang_chung_ket_qua b USING (ket_qua_id)
 WHERE k.ca_id = 'CA360_001'
-  AND k.lan_chay_id = 'CA360_001_PDF360_LS2_REFERENCE'
+  AND k.lan_chay_id = 'REF_TEAM_20261107_CA360_001'
 ORDER BY k.ket_qua_id, b.lien_ket_id;
 ```
 
@@ -55,18 +68,16 @@ Các bảng không có run ID cần cách chọn nhất quán như mục 8.4.
 4. **Summary:** tính coverage/counts từ danh sách thực, giải thích denominator nếu có score.
    UNKNOWN/INSUFFICIENT không được hiện như đã compliant; không bắt buộc score nếu
    chưa thống nhất công thức/version, có thể hiển thị counts/coverage trước.
-5. **Review status:** tạo DRAFT/PENDING khi chưa có review cho đúng outputs;
-   giữ kết quả máy gốc và effective reviewed result riêng khi C12 được triển khai.
+5. **Review status:** tạo DRAFT/PENDING khi chưa có review cho đúng outputs; C12/effective-result đã có. Giữ kết quả máy gốc, review events riêng và exact target hash/revision.
 6. **Persistence:** sinh report ID/version; lưu `report_json`, coverage, rule/knowledge hash,
    thời điểm và URI nếu export. Cùng input/retry không tạo report trùng; review mới
    tạo version mới, không ghi đè report đã xuất.
 7. **API:** triển khai reader/status/report/export endpoints và quyền ở `api/v1/`.
-   Các URL trong phụ lục A.6 BRD là API đề xuất; routes upload/report/review của repo
-   hiện vẫn là skeleton, cần implement và cập nhật OpenAPI.
+   Routes upload/report/review đã có. OpenAPI hiện mô tả 26 operations; xem INTEGRATION_V1 cho các điều kiện nghiệp vụ.
 8. **UI:** gọi API, hiển thị progress và từng section; chọn finding mở đúng evidence
    và legal basis; hiển thị relevant/current citation status riêng và badge draft/review.
 9. **Orchestration:** nối services trong `workflows/assessment_workflow.py`; API/worker
-   dùng chung use cases. Worker/Celery hiện là skeleton, queue/retry/recovery cần code riêng.
+   dùng chung use cases. Worker/Celery/Beat và recovery đã có; nghiệm thu duplicate/restart/lease theo contract.
 
 UI không giữ database password, không gọi cloud DB bằng service/admin key,
 không tự JOIN DB hay gọi LLM để đưa ra kết luận khác backend.
@@ -76,8 +87,7 @@ không tự JOIN DB hay gọi LLM để đưa ra kết luận khác backend.
 `modules/reports/builder.py:build_draft_report` nhận `IntegrationInput`, cộng thêm hai tham số bắt buộc `risks=merged_c10` và `recommendations=merged_c11`. Nhóm D đọc chúng từ output của đúng run hoặc nhận handoff nhóm C. Builder không tự tính citation risks/actions nữa. `validate_report` cũng cần hai tham số này để kiểm tra report giữ đúng input.
 
 `FinalReport.phien_ban_bao_cao` hiện là string (`draft-v1` trong helper),
-SQL `bao_cao_danh_gia.phien_ban_bao_cao` là INTEGER. Chọn quy ước version/mapping
-hoặc migration trước khi writer thật; không cast `draft-v1` thành số tùy ý.
+SQL `bao_cao_danh_gia.phien_ban_bao_cao` là INTEGER của projection seed. Live writer đã dùng report_versions với version_no số riêng và DTO string; không cast draft-v1 sang INTEGER hoặc đọc projection thay live report.
 
 ### 7.5 Màn hình/báo cáo tối thiểu
 
@@ -105,7 +115,7 @@ pytest -q -c backend/pyproject.toml backend/tests/contract/test_db_handoffs.py -
 ```
 
 Bàn giao report reader/mapper/builder/writer/exporter, API/UI, wiring và integration/E2E tests.
-Nếu chưa triển khai review, ghi rõ demo hiện chỉ phát hành report draft.
+Review đã có. Policy REVIEW_ALL_FINDINGS_V1 yêu cầu quyết định cho mọi target; draft chưa review vẫn đọc/export với nhãn rõ.
 
 ### 7.7 Recipe đọc/join cho nhóm D: chọn run rồi đọc từng section
 
@@ -116,7 +126,8 @@ Nếu chưa triển khai review, ghi rõ demo hiện chỉ phát hành report dr
 | Dựng UI bằng report mẫu | Full C13 ở `qa.artifacts`, role EXPECTED, contract_name C13 |
 | Xem normalized rows reference | Bảng runtime và QA DTO cùng reference case/run |
 | Report cho run dev đã chạy bước 5–7 | `assessment_runs` + `assessment_output_lineage` + inputs upstream đã pin |
-| Export/report đã lưu | `bao_cao_danh_gia` với report version/run pin đầy đủ do writer tạo |
+| Report full pipeline live | `workflow_runs.draft_json` + `report_versions`, exact case/run/report ID/version |
+| Export đã lưu | `report_versions.exports_json`; bao_cao_danh_gia chỉ projection seed |
 
 Bộ 360 vừa seed có normalized reference outputs và QA artifacts; seed **chưa tự tạo**
 `assessment_runs`/lineage cho các case corpus. Query lineage rỗng lúc này là bình thường.
@@ -139,7 +150,7 @@ if dev_output is None:
 
 `Store.get/get_input/get_lineage` đọc exact case/run, kiểm tra input/output checksums,
 case pins, knowledge đã pin, normalized rows và DTO lineage trong transaction đọc nhất
-quán; không gọi reasoning/risk/recommendation. Dùng các hàm này cho reader sản phẩm.
+quán; không gọi reasoning/risk/recommendation. Dùng các hàm này cho reader standalone bước 5–7. Full pipeline live đọc RunRepository.draft và PostgresReportStore, không fallback baseline hoặc ép mọi workflow run phải có Store row.
 Các SQL recipes dưới đây phục vụ kiểm tra/hiểu mapping, không thay thế integrity checks.
 Dữ liệu legacy thiếu lineage không được ghép bằng “run mới nhất” hoặc QA EXPECTED.
 
@@ -242,42 +253,48 @@ vết catalog, không dùng thay câu khuyến nghị lịch sử. Giữ legal/e
 #### D7 — Review và report version
 
 ```sql
--- Q45_REVIEW_EVENTS: danh sách audit để xử lý; chưa chứng minh run này đã được duyệt.
-SELECT review_id, doi_tuong_loai, doi_tuong_id, actor_id, hanh_dong,
-       gia_tri_truoc_json, gia_tri_sau_json, ly_do, ngay_review, phien_ban_id
-FROM runtime.nhat_ky_review WHERE ca_id=%(case_id)s
-ORDER BY ngay_review, review_id;
+-- Q45_REVIEW_EVENTS: nguồn live, chọn exact case/run; seq là thứ tự chuẩn.
+SELECT review_id, ca_id, run_id, seq, doi_tuong_loai, doi_tuong_id, actor_id,
+       target_sha256, action, before_json, after_json, reason, reviewed_at,
+       tenant_id, phien_ban_id
+FROM runtime.review_events
+WHERE ca_id=%(case_id)s AND run_id=%(run_id)s
+ORDER BY seq;
 ```
 
-Review service phải đối chiếu object ID với đúng outputs/report version và quyền actor.
+ReviewRepository.for_run và review service đối chiếu object ID với đúng outputs/report version và quyền actor. nhat_ky_review chỉ là mirror; không lấy ngày/PK mirror làm thứ tự live.
 Một review của case cũ không duyệt mọi output mới của case. Chưa có C12 thật thì report
 DRAFT/PENDING. Nhiều rows review là lịch sử tuần tự, không JOIN trực tiếp vào từng risk
 rồi nhân số recommendations.
 
 ```sql
--- Q46_REPORT_VERSIONS: xem versions đã lưu và run pin nếu report full có audit.context.
-SELECT bao_cao_id, ca_id, phien_ban_bao_cao, report_status, review_status,
-       report_uri, knowledge_snapshot_sha256, rule_version, ngay_tao,
-       report_json->'audit'->'context'->>'run_id' AS pinned_run_id
-FROM runtime.bao_cao_danh_gia
-WHERE ca_id=%(case_id)s ORDER BY phien_ban_bao_cao, bao_cao_id;
+-- Q46_REPORT_VERSIONS: nguồn live; report_json là toàn bộ FinalReport envelope.
+SELECT bao_cao_id, ca_id, run_id, version_no, review_revision, report_sha256,
+       report_json->>'phien_ban_bao_cao' AS dto_report_version,
+       report_json->>'report_status' AS report_status,
+       report_json->>'review_status' AS review_status,
+       report_json->'report_json'->'audit'->'context'->>'run_id' AS pinned_run_id,
+       report_json->'report_json'->'audit'->'context'->>'knowledge_snapshot_sha256' AS knowledge_sha,
+       exports_json, created_at
+FROM runtime.report_versions
+WHERE ca_id=%(case_id)s AND run_id=%(run_id)s
+ORDER BY version_no, bao_cao_id;
 ```
 
-Native report seed là projection gọn nên `pinned_run_id` có thể NULL; đọc full C13 QA
-để preview. Writer report thật cần lưu full `ReportContent` với `audit.context`/upstream
-version pins; đây là quy ước cần triển khai, không phải native projection đã tự có đủ.
+PostgresReportStore lưu full FinalReport, gồm ReportContent ở report_json lồng bên trong;
+không nhầm một cấp JSON. bao_cao_danh_gia của seed là projection gọn; để preview mẫu đọc full C13 QA.
 Không chọn report mới nhất cho một run khác; khi export, chọn chính xác report ID/version.
 
 #### D8 — Ghép section theo IDs rồi xây report
 
-1. Case/source/deployment lấy Q10, C02/subjects/facts/Q11–Q14 hoặc snapshot DI đã pin.
+1. Live lấy Case/profile/source/deployment từ RunRepository.draft đúng run. Q10–Q14 dành baseline/standalone; không thay DTO lịch sử bằng profile bảng đơn hiện tại.
 2. C03 lấy Q15/snapshot DI; C04/C05 lấy upstream snapshot (C05 có trong run input).
 3. C06/chunks dùng để mở evidence, C07/C08/C10/C11 lấy Store/lineage của run.
-4. C09 lấy run input/Q37 đúng run; C12 lấy review service đúng targets nếu đã triển khai.
+4. C09 lấy draft/run input đúng run; C12 lấy ReviewRepository/ReviewService đúng targets. Không đọc mirror seed thay review_events live.
 5. Dựng `ReportContent`; summary đếm từ DTOs, UNKNOWN/unresolved giữ nguyên.
 6. Validate ownership/context/grounding; lưu C13 draft/version + URI nếu export.
 
-Gọi `build_draft_report(integration_input, knowledge, risks=merged_c10, recommendations=merged_c11)` với C10/C11 đầy đủ. `IntegrationInput.compliance` vẫn là handoff compliance-only; truyền outputs đã hợp nhất qua hai tham số riêng để không mất nhánh citation. Report không chạy lại bước 6–7 hoặc cộng citation risks lần thứ hai. Writer/export/reader mới vẫn do nhóm D triển khai.
+Gọi `build_draft_report(integration_input, knowledge, risks=merged_c10, recommendations=merged_c11)` với C10/C11 đầy đủ. `IntegrationInput.compliance` vẫn là handoff compliance-only; truyền outputs đã hợp nhất qua hai tham số riêng để không mất nhánh citation. Report không chạy lại bước 6–7 hoặc cộng citation risks lần thứ hai. PostgresReportStore/reader/export/review đã có; người 5 hoàn thiện và nghiệm thu, không viết một writer thứ hai vào projection seed.
 
 **Bàn giao nhóm D:** API chọn case/run/report version, report builder/reader/writer,
 mapping mỗi section, export storage, UI mở evidence và các kiểm tra thiếu kết quả/trộn run.

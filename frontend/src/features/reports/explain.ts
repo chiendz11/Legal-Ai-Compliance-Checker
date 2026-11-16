@@ -15,6 +15,7 @@ import type {
 import { fieldLabel } from "../../shared/fieldLabels";
 import { stripEngineMarks } from "../../shared/components/ui";
 import { label } from "../../shared/labels";
+import { requirementDisplayStatus } from "./assessmentStatus";
 
 export type Cause =
   | "APPLIES"
@@ -25,6 +26,8 @@ export type Cause =
   | "DATE"
   | "NO_AI"
   | "NEEDS_REVIEWER"
+  | "OUTSIDE_SCOPE"
+  | "NOT_TRIGGERED"
   | "AI_PENDING"
   | "NO_EVIDENCE"
   | "DONE"
@@ -57,6 +60,14 @@ export const CAUSES: Record<Cause, { title: string; hint: string }> = {
   NEEDS_REVIEWER: {
     title: "Cần chuyên viên xác minh dữ kiện",
     hint: "Các điểm kiểm tra này chỉ kết luận được khi có dữ kiện đã xác minh (điều kiện phát sinh, điều khoản bị cấm, việc thực hiện hợp đồng). AI không thể tự kết luận ở đây nên hệ thống không gọi AI, tránh tốn phí.",
+  },
+  OUTSIDE_SCOPE: {
+    title: "Ngoài phạm vi rà soát dự thảo",
+    hint: "Các quy định này cần giấy tờ về việc thực hiện hợp đồng (đã ký, thu tiền, bàn giao…) nên không được đánh giá khi rà soát dự thảo, và không được coi là đã đáp ứng.",
+  },
+  NOT_TRIGGERED: {
+    title: "Không phát sinh nghĩa vụ",
+    hint: "Sau khi xét điều kiện riêng, không còn điểm kiểm tra bắt buộc nào áp dụng cho hợp đồng này.",
   },
   AI_PENDING: {
     title: "AI đã đọc nhưng chưa đủ căn cứ kết luận",
@@ -175,6 +186,17 @@ export function explainRequirement(
   applicable: ApplicableRequirement | undefined,
   criteria: CriterionResult[],
 ): Explanation {
+  const shown = requirementDisplayStatus(requirement);
+  if (shown === "OUTSIDE_REVIEW_SCOPE")
+    return {
+      cause: "OUTSIDE_SCOPE",
+      text: "Ngoài phạm vi rà soát dự thảo: cần giấy tờ về việc thực hiện hợp đồng nên chưa đánh giá. Không được coi là đã đáp ứng.",
+    };
+  if (shown === "NOT_TRIGGERED")
+    return {
+      cause: "NOT_TRIGGERED",
+      text: "Không phát sinh nghĩa vụ: sau khi xét điều kiện riêng, không còn điểm kiểm tra bắt buộc nào áp dụng.",
+    };
   if (requirement.status !== "INSUFFICIENT")
     return {
       cause: "DONE",
@@ -270,7 +292,8 @@ export function aiSuggestion(reason: string | null | undefined): AiSuggestion | 
 
 /** Short reason under one criterion, instead of the raw module trace. */
 export function explainCriterion(c: CriterionResult): string | null {
-  if (c.finding !== "UNKNOWN") return null;
+  // Excluded criteria are not pending a conclusion; their badge says why they do not count.
+  if (c.finding !== "UNKNOWN" || c.excluded) return null;
   const reason = c.uncertainty_reason ?? "";
   if (c.model_version === AI_NOT_CALLED && /offline/i.test(reason)) return "Chưa chạy AI.";
   return readableReason(reason) ?? "Chưa đủ căn cứ để kết luận.";

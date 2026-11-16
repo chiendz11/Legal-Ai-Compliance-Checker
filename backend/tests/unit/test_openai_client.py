@@ -354,3 +354,56 @@ def test_redirect_does_not_forward_api_key_to_another_host():
     with pytest.raises(LlmClientError, match="INVALID_REQUEST"):
         complete(client)
     assert len(calls) == len(sink.events) == 1
+
+
+def test_pacing_applies_between_successive_http_attempts():
+    now = [0.0]
+    delays = []
+
+    def sleep(delay):
+        delays.append(delay)
+        now[0] += delay
+
+    client, _ = make_client(
+        lambda request: httpx.Response(200, json=completed()),
+        settings=OpenAISettings(api_key="TEST", model="test", min_request_interval_seconds=8),
+        monotonic=lambda: now[0],
+        sleep=sleep,
+    )
+    complete(client)
+    complete(client)
+    assert delays == [8]
+
+
+def test_google_retry_info_duration_is_respected_without_exposing_body():
+    calls = []
+    sleeps = []
+
+    def handler(request):
+        calls.append(request)
+        if len(calls) == 1:
+            return httpx.Response(
+                429,
+                json={
+                    "error": {
+                        "message": "PRIVATE provider error",
+                        "details": [
+                            {
+                                "@type": "type.googleapis.com/google.rpc.RetryInfo",
+                                "retryDelay": "45s",
+                            }
+                        ],
+                    }
+                },
+            )
+        return httpx.Response(200, json=completed())
+
+    client, sink = make_client(
+        handler,
+        sleep=sleeps.append,
+        settings=OpenAISettings(api_key="TEST", model="test", max_retry_delay_seconds=90),
+    )
+    complete(client)
+    assert sleeps == [45]
+    assert len(sink.events) == 2
+    assert all("PRIVATE" not in e.model_dump_json() for e in sink.events)

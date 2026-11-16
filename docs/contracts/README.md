@@ -1,149 +1,129 @@
-# Contracts máy đọc được cho phát triển song song
+# Contracts chung cho phát triển và tích hợp
 
-Các JSON trong folder này là đặc tả dữ liệu để IDE, coding agent, validator và
-code generator sử dụng. Không chứa đáp án dataset hoặc triển khai nghiệp vụ.
-Nguồn nghiệp vụ là [BRD](../BRD_v1.1.pdf), [contracts gốc](../data_contracts_v7_3_2.md)
-và [giải thích contracts](../contracts_va_muc_dich_vi.md).
+> Baseline hiện hành cho DB mới: [PDF360 v4 r2 — 10/11](../guides/dataset_pdf360_v4r2_runtime_20261110.md).
+> Knowledge được chủ dự án duyệt, hash `4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a`; full-catalog reference xét 323 families.
+> Số liệu PDF/TEAM_CORE của revision trước bên dưới là lịch sử; literal reference mới chưa phải legal gold toàn tài liệu.
 
-## Chọn đúng file cho công việc
 
-| File | Người dùng và công dụng |
+UI/export: [REPORT_PRESENTATION_V1](report_presentation.md) và
+[schema](report_presentation.schema.json) tách kết luận, phạm vi và độ phủ;
+projection nằm ngoài C13/hash và không thay quyết định review.
+
+Rà soát dự thảo: [quy ước 09/11](../guides/baseline_v3_draft_review_fix_20261109.md)
+và [policy máy đọc](draft_review_policy.json). C01 có review_mode/document_set_complete;
+phạm vi ngoài rà soát được giữ riêng, không đổi thành tuân thủ.
+
+Baseline dữ liệu mới: [TEAM_BASELINE_20261107](../guides/dataset_team_baseline_20261107.md). Đọc [topic mapping](legal_topic_mapping.json) và [source reference policy](source_reference_policy.json).
+
+Biên bản thống nhất toàn docs: [docs_alignment_changes_20261107.md](../guides/docs_alignment_changes_20261107.md).
+catalog.json ghi runtime_port/call_parameters và bảng operational thực, khác projections
+workbook. PDF giải thích contracts là snapshot đọc tham khảo; models/schemas/spec hiện
+hành có thẩm quyền cho coding. C02 catalog revision 1.1 là bổ sung fields, không phải
+enum wire contract_version mới; Context envelopes vẫn 1.0.
+
+Bắt đầu bằng [đặc tả INTEGRATION_V1](integration_spec.md) và
+[từ điển dữ liệu](data_dictionary.md). BRD ở [business](../business/BRD_v1.1.pdf);
+[contracts gốc v7.3.2](data_contracts_v7_3_2.md) là baseline lịch sử. Quyết định mới
+được ghi rõ ở INTEGRATION_V1, không tiếp tục xem mọi ví dụ v7.3.2 là hiện trạng code.
+
+Hướng dẫn triển khai thống nhất: [playbook năm người](../guides/parallel_development_playbook.md). Mở hỗ trợ một criterion cần có verifier/nguồn và acceptance, không chỉ DTO pass.
+
+## 1. Các loại đặc tả
+
+| File | Dùng để làm gì? |
 |---|---|
-| [OpenAPI thiết kế UI](../openapi.design.json) | Frontend mock/sinh client; backend triển khai request/response đã đề xuất |
-| [catalog.json](catalog.json) | Tra ID contract → model, schema, producer/consumer, bảng lưu, cardinality và quy tắc nghiệp vụ |
-| `C01.schema.json` … `C13.schema.json`, `X01.schema.json`, `X02.schema.json` | Validate cấu trúc **một record** của từng contract bằng JSON Schema 2020-12 |
-| [Schemas handoff tổng hợp](../module_contracts.schema.json) | Input/output theo module, gồm context và các danh sách record |
-| [database_catalog.json](database_catalog.json) | Tên/cột/kiểu SQL/PK của 50 bảng workbook + 6 bảng QA và 78 FK workbook |
+| `C01.schema.json` … `C13.schema.json`, `X01`, `X02` | Cấu trúc record khớp runtime Pydantic |
+| [module_contracts.schema.json](module_contracts.schema.json) | Envelope/input-output của từng module |
+| [catalog.json](catalog.json) | Producer/consumer/cardinality/semantic rules và bảng baseline |
+| [data_dictionary.json](data_dictionary.json) | Profile fields, facts numeric/units, aliases, markers, owners và gaps |
+| [source_observed_extraction_baseline.md](source_observed_extraction_baseline.md) | 19 trường có trong FULL90; phần nội dung phụ thuộc mẫu; nguồn P2 bàn giao và module tiêu thụ |
+| [integration_policy.json](integration_policy.json) | Execution mode, scope, review policy và taxonomy |
+| [criterion_verification.schema.json](criterion_verification.schema.json), [document_read_coverage.schema.json](document_read_coverage.schema.json) | Attestation nội bộ và metadata đọc trang; không phải endpoint/public AI output |
+| [handoff_acceptance.json](handoff_acceptance.json) | 19 scenario bàn giao và bằng chứng cần có; không phải báo cáo đã pass |
+| [citation_provenance.schema.json](citation_provenance.schema.json) | Required context/hash/contract cho **live** C09 |
+| [document_chunking_policy.json](document_chunking_policy.json) | Trial policy: source spans, structural chunks, bounded parent context và giới hạn nghiệm thu |
+| [decision_rule_policy.schema.json](decision_rule_policy.schema.json) | JSON của decision rule; phân biệt kết luận về nội dung dự thảo với vi phạm thực hiện; không chạy predicate như code |
+| [knowledge_applicability_policy.md](knowledge_applicability_policy.md), [schema](legal_version_policy.schema.json) | Scope fields, mốc chọn phiên bản, sự kiện thực hiện, chuyển tiếp và phân biệt revision tri thức với baseline eval |
+| [database_catalog.json](database_catalog.json) | 50 bảng workbook + 6 QA; migrations còn có bảng vận hành khác |
+| [OpenAPI FE–BE](../architecture/openapi.design.json) | 26 operations đã có handler; typed client frontend dùng spec này |
 
-Đặc tả JSON đã được xuất và hiện được quản lý trực tiếp trong repo; công cụ sinh đã xóa.
-Giữ models trong `legal_checker/shared/contracts/` vì backend dùng để validate dữ liệu.
-Khi đổi contract, cập nhật JSON và model tương ứng trong cùng PR để tránh lệch nhau.
-Catalog không thay SQL migrations hoặc tự thực thi các quy tắc được ghi trong nó.
+C01 case/source; C02 profile/facts; C03 citations; C04 scope; C05 temporal/applicable
+requirements; C06 retrieval; C07 criterion; C08 requirement aggregation; C09 citation
+validation; C10 risks; C11 recommendations; C12 review; C13 report. X01 pin deployment/
+knowledge, X02 audit provider attempts. Chi tiết ownership H01–H24 nằm trong spec.
 
-## Frontend và backend dùng OpenAPI thiết kế thế nào?
+## 2. Dùng đúng contract
 
-Schema runtime xem trực tiếp tại `http://127.0.0.1:8000/openapi.json` sau khi chạy backend;
-Swagger ở `/docs`. Repo không lưu thêm một bản runtime JSON.
+Schema validate cấu trúc, Pydantic còn có model validators. Cross-record guards kiểm
+IDs/case/run/hash/quote. Consumer chỉ đòi thêm field sau khi thay đổi contract chung,
+không tự tạo yêu cầu ngầm trong implementation mà producer không được biết.
 
-`openapi.design.json` là **PROPOSED**, gồm 20 operations: 3 GET đang có implementation
-và 17 operations cần triển khai. Mỗi operation ghi `x-implementation-status`:
+C02 facts có `ten_truong` linh hoạt nên dictionary quy định canonical names/units.
+Không tự alias giá bán thành mọi mẫu số numeric. Thiếu dữ kiện giữ null/UNKNOWN,
+không default false/0. Review snapshot không tự duyệt output mới từ PDF.
 
-- `IMPLEMENTED`: có handler hiện tại; xem `/openapi.json` của backend để biết hành vi đang chạy.
-- `NOT_IMPLEMENTED`: frontend dùng làm contract/mock; backend cần viết route/service/repository.
+C09 legacy source_snapshot_json vẫn là dict để đọc report/QA lịch sử. Live validator
+phải dựng CitationProvenance với hash/context/hop_dong_id; C10 kiểm ownership tiếp.
+C03 occurrence precise offsets/bbox vẫn là gap cần owner 2/3 chốt; không gọi grouping
+citation theo văn bản là đã đo đủ occurrence recall.
 
-Đặc tả mới có request/response typed, `operationId` ổn định, phân trang, lỗi, nguồn
-file binary/multipart, chống gửi nhầm dữ liệu server sở hữu và liên kết case/run/review/report.
-Luồng chính:
+## 3. Persistence và API
 
-```text
-POST /contracts (multipart PDF/DOCX)
-    → POST /cases (ID hợp đồng, mốc đánh giá)
-    → POST /cases/{ca_id}/runs (Idempotency-Key)
-    → GET  /cases/{ca_id}/runs/{run_id}/status
-    → GET  /cases/{ca_id}/runs/{run_id}/results
-    → POST/GET /cases/{ca_id}/runs/{run_id}/reviews
-    → POST/GET /cases/{ca_id}/runs/{run_id}/reports
-    → GET /reports/{bao_cao_id}
-    → POST /reports/{bao_cao_id}/publish
-    → GET /reports/{bao_cao_id}/export?format=pdf
-```
+Live run full pipeline đọc từ workflow_runs/draft_json, report_versions và review_events.
+Standalone group C dùng assessment_runs/lineage. Bảng bao_cao_danh_gia vẫn là projection
+workbook có INTEGER version; live report dùng string contract + version_no riêng.
+Không JOIN các bảng seed để thay kết quả mới. Chi tiết transaction/source-of-truth ở spec.
 
-Mọi đường dẫn trên có prefix `/api/v1`. Các GET danh sách contracts/cases và GET
-nguồn hợp đồng cũng nằm trong spec. UI đọc nguồn PDF để mở đúng trang evidence.
-COMPLETED là máy đã xử lý xong, không đồng nghĩa với báo cáo đã duyệt.
+OpenAPI thiết kế giữ operationId ổn định cho FE; backend `/openapi.json` cho schema
+runtime, Swagger `/docs`. Auth thực tế hỗ trợ session cookie và Bearer khi AUTH_MODE=on;
+off là dev actor. Mô tả/metadata spec không thay authorization handler. FE không gửi
+actor/tenant để tự quyết quyền, không gửi C05/C06 cho endpoint chạy assessment.
 
-Endpoint `/pipeline/steps-5-7` và các POST module đã xóa khỏi code và schema runtime.
-Các module bước 5–7 gọi qua hàm Python/contracts; API frontend dùng luồng assessment toàn bộ.
-GET `/cases/{ca_id}/runs/{run_id}` cũ chỉ đọc output 5–7 đã lưu, không phải full report.
+## 4. Thay đổi và nghiệm thu
 
-Các quy ước **thiết kế** cần backend thực thi khi triển khai:
-
-- Tenant/actor lấy từ danh tính đã xác thực; client không được tự quyết định chúng.
-- Backend pin deployment, knowledge hash, run/trace IDs; frontend không gửi C05/C06.
-- Retry lệnh start dùng cùng `Idempotency-Key`; khóa mới để yêu cầu run mới.
-- Pagination dùng `page` từ 1, `page_size` mặc định 20/tối đa 100; response có `total`.
-- Lỗi mới có `{ "error": { "code", "message", "trace_id", "details" } }`.
-  Backend cần exception handlers để áp dụng kể cả lỗi validation 422.
-- Các GET cũ giữ lỗi FastAPI hiện tại; không được coi error envelope mới đã hoạt động.
-- Review request gửi target/action/after/reason/hash kỳ vọng; server tạo actor,
-  before state, review ID và thời gian. Phải kiểm tra target thuộc đúng case/run.
-- Report version gắn đúng run và review revision. Publish từ chối revision cũ hoặc
-  review bắt buộc chưa đủ; export draft phải hiển thị trạng thái nháp.
-- Quy ước tiền Decimal: response có thể là chuỗi, không tự làm tròn bằng số thực JavaScript.
-- `null`, UNKNOWN, INSUFFICIENT và sự khác nhau giữa citation/compliance phải hiển thị rõ.
-
-Bearer authentication, writer, worker/progress, exception handlers, publish và export
-ở các operation dự kiến **chưa được triển khai**. Workflow đăng nhập/quản lý quyền và
-API curator duyệt/phát hành knowledge là thiết kế tiếp theo, chưa đặc tả chi tiết ở bản UI MVP này.
-Chưa có code sinh client hoặc chọn framework frontend tự động.
-
-Có thể import `openapi.design.json` vào công cụ đọc OpenAPI hoặc dùng nó làm input
-cho generator của stack frontend đã chọn. Khi đổi thiết kế API, sửa trực tiếp JSON,
-đối chiếu các bên sử dụng và kiểm tra hợp lệ trước khi commit.
-
-## Người làm module dùng JSON Schema thế nào?
-
-Ví dụ người làm Retrieval:
-
-1. Đọc `catalog.json`: Retrieval nhận C05 + chunks + knowledge, trả danh sách C06.
-2. Input đầy đủ theo `RetrievalInput` trong bundle handoff; knowledge là dependency riêng.
-3. Mỗi record output theo `C06.schema.json`, giữ đúng IDs của case/run/criterion/chunk.
-4. Repository/mapper tự đọc và chuyển dữ liệu DB; xem [recipe JOIN](../huong_dan_trien_khai_module_sau_seed.md).
-5. Validate schema và các quy tắc nghiệp vụ trước khi lưu/bàn giao.
-
-Ví dụ kiểm tra một record đã có trong Python, sau khi cài backend extra `[dev]`:
-
-```python
-import json
-from pathlib import Path
-from jsonschema import Draft202012Validator, FormatChecker
-from legal_checker.shared.contracts.retrieval import RetrievalEvidence
-
-schema = json.loads(Path("docs/contracts/C06.schema.json").read_text())
-payload = my_retrieval_record  # Output thực tế do module của bạn tạo.
-Draft202012Validator(schema, format_checker=FormatChecker()).validate(payload)
-record = RetrievalEvidence.model_validate(payload)
-```
-
-Schema riêng mô tả một record. Với contract có `handoff_cardinality: many`, validate
-từng record hoặc dùng model input/output chứa list trong bundle handoff.
-Pydantic vẫn bắt buộc ở backend: JSON Schema không biểu diễn hết `model_validator`
-và không chứng minh quote thực sự nằm trong PDF hay target thuộc cùng case/run.
-
-Catalog đánh dấu rõ các gap hiện tại để người dev xử lý có chủ đích:
-
-- C03 chưa có offsets/bbox occurrence chi tiết trong DTO citation hiện tại.
-- C12 chưa có run_id riêng trong DTO/bảng; writer phải pin và kiểm tra target membership.
-- C13 version DTO là string, SQL là INTEGER; thống nhất mapper/migration trước khi ghi.
-- C11 metadata hiện là template engine; muốn dùng LLM cần thay contract có review.
-
-`database_catalog.json` là danh mục cột/khóa, không phải migration hoặc schema đầy đủ
-về defaults/nullability/checks. Bốn bảng snapshot/run bổ sung nằm trong migration 002;
-catalog ghi đường dẫn migrations và bảng lineage. SQL đã áp dụng không được sửa để khớp
-file tài liệu. Không tạo bảng mới chỉ vì có một contract mới.
-
-## Cập nhật và kiểm tra
-
-Các file cần sửa tùy phần thay đổi:
-
-| Thay đổi | Nguồn |
-|---|---|
-| Fields/enum module | `backend/src/legal_checker/shared/contracts/`, schema record tương ứng và bundle handoff/X02 nếu liên quan |
-| HTTP UI dự kiến, body/response và mô tả | `docs/openapi.design.json` |
-| Producer/consumer, quy tắc, mapping bảng | `docs/contracts/catalog.json` |
-| HTTP đang chạy | `backend/src/legal_checker/api/`; xem schema runtime tại `/openapi.json` |
-| Cấu trúc DB mới | Thêm SQL migration, cập nhật metadata DB và `docs/contracts/database_catalog.json` tương ứng |
-
-Từ root repo:
+Cùng một PR cập nhật model + schema + catalog/dictionary/semantics + producer/consumer
++ tests; nếu đổi HTTP thì OpenAPI + generated frontend types. Alembic riêng cho DB.
+Tool sinh cũ không cần khôi phục; đặc tả được quản lý trong repo và kiểm tra bằng tests.
 
 ```bash
-pytest -q -c backend/pyproject.toml backend/tests/contract/test_machine_contracts.py
+pytest -q -c backend/pyproject.toml backend/tests/contract
+python -m devtools.integration_audit --output data/private/integration_audit
+npm --prefix frontend run gen:api
+npm --prefix frontend run build
 ```
 
-Test đọc các file JSON, kiểm tra khớp models, OpenAPI hợp lệ, JSON Schema/refs, ví dụ HTTP, mapping
-bảng và nhãn implementation. CI hiện chạy bộ test này cùng các tests còn lại; không cần
-DB để kiểm tra riêng các file contract; tests không sinh hoặc ghi lại đặc tả. Khi implement API mới, cập nhật nhãn
-và đối chiếu runtime với design trong cùng PR; không chỉ đổi nhãn để báo đã hoàn thành.
+Audit DB chỉ đọc snapshot pin; private CSV có một dòng mỗi criterion. Các binding
+semantic/branch chưa thể chứng minh từ catalog được ghi là cần owner review, không
+sinh gold labels bằng keyword. Tests contract/handoff không thay eval chất lượng.
 
-Chuẩn định dạng: [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.0.html) và
-[JSON Schema 2020-12](https://json-schema.org/draft/2020-12).
+## 5. Rà toàn văn và bổ sung evidence cho C06
+
+`document_review.schema.json` là chứng từ nội bộ của backend, không phải contract
+HTTP mới. `DocumentReviewArtifact` khóa case/run/knowledge hash, source SHA,
+extraction version, hash từng chunk, tất cả batch và ma trận batch × criterion.
+Validator runtime kiểm coverage và kết luận khớp ma trận; JSON Schema chỉ kiểm shape.
+
+Workflow gọi `retrieval_refinement.refine(...)` sau truy xuất ban đầu, trước
+`validate_retrieval` và C07. Chỉ chunk thuộc extraction hiện hành được bổ sung làm
+C06 FINAL/selected. Phải **trả danh sách C06 mới**; sửa một bản deepcopy trong
+`observations.observe` không thay đổi C06 mà evaluator dùng.
+
+`ABSENT` trên top-K không chứng minh vắng toàn tài liệu. Chỉ khi mọi chunk và mọi
+criterion trong lượt rà đã có kết quả, không có UNCERTAIN cho criterion đó, mới có
+`absence_verified`. Chứng từ lưu tại `artifact://evidence/<sha>.json`; excerpt là
+literal string ở `/conclusion_text/<criterion_id>`, không phải quote hợp đồng giả.
+Kết quả vẫn là MACHINE DRAFT và `review_status=PENDING`.
+
+`assessment_disposition` trong C08 snapshot là thông tin vận hành: ASSESSED,
+NEEDS_EVIDENCE, LEGAL_SCOPE_UNRESOLVED, NOT_TRIGGERED. NOT_TRIGGERED chỉ dùng khi tất
+cả criterion bắt buộc được loại trừ hợp lệ theo điều kiện riêng. Đây không phải
+status pháp lý thứ năm: bốn status và AGG_CAN_HO_V1 giữ nguyên, FE giải thích riêng.
+
+
+Bổ sung runtime 08/11: C02 v1.2 thêm boolean nullable `co_thoa_thuan_dat_coc`;
+không suy thiếu thỏa thuận từ việc chưa thu tiền. LegalVersionPolicy thêm liên kết
+family lịch sử có nguồn. Revision catalog clone base, không đổi snapshot lịch sử.
+C13 có display statuses theo disposition; raw C07/C08 và policy AGG_CAN_HO_V1 giữ nguyên.
+[Xem quy trình và lệnh áp dụng](../guides/complete_runtime_alignment_20261108.md).
+
+Policy bổ sung: [Định danh viện dẫn C09 V2](citation_identity_policy.json), giữ C03 quan sát gốc và provenance của cách phân giải.

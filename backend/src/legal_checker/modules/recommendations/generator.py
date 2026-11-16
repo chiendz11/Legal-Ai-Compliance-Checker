@@ -6,6 +6,11 @@ from copy import deepcopy
 from string import Formatter
 
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
+from legal_checker.modules.recommendations.rendering import (
+    bind_draft_slots,
+    observed_quote,
+    verification_request,
+)
 from legal_checker.modules.recommendations.validator import validate_risks
 from legal_checker.modules.risks.policy import DISABLED, Diagnostics
 from legal_checker.shared.contracts.common import Context
@@ -39,7 +44,7 @@ LIMITS = {
     "official_identity_and_temporal_evidence_required",
 }
 SEVERITY_ORDER = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
-VERIFICATION_ACTIONS = {"VERIFY", "VERIFY_REFERENCE", "REQUEST_VERIFICATION"}
+VERIFICATION_ACTIONS = {"VERIFY", "VERIFY_REFERENCE", "REQUEST_VERIFICATION", "REQUEST_EVIDENCE"}
 REMEDY_ACTIONS = {"ADD", "AMEND_OR_PERFORM_CORRECTIVE_ACTION", "CORRECT_REFERENCE"}
 
 
@@ -120,14 +125,15 @@ def _values(request, risk, requirement):
         else source.get("relevant_date"),
         "uncertainty_reason": source.get("uncertainty_reason") or source.get("ly_do"),
         "reason_code": source.get("reason_code"),
+        "verification_request": verification_request(source),
         "evidence_ids": ", ".join(risk.evidence_ids),
         "legal_basis_ids": ", ".join(risk.legal_basis_ids),
-        "quote": "\n".join(item["trich_dan"] for item in source.get("evidence", [])),
+        "quote": observed_quote(source),
     }
     return values
 
 
-def _build(request, knowledge, risk, requirement, template, mappings):
+def _build(request, knowledge, risk, requirement, template, mappings, diagnostics=None):
     limits = _decode(template.get("gioi_han_sinh_json"), dict)
     if set(limits) - LIMITS - {"selection_policy"}:
         raise ValueError("Unsupported generation constraint")
@@ -170,6 +176,9 @@ def _build(request, knowledge, risk, requirement, template, mappings):
         raise ValueError("Missing required legal basis")
     values = _values(request, risk, requirement)
     text = _render(template.get("noi_dung"), values)
+    text, unbound = bind_draft_slots(text, values)
+    if unbound:
+        raise ValueError("Missing required template facts: " + ", ".join(unbound))
     required = _required_elements(template.get("required_elements_json"), values)
     if risk.risk_type == "VERIFICATION":
         if not values["uncertainty_reason"]:
@@ -188,13 +197,19 @@ def _build(request, knowledge, risk, requirement, template, mappings):
         ("kiem_tra_sau_khac_phuc", "Kiểm tra sau khắc phục"),
     ):
         if template.get(key):
-            text += "\n" + label + ": " + _render(template[key], values)
+            rendered, missing = bind_draft_slots(_render(template[key], values), values)
+            if missing:
+                _gap(diagnostics, "UNRESOLVED_TEMPLATE_BINDING", risk.ket_qua_rui_ro_id, missing)
+                text += "\n" + label + ": Cần bổ sung dữ kiện " + ", ".join(missing) + "."
+            else:
+                text += "\n" + label + ": " + rendered
     snapshot = deepcopy(template)
     snapshot.update(
         mapping_snapshots=deepcopy(mappings),
         context=request.model_dump(mode="json", include=set(Context.model_fields)),
         generation_policy="ALL_MAPPED_TEMPLATES",
         resolved_bindings={key: value for key, value in values.items() if value is not None},
+        rendering_policy="OBSERVED_TEMPLATE_BINDINGS_V1",
     )
     return Recommendation(
         khuyen_nghi_ca_id=stable_id(
@@ -317,6 +332,7 @@ def recommend(
                         owners.get(risk.source.yeu_cau_ca_id),
                         template,
                         links,
+                        diagnostics,
                     )
                 )
             except (ValueError, TypeError, KeyError) as exc:

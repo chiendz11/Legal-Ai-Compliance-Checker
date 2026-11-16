@@ -1,5 +1,6 @@
 """Synthetic adapter integration; this does not claim real OCR/retrieval/LLM quality."""
 
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -137,3 +138,28 @@ def test_workflow_rejects_foreign_or_changed_upstream_context(knowledge, request
         scopes.clear()
     with pytest.raises(ValueError):
         workflow.evaluate(case, context)
+
+
+def test_refinement_is_returned_authoritatively_before_observations(knowledge, request_factory):
+    request = request_factory()
+    workflow, case, context, _, _ = assemble(request, knowledge)
+    seen = []
+
+    def refine(ctx, profile, requirements, rows, chunks, kb):
+        rows[0].scores["review_candidate"] = 1.0
+        seen.append("refined")
+        return rows
+
+    def observe(ctx, profile, requirements, rows, chunks, kb):
+        assert seen == ["refined"]
+        assert rows[0].scores["review_candidate"] == 1.0
+        return request.payload.observations
+
+    workflow.modules = replace(
+        workflow.modules,
+        retrieval_refinement=SimpleNamespace(refine=refine),
+        observations=SimpleNamespace(observe=observe),
+    )
+    draft = workflow.evaluate(case, context)
+    assert draft.retrieval[0].scores["review_candidate"] == 1.0
+    assert "review_candidate" not in request.payload.retrieval[0].scores

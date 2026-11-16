@@ -1,6 +1,6 @@
 {
-  "catalog_version": "1.0",
-  "scope": "50 workbook tables and 6 QA tables; supplementary snapshot/run DDL stays in migration 002.",
+  "catalog_version": "1.1",
+  "scope": "50 workbook tables and 6 QA tables; operational_tables separately inventories app storage from Alembic revisions.",
   "not_a_migration": true,
   "tables": [
     {
@@ -3830,5 +3830,81 @@
     "Only workbook FKs are listed; QA/snapshot/run constraints are in SQL migrations.",
     "Nullable/default/check constraints are not inferred from this column inventory.",
     "Foreign keys alone do not guarantee same case/run; repositories must validate ownership."
+  ],
+  "operational_tables": [
+    {
+      "name": "dev_meta.dataset_updates",
+      "migration": "backend/src/legal_checker/migrations/versions/0007_dataset_updates.py",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "dev_meta.seed_imports",
+      "migration": "backend/src/legal_checker/migrations/versions/0001_workbook.py",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "knowledge.knowledge_snapshots",
+      "migration": "backend/src/legal_checker/migrations/sql/002_snapshots_and_runs.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.app_users",
+      "migration": "backend/src/legal_checker/migrations/sql/006_users_and_reviews.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.assessment_case_pins",
+      "migration": "backend/src/legal_checker/migrations/sql/002_snapshots_and_runs.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.assessment_output_lineage",
+      "migration": "backend/src/legal_checker/migrations/sql/002_snapshots_and_runs.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.assessment_runs",
+      "migration": "backend/src/legal_checker/migrations/sql/002_snapshots_and_runs.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.contract_uploads",
+      "migration": "backend/src/legal_checker/migrations/sql/005_contract_uploads.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.report_versions",
+      "migration": "backend/src/legal_checker/migrations/sql/004_workflow_runs_and_reports.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.review_events",
+      "migration": "backend/src/legal_checker/migrations/sql/006_users_and_reviews.sql",
+      "role": "operational, not a seeded workbook table"
+    },
+    {
+      "name": "runtime.workflow_runs",
+      "migration": "backend/src/legal_checker/migrations/sql/004_workflow_runs_and_reports.sql",
+      "role": "operational, not a seeded workbook table"
+    }
+  ],
+  "scope_note": "tables/foreign_keys describe the 50 workbook and 6 QA tables; operational_tables inventories additional app migrations. Alembic also owns its version table. Migrations are authoritative.",
+  "operational_column_extensions": [
+    {
+      "table": "runtime.ca_danh_gia",
+      "migration": "backend/src/legal_checker/migrations/versions/0008_assessment_review_scope.py",
+      "columns": [
+        {
+          "name": "review_mode",
+          "sql_type": "TEXT",
+          "default": "FULL_ASSESSMENT"
+        },
+        {
+          "name": "document_set_complete",
+          "sql_type": "BOOLEAN",
+          "default": false
+        }
+      ]
+    }
   ]
 }

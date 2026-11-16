@@ -1,4 +1,5 @@
 import type { ReportContent } from "../../shared/api/client";
+import { requirementDisplayStatus } from "./assessmentStatus";
 import { type Cause, explainRequirement } from "./explain";
 import { useReportIndex } from "./reportIndex";
 
@@ -7,7 +8,9 @@ export function useInsufficientCauses(content: ReportContent) {
   const index = useReportIndex();
   const causes = new Map<Cause, { count: number; fields: Map<string, number> }>();
   for (const r of content.compliance.requirement_results) {
-    if (r.status !== "INSUFFICIENT") continue;
+    // Rows outside the chosen review scope or not triggered keep their stored status but are
+    // not "insufficient" for the reader.
+    if (requirementDisplayStatus(r) !== "INSUFFICIENT") continue;
     const why = explainRequirement(
       r,
       index.applicableById.get(r.yeu_cau_ca_id),

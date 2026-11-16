@@ -9,6 +9,13 @@
 
 ---
 
+Các mốc/tỷ lệ kỳ vọng trong kế hoạch hoặc slides không phải bằng chứng nghiệm thu code. Trạng thái tích hợp hiện hành xem [INTEGRATION_V1](../contracts/integration_spec.md) và [changelog](../guides/integration_alignment_changes_20261105.md).
+
+Các thống kê dataset phía dưới thuộc snapshot khi lập kế hoạch, không phải số liệu
+TEAM hiện hành. Baseline mới có 323 families/479 criteria và 36 yêu cầu tham chiếu/ca;
+xem [dataset PDF360 v4r2 hiện hành](../guides/dataset_pdf360_v4r2_runtime_20261110.md). Không thay
+file Excel/CSV/slides kế hoạch để coi những milestone dự kiến đã được nghiệm thu.
+
 ## 1. Phân công Vai trò & Ownership (5 Thành viên)
 
 | Người | Vai trò | Ownership chính | Input chính | Output chính | Metric chính | Service | Tuần trọng tâm | Phụ thuộc | Ghi chú |

@@ -1,6 +1,7 @@
 import type { CitationValidation, RequirementResult } from "../../shared/api/client";
 import { Distribution, STATUS_COLORS as S } from "../../shared/components/Distribution";
 import { label, type LabelKind } from "../../shared/labels";
+import { requirementDisplayStatus } from "./assessmentStatus";
 
 /** Fixed order and color per stored status; counts come straight from the report. */
 function items(kind: LabelKind, order: [string, string][], codes: string[]) {
@@ -25,8 +26,10 @@ export function RequirementDistribution({ results }: { results: RequirementResul
           ["PARTIAL", S.warning],
           ["COMPLIANT", S.good],
           ["INSUFFICIENT", S.none],
+          ["NOT_TRIGGERED", S.none],
+          ["OUTSIDE_REVIEW_SCOPE", S.none],
         ],
-        results.map((r) => r.status),
+        results.map(requirementDisplayStatus),
       )}
     />
   );

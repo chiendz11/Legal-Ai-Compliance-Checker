@@ -1,5 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract-id": "X01",
+  "x-contract-version": "1.0",
+  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply.",
   "additionalProperties": false,
   "properties": {
     "phien_ban_id": {
@@ -67,8 +70,5 @@
     "rule_version"
   ],
   "title": "DeploymentSnapshot",
-  "type": "object",
-  "x-contract-id": "X01",
-  "x-contract-version": "1.0",
-  "x-semantic-validation": "See catalog.json; Python validators/business checks still apply."
+  "type": "object"
 }

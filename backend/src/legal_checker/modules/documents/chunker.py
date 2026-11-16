@@ -8,14 +8,14 @@
 
 import bisect
 import hashlib
-import itertools
 import re
 from dataclasses import dataclass
 
+from legal_checker.modules.documents.citation_spans import find_citation_spans
 from legal_checker.modules.documents.parser import DocumentText
 from legal_checker.shared.contracts.document_intelligence import Chunk
 
-CHUNKER_VERSION = "structural-v1"
+CHUNKER_VERSION = "structural-sentences-v2"
 
 # Tiêu đề đứng đầu dòng. Phần/Chương/Điều phải theo sau bởi dấu chấm/hai chấm/gạch
 # hoặc hết dòng, nên "Điều 5 của Hợp đồng này" ở đầu dòng không bị bắt.
@@ -34,7 +34,17 @@ _HEADING = re.compile(
 # Dòng mục lục: tiêu đề + dãy chấm dẫn + số trang ở cuối dòng ("ĐIỀU 2. MỤC ĐÍCH.....10").
 _TOC_TAIL = re.compile(r"(?:\.{4,}|\u2026{2,})[ \t]*\d{1,4}[ \t]*$")
 # Điểm cắt phụ khi một Điều quá dài: dòng bắt đầu "1." / "2)" / "a)" hoặc dòng trống.
-_SUB_BREAK = re.compile(r"(?m)^(?=[ \t]*(?:\d{1,2}[.)]|[a-zđ]\))[ \t])|\n[ \t]*\n")
+_SUB_BREAK = re.compile(
+    r"(?m)^(?=[ \t]*(?:\d{1,2}[.)]|\d{1,2}(?:\.\d{1,2})+\.?|[a-zđ]\))[ \t])|\n[ \t]*\n"
+)
+# Sentence boundaries never split decimals, enumerators or dotted document numbers.
+_SENTENCE_END = re.compile(r"[.!?;][\"”’)]*\s+")
+_CONTINUATION = re.compile(
+    r"(?:trừ\s+(?:trường\s+hợp|khi)|ngoại\s+trừ|với\s+điều\s+kiện|"
+    r"tuy\s+nhiên|và\s+với\s+điều\s+kiện)\b",
+    re.I,
+)
+_ABBREVIATIONS = {"tp", "q", "p", "stt", "ts", "ths", "pgs", "gs", "v.v"}
 
 
 @dataclass(frozen=True)
@@ -51,6 +61,9 @@ class ChunkRecord:
     sha256: str
     global_start: int  # vị trí trong text đã ghép của cả tài liệu
     global_end: int
+    section_start: int = 0
+    section_end: int = 0
+    split_reason: str = "STRUCTURAL_ELEMENT"
 
     def to_contract(self) -> Chunk:
         return Chunk(
@@ -62,8 +75,8 @@ class ChunkRecord:
         )
 
 
-def extraction_version(source_sha256: str, parser_version: str) -> str:
-    raw = f"{source_sha256}|{parser_version}|{CHUNKER_VERSION}"
+def extraction_version(source_sha256: str, parser_version: str, *, max_chars: int = 1800) -> str:
+    raw = f"{source_sha256}|{parser_version}|{CHUNKER_VERSION}|target-chars={max_chars}"
     return hashlib.sha256(raw.encode()).hexdigest()[:12]
 
 
@@ -134,28 +147,73 @@ def _sections(text: str) -> list[tuple[int, int, str | None]]:
     return sections or [(0, len(text), None)]
 
 
-def _split_long(text: str, start: int, end: int, max_chars: int) -> list[tuple[int, int]]:
-    """Cắt section dài tại ranh giới khoản/đoạn; không có điểm cắt thì cắt ở khoảng trắng."""
+def _split_long(
+    text: str,
+    start: int,
+    end: int,
+    max_chars: int,
+    protected: list[tuple[int, int]] | None = None,
+) -> list[tuple[int, int]]:
+    """Prefer complete clauses/sentences; size is soft up to two times the target.
+
+    A source citation is atomic. Long unpunctuated input still has a bounded fallback;
+    its split_reason exposes this limitation rather than claiming semantic completeness.
+    """
     if end - start <= max_chars:
         return [(start, end)]
-    body = text[start:end]
-    cuts = sorted({0, *(m.start() for m in _SUB_BREAK.finditer(body)), len(body)})
-    pieces: list[tuple[int, int]] = []
-    current = 0
-    for previous, following in itertools.pairwise(cuts):
-        if following - current > max_chars and previous > current:
-            pieces.append((current, previous))
-            current = previous
-    pieces.append((current, len(body)))
-    result: list[tuple[int, int]] = []
-    for a, b in pieces:
-        while b - a > max_chars:
-            cut = body.rfind(" ", a, a + max_chars)
-            cut = cut if cut > a else a + max_chars
-            result.append((a, cut))
-            a = cut
+    protected = protected or []
+
+    def safe(cut):
+        return not any(a < cut < b for a, b in protected)
+
+    boundaries = set()
+    for match in _SUB_BREAK.finditer(text, start, end):
+        cut = match.start()
+        if text[start:cut].rstrip().endswith(":") or _CONTINUATION.match(text[cut:end].lstrip()):
+            continue
+        if safe(cut):
+            boundaries.add(cut)
+    for match in _SENTENCE_END.finditer(text, start, end):
+        cut = match.end()
+        before = text[max(start, match.start() - 12) : match.start()]
+        word = before.rsplit(None, 1)[-1].lower() if before.strip() else ""
+        if word.isdigit() or word in _ABBREVIATIONS:
+            continue
+        if _CONTINUATION.match(text[cut:end].lstrip()):
+            continue
+        if safe(cut):
+            boundaries.add(cut)
+    boundaries.add(end)
+    cuts = sorted(boundaries)
+    result = []
+    a = start
+    while a < end:
+        if end - a <= max_chars:
+            b = end
+        else:
+            fitting = [x for x in cuts if a < x <= a + max_chars]
+            # Avoid separating a tiny heading/introduction from its first clause.
+            fitting = [x for x in fitting if x - a >= min(160, max_chars // 3)]
+            if fitting:
+                b = fitting[-1]
+            else:
+                following = next((x for x in cuts if x > a), end)
+                if following - a <= 2 * max_chars:
+                    b = following
+                else:
+                    limit = min(end, a + 2 * max_chars)
+                    spaces = [m.end() for m in re.finditer(r"\s+", text[a:limit])]
+                    b = next((a + x for x in reversed(spaces) if safe(a + x)), limit)
+                    # Even in a forced split, keep an observed citation in one piece.
+                    for lo, hi in protected:
+                        if lo < b < hi:
+                            b = lo if lo > a else hi
+                            break
+        if b <= a:
+            raise ValueError("Chunker failed to advance")
         result.append((a, b))
-    return [(start + a, start + b) for a, b in result]
+        a = b
+    return result
 
 
 def chunk_document(
@@ -165,10 +223,14 @@ def chunk_document(
     version: str,
     max_chars: int = 1800,
 ) -> list[ChunkRecord]:
+    if max_chars < 32:
+        raise ValueError("max_chars must be at least 32")
     text, starts, numbers = join_pages(document)
+    protected = [(s["start"], s["end"]) for s in find_citation_spans(text)]
     chunks: list[ChunkRecord] = []
     for sec_start, sec_end, path in _sections(text):
-        for a, b in _split_long(text, sec_start, sec_end, max_chars):
+        pieces = _split_long(text, sec_start, sec_end, max_chars, protected)
+        for a, b in pieces:
             body = text[a:b]
             if not body.strip():
                 continue
@@ -185,6 +247,15 @@ def chunk_document(
                     sha256=hashlib.sha256(body.encode("utf-8")).hexdigest(),
                     global_start=a,
                     global_end=b,
+                    section_start=sec_start,
+                    section_end=sec_end,
+                    split_reason=(
+                        "STRUCTURAL_ELEMENT"
+                        if len(pieces) == 1
+                        else "SENTENCE_OR_CLAUSE"
+                        if b == sec_end or re.search(r"[.!?;][\"”’)]*\s*$", body)
+                        else "BOUNDED_SOURCE_SPLIT"
+                    ),
                 )
             )
     return chunks

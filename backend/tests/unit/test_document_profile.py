@@ -50,6 +50,21 @@ def _facts(profile):
     return {f.ten_truong: f for f in profile.facts}
 
 
+def test_separate_gross_area_and_declared_stage_keep_exact_source():
+    chunks, profile = _profile(
+        "Trạng thái: DỰ THẢO CHƯA KÝ (DRAFT_REVIEW).\n"
+        "Diện tích sử dụng: 62.4 m²\nDiện tích sàn xây dựng căn hộ: 67.4 m²\n"
+        "Diện tích thửa đất: 17000 m²\n"
+    )
+    facts = _facts(profile)
+    assert facts["dien_tich"].gia_tri_chuan_json == "62.4"
+    assert facts["gross_area_m2"].gia_tri_chuan_json == "67.4"
+    assert facts["land_area_m2"].gia_tri_chuan_json == "17000"
+    assert facts["document_stage"].gia_tri_chuan_json == "DRAFT_REVIEW"
+    assert not facts["document_stage"].human_verified
+    _validate(chunks, profile)
+
+
 def _validate(chunks, profile):
     case = AssessmentCase(
         ca_id="CA_TEST",
@@ -292,3 +307,112 @@ def test_signing_sentence_agrees_with_label_or_is_a_conflict():
     assert fact.trang_thai == "CONFLICT"
     assert fact.gia_tri_chuan_json == ["2017-02-16", "2018-03-20"]
     assert _signing(conflict).duoc_dung_phan_giai is False
+
+
+def test_warranty_duration_and_start_have_literal_source_evidence():
+    chunks, result = _profile(
+        "Thời gian bảo hành nhà ở là 60 tháng tính từ ngày Bên Bán ký Biên bản "
+        "nghiệm thu đưa nhà ở vào sử dụng."
+    )
+    facts = _facts(result)
+    assert facts["warranty_months"].gia_tri_chuan_json == "60"
+    assert facts["warranty_unit"].gia_tri_chuan_json == "MONTH"
+    assert facts["warranty_start"].gia_tri_chuan_json == "COMPLETION_AND_ACCEPTANCE_INTO_USE"
+    _validate(chunks, result)
+
+
+def test_warranty_conflicts_are_not_silently_resolved():
+    _, result = _profile("Bảo hành nhà ở là 60 tháng.", "Bảo hành nhà ở là 36 tháng.")
+    assert _facts(result)["warranty_months"].trang_thai == "CONFLICT"
+    assert "warranty_unit" not in _facts(result)
+
+
+def test_event_markers_are_extracted_only_from_explicit_event_labels():
+    chunks, result = _profile(
+        "Là nhà ở xã hội: Không\nLà giao dịch điện tử: Có\n"
+        "Ngày thu tiền thực tế: 2017-02-20\nNgày sử dụng hợp đồng theo mẫu: 2017-02-10\n"
+    )
+    assert result.profile.la_nha_o_xa_hoi is False
+    assert result.profile.la_giao_dich_dien_tu is True
+    markers = {x.loai_moc: x for x in result.time_markers}
+    assert markers["COLLECTION"].ngay == date(2017, 2, 20)
+    assert markers["TEMPLATE_USE"].ngay == date(2017, 2, 10)
+    assert markers["SIGNING"].ngay is None
+    _validate(chunks, result)
+
+
+def test_maintenance_account_literals_retain_exact_source():
+    chunks, profile = _profile(
+        "Tài khoản bảo trì giả lập: TEST-MAINT-001; "
+        "tên tài khoản TEST-CHU-DAU-TU; tổ chức tín dụng TEST-BANK.\n"
+        "Tài khoản này riêng với tài khoản thu tiền mua căn hộ."
+    )
+    facts = _facts(profile)
+    assert facts["maintenance_account_number"].gia_tri_chuan_json == "TEST-MAINT-001"
+    assert facts["maintenance_account_holder"].gia_tri_chuan_json == "TEST-CHU-DAU-TU"
+    assert facts["maintenance_bank"].gia_tri_chuan_json == "TEST-BANK"
+    for e in profile.evidence:
+        chunk = next(c for c in chunks if c.doan_id == e.doan_id)
+        assert chunk.noi_dung[e.ky_tu_bat_dau : e.ky_tu_ket_thuc] == e.trich_dan
+
+
+def test_maintenance_account_three_labels_not_confused_with_sale_payment_account():
+    chunks, profile = _profile(
+        "Tài khoản thanh toán tiền mua căn hộ: SALE-999\n"
+        "Ngân hàng thanh toán tiền mua căn hộ: Ngân hàng bán hàng\n"
+        "Tài khoản bảo trì: TEST-MAINT-070\n"
+        "Tên tài khoản bảo trì: Công ty Mô Phỏng - kinh phí bảo trì\n"
+        "Ngân hàng tài khoản bảo trì: Ngân hàng mô phỏng\n"
+    )
+    facts = _facts(profile)
+    assert facts["maintenance_account_number"].gia_tri_chuan_json == "TEST-MAINT-070"
+    assert facts["maintenance_bank"].gia_tri_chuan_json == "Ngân hàng mô phỏng"
+    assert all(not f.human_verified for f in facts.values())
+    _validate(chunks, profile)
+
+
+def test_conflicting_maintenance_bank_labels_remain_conflict():
+    _, profile = _profile(
+        "Ngân hàng tài khoản bảo trì: Ngân hàng A giả lập\n"
+        "Ngân hàng tài khoản bảo trì: Ngân hàng B giả lập\n"
+    )
+    assert _facts(profile)["maintenance_bank"].trang_thai == "CONFLICT"
+
+
+def test_wrapped_account_holder_retains_full_value_and_exact_span():
+    chunks, profile = _profile(
+        "Tài khoản bảo trì: TEST-MAINT-001\n"
+        "Tên tài khoản bảo trì: CÔNG TY CỔ PHẦN ĐẦU TƯ\n"
+        "VÀ PHÁT TRIỂN DỰ ÁN MÔ PHỎNG - kinh phí bảo trì\n"
+        "Ngân hàng tài khoản bảo trì: Ngân hàng mô phỏng\n"
+    )
+    f = _facts(profile)["maintenance_account_holder"]
+    assert f.gia_tri_chuan_json == (
+        "CÔNG TY CỔ PHẦN ĐẦU TƯ VÀ PHÁT TRIỂN DỰ ÁN MÔ PHỎNG - kinh phí bảo trì"
+    )
+    assert f.trang_thai == "EXTRACTED"
+    _validate(chunks, profile)
+
+
+def test_account_continuation_does_not_absorb_a_note():
+    _, profile = _profile(
+        "Tên tài khoản bảo trì: CÔNG TY MÔ PHỎNG\n"
+        "Ghi chú: Không phải tài khoản đã mở thực tế.\n"
+        "Ngân hàng tài khoản bảo trì: Ngân hàng mô phỏng\n"
+    )
+    assert _facts(profile)["maintenance_account_holder"].gia_tri_chuan_json == "CÔNG TY MÔ PHỎNG"
+
+
+def test_justified_pdf_account_label_and_wrapped_value_preserve_literal_evidence():
+    chunks, profile = _profile(
+        "Tài khoản bảo trì: TEST-MAINT-012\n"
+        "Tên  tài  khoản  bảo  trì:  CÔNG  TY  TNHH  MỘT  THÀNH  VIÊN\n"
+        "XÂY DỰNG VÀ KINH DOANH NHÀ MÔ PHỎNG - kinh phí bảo trì\n"
+        "Ngân hàng tài khoản bảo trì: Ngân hàng mô phỏng\n"
+    )
+    fact = _facts(profile)["maintenance_account_holder"]
+    assert fact.trang_thai == "EXTRACTED"
+    assert fact.gia_tri_chuan_json == (
+        "CÔNG TY TNHH MỘT THÀNH VIÊN XÂY DỰNG VÀ KINH DOANH NHÀ MÔ PHỎNG - kinh phí bảo trì"
+    )
+    _validate(chunks, profile)

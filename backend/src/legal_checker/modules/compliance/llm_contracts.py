@@ -15,6 +15,8 @@ class ProposedQuote(BaseModel):
     doan_id: str
     trich_dan: str
     ky_tu_bat_dau: int | None
+    # Prefer backend-provided quote IDs. The adapter restores exact text/offsets.
+    quote_id: str | None = None
 
 
 class CandidateFact(BaseModel):
@@ -55,6 +57,7 @@ class CriterionAnalysis(Model):
     observation: Observation
     error_code: str | None = None
     request_id: str | None = None
+    adverse_evidence_review: dict | None = None
 
 
 class ObservationBatch(Model):

@@ -15,6 +15,10 @@ from legal_checker.modules.assessments.interfaces import AssessmentStore
 from legal_checker.modules.assessments.repository import Store
 from legal_checker.modules.assessments.runs import RunRepository
 from legal_checker.modules.assessments.service import AssessmentService
+from legal_checker.modules.compliance.verification import (
+    CriterionVerificationProvider,
+    EvidenceRegistryProvider,
+)
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.modules.legal_knowledge.repository import Knowledge
 from legal_checker.modules.reports.repository import PostgresReportStore, ReportStore
@@ -81,12 +85,62 @@ def llm_client_factory(settings: Settings):
     return build
 
 
+def document_semantic_extractor(settings: Settings):
+    """Documents uses its own local provider; C07 configuration remains independent."""
+    if settings.documents_extractor == "rules":
+        return None
+    if settings.documents_extractor != "hybrid":
+        raise ValueError("DOCUMENTS_EXTRACTOR must be rules or hybrid")
+    from legal_checker.modules.documents.ollama_client import OllamaDocumentClient, OllamaOptions
+    from legal_checker.modules.documents.semantic_extractor import (
+        SemanticDocumentExtractor,
+        SemanticOptions,
+    )
+
+    return SemanticDocumentExtractor(
+        OllamaDocumentClient(
+            OllamaOptions(
+                base_url=settings.documents_ollama_url,
+                model=settings.documents_ollama_model,
+                timeout_seconds=settings.documents_llm_timeout_seconds,
+            ),
+            PostgresLlmAuditSink(settings.database_url),
+        ),
+        settings.source_cache_dir / "documents_llm",
+        SemanticOptions(
+            max_calls=settings.documents_llm_max_calls,
+            recheck_existing=settings.documents_llm_recheck_existing,
+        ),
+    )
+
+
 def module_source(
-    settings: Settings, cases: CaseRepository, documents: SourceStorage | None = None
+    settings: Settings,
+    cases: CaseRepository,
+    documents: SourceStorage | None = None,
+    *,
+    verification_provider: CriterionVerificationProvider | None = None,
+    external_registry_provider: EvidenceRegistryProvider | None = None,
 ) -> ModuleSource:
-    if settings.assessment_modules == "modules":
+    if settings.assessment_modules in {"modules", "modules_di_reference"}:
+        from legal_checker.modules.compliance.source_verifier import (
+            SourceFactVerifier,
+            SyntheticScenarioEvidence,
+        )
         from legal_checker.modules.documents.ocr import build_ocr_engine
         from legal_checker.workflows.integrated import IntegratedModulesSource
+
+        if verification_provider is None:
+            if settings.synthetic_scenario_path:
+                synthetic = SyntheticScenarioEvidence(
+                    settings.synthetic_scenario_path,
+                    artifact_dir=settings.source_cache_dir / "evidence",
+                )
+                verification_provider = synthetic
+                if external_registry_provider is None:
+                    external_registry_provider = synthetic
+            else:
+                verification_provider = SourceFactVerifier()
 
         return IntegratedModulesSource(
             settings.database_url,
@@ -96,6 +150,13 @@ def module_source(
             source_cache_dir=settings.source_cache_dir,
             llm_client_factory=llm_client_factory(settings),
             llm_max_calls=settings.assessment_llm_max_calls,
+            llm_batch_size=settings.assessment_llm_batch_size,
+            llm_max_context_chars=settings.assessment_llm_max_context_chars,
+            full_document_review=settings.assessment_full_document_review,
+            allow_reference_documents=settings.assessment_modules == "modules_di_reference",
+            verification_provider=verification_provider,
+            external_registry_provider=external_registry_provider,
+            document_semantic_extractor=document_semantic_extractor(settings),
             llm_parallel=settings.assessment_llm_parallel,
             llm_agreement=settings.assessment_llm_agreement,
             llm_hints=settings.assessment_llm_hints,
@@ -113,7 +174,12 @@ def module_source(
     raise ValueError(f"Unknown ASSESSMENT_MODULES={settings.assessment_modules!r}")
 
 
-def build_services(settings: Settings) -> Services:
+def build_services(
+    settings: Settings,
+    *,
+    verification_provider: CriterionVerificationProvider | None = None,
+    external_registry_provider: EvidenceRegistryProvider | None = None,
+) -> Services:
     """Read PostgreSQL knowledge and persist all run results in the same local DB."""
     knowledge = Knowledge(settings.database_url, settings.knowledge_snapshot_sha256)
     assessment_store = Store(settings.database_url)
@@ -127,7 +193,13 @@ def build_services(settings: Settings) -> Services:
     )
     uploads = LocalUploadStorage(settings.upload_dir, max_bytes=settings.source_max_bytes)
     document_sources = RoutingSourceStorage(uploads, remote_sources)
-    source = module_source(settings, cases, document_sources)
+    source = module_source(
+        settings,
+        cases,
+        document_sources,
+        verification_provider=verification_provider,
+        external_registry_provider=external_registry_provider,
+    )
     runner = AssessmentRunner(
         runs=runs,
         reports=reports,

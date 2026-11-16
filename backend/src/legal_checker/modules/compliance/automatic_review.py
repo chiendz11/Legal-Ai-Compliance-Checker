@@ -5,9 +5,14 @@ catalog can authorize a grounded content proposal; numeric facts, local conditio
 exceptions, absence and performance still need independent backend attestations.
 """
 
-from legal_checker.modules.compliance.criterion_reasoner import CONTENT_TYPES, _legal_basis
+from legal_checker.modules.compliance.criterion_reasoner import (
+    CONTENT_TYPES,
+    SUPPORTED_TYPES,
+    _legal_basis,
+)
 from legal_checker.modules.compliance.decision_rules import load_decision_rule, parse_json_object
 from legal_checker.modules.compliance.reviewed_observations import BackendReview, proposal_digest
+from legal_checker.modules.compliance.subject_grounding import subject_supported
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.reasoning import Gates
 
@@ -88,6 +93,21 @@ def automatic_review(
     # Existing independent attestations may supply facts; their context was checked
     # by LLMObservationProvider. CandidateFact from an AI is never promoted here.
     gates = verification.gates.model_copy(deep=True) if verification else Gates()
+    synthetic = bool(
+        verification
+        and verification.verification_reference.startswith("SYNTHETIC_SCENARIO_V1:")
+        and verification.facts_verified
+        and verification.facts.get("synthetic_evaluation") is True
+    )
+    source_checked_draft = bool(
+        verification
+        and verification.verification_reference.startswith("C02_DRAFT_CONTENT_V2:")
+        and verification.facts_verified
+        and verification.facts.get("assessment_mode") == "DRAFT_REVIEW"
+        and verification.facts.get("assessment_policy_id") == "DRAFT_CONTENT_REVIEW_V1"
+        and verification.facts.get("evaluation_target") == "CONTRACT_CONTENT"
+        and getattr(knowledge, "review_status", None) in {"HUMAN_VERIFIED", "SOURCE_CHECKED"}
+    )
     gates.scope_confirmed = requirement.confirmed
     gates.version_resolved = requirement.version_status == "RESOLVED"
     gates.source_verified = bool(_legal_basis(criterion, knowledge)) and (
@@ -99,7 +119,14 @@ def automatic_review(
         )
     )
     # Exact quote and C06 membership have already been validated by the adapter.
-    gates.evidence_validated = bool(proposal.evidence) and not proposal.external_evidence
+    registered = {
+        row.bang_chung_id
+        for row in request.payload.external_evidence_registry
+        if row.verified and row.tieu_chi_id == proposal.tieu_chi_id
+    }
+    gates.evidence_validated = bool(proposal.evidence or proposal.external_evidence) and all(
+        row.bang_chung_id in registered for row in proposal.external_evidence
+    )
     if not verification:
         gates.exceptions_resolved = not exceptions and not applicability.get("exception_ids")
     local = (
@@ -113,13 +140,39 @@ def automatic_review(
     )
     # An unqualified semantic CONTENT draft is allowed only with the verified
     # catalog above. Complex/numeric predicates are still checked by reason().
-    supported = criterion.get("loai_kiem_tra") in CONTENT_TYPES
+    supported = criterion.get("loai_kiem_tra") in (
+        SUPPORTED_TYPES if verification and verification.facts_verified else CONTENT_TYPES
+    )
     numeric = conditions.get("numeric_rule") is not None
+    absence_predicate = bool(
+        verification
+        and proposal.proposed_finding == "MISSING"
+        and criterion.get("loai_kiem_tra") in CONTENT_TYPES
+        and criterion.get("bat_buoc") is True
+        and criterion.get("noi_dung_bat_buoc_trong_hd") is True
+        and verification.mandatory_confirmed
+        and verification.all_pages_readable
+        and verification.all_related_documents_received
+        and gates.missing_allowed()
+    )
     predicate = bool(
-        proposal.proposed_finding in {"SATISFIED", "VIOLATED"}
+        (proposal.proposed_finding in {"SATISFIED", "VIOLATED"} or absence_predicate)
         and not issues
         and not unresolved_provider_conditions
-        and rule.get("human_verified") is True
+        and (
+            proposal.proposed_finding != "VIOLATED"
+            or subject_supported(
+                proposal.tieu_chi_id, " ".join(e.trich_dan for e in proposal.evidence)
+            )
+        )
+        and (
+            verification is None or verification.facts.get("content_subject_validated") is not False
+        )
+        and (
+            rule.get("human_verified") is True
+            or synthetic
+            or (source_checked_draft and rule.get("trang_thai") == "SOURCE_CHECKED")
+        )
         and supported
         and gates.reliable()
         and local == "MATCH"
@@ -146,5 +199,19 @@ def automatic_review(
         predicate_verified=predicate,
         gates=gates,
         local_applicability=local,
+        exclusion_reason=(
+            str(verification.facts["local_non_applicability_reason"])
+            if source_checked_draft
+            and local == "NO_MATCH"
+            and verification.facts.get("local_condition_policy") == "DRAFT_LOCAL_CONDITIONS_V1"
+            and verification.facts.get("condition_review_sha256")
+            and verification.facts.get("document_review_complete") is True
+            and verification.facts.get("local_non_applicability_reason")
+            else str(verification.facts.get("synthetic_non_applicability_reason"))
+            if synthetic
+            and local == "NO_MATCH"
+            and verification.facts.get("synthetic_non_applicability_reason")
+            else None
+        ),
         **values,
     )

@@ -24,6 +24,7 @@ import {
   RequirementNamesContext,
 } from "./reportIndex";
 import { TechnicalSection } from "./TechnicalSection";
+import { ReportPresentationContext } from "./assessmentStatus";
 
 export function ReportPage() {
   const { baoCaoId = "" } = useParams();
@@ -95,6 +96,7 @@ function ReportView({ record }: { record: ReportRecord }) {
   }, [tab, focus, namesById, basisById]);
 
   return (
+    <ReportPresentationContext.Provider value={record.presentation ?? null}>
     <ReportIndexContext.Provider value={index}>
       <RequirementNamesContext.Provider value={namesById}>
         <LegalBasisContext.Provider value={basisById}>
@@ -123,6 +125,7 @@ function ReportView({ record }: { record: ReportRecord }) {
         </LegalBasisContext.Provider>
       </RequirementNamesContext.Provider>
     </ReportIndexContext.Provider>
+    </ReportPresentationContext.Provider>
   );
 }
 
@@ -269,6 +272,9 @@ function ReportHeader({ record }: { record: ReportRecord }) {
         <span className={`badge tone-${published ? "good" : "warn"}`}>
           {published ? "Đã phát hành" : "Bản nháp · chưa duyệt"}
         </span>
+        {kase.assessment_context.review_mode === "DRAFT_REVIEW" && (
+          <span className="badge tone-neutral">Rà soát dự thảo trước khi ký</span>
+        )}
         <span>Đánh giá ngày {viDate(kase.assessment_context.ngay_danh_gia)}</span>
         <Link to="/help#doc-bao-cao" className="small">
           Cách đọc báo cáo này

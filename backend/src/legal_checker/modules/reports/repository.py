@@ -7,6 +7,7 @@ the contract's string version still needs a team-agreed mapping.
 
 import hashlib
 import json
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -30,7 +31,7 @@ class StoredReport:
 
 class ReportStore(Protocol):
     def save_version(
-        self, run_id: str, report: FinalReport, review_revision: str = NO_REVIEW
+        self, run_id: str, report: FinalReport, review_revision: str = NO_REVIEW, *, connection=None
     ) -> StoredReport: ...
     def get(self, bao_cao_id: str) -> StoredReport | None: ...
     def list_for_run(
@@ -63,11 +64,15 @@ class PostgresReportStore:
         self.database_url = database_url
 
     def save_version(
-        self, run_id: str, report: FinalReport, review_revision: str = NO_REVIEW
+        self, run_id: str, report: FinalReport, review_revision: str = NO_REVIEW, *, connection=None
     ) -> StoredReport:
         """Same report content is idempotent; a different one under the same ID conflicts."""
         sha = report_digest(report)
-        with connect_postgres(self.database_url) as connection:
+        with (
+            nullcontext(connection)
+            if connection is not None
+            else connect_postgres(self.database_url)
+        ) as connection:
             connection.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", (f"report/{run_id}",)
             )

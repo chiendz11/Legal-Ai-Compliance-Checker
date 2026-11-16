@@ -12,6 +12,7 @@ from typing import Callable, Protocol
 
 import psycopg
 
+from legal_checker.core.postgres import connect_postgres
 from legal_checker.modules.assessments.runs import RunRecord, RunRepository
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.modules.reports.repository import ReportStore
@@ -114,6 +115,10 @@ class AssessmentRunner:
                 case, context, on_stage=on_stage
             )
             report = build_run_report(draft, self.knowledge, record.module_source)
+            # A run cannot become COMPLETED without its initial report. Commit both or neither.
+            with connect_postgres(self.runs.database_url) as connection:
+                self.reports.save_version(run_id, report, connection=connection)
+                self.runs.complete(ca_id, run_id, draft, connection=connection)
         except TRANSIENT_ERRORS as error:
             self.runs.release(ca_id, run_id)
             raise TransientRunError(str(error)) from error
@@ -122,7 +127,5 @@ class AssessmentRunner:
                 self.runs.mark_stage(ca_id, run_id, stage, "FAILED")
             self.runs.fail(ca_id, run_id, failure_reason(error), str(error))
             return self.runs.get(ca_id, run_id)
-        self.runs.complete(ca_id, run_id, draft)
-        self.reports.save_version(run_id, report)
         log.info("assessment_completed", extra=log_context)
         return self.runs.get(ca_id, run_id)

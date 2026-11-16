@@ -5,7 +5,13 @@ import json
 import os
 from pathlib import Path
 
-from devtools.dataset_download import DatasetError, check_dataset, pull_dataset, read_manifest
+from devtools.dataset_download import (
+    DatasetError,
+    cache_bundled_sources,
+    check_dataset,
+    pull_dataset,
+    read_manifest,
+)
 from dotenv import dotenv_values
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -13,11 +19,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("pull", "check"))
+    parser.add_argument("command", choices=("pull", "check", "cache-sources"))
     parser.add_argument(
         "--manifest", type=Path, default=PROJECT_ROOT / "configs/dataset_dev_validation.json"
     )
     parser.add_argument("--destination", type=Path)
+    parser.add_argument("--cache-dir", type=Path)
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--url")
     source.add_argument("--archive", type=Path, help="Use a ZIP already downloaded in your browser")
@@ -36,7 +43,12 @@ def main():
                 raise DatasetError("SEED_WORKBOOK_PATH points to a different dataset workbook")
             destination = (PROJECT_ROOT / workbook).parent
         url = args.url or os.getenv("DATASET_ARCHIVE_URL") or config.get("DATASET_ARCHIVE_URL")
-        if args.command == "check":
+        if args.command == "cache-sources":
+            from legal_checker.core.config import Settings
+
+            cache_dir = args.cache_dir or Settings.from_env().source_cache_dir
+            result = cache_bundled_sources(manifest, destination, cache_dir)
+        elif args.command == "check":
             result = {"status": "verified", **check_dataset(manifest, destination)}
         else:
             result = pull_dataset(manifest, destination, url=url, archive_path=args.archive)

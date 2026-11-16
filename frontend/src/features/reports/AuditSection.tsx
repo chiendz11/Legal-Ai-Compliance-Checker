@@ -20,6 +20,8 @@ export function AuditSection({ record }: { record: ReportRecord }) {
   const audit = content.audit as {
     context?: Record<string, unknown>;
     publication?: Record<string, unknown>;
+    diagnostics?: unknown[];
+    assessment_profile?: Record<string, unknown>;
   };
   const context = audit.context ?? {};
   const publication = audit.publication;
@@ -57,10 +59,28 @@ export function AuditSection({ record }: { record: ReportRecord }) {
           ["Phiên bản triển khai", <code>{kase.deployment.phien_ban_id}</code>],
           ["Rule", <code>{kase.deployment.rule_version}</code>],
           ["Tri thức pháp lý", <code>{kase.deployment.legal_knowledge_version}</code>],
+          [
+            "Xác minh tri thức",
+            <StatusBadge
+              kind="knowledgeReview"
+              code={typeof content.audit.knowledge_review_status === "string"
+                ? content.audit.knowledge_review_status : undefined}
+            />,
+          ],
         ]}
       />
       <h3 className="subhead">Ngữ cảnh run</h3>
+      <Fields rows={[["Chế độ dữ liệu", <Value value={content.audit.evidence_mode ?? "SOURCE_ONLY"} />]]} />
       <Fields rows={Object.entries(context).map(([k, v]) => [k, <Value value={v} />])} />
+      <h3 className="subhead">Phạm vi đánh giá thực tế</h3>
+      <JsonBlock value={audit.assessment_profile ?? "Báo cáo cũ chưa lưu mục này."} />
+      <h3 className="subhead">Chẩn đoán xử lý ({audit.diagnostics?.length ?? 0})</h3>
+      <p className="small">Các mã xử lý như CALL_LIMIT hoặc lỗi provider không phải kết luận hợp đồng vi phạm.</p>
+      <JsonBlock value={record.presentation?.diagnostics ?? audit.diagnostics ?? []} />
+      {record.presentation && <details>
+        <summary>Chẩn đoán nguyên bản đã lưu</summary>
+        <JsonBlock value={audit.diagnostics ?? []} />
+      </details>}
       <h3 className="subhead">Lịch sử rà soát</h3>
       {mockEnabled ? (
         <Notice tone="info">Lịch sử review cần backend thật.</Notice>
