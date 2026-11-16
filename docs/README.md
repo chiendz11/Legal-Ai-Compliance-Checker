@@ -81,6 +81,7 @@ seed DB local mới của đợt 07/11. Đã được thay bởi [release PDF360
 * **[Báo cáo Tiến độ Tuần 9 (PPTX)](business/bao_cao_tien_do_tuan_9.pptx)** ([Thư mục Slides](business/slides/bao_cao_tien_do_tuan_9.pptx)): Bản trình chiếu tiến độ/mục tiêu Tuần 9; các tỷ lệ kỳ vọng không thay bằng chứng nghiệm thu (Cột mốc First Working Inference E2E, Cụm K3d GitOps, Async Task Queue và Reviewer Workbench).
 * **[Báo cáo Tuần 10 điều chỉnh](business/bao_cao_tien_do_tuan_10.md)** ([PPTX](business/slides/bao_cao_tien_do_tuan_10.pptx), [PDF](business/slides/bao_cao_tien_do_tuan_10.pdf)): Bám workbook kế hoạch: Inference MVP, phần việc năm người, smoke/regression trên DEV, nguồn của kết luận và danh sách lỗi ưu tiên.
 * **[Báo cáo Tuần 11 — kế hoạch và thực tế](business/bao_cao_tien_do_tuan_11.md)** ([PPTX](business/slides/bao_cao_tien_do_tuan_11.pptx), [PDF](business/slides/bao_cao_tien_do_tuan_11.pdf)): Đối chiếu nhiệm vụ năm người, bằng chứng hiện có và các bước còn lại để nghiệm thu Inference STABLE.
+* **[Báo cáo tổng quan hệ thống & tiến độ 16/11/2026 (PPTX)](business/slides/Legal-AI-Compliance-Checker-bao-cao-he-thong-2026-11-16.pptx)** ([Bản cùng tên trong `business/`](business/Legal-AI-Compliance-Checker-bao-cao-he-thong-2026-11-16.pptx)): Tổng hợp toàn diện BA, C01–C13, Kiến trúc, Stack, Gold Master R12 (`220/360`), QA và lộ trình.
 * **[Mục lục và trạng thái các slide](business/slides/README.md)**: Phân biệt báo cáo tuần đã điều chỉnh với bản nháp lịch sử về tri thức/công nghệ/Gold có nhận định chưa nghiệm thu.
 * **[Business Requirements Document (BRD v1.1)](business/BRD_v1.1.pdf)**: Đặc tả yêu cầu nghiệp vụ gốc, quy tắc thẩm định pháp lý và xử lý trường hợp bất định.
 
@@ -111,9 +112,14 @@ seed DB local mới của đợt 07/11. Đã được thay bởi [release PDF360
 ### 6. Hướng dẫn Phát triển theo Module (`modules/`)
 * **[Quy chuẩn Tích hợp Chung](modules/README.md)**: Nguyên tắc handoff, kết nối database, khóa JOIN và kiểm thử.
 * **[Nhóm A (Bước 1–2: Document Intelligence)](modules/group_a_document_intelligence.md)**: Tiếp nhận hợp đồng, OCR/parser, trích xuất facts (C02) và citations (C03).
+* **[Document Intelligence Hybrid với Qwen/Ollama Local](modules/documents_local_llm.md)**: Cấu hình `DOCUMENTS_EXTRACTOR=hybrid`, ngân sách 2 cửa sổ, cache theo model digest, `DERIVED_REVIEW_PENDING`, audit X02 `OLLAMA_LOCAL` và diagnostics.
 * **[Nhóm B (Bước 3–4: Legal Scope, Citation & Retrieval)](modules/group_b_legal_and_retrieval.md)**: Xác định phạm vi áp dụng (C04), hiệu lực thời gian (C05), kiểm định viện dẫn (C09) và truy xuất Top-K (C06).
 * **[Nhóm C (Bước 5–7: Compliance, Risk & Recommendation)](modules/group_c_compliance_and_risk.md)**: Đánh giá tiêu chí (C07/C08), tổng hợp rủi ro (C10) và khuyến nghị xử lý (C11).
 * **[Nhóm D (Bước 8–9: Report Aggregation & UI/Frontend)](modules/group_d_report_and_frontend.md)**: Hợp nhất hai nhánh, ghi nhận sự kiện review (C12) và xuất báo cáo (C13).
+
+### 7. Giải thích Chuyên sâu Cơ chế Hệ thống (`system-guide/`)
+* **[Mục lục System Deep Dive](system-guide/README.md)**: Lớp tài liệu giải thích *vì sao* cần contract, thuật toán cốt lõi, trade-off kiến trúc, ví dụ hợp đồng mua bán căn hộ và ánh xạ tới class/function nguồn (không trùng lặp đặc tả `modules/` và `contracts/`):
+  * [01 — System Overview & End-to-End Flow](system-guide/01-system-overview-and-end-to-end-flow.md) · [02 — Knowledge, Runtime & Gold Master](system-guide/02-knowledge-runtime-and-gold-master.md) · [03 — Document Intelligence](system-guide/03-document-intelligence.md) · [04 — Scope & Temporal Resolution](system-guide/04-scope-and-temporal-resolution.md) · [05 — Citation Validation & Retrieval](system-guide/05-citation-validation-and-retrieval.md) · [06 — Compliance Reasoning & C07/C08](system-guide/06-compliance-reasoning-and-c07-c08.md) · [07 — Risk & Recommendation](system-guide/07-risk-and-recommendation.md) · [08 — Report Generation & Human Review](system-guide/08-report-generation-and-human-review.md) · [09 — Async Workflow & Job Lifecycle](system-guide/09-async-workflow-and-job-lifecycle.md) · [10 — Unknown, Insufficient & Diagnostics](system-guide/10-unknown-insufficient-and-diagnostics.md)
 
 - [Sửa verifier/evidence HD360_001 ngày 08/11](guides/hd360_followup_verification_20261108.md): full review, C06 refinement và cách đọc NOT_TRIGGERED.
 

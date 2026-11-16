@@ -58,7 +58,7 @@ numeric/aggregation engines. Người 5 nối provider trước C07.
 
 | Phần | Đã có | Giới hạn cần nghiệm thu |
 |---|---|---|
-| Documents | Upload, PDF text parser, structural chunks, profile/facts/C03, writer | OCR/DOCX parser chưa có; field coverage và citation occurrences cần eval |
+| Documents | Upload, PDF text parser, structural chunks, profile/facts (`rules` mặc định + tùy chọn `DOCUMENTS_EXTRACTOR=hybrid` Qwen/Ollama local), C03, writer | OCR/DOCX parser chưa có; field coverage, semantic acceptance trên 360 ca và citation occurrences cần eval |
 | Scope/Temporal | Rule-based scope và interval resolver từ catalog | Typed field thiếu, marker mapping/history/overlaps cần owner xác nhận |
 | Citation | Identity/temporal/domain/classifier + live provenance | Tên+năm chưa có policy unique identity; UNKNOWN không tự thành VALID |
 | Retrieval | BM25, fact/section metadata và tùy chọn semantic/rerank | Relevance/Recall@K trên annotations; không cần bật hybrid để coi có implementation |

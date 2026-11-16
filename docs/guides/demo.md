@@ -31,7 +31,11 @@ Trong `.env` của bạn (hoặc cấu hình K8s ConfigMap/Secret):
   ASSESSMENT_MODULES=modules
   ASSESSMENT_QUEUE=inline
   ASSESSMENT_LLM=offline
+  DOCUMENTS_EXTRACTOR=rules
   ```
+
+- **Tùy chọn Document Intelligence hybrid với Qwen/Ollama local (tách riêng với `ASSESSMENT_LLM` của C07):**
+  Xem [documents_local_llm.md](../modules/documents_local_llm.md). Đặt `DOCUMENTS_EXTRACTOR=hybrid`, bật sẵn Ollama local (`qwen3.5:9b-q4_K_M` tại `DOCUMENTS_OLLAMA_URL`) trước khi khởi động API/worker; các fact đề xuất giữ `DERIVED_REVIEW_PENDING` và ghi X02 `OLLAMA_LOCAL`.
 
 - **Chế độ Live AI với Groq (cần tài khoản/model đã cấu hình):**
   ```bash
