@@ -69,14 +69,14 @@
       "type": "string"
     },
     "model_version": {
-      "const": "TEMPLATE_ENGINE_NO_LLM",
       "default": "TEMPLATE_ENGINE_NO_LLM",
+      "minLength": 1,
       "title": "Model Version",
       "type": "string"
     },
     "prompt_version": {
-      "const": "NOT_USED",
       "default": "NOT_USED",
+      "minLength": 1,
       "title": "Prompt Version",
       "type": "string"
     },

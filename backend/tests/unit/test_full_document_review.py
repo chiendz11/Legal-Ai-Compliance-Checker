@@ -141,7 +141,12 @@ def semantic_evaluate(prepared, bundle, finding):
 
 
 @pytest.mark.parametrize(
-    "kind,finding", [("PROHIBITED_CLAUSE", "VIOLATED"), ("CONTRACT_CONTENT", "SATISFIED")]
+    "kind,finding",
+    [
+        ("PROHIBITED_CLAUSE", "VIOLATED"),
+        ("PROHIBITED_CLAUSE", "SATISFIED"),
+        ("CONTRACT_CONTENT", "SATISFIED"),
+    ],
 )
 def test_present_candidates_reach_semantic_c07_with_real_c06(
     tmp_path, reasoning_case, kind, finding
@@ -533,3 +538,29 @@ def test_adaptive_recovery_cannot_exceed_budget_or_store_partial_proof(tmp_path,
             coverage,
         )
     assert set((tmp_path / "artifacts").rglob("*.json")) == before
+
+
+def test_prohibited_clause_without_subject_support_is_marked_absent_not_uncertain(
+    tmp_path, reasoning_case
+):
+    from copy import deepcopy
+
+    prepared = prepare(tmp_path, reasoning_case, "PROHIBITED_CLAUSE")
+    knowledge, request, ctx, profile, coverage, records = prepared
+    criterion = deepcopy(knowledge.criteria["CRITERION_1"])
+    criterion["tieu_chi_id"] = "TC_PV_HYC010_01"
+    knowledge.criteria["TC_PV_HYC010_01"] = criterion
+    for rule in list(knowledge.tables["quy_tac_quyet_dinh"]):
+        copied = deepcopy(rule)
+        copied["tieu_chi_id"] = "TC_PV_HYC010_01"
+        copied["quy_tac_id"] += "_HYC010"
+        knowledge.tables["quy_tac_quyet_dinh"].append(copied)
+    records[0] = records[0].model_copy(update={"tieu_chi_id": "TC_PV_HYC010_01"}, deep=True)
+    request.payload.chunks[0].noi_dung = (
+        "Bên Bán được miễn trừ tranh chấp của bên thứ ba đối với hành vi của Bên Mua, "
+        "trừ lỗi của Bên Bán."
+    )
+    bundle = review(tmp_path, prepared, MatrixClient("PRESENT"))
+    assert bundle.decisions["TC_PV_HYC010_01"]["assessment"] == "ABSENT"
+    assert bundle.verifications[0].gates.absence_verified is True
+    assert bundle.verifications[0].facts.get("content_subject_validated") is not False

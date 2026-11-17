@@ -128,4 +128,75 @@ def interpretation_notes(criterion_id):
             "đưa vào sử dụng của luật đó; không mặc định buộc dự thảo dùng ngày nhận vật của "
             "quy tắc chung. Sự có mặt của cách tính mốc không chứng minh đã nghiệm thu thực tế."
         ),
+        "TC_PV_HYC003_01": (
+            "Chỉ kết luận VIOLATED khi điều khoản bắt buộc người tiêu dùng/bên mua chỉ được "
+            "thương lượng hoặc hòa giải và TƯỚC BỎ hoặc HẠN CHẾ quyền khởi kiện ra Tòa án hoặc "
+            "Trọng tài. Điều khoản ưu tiên thương lượng/hòa giải trước nhưng vẫn cho phép đưa vụ "
+            "việc ra Tòa án có thẩm quyền khi thương lượng không thành là hoàn toàn hợp pháp -> "
+            "trả SATISFIED với missing_conditions=[]."
+        ),
+        "TC_PV_HYC004_01": (
+            "Chỉ kết luận VIOLATED khi điều khoản loại trừ trách nhiệm của bên bán đối với "
+            "nghĩa vụ do chính bên bán vi phạm hoặc do lỗi của bên bán. Các điều khoản: (1) miễn "
+            "trừ trách nhiệm của bên bán đối với tranh chấp của bên thứ ba phát sinh từ hành vi "
+            "của chính bên mua (trừ trường hợp do lỗi của bên bán), hoặc (2) quy định ban quản "
+            "lý/bên bán mở cửa căn hộ trong tình huống khẩn cấp (cháy nổ, cấp cứu) có lập biên "
+            "bản và chịu trách nhiệm nếu vượt quá phạm vi cần thiết, KHÔNG phải là điều khoản "
+            "loại trừ trách nhiệm trái luật -> trả SATISFIED với missing_conditions=[]."
+        ),
+        "TC_PV_HYC017_01": (
+            "Trong DRAFT_REVIEW (evaluation_target=CONTRACT_CONTENT), chỉ đánh giá hình thức "
+            "văn bản của dự thảo hợp đồng và điều khoản quy định hợp đồng lập thành văn bản. "
+            "Việc ký kết chính thức, chữ ký, con dấu thuộc tiêu chí ký kết/hiệu lực khác "
+            "(ngoài phạm vi DRAFT_REVIEW); không lấy lý do bản dự thảo chưa ký để trả UNKNOWN "
+            "khi văn bản dự thảo và điều khoản hình thức văn bản đã có mặt."
+        ),
+        "TC_PV_HYC038_01": (
+            "Trong DRAFT_REVIEW (evaluation_target=CONTRACT_CONTENT), chỉ đánh giá hình thức "
+            "văn bản của dự thảo hợp đồng và điều khoản quy định hợp đồng lập thành văn bản. "
+            "Việc ký kết chính thức, chữ ký, con dấu thuộc tiêu chí ký kết/hiệu lực khác "
+            "(ngoài phạm vi DRAFT_REVIEW); không lấy lý do bản dự thảo chưa ký để trả UNKNOWN "
+            "khi văn bản dự thảo và điều khoản hình thức văn bản đã có mặt."
+        ),
+        "TC_PV_HYC035_01": (
+            "Trong DRAFT_REVIEW, kiểm tra sự có mặt của điều khoản/phụ lục lịch thanh toán "
+            "gắn các đợt thanh toán với tiến độ xây dựng hoặc bàn giao căn hộ (kể cả cách diễn đạt "
+            "khái quát trong dự thảo như 'theo mốc tiến độ xây dựng được xác nhận trong hồ sơ giao "
+            "dịch', 'theo mốc tiến độ xây dựng tiếp theo', 'khi có thông báo bàn giao căn hộ'). "
+            "Không yêu cầu dự thảo phải liệt kê tên từng hạng mục kỹ thuật cụ thể (như đổ móng, "
+            "cất nóc) hay thông báo nghiệm thu thực tế; khi lịch thanh toán đã gắn với tiến độ xây "
+            "dựng/bàn giao thì trả SATISFIED với missing_conditions=[]."
+        ),
+        "TC_PV_HYC040_03": (
+            "Trong DRAFT_REVIEW, kiểm tra điều khoản/phụ lục quy định về phần sở hữu chung, "
+            "sử dụng chung và nguyên tắc sử dụng theo đúng công năng/thiết kế được phê duyệt. "
+            "Không yêu cầu đính kèm hồ sơ bản vẽ thiết kế kỹ thuật đã phê duyệt của cơ quan "
+            "nhà nước để xác nhận điều khoản có mặt trong dự thảo."
+        ),
+        "TC_PV_HYC047_01": (
+            "Trong DRAFT_REVIEW, kiểm tra phần mở đầu/thân hợp đồng hoặc phụ lục giao dịch có "
+            "ghi ngày, tháng, năm giao kết/lập hợp đồng. Không lấy việc mẫu Biên bản bàn giao "
+            "đính kèm để trống ngày bàn giao tương lai hoặc bản dự thảo chưa ký làm lý do trả "
+            "UNKNOWN; khi hợp đồng đã ghi ngày lập/giao kết thì trả SATISFIED với "
+            "missing_conditions=[]."
+        ),
+        "TC_PV_HYC053_02": (
+            "Trong DRAFT_REVIEW (evaluation_target=CONTRACT_CONTENT), chỉ kiểm tra nội dung "
+            "điều khoản quy định mốc bắt đầu tính thời hạn bảo hành (từ khi hoàn thành xây dựng "
+            "và nghiệm thu đưa vào sử dụng). Tuyệt đối không đòi văn bản nghiệm thu thực tế đã "
+            "xảy ra; khi điều khoản quy định mốc bảo hành phù hợp thì trả SATISFIED với "
+            "missing_conditions=[]."
+        ),
+        "TC_PV_HYC049_03": (
+            "Trong DRAFT_REVIEW, kiểm tra hợp đồng/phụ lục có quy định rõ mức kinh phí bảo trì "
+            "2%, nghĩa vụ đóng kinh phí bảo trì của bên mua (trước/khi nhận bàn giao căn hộ) và "
+            "thông tin khoản phí này trong hợp đồng; khi đã có quy định trong dự thảo thì trả "
+            "SATISFIED với missing_conditions=[], không đòi chứng từ thu tiền thực tế."
+        ),
+        "TC_PV_DS441_02": (
+            "Điều 441 khoản 2 BLDS cho phép các bên thỏa thuận thời điểm chuyển rủi ro (ví dụ "
+            "kể từ khi nhận bàn giao căn hộ), hoặc nếu không có thỏa thuận thì áp dụng quy tắc "
+            "mặc định của luật. Khi dự thảo đã có điều khoản thỏa thuận rõ thời điểm bên mua "
+            "chịu rủi ro (như từ khi bàn giao căn hộ) thì trả SATISFIED với missing_conditions=[]."
+        ),
     }.get(criterion_id)

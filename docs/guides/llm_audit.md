@@ -123,6 +123,6 @@ WHERE ca_id = 'CA360_001'
 ORDER BY ngay_goi, lan_goi_id;
 ```
 
-Thêm điều kiện `trace_id` khi xem một run. Sink không tự phát hành HTTP endpoint hoặc mở quyền đọc audit cho người dùng khác.
+Thêm điều kiện `trace_id` khi xem một run. Các module dùng X02 thực tế hiện gồm `COMPLIANCE`, `DOCUMENT_INTELLIGENCE` (`OLLAMA_LOCAL`) và `C11` (`OLLAMA_LOCAL`, `prompt_version="C11_PERSONALIZATION_V1"`, `schema_version="C11_PERSONALIZED_RECOMMENDATION_V1"`). Lưu ý riêng cho C11: X02 `SUCCESS` chỉ xác nhận Ollama đã trả response hợp lệ về giao thức; việc kết quả đó có được chấp nhận thay thế diễn đạt hay bị Backend Validator từ chối (`TEMPLATE_ENGINE_FALLBACK`) được ghi trong `Recommendation` và diagnostics C11. Sink không tự phát hành HTTP endpoint hoặc mở quyền đọc audit cho người dùng khác.
 
 Schema máy đọc: [llm_audit.schema.json](../contracts/llm_audit.schema.json). Khi đổi X02, cập nhật model, schema này và `contracts/X02.schema.json` trong cùng PR; tests kiểm tra tính nhất quán. Tests mock provider và dùng DB test riêng; không gọi provider thật hoặc yêu cầu API key.

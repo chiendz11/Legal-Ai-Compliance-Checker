@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** C04 trả lời “yêu cầu pháp lý này có thuộc phạm vi của giao dịch không”, C05 trả lời “phiên bản nào của yêu cầu có hiệu lực tại mốc thời gian của giao dịch” — cả hai bằng logic tất định và đều được phép trả lời “chưa biết”.
+
+**Hình dung đời thường.** C04 giống bước sàng lọc ở phòng khám: với mỗi xét nghiệm trong danh mục, hỏi “bệnh nhân này có thuộc diện cần làm không?”. Nếu thiếu thông tin để trả lời, câu trả lời đúng là “chưa rõ” chứ không phải “không cần”. C05 giống việc chọn phác đồ theo ngày khám: cùng một bệnh nhưng trước và sau ngày ban hành phác đồ mới thì áp dụng khác nhau, và có điều khoản chuyển tiếp cho ca đang điều trị dở.
+
+**Ba ý phải nói được:**
+
+1. **Logic ba giá trị Kleene:** `MATCH` / `NO_MATCH` / `UNKNOWN`. Một điều kiện chắc chắn sai đủ để loại; còn điều kiện chưa biết thì không dám loại.
+2. **Khoảng hiệu lực nửa mở `[từ, đến)`:** tại đúng ngày chuyển giao chỉ có một phiên bản khớp; không mượn mốc thời gian khác loại.
+3. **Chuyển tiếp Điều 83(5) Luật KDBĐS 2023:** cần một dữ kiện ngoài hợp đồng đã được con người xác minh; thiếu thì `UNKNOWN`.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| Requirement family | Một nhóm yêu cầu pháp lý (ví dụ “bảo hành căn hộ”); kho hiện có 323 nhóm. |
+| Scope | Phạm vi áp dụng: yêu cầu có dành cho loại giao dịch/tài sản/chủ thể này không. |
+| Marker / mốc | Ngày pháp lý dùng để chọn phiên bản: `SIGNING`, `TEMPLATE_USE`, `DEPOSIT_AGREEMENT`, `COLLECTION`. |
+| Nửa mở | Tính ngày bắt đầu, không tính ngày kết thúc. |
+| `candidate_version_only` | Con trỏ phiên bản tạm khi chưa chốt được — để biết đang treo ở đâu, không dùng để chấm. |
+
+**Slide tương ứng:** 20–22 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 6–7 phút.
+
+---
+
 ## 1. Tại sao phải tách `C04` (Scope) khỏi `C05` (Temporal), và cả hai khỏi `C03` (Citations)?
 
 Trong catalog hiện hành có **323 requirement families** (từ nghĩa vụ công khai thông tin, đặt cọc, trần thanh toán đợt 1, bảo lãnh ngân hàng, bảo hành chung cư 60 tháng đến quy chế nhà chung cư...). Không phải cả 323 family đều áp dụng cho mọi hợp đồng, và ngay cả khi áp dụng, phiên bản áp dụng vào năm 2020 khác hoàn toàn năm 2024.
@@ -104,6 +130,24 @@ Khi một requirement family mới được giới thiệu từ `01/08/2024` nh�
 ### 3.5. Con trỏ `candidate_version_only` khi `version_status = UNKNOWN`
 
 Nếu một requirement không thể chốt được phiên bản (ví dụ thiếu ngày ký hợp đồng), `TemporalResolver` **vẫn đặt một con trỏ `requirement_version_id` tham chiếu tạm** với cờ `nguon_snapshot_json["candidate_version_only"] = True` và `version_status = "UNKNOWN"`. Lý do là để các bước Retrieval hay Gold/UI vẫn biết tiêu chí nào đang bị treo vì thiếu mốc, nhưng tuyệt đối không cho phép `C07`/`C08` chấm thành `SATISFIED`/`NON_COMPLIANT`.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Vì sao không dùng True/False cho đơn giản?**  
+Đáp: Vì thiếu dữ kiện sẽ bị hiểu là False và hệ thống lặng lẽ bỏ qua một nghĩa vụ pháp lý. Với Kleene, `VÀ(MATCH, UNKNOWN) = UNKNOWN` nên nghĩa vụ đó vẫn hiện ra dưới dạng “cần xác minh”.
+
+**Hỏi: Hợp đồng không ghi ngày ký thì sao?**  
+Đáp: C05 không tự lấy ngày hôm nay. Các yêu cầu cần mốc `SIGNING` giữ `version_status=UNKNOWN`, kéo C08 về `INSUFFICIENT`. Người dùng có thể khai mốc ở C01, miễn không mâu thuẫn với ngày đọc được trong PDF.
+
+**Hỏi: Ký đúng ngày 01/08/2024 thì theo luật nào?**  
+Đáp: Luật mới. Khoảng nửa mở: phiên bản cũ kết thúc *trước* 01/08/2024, phiên bản mới bắt đầu *từ* 01/08/2024.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* `UNKNOWN` (chưa biết) khác `NO_MATCH` (không áp dụng) và khác `NOT_APPLICABLE` (yêu cầu chưa ra đời tại ngày ký).
+* C05 không được sửa quyết định phạm vi của C04; `handoffs.py` sẽ ném lỗi nếu vi phạm.
 
 ---
 

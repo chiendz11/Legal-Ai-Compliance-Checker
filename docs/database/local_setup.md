@@ -1,6 +1,6 @@
 # PostgreSQL local và seed từ workbook
 
-Baseline hiện hành: [PDF360 v4 r2 — runtime và knowledge đã duyệt](../guides/dataset_pdf360_v4r2_runtime_20261110.md). Manifest LOCAL_ARCHIVE_READY dùng --archive với đúng ZIP mới.
+Baseline hiện hành: [PDF360 v4 r2 — runtime và knowledge đã duyệt](../guides/dataset_pdf360_v4r2_runtime_20261110.md). Manifest đã `PUBLISHED` lên Google Drive; chạy `python -m scripts.dataset pull` (hoặc `--archive` nếu đã tải sẵn ZIP).
 
 Nếu chưa có môi trường Python của repo, làm theo [hướng dẫn tạo/kích hoạt `.venv`](../guides/dev_setup.md) trước.
 
@@ -8,7 +8,7 @@ Mỗi dev có **một PostgreSQL riêng trên máy**, cùng cấu trúc bảng v
 Không cần Supabase để phát triển từng module.
 
 ```text
-legal_checker_dev_team_20261107
+legal_checker_dev_pdfv4r2_20261110
 ├── knowledge    22 bảng workbook: luật, criteria, rules, templates và quản trị
 ├── runtime      28 bảng workbook: hợp đồng, chunks, evidence và kết quả
 ├── qa           6 bảng: split, payload/assertions tham chiếu và kiểm tra nguồn
@@ -117,7 +117,7 @@ Dùng DBeaver, pgAdmin hoặc công cụ PostgreSQL quen thuộc với cấu hì
 |---|---|
 | Host | `127.0.0.1` |
 | Port | `5433` |
-| Database | `legal_checker_dev_team_20261107` |
+| Database | `legal_checker_dev_pdfv4r2_20261110` |
 | User | `legal_checker` |
 | Password local | `legal_checker_local_only` |
 
@@ -227,7 +227,7 @@ không phụ thuộc workbook riêng của bạn.
 
 ## 8. Revision tri thức hiện hành
 
-Bản hiện hành là `v7.5.0-pdf360-v4r2-runtime-20261110`, có 240 DEV + 60 VALIDATION và 32 ca regression. Tri thức mang nhãn `V750_TEAM_KNOWLEDGE_20261107`; SHA nội dung là `39d823fb72b886d88d55367e928f96a39218d16e4287899fc1a163d25458bc4d`.
+Bản hiện hành là `v7.5.0-pdf360-v4r2-runtime-20261110`, có 240 DEV + 60 VALIDATION và 32 ca regression. Tri thức mang nhãn `V750_KNOWLEDGE_OWNER_APPROVED_20261110`; SHA nội dung là `4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a`.
 
 `seed` nhận diện workbook đúng manifest và pin snapshot `HUMAN_VERIFIED`: chủ dự án đã chấp nhận 479 criteria, 1.916 decision rules và 9 ngoại lệ. Dữ kiện extraction và kết quả AI có review riêng. Runtime/QA dựng lại theo cùng PDF v4 r2 và snapshot; reference engine vẫn là SILVER. Xem [baseline guide](../guides/dataset_pdf360_v4r2_runtime_20261110.md).
 

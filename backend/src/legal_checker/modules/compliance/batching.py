@@ -101,23 +101,50 @@ def complete_batch(
     payload = shared_source_payload(packages)
     if max_chars is not None and len(json.dumps(payload, ensure_ascii=False)) > max_chars:
         return {key: LlmClientError("CONTEXT_LIMIT") for key in by_id}
-    properties = {
+    all_quote_ids = sorted(
+        {
+            q_id
+            for p in packages
+            for group in p.get("quote_catalog", [])
+            for q in group.get("quotes", [])
+            if (
+                q_id := (
+                    q[0]
+                    if p.get("source_text_representation") == "ORDERED_QUOTE_LINES_V1"
+                    else q["quote_id"]
+                )
+            )
+            is not None
+        }
+    )
+    all_external_aliases = sorted(
+        {
+            item["external_alias"]
+            for p in packages
+            for item in p.get("external_registry_metadata_only", [])
+            if "external_alias" in item
+        }
+    )
+    properties: dict = {
         "item_id": {"type": "string", "enum": list(by_alias)},
         "proposed_finding": {
             "type": "string",
             "enum": ["SATISFIED", "VIOLATED", "MISSING", "UNKNOWN"],
         },
         "giai_thich": {"type": "string"},
-        **{
-            name: {"type": "array", "items": {"type": "string"}}
-            for name in (
-                "missing_conditions",
-                "verification_requirements",
-                "quote_ids",
-                "external_ids",
-            )
-        },
+        "missing_conditions": {"type": "array", "items": {"type": "string"}},
+        "verification_requirements": {"type": "array", "items": {"type": "string"}},
+        "quote_ids": (
+            {"type": "array", "items": {"type": "string", "enum": all_quote_ids}}
+            if all_quote_ids
+            else {"type": "array", "items": {"type": "string"}}
+        ),
     }
+    if all_external_aliases:
+        properties["external_ids"] = {
+            "type": "array",
+            "items": {"type": "string", "enum": all_external_aliases},
+        }
     schema = {
         "type": "object",
         "additionalProperties": False,
@@ -191,8 +218,9 @@ def complete_batch(
                 for item in package["external_registry_metadata_only"]:
                     allowed[item["bang_chung_id"]] = item["bang_chung_id"]
                     allowed[item["external_alias"]] = item["bang_chung_id"]
-                if not isinstance(row["external_ids"], list) or any(
-                    e not in allowed for e in row["external_ids"]
+                external_ids = row.get("external_ids", [])
+                if not isinstance(external_ids, list) or any(
+                    e not in allowed for e in external_ids
                 ):
                     raise LlmClientError("UNREGISTERED_EXTERNAL_ID")
                 row = {
@@ -217,7 +245,7 @@ def complete_batch(
                         }
                         for q in row["quote_ids"]
                     ],
-                    "external_evidence_ids": [allowed[e] for e in row["external_ids"]],
+                    "external_evidence_ids": [allowed[e] for e in external_ids],
                 }
             proposal = SemanticProposal.model_validate(row)
             verification = package.get("backend_verification") or {}

@@ -44,9 +44,10 @@ ABSENT chỉ nói chưa có nội dung trong batch; backend tổng hợp mọi b
 vắng toàn tài liệu. Văn bản hứa làm một việc không chứng minh đã thực hiện việc đó.
 Không xác nhận chữ ký/con dấu từ text. Trả UNCERTAIN nếu cần nhìn ảnh chữ ký/con dấu.
 Không tự coi phụ lục thay thế điều khoản khác khi có mâu thuẫn. Không suy rộng sang
-criterion khác. PRESENT cần ít nhất một candidate_chunk_alias thuộc batch hiện tại.
-ABSENT không mang candidate; explanation ngắn dưới 220 ký tự. Không trả gates, nhãn
-C07/C08, human_verified hoặc khẳng định đã được người thật duyệt.
+criterion khác. PRESENT cần ít nhất một candidate_chunk_alias (tối đa 3 alias tiêu biểu,
+không lặp lại alias) thuộc batch hiện tại. ABSENT không mang candidate; explanation
+ngắn dưới 160 ký tự. Không trả gates, nhãn C07/C08, human_verified hoặc khẳng định đã được
+người thật duyệt.
 Trường search_finding cho biết predicate đang mô tả điều cần tìm: với điều khoản cấm
 là VIOLATED (hành vi trái luật), với nội dung bắt buộc là SATISFIED (nội dung cần có).
 Không đảo nghĩa PRESENT thành việc hợp đồng tuân thủ điều cấm. Ví dụ câu “bên bán
@@ -339,19 +340,29 @@ class FullDocumentReviewer:
                     self.calls += 1
                     self.cost += len(aliases)
                     self.request_chars += len(json.dumps(payload, ensure_ascii=False))
-                    response = self.client.complete(
-                        context,
-                        instructions=INSTRUCTIONS
-                        + (
-                            "\nResponse trước không đủ aliases/schema; phải trả đủ ma trận batch."
-                            if attempt
-                            else ""
-                        ),
-                        payload=payload,
-                        schema=schema,
-                        prompt_version=PROMPT + ("_REPAIR" if attempt else ""),
-                        schema_version="DOCUMENT_REVIEW_V1",
-                    )
+                    try:
+                        response = self.client.complete(
+                            context,
+                            instructions=INSTRUCTIONS
+                            + (
+                                "\nResponse trước không đủ aliases/schema; "
+                                "phải trả đủ ma trận batch."
+                                if attempt
+                                else ""
+                            ),
+                            payload=payload,
+                            schema=schema,
+                            prompt_version=PROMPT + ("_REPAIR" if attempt else ""),
+                            schema_version="DOCUMENT_REVIEW_V1",
+                        )
+                    except LlmClientError as error:
+                        if error.code == "INCOMPLETE_RESPONSE" and len(criteria) > 1:
+                            middle = len(criteria) // 2
+                            pending[0:0] = [criteria[:middle], criteria[middle:]]
+                            self.adaptive_splits += 1
+                            part = None
+                            break
+                        raise
                     try:
                         value = parse_json_object(response.content)
                         read = value["reviewed_chunks"]
@@ -398,10 +409,11 @@ class FullDocumentReviewer:
                                     ),
                                 )
                             ):
-                                check.assessment = "UNCERTAIN"
+                                check.assessment = "ABSENT"
+                                check.candidate_chunk_ids = []
                                 check.explanation = (
-                                    "SUBJECT_NOT_IN_EVIDENCE: seller/intermediary relation "
-                                    "not established"
+                                    "Không có quan hệ bán qua bên thứ ba/môi giới/đại lý "
+                                    "trong batch."
                                 )
                             if check.assessment == "PRESENT" and "thua dat" in fold(
                                 criterion["noi_dung"]
@@ -520,6 +532,7 @@ class FullDocumentReviewer:
                 **record.facts,
                 "document_review_sha256": stored.sha256,
                 "document_review_complete": True,
+                "document_review_non_candidates_absent": not uncertain and not invalid_subject,
                 **(
                     {"content_subject_validated": False}
                     if invalid_subject and not positives

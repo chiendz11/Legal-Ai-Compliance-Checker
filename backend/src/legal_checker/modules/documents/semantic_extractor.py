@@ -98,6 +98,7 @@ class SemanticResult:
     diagnostics: list[dict] = field(default_factory=list)
     model_digest: str | None = None
     fingerprint: str = ""
+    fact_method: str = "LOCAL_LLM_EXACT_QUOTE_V1"
 
 
 def normalize(proposal: FactProposal) -> object:
@@ -146,7 +147,9 @@ class SemanticDocumentExtractor:
         *,
         source_sha256: str,
     ):
-        result = SemanticResult()
+        result = SemanticResult(
+            fact_method=getattr(self.client, "fact_method", "LOCAL_LLM_EXACT_QUOTE_V1")
+        )
         known = {f.ten_truong for f in profile.facts if f.gia_tri_chuan_json is not None}
         requested = set(self.options.fields)
         if not self.options.recheck_existing:
@@ -312,7 +315,7 @@ class SemanticDocumentExtractor:
                     gia_tri_raw=rows[0].quote,
                     gia_tri_chuan_json=alternatives[0] if len(alternatives) == 1 else alternatives,
                     trang_thai="DERIVED_REVIEW_PENDING" if len(alternatives) == 1 else "CONFLICT",
-                    phuong_phap="LOCAL_LLM_EXACT_QUOTE_V1@" + str(result.model_digest),
+                    phuong_phap=result.fact_method + "@" + str(result.model_digest),
                     human_verified=False,
                     evidence_ids=[e.bang_chung_id for e in evidence],
                 )

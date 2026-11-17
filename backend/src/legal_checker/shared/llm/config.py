@@ -104,25 +104,41 @@ class OpenAISettings:
         if environ is None:
             load_dotenv(PROJECT_ROOT / ".env", override=False)
             environ = os.environ
-        api_key = (
-            environ.get("OPENAI_API_KEY")
-            or environ.get("GROQ_API_KEY")
-            or environ.get("LLM_API_KEY", "")
-        )
-        base_url = (
-            environ.get("OPENAI_BASE_URL")
-            or environ.get("GROQ_BASE_URL")
-            or environ.get("LLM_BASE_URL", "")
-        )
-        model = (
-            environ.get("OPENAI_MODEL") or environ.get("GROQ_MODEL") or environ.get("LLM_MODEL", "")
-        )
-        is_groq = api_key.startswith("gsk_") or environ.get("ASSESSMENT_LLM") == "groq"
+        is_groq = environ.get("ASSESSMENT_LLM") == "groq"
         if is_groq:
-            if not base_url:
-                base_url = "https://api.groq.com/openai/v1"
-            if not model:
-                model = environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
+            api_key = (
+                environ.get("GROQ_API_KEY")
+                or environ.get("LLM_API_KEY")
+                or environ.get("OPENAI_API_KEY", "")
+            )
+            base_url = (
+                environ.get("GROQ_BASE_URL")
+                or environ.get("LLM_BASE_URL")
+                or "https://api.groq.com/openai/v1"
+            )
+            model = environ.get("GROQ_MODEL") or environ.get("LLM_MODEL") or "openai/gpt-oss-20b"
+        else:
+            api_key = (
+                environ.get("OPENAI_API_KEY")
+                or environ.get("GROQ_API_KEY")
+                or environ.get("LLM_API_KEY", "")
+            )
+            base_url = (
+                environ.get("OPENAI_BASE_URL")
+                or environ.get("GROQ_BASE_URL")
+                or environ.get("LLM_BASE_URL", "")
+            )
+            model = (
+                environ.get("OPENAI_MODEL")
+                or environ.get("GROQ_MODEL")
+                or environ.get("LLM_MODEL", "")
+            )
+            if api_key.startswith("gsk_"):
+                is_groq = True
+                if not base_url:
+                    base_url = "https://api.groq.com/openai/v1"
+                if not model:
+                    model = environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
         if not base_url:
             base_url = "https://api.openai.com/v1"
         provider = "GROQ" if is_groq else "OPENAI"

@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** C10 gộp rủi ro từ hai nhánh thành một danh sách, mỗi rủi ro truy ngược về đúng một nguồn; C11 sinh khuyến nghị bằng template tất định, và LLM (nếu bật) chỉ được diễn đạt lại câu chữ dưới sự kiểm soát của validator.
+
+**Hình dung đời thường.** C10 giống người tổng hợp biên bản từ hai tổ kiểm tra: mỗi dòng phải ghi rõ do tổ nào phát hiện, ở hồ sơ nào, không được chép nhầm biên bản của đợt kiểm tra trước. C11 giống mẫu công văn điền sẵn: nội dung pháp lý cố định, chỉ điền dữ kiện có thật. Có thể nhờ biên tập viên chuốt câu, nhưng nếu bản chuốt làm mất hoặc đổi một con số, một tên luật hay một câu trích thì dùng lại nguyên bản.
+
+**Ba ý phải nói được:**
+
+1. **Hai nguồn rủi ro:** từ C07 (`VIOLATED`/`MISSING`/`UNKNOWN`) và từ C09 (`STALE`/`INVALID`/`UNKNOWN`); `UNKNOWN` thành rủi ro loại `VERIFICATION`.
+2. **`validate_findings()` chống ghép nhầm:** khớp `ca_id`, `run_id`, `hop_dong_id` và mã băm snapshot.
+3. **C11 có 22 `LIMITS`:** không tự tuyên vô hiệu/phạt, không bịa tên/ngày/số; `UNKNOWN` chỉ được sinh hành động xác minh.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| `RiskSource` | Con trỏ về đúng một kết quả C07 hoặc một phát hiện C09. |
+| `VERIFICATION` | Loại rủi ro “cần xác minh”, sinh từ kết quả chưa biết. |
+| Template Engine | Bộ sinh khuyến nghị tất định từ mẫu đã ghim trong kho tri thức. |
+| Personalization | Lớp tuỳ chọn cho LLM diễn đạt lại (`C11_PERSONALIZATION=off|ollama|openai`). |
+| Anchor / mỏ neo | Số tiền, %, ngày, số hiệu văn bản, câu trích… phải được giữ nguyên. |
+
+**Slide tương ứng:** 32–33 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 4–5 phút.
+
+---
+
 ## 1. Module Rủi ro (`C10`): Hợp nhất hai nhánh & Khóa chống "JOIN lỏng"
 
 ### 1.1. Hai nguồn rủi ro độc lập chảy vào một đầu ra `RiskResult`
@@ -59,6 +85,38 @@ Trước đây, nhiều mẫu khuyến nghị để thô các placeholder dạng
    * `[thông tin/bằng chứng cụ thể còn thiếu]` ← lấy qua `verification_request(source)` từ `uncertainty_reason` hoặc thông điệp riêng theo `reason_code` (ví dụ `NAME_ONLY_VERSION_IDENTITY_AMBIGUOUS` → yêu cầu cung cấp *"năm ban hành hoặc số hiệu, cùng bản nguồn hoặc dẫn chiếu đủ để định danh phiên bản luật"*).
 3. **Liên kết chặt với Risk:** Mỗi `Recommendation` lưu `ket_qua_rui_ro_id` để giao diện luôn hiển thị song song: *Phát hiện (C07/C09) → Rủi ro (C10) → Hành động khuyến nghị (C11) → Quote PDF gốc*.
 
+### 2.3. Hybrid Recommendation: Template Engine + LLM Personalization (`personalization/`)
+
+Từ nền tảng Template Engine xác định, C11 hỗ trợ thêm lớp cá thể hóa diễn đạt **tùy chọn** (`C11_PERSONALIZATION=ollama` hoặc `openai`, mặc định `off`):
+
+1. **Template Engine luôn chạy trước và nắm quyền quyết định:** `generator.py` tạo trọn vẹn khuyến nghị chuẩn hóa (mapping `ALL`, `loai_hanh_dong`, `uu_tien`, `evidence_ids`, `legal_basis_ids`, 22 `LIMITS`). Qwen không bao giờ được chọn template hay sửa metadata pháp lý.
+2. **Local Qwen chỉ viết lại câu chữ diễn đạt:** [`OllamaRecommendationClient`](../../backend/src/legal_checker/modules/recommendations/personalization/client.py) xác nhận `qwen3.5:9b-q4_K_M` và lấy digest thực qua `/api/tags`, gọi tuần tự `/api/chat` (`C11_PERSONALIZATION_V1`, JSON schema strict `PersonalizedRecommendation`) trên payload tối thiểu của khuyến nghị đó (không gửi cả PDF hay Knowledge DB) và ghi audit X02 (`module="C11"`, `provider="OLLAMA_LOCAL"`).
+3. **Backend Validator chặn mọi ảo giác trước khi thay văn bản:** [`validate_personalized_output()`](../../backend/src/legal_checker/modules/recommendations/personalization/validator.py) trích xuất và đối chiếu chéo toàn bộ anchor (số tiền, `%`, ngày tháng, ngưỡng, số hiệu/tên văn bản, quote nguyên văn, thực thể/tài khoản, checklist/dự thảo); chặn phát ngôn vô hiệu/chế tài/tăng ưu tiên; và chặn tuyệt đối việc biến `UNKNOWN`/`VERIFICATION` thành kết luận vi phạm hay yêu cầu sửa chữa.
+4. **Fallback an toàn (`TEMPLATE_ENGINE_FALLBACK`):** Mọi lỗi Ollama, timeout, digest sai, hết ngân sách (`C11_LLM_MAX_CALLS`), audit DB lỗi hoặc output bị validator reject đều tự động rơi về nguyên văn `noi_dung` của Template Engine kèm `model_version="TEMPLATE_ENGINE_FALLBACK"`, `prompt_version="C11_PERSONALIZATION_V1"` và mã diagnostics (`C11_PERSONALIZATION_REJECTED`, `C11_PERSONALIZATION_FALLBACK`, ...). `review_status` vẫn luôn là `PENDING`.
+5. **Tuỳ chọn nhà cung cấp API (`C11_PERSONALIZATION=openai`):** [`OpenAIRecommendationClient`](../../backend/src/legal_checker/modules/recommendations/personalization/openai_client.py) dùng lại client Responses API chung (schema `strict`, `store=false`) và ghi audit X02 với `module="C11"`, `provider="OPENAI"`. Prompt, validator và fallback **giống hệt** đường Ollama; lỗi nhà cung cấp được ánh xạ thành `C11_<mã lỗi>` rồi rơi về template. Lưu ý kỹ thuật: service truyền cả `RecommendationRequest` (lớp con của `Context`) cho client, nên adapter phải rút về đúng các trường `Context` trước khi gọi client chung — thiếu bước này mọi lượt gọi sẽ thất bại trước khi tới API và hiện thành `C11_MODEL_UNAVAILABLE` không kèm dòng audit (lỗi đã sửa ngày 17/11/2026, có test hồi quy).
+6. **Hiện trạng chất lượng diễn đạt lại (số đo chạy thử 17/11/2026, một hợp đồng, khuyến nghị sinh từ `UNKNOWN`):** gần như mọi bản diễn đạt lại đều bị validator loại bằng `C11_ANCHOR_MISMATCH` — 78/79 lượt với `qwen3:4b` local; 76/76 và 48/48 lượt ở hai lần chạy với `gpt-4.1-mini`. Khi lần nguyên nhân trên mẫu thật:
+   * **Một lỗi của chính validator (đã sửa, có test hồi quy):** `_ENTITY_RE` không có ranh giới từ và chạy không phân biệt hoa thường, nên cụm văn xuôi như *"không đầy đủ"* bị đọc thành thực thể *"ông đầy đủ"* → `Fabricated entity or identity detected` trên 6/6 mẫu đầu. Bản sửa yêu cầu từ chỉ vai trò (`ông`, `bà`, `công ty`…) phải đứng đầu từ và tên theo sau phải viết hoa.
+   * **Sau khi sửa, thử lại 12 mẫu vẫn chưa mẫu nào được chấp nhận:** 4 mẫu model làm rơi số hiệu văn bản (`Original legal code dropped`), 1 mẫu làm rơi một đại lượng, và 6 mẫu bị `Fabricated legal instrument detected` trên các cụm từ chung như *"pháp luật chuyên ngành liên quan"* — dấu hiệu mẫu nhận diện tên luật còn rộng (chưa đổi, cần rà cùng người phụ trách C11).
+   * **Kết luận vận hành:** lớp an toàn hoạt động đúng (không câu nào của LLM lọt vào báo cáo), nhưng lợi ích của personalization cho nhóm khuyến nghị này hiện gần như bằng 0. Hướng xử lý hợp lý là siết prompt (giữ nguyên số hiệu, không thêm cụm "pháp luật …") hoặc bỏ qua personalization cho mục `UNKNOWN`, thay vì nới validator tuỳ tiện.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Sao không để LLM viết khuyến nghị cho tự nhiên?**  
+Đáp: Vì rủi ro pháp lý: model dễ tuyên bố vô hiệu, bịa tên/số tài khoản, hoặc tự đề xuất con số mới. Nội dung pháp lý do template quyết định; LLM chỉ chỉnh câu chữ và phải qua validator.
+
+**Hỏi: Validator loại bản diễn đạt lại thì người dùng thấy gì?**  
+Đáp: Thấy nguyên văn khuyến nghị của template, kèm `model_version="TEMPLATE_ENGINE_FALLBACK"` và mã chẩn đoán. Không có câu nào của LLM lọt vào báo cáo.
+
+**Hỏi: Tỷ lệ bản diễn đạt lại được chấp nhận hiện là bao nhiêu?**  
+Đáp: Thấp. Trong các lượt chạy thử ngày 17/11/2026 trên một hợp đồng, gần như toàn bộ bản diễn đạt lại (cả Qwen 4B local lẫn gpt-4.1-mini) bị loại với `C11_ANCHOR_MISMATCH`. Một phần do lỗi regex của validator (đã sửa), phần còn lại do model làm rơi số hiệu văn bản và mẫu nhận diện tên luật còn rộng — chi tiết ở §2.3 mục 6.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* Rủi ro viện dẫn (C09) không tự làm đổi trạng thái tuân thủ nội dung (C07/C08).
+* Khuyến nghị cho mục `UNKNOWN` là “yêu cầu xác minh/bổ sung chứng cứ”, không phải “yêu cầu sửa hợp đồng”.
+
 ---
 
 ## 3. Đọc tiếp & Tham chiếu nhanh
@@ -68,3 +126,4 @@ Trước đây, nhiều mẫu khuyến nghị để thô các placeholder dạng
   * [`aggregate_risks()`](../../backend/src/legal_checker/modules/risks/aggregator.py) — điểm hợp nhất `compliance_risks + citation_risks`.
   * [`validate_findings()`](../../backend/src/legal_checker/modules/risks/compliance_mapper.py) — rào chắn provenance C07 → C10.
   * [`recommend()`](../../backend/src/legal_checker/modules/recommendations/generator.py) & [`bind_draft_slots()`](../../backend/src/legal_checker/modules/recommendations/rendering.py) — quy tắc 22 `LIMITS` và render sạch slot tiếng Việt.
+  * [`RecommendationPersonalizationService`](../../backend/src/legal_checker/modules/recommendations/personalization/service.py) & [`validate_personalized_output()`](../../backend/src/legal_checker/modules/recommendations/personalization/validator.py) — cá thể hóa Qwen local có kiểm chứng và fallback về Template Engine.

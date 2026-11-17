@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** Lớp đọc tài liệu biến bytes PDF thành các đoạn văn giữ nguyên từng ký tự, một hồ sơ dữ kiện có trích dẫn (C02) và danh sách viện dẫn (C03) — không bịa giá trị và không làm lệch vị trí.
+
+**Hình dung đời thường.** Giống một thư ký đọc hợp đồng với bút dạ quang: chỉ được tô lên đúng chữ có trong văn bản, và mỗi thông tin ghi ra phiếu (ngày ký, giá, bảo hành) phải kèm số trang và dòng đã tô. Thư ký có thể nhờ một trợ lý AI gợi ý chỗ khó, nhưng gợi ý nào không chỉ được đúng dòng nguyên văn thì bỏ, và gợi ý nào được nhận cũng ghi chú “chờ duyệt”.
+
+**Ba ý phải nói được:**
+
+1. **Kiểm toàn vẹn trước khi đọc:** SHA-256 của PDF phải khớp hồ sơ ca; PDF không có quyền tự đổi `review_mode`.
+2. **Chia đoạn theo cấu trúc pháp lý, giữ nguyên văn:** `noi_dung = raw_text[start:end]`, nhờ đó mọi trích dẫn kiểm được bằng phép so chuỗi con.
+3. **Hai lớp trích xuất:** rule luôn chạy (fact `EXTRACTED`); LLM tuỳ chọn cho 9 trường khó (fact `DERIVED_REVIEW_PENDING`) — “trích dẫn đúng chứng minh nguồn gốc, không chứng minh ngữ nghĩa”.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| Chunk / đoạn | Một lát cắt nguyên văn của hợp đồng kèm đường dẫn mục, trang và vị trí ký tự. |
+| `section_path` | Đường dẫn cấu trúc, ví dụ `Hợp đồng/ĐIỀU 9. BẢO HÀNH NHÀ Ở/Khoản 5`. |
+| Fact | Một dữ kiện đã trích (tên trường, giá trị chuẩn hoá, trạng thái, bằng chứng). |
+| `all_pages_have_text` | Cờ cho biết mọi trang đều đọc được chữ; thiếu cờ này thì cấm kết luận `MISSING`. |
+| Hybrid | `DOCUMENTS_EXTRACTOR=hybrid`: rule + LLM (Ollama local hoặc OpenAI API). |
+
+**Slide tương ứng:** 15–18 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 5–6 phút.
+
+---
+
 ## 1. Tại sao Document Intelligence là lớp nền sống còn?
 
 Trong một hệ thống kiểm tra tuân thủ có truy vết (auditable compliance), mọi kết luận ở bước C07 hay C10 đều phải trả lời được câu hỏi: **"Con số hoặc điều khoản này nằm ở trang mấy, chunk nào, từ ký tự nào tới ký tự nào trong PDF?"**. Nếu ngay ở bước đọc tài liệu ban đầu:
@@ -56,7 +82,7 @@ Nếu một Điều vượt quá `max_chars` (mặc định `1800` ký tự):
 
 ---
 
-## 4. Trích xuất `ContractProfile` & `Facts` (`C02`): Rule vs Local LLM (`SemanticDocumentExtractor`)
+## 4. Trích xuất `ContractProfile` & `Facts` (`C02`): Rule vs LLM (`SemanticDocumentExtractor`)
 
 `C02` tạo ra `ContractProfile` gồm 4 nhóm dữ liệu:
 1. `profile` (`ProfileFields`): loại hợp đồng, loại/tình trạng tài sản, chế độ giao dịch, cờ `la_nha_xay_moi`, `la_nha_o_xa_hoi`, `co_thoa_thuan_trong_tai`, giá bán, diện tích, tỷ lệ thanh toán, bảo hành...
@@ -81,6 +107,7 @@ Tại sao không bỏ hẳn rule (`profile_extractor.py`) để giao hết cho L
 * **Kích hoạt tách biệt:** Bật bằng `DOCUMENTS_EXTRACTOR=hybrid` (mặc định `.env.example` vẫn là `rules`), hoàn toàn độc lập với `ASSESSMENT_LLM` của tầng C07. Model chạy trên host qua `OllamaDocumentClient` (`qwen3.5:9b-q4_K_M`, temperature `0`, context `4.096`, max output `512`), không có fallback cloud.
 * **Ngân sách cửa sổ & Cache:** Mặc định chỉ xét tối đa `DOCUMENTS_LLM_MAX_CALLS=2` cửa sổ (tối đa `1.400` ký tự/cửa sổ) cho các trường mà rule chưa tìm ra. Phản hồi được cache cục bộ tại `SOURCE_CACHE_DIR/documents_llm/` theo khóa `(input, source, model_digest, options, prompt/schema)` — cache hit không ghi lượt gọi giả.
 * **Audit X02 & Diagnostics:** Mọi lượt `/api/chat` thực tế ghi X02 với `provider="OLLAMA_LOCAL"`, `module="DOCUMENT_INTELLIGENCE"`; bảng diagnostics phân biệt rõ `DOCUMENT_LLM_CALLED`, `DOCUMENT_LLM_CACHE_HIT`, `DOCUMENT_LLM_BUDGET_LIMIT`, `DOCUMENT_LLM_NO_CANDIDATE_WINDOWS` và lỗi model/timeout (lỗi hoặc timeout sẽ fallback sạch về output `rules`, không ngầm đọc reference QA).
+* **Tuỳ chọn nhà cung cấp API (`DOCUMENTS_LLM_PROVIDER=openai`):** Mặc định vẫn là `ollama`. Khi chọn `openai`, [`OpenAIDocumentClient`](../../backend/src/legal_checker/modules/documents/openai_client.py) gọi Responses API với JSON schema `strict` và `store=false`; **toàn bộ kiểm chứng phía sau giữ nguyên** (quote nguyên văn, vai trò trường, đơn vị, trạng thái `DERIVED_REVIEW_PENDING`). Fact mang `phuong_phap=API_LLM_EXACT_QUOTE_V1@API_MODEL:<provider>:<model>` để phân biệt với đường local (`LOCAL_LLM_EXACT_QUOTE_V1@<model_digest>`) — tham chiếu `API_MODEL` là ID model của API, không phải checksum trọng số. Audit X02 ghi `provider="OPENAI"`, `module="DOCUMENT_INTELLIGENCE"`; API key chỉ nằm trong `.env` local hoặc Kubernetes Secret, không đi vào cache hay provenance. Xem [openai_three_module_demo.md](../modules/openai_three_module_demo.md).
 
 ---
 
@@ -91,6 +118,24 @@ Trong `modules/documents/`, `extract_citations()` cùng [`find_citation_spans()`
 **Vì sao `C03` không tự tra DB để chấm đúng/sai?**
 * Tách biệt trách nhiệm: Nhóm A (Document Intelligence) chỉ đọc PDF và giữ bằng chứng vị trí văn bản, **không phụ thuộc vào tri thức pháp luật (`KnowledgeSnapshot`)**.
 * Nhờ vậy, khi cập nhật bộ luật mới (ví dụ bổ sung văn bản mới vào `van_ban_phap_ly`), ta chỉ cần chạy lại `C09 Citation Validation` trên danh sách `C03` đã trích mà không phải parse lại hàng trăm file PDF.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: PDF scan (ảnh) thì sao?**  
+Đáp: Hệ thống không giả vờ đọc đủ. `all_pages_have_text=false` được ghi lại, và về sau mọi kết luận cần phủ toàn văn (như `MISSING`) bị chặn, giữ `UNKNOWN`.
+
+**Hỏi: Vì sao không giao hết việc trích xuất cho LLM?**  
+Đáp: Rule nhanh, miễn phí và tái lập 100% cho các mẫu ổn định (ngày, tiền, %). LLM chỉ đáng dùng cho chỗ văn phong biến thiên, và kể cả khi dùng thì fact của nó chưa được coi là số liệu đã xác minh ở C07.
+
+**Hỏi: LLM trích sai vai trò (ví dụ lấy địa chỉ dự án làm trụ sở bên bán) thì ai bắt?**  
+Đáp: Kiểm quote chỉ bắt được việc bịa chữ. Sai vai trò được chặn bằng trạng thái `DERIVED_REVIEW_PENDING`: `SourceFactVerifier` ở C07 chỉ nhận fact `EXTRACTED`, nên đề xuất này không tự thành căn cứ kết luận.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* C03 chỉ *phát hiện* viện dẫn; đừng nói C03 “kiểm tra hiệu lực” — đó là việc của C09.
+* Cache của lớp LLM được khoá theo model/prompt/schema; cache hit không được tính là một lượt gọi.
 
 ---
 
