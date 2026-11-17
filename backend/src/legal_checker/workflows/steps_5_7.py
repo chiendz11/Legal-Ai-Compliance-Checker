@@ -8,6 +8,9 @@ from legal_checker.modules.compliance.requirement_aggregator import (
     excluded_requirement_ids,
 )
 from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
+from legal_checker.modules.recommendations.personalization.contracts import (
+    RecommendationPersonalizer,
+)
 from legal_checker.modules.recommendations.service import generate_recommendations
 from legal_checker.modules.reports.presentation import requirement_diagnostic_code
 from legal_checker.modules.risks.service import evaluate_risks
@@ -22,7 +25,12 @@ from legal_checker.shared.contracts.reasoning import ReasoningPayload, Reasoning
 from legal_checker.shared.validation import validate_request
 
 
-def evaluate(request: PipelineRequest, knowledge: KnowledgeSnapshot) -> PipelineResponse:
+def evaluate(
+    request: PipelineRequest,
+    knowledge: KnowledgeSnapshot,
+    *,
+    recommendation_personalizer: RecommendationPersonalizer | None = None,
+) -> PipelineResponse:
     """Compute each branch once, retaining missing-input and knowledge diagnostics."""
     request = PipelineRequest.model_validate(request.model_dump())
     validate_request(request, knowledge)
@@ -81,6 +89,7 @@ def evaluate(request: PipelineRequest, knowledge: KnowledgeSnapshot) -> Pipeline
         RecommendationRequest(**context, payload={**common, "risks": risks}),
         knowledge,
         diagnostics=diagnostics,
+        personalizer=recommendation_personalizer,
     )
     return PipelineResponse(
         **context,

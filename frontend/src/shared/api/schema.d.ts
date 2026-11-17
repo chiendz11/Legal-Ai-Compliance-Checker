@@ -992,7 +992,7 @@ export interface components {
             loai_moc_ap_dung?: string | null;
             /**
              * Review Mode
-             * @default FULL_ASSESSMENT
+             * @default DRAFT_REVIEW
              * @enum {string}
              */
             review_mode: "FULL_ASSESSMENT" | "DRAFT_REVIEW";
@@ -1488,15 +1488,13 @@ export interface components {
             /**
              * Model Version
              * @default TEMPLATE_ENGINE_NO_LLM
-             * @constant
              */
-            model_version: "TEMPLATE_ENGINE_NO_LLM";
+            model_version: string;
             /**
              * Prompt Version
              * @default NOT_USED
-             * @constant
              */
-            prompt_version: "NOT_USED";
+            prompt_version: string;
             /**
              * Review Status
              * @default PENDING
@@ -2248,15 +2246,13 @@ export interface components {
             /**
              * Model Version
              * @default TEMPLATE_ENGINE_NO_LLM
-             * @constant
              */
-            model_version: "TEMPLATE_ENGINE_NO_LLM";
+            model_version: string;
             /**
              * Prompt Version
              * @default NOT_USED
-             * @constant
              */
-            prompt_version: "NOT_USED";
+            prompt_version: string;
             /**
              * Review Status
              * @default PENDING

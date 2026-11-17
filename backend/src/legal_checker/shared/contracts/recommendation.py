@@ -1,5 +1,7 @@
 from typing import Any, Literal
 
+from pydantic import Field
+
 from legal_checker.shared.contracts.common import Model, Severity
 
 
@@ -16,6 +18,6 @@ class Recommendation(Model):
     template_snapshot_json: dict[str, Any]
     rule_version: str
     knowledge_snapshot_sha256: str
-    model_version: Literal["TEMPLATE_ENGINE_NO_LLM"] = "TEMPLATE_ENGINE_NO_LLM"
-    prompt_version: Literal["NOT_USED"] = "NOT_USED"
+    model_version: str = Field(default="TEMPLATE_ENGINE_NO_LLM", min_length=1)
+    prompt_version: str = Field(default="NOT_USED", min_length=1)
     review_status: Literal["PENDING"] = "PENDING"

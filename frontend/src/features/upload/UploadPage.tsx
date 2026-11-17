@@ -45,7 +45,7 @@ export function UploadPage() {
   const [markerType, setMarkerType] = useState("");
   const [runNow, setRunNow] = useState(true);
   const [reviewMode, setReviewMode] = useState<"DRAFT_REVIEW" | "FULL_ASSESSMENT">("DRAFT_REVIEW");
-  const [documentSetComplete, setDocumentSetComplete] = useState(false);
+  const [documentSetComplete, setDocumentSetComplete] = useState(true);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);

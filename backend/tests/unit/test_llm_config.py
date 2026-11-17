@@ -86,3 +86,102 @@ def test_config_reads_numeric_environment_strings():
     assert settings.max_attempts == 3
     assert settings.max_retry_delay_seconds == 2
     assert settings.total_timeout_seconds == 40
+
+
+def test_groq_selection_prefers_groq_vars_even_when_openai_vars_present():
+    settings = OpenAISettings.from_env(
+        {
+            "ASSESSMENT_LLM": "groq",
+            "OPENAI_API_KEY": "AQ.OTHER_KEY",
+            "OPENAI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai",
+            "OPENAI_MODEL": "gemini-3.5-flash-lite",
+            "GROQ_API_KEY": "gsk_TEST_GROQ_SECRET",
+            "GROQ_MODEL": "openai/gpt-oss-20b",
+        }
+    )
+    assert settings.provider == "GROQ"
+    assert settings.api_key == "gsk_TEST_GROQ_SECRET"
+    assert settings.base_url == "https://api.groq.com/openai/v1"
+    assert settings.model == "openai/gpt-oss-20b"
+    assert settings.api_mode == "chat_completions"
+
+
+def test_c07_ollama_client_and_factory(monkeypatch):
+    import json
+
+    import httpx
+    from legal_checker.api.dependencies import llm_client_factory
+    from legal_checker.core.config import Settings
+    from legal_checker.shared.contracts.common import Context
+    from legal_checker.shared.llm.ollama_client import (
+        OllamaComplianceClient,
+        OllamaComplianceSettings,
+    )
+
+    class Sink:
+        def __init__(self):
+            self.events = []
+
+        def append(self, event):
+            self.events.append(event)
+
+    settings = Settings(
+        database_url="postgresql://u:p@127.0.0.1:5432/db",
+        assessment_llm="ollama",
+        c07_ollama_url="http://127.0.0.1:11434",
+        c07_ollama_model="qwen3:4b-q4_K_M",
+    )
+    built = llm_client_factory(settings)()
+    assert isinstance(built, OllamaComplianceClient)
+    assert built.settings.provider == "OLLAMA_LOCAL"
+
+    digest = "c" * 64
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/tags":
+            return httpx.Response(
+                200, json={"models": [{"name": "qwen3:4b-q4_K_M", "digest": digest}]}
+            )
+        body = json.loads(request.content.decode())
+        assert body["think"] is False
+        assert body["stream"] is False
+        return httpx.Response(
+            200,
+            json={
+                "model": "qwen3:4b-q4_K_M",
+                "done": True,
+                "done_reason": "stop",
+                "prompt_eval_count": 42,
+                "eval_count": 11,
+                "message": {"content": '{"ok": true}'},
+            },
+        )
+
+    sink = Sink()
+    client = OllamaComplianceClient(
+        OllamaComplianceSettings(model="qwen3:4b-q4_K_M"),
+        sink,
+        transport=httpx.MockTransport(handler),
+    )
+    ctx = Context(
+        ca_id="CA_1",
+        phien_ban_id="P1",
+        rule_version="R1",
+        legal_knowledge_version="L1",
+        knowledge_snapshot_sha256="a" * 64,
+        run_id="RUN_1",
+        trace_id="TRACE_1",
+    )
+    res = client.complete(
+        ctx,
+        instructions="sys",
+        payload={"a": 1},
+        schema={"type": "object"},
+        prompt_version="P_V1",
+        schema_version="S_V1",
+    )
+    assert res.content == '{"ok": true}'
+    assert res.model_version == f"qwen3:4b-q4_K_M@{digest}"
+    assert len(sink.events) == 1
+    assert sink.events[0].module == "COMPLIANCE"
+    assert sink.events[0].provider == "OLLAMA_LOCAL"

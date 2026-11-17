@@ -109,9 +109,8 @@ trường, làm theo [dev setup](dev_setup.md). Release local có ZIP tại thư
 /home/chienqt/Downloads/legal_compliance_v750_pdf360_v4r2_runtime_20261110/
 ```
 
-Manifest hiện `LOCAL_ARCHIVE_READY`: chưa trỏ checksum mới vào một link Drive cũ.
-Tech lead bàn giao đúng ZIP sau, hoặc upload chính ZIP đó rồi cập nhật URL và
-publication status theo bytes thực tế:
+Manifest `configs/dataset_dev_validation.json` đã ở trạng thái `PUBLISHED` và trỏ tới link Google Drive của đúng gói:
+`https://drive.google.com/file/d/1Mn21HHxrkkaUglrVTdwJCVJerp2MKlVP/view?usp=drive_link`
 
 ```text
 legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
@@ -210,7 +209,4 @@ riêng file này. Full workbook giữ payload dài nên lớn: seeder dùng stre
 không nạp toàn bộ vào RAM. Không upload full workbook qua Google Sheets rồi dùng
 bản được chuyển đổi để seed; checksum và định dạng inline strings sẽ khác.
 
-Manifest đã pin đúng ZIP/file/hash mới nhưng URL còn trống (`LOCAL_ARCHIVE_READY`).
-Các ZIP này chưa được upload lên Drive/Supabase. Khi upload, dùng đúng ZIP
-DEV_VALIDATION, sau đó cập nhật URL/publication status theo bytes đã kiểm; không
-đổi sang link gói nguồn v4 r2 trước đây vì gói đó không có runtime/QA đầy đủ.
+Gói `DEV_VALIDATION` đã được upload lên Google Drive (`1Mn21HHxrkkaUglrVTdwJCVJerp2MKlVP`) và pin ở trạng thái `PUBLISHED` trong `configs/dataset_dev_validation.json`. Thành viên có thể chạy trực tiếp `python -m scripts.dataset pull` (hoặc `--archive <path>` nếu đã tải thủ công). Không đổi sang link gói nguồn v4 r2 trước đây vì gói đó không có runtime/QA đầy đủ.

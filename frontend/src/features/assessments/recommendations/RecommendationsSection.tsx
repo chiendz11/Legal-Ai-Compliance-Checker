@@ -8,8 +8,10 @@ import { cleanRecommendationText } from "../../../shared/text";
 function formatModelVersion(code: string | null | undefined): string {
   if (!code) return "—";
   if (code === "TEMPLATE_ENGINE_NO_LLM") return "Quy tắc khuyến nghị chuẩn hóa (Playbook pháp lý)";
+  if (code === "TEMPLATE_ENGINE_FALLBACK") return "Quy tắc khuyến nghị chuẩn hóa (Fallback an toàn)";
   if (code.startsWith("BACKEND_NUMERIC")) return "Đối soát định lượng số liệu";
   if (code.startsWith("BACKEND_SCOPE")) return "Kiểm tra phạm vi áp dụng";
+  if (code.toLowerCase().includes("qwen")) return `Cá thể hóa ngôn ngữ (${code.split("@")[0]})`;
   if (code.includes("GEMINI") || code.includes("OPENAI") || code.includes("LLM")) return "Trợ lý pháp lý AI";
   return code;
 }

@@ -18,6 +18,43 @@ from legal_checker.shared.ids import requirement_instance_id
 from legal_checker.shared.storage.artifacts import store_bytes
 
 
+def _is_source_verified(criterion, knowledge) -> bool:
+    """Confirm legal basis exists and both catalog snapshot and criterion source are reviewed."""
+    return (
+        getattr(knowledge, "review_status", None) in {"SOURCE_CHECKED", "HUMAN_VERIFIED"}
+        and criterion.get("trang_thai_nguon") in {"SOURCE_CHECKED", "VERIFIED"}
+        and bool(_legal_basis(criterion, knowledge))
+    )
+
+
+def _resolve_exceptions(criterion, applicability, knowledge, *, warranty_subject=None):
+    """Evaluate declared and catalogued exceptions against known facts without guessing."""
+    declared_exceptions = set(applicability.get("exception_ids", []))
+    tables = getattr(knowledge, "tables", None) or {}
+    exceptions = [
+        row
+        for row in tables.get("ngoai_le_ap_dung", [])
+        if row.get("ngoai_le_id") in declared_exceptions
+        or row.get("tieu_chi_id") == criterion["tieu_chi_id"]
+        or (
+            row.get("requirement_version_id") == criterion.get("requirement_version_id")
+            and not row.get("tieu_chi_id")
+        )
+        or (
+            row.get("dieu_khoan_id") == criterion.get("source_dieu_khoan_id")
+            and not row.get("tieu_chi_id")
+        )
+    ]
+    known = {row.get("ngoai_le_id") for row in exceptions}
+    exception_facts = {}
+    if warranty_subject is not None:
+        exception_facts["warranty.subject"] = warranty_subject
+    resolved = not (declared_exceptions - known) and all(
+        _exception_match(row, exception_facts) is False for row in exceptions
+    )
+    return exceptions, resolved
+
+
 class SourceFactVerifier:
     def verify(self, context, profile, requirements, chunks, knowledge, *, coverage=None):
         chunks_by_id = {c.doan_id: c for c in chunks}
@@ -49,6 +86,12 @@ class SourceFactVerifier:
                     applicability.get(k)
                     for k in ("case_facts_required", "optional_choice", "exception_ids")
                 )
+                _, exceptions_resolved = _resolve_exceptions(
+                    criterion,
+                    applicability,
+                    knowledge,
+                    warranty_subject=facts.get("warranty_subject"),
+                )
                 results.append(
                     CriterionVerification(
                         **context.model_dump(),
@@ -62,7 +105,8 @@ class SourceFactVerifier:
                         gates=Gates(
                             scope_confirmed=requirement.confirmed,
                             version_resolved=True,
-                            exceptions_resolved=simple,
+                            source_verified=_is_source_verified(criterion, knowledge),
+                            exceptions_resolved=exceptions_resolved,
                         ),
                         facts=facts,
                         facts_verified=bool(facts),
@@ -132,10 +176,7 @@ def _verify_draft_content(
     )
     if bound:
         record.facts["condition_triggered"] = True
-    record.gates.source_verified = bool(_legal_basis(criterion, knowledge)) and (
-        getattr(knowledge, "review_status", None) in {"SOURCE_CHECKED", "HUMAN_VERIFIED"}
-        and criterion.get("trang_thai_nguon") in {"SOURCE_CHECKED", "VERIFIED"}
-    )
+    record.gates.source_verified = _is_source_verified(criterion, knowledge)
     if criterion["tieu_chi_id"] == "TC_PV_HYC053_01" and all(
         name in sources for name in ("warranty_months", "warranty_unit", "warranty_start")
     ):
@@ -145,29 +186,11 @@ def _verify_draft_content(
         numeric = conditions.get("numeric_rule") or {}
         if not issues and "warranty_min_months" in numeric:
             record.facts["numeric_scope"] = numeric["scope"]
-    # Resolve no exceptions only when the pinned registry declares none for this
-    # criterion/article. An unknown or matching exception still needs its adapter.
-    declared_exceptions = set(applicability.get("exception_ids", []))
-    exceptions = [
-        row
-        for row in knowledge.tables.get("ngoai_le_ap_dung", [])
-        if row.get("ngoai_le_id") in declared_exceptions
-        or row.get("tieu_chi_id") == criterion["tieu_chi_id"]
-        or (
-            row.get("requirement_version_id") == criterion["requirement_version_id"]
-            and not row.get("tieu_chi_id")
-        )
-        or (
-            row.get("dieu_khoan_id") == criterion.get("source_dieu_khoan_id")
-            and not row.get("tieu_chi_id")
-        )
-    ]
-    known = {row.get("ngoai_le_id") for row in exceptions}
-    exception_facts = {}
-    if "warranty_subject" in sources:
-        exception_facts["warranty.subject"] = sources["warranty_subject"][0]
-    record.gates.exceptions_resolved = not (declared_exceptions - known) and all(
-        _exception_match(row, exception_facts) is False for row in exceptions
+    exceptions, record.gates.exceptions_resolved = _resolve_exceptions(
+        criterion,
+        applicability,
+        knowledge,
+        warranty_subject=sources["warranty_subject"][0] if "warranty_subject" in sources else None,
     )
     from legal_checker.modules.compliance.source_bindings import (
         bind_maintenance_ratio,

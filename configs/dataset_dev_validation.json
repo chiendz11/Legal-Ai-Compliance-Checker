@@ -9,7 +9,7 @@
   "legal_knowledge_version": "V750_KNOWLEDGE_OWNER_APPROVED_20261110",
   "knowledge_snapshot_sha256": "4ab2d7ea296ea908e25c09fcb6d5f073f1ebe1917678b36390f803b1c725804a",
   "migration_strategy": "FRESH_DATABASE_REQUIRED",
-  "publication_status": "LOCAL_ARCHIVE_READY",
+  "publication_status": "PUBLISHED",
   "bundled_sources_index": "SOURCE_FILES.json",
   "assessment_profile": "FULL_CATALOG_DRAFT_REFERENCE_V1",
   "cases": {
@@ -24,7 +24,7 @@
   "regression_cases": 32,
   "archive": {
     "filename": "legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip",
-    "url": null,
+    "url": "https://drive.google.com/file/d/1Mn21HHxrkkaUglrVTdwJCVJerp2MKlVP/view?usp=drive_link",
     "bytes": 1363000728,
     "sha256": "a93281b00065da2508f7f2139b4a3fa3ded9f3da8ea24d96381a3eee80026afd",
     "max_expanded_bytes": 1384085496

@@ -178,29 +178,35 @@ và context liên quan. Ghi `runtime.khuyen_nghi_danh_gia`.
 5. Validate C11: cùng risk ID, legal basis/evidence, template và knowledge/rule version.
 6. Lưu nội dung, action, priority và snapshots; giữ review PENDING.
 
-`Recommendation.model_version` hiện bị giới hạn `TEMPLATE_ENGINE_NO_LLM`,
-`prompt_version` là `NOT_USED`; generator/validator đã kiểm tra mapping, C10 instance,
-required elements/facts, constraints, evidence/legal basis và priority theo contract.
-Policy/template/fact chưa hỗ trợ giữ diagnostics, không chọn template đầu hoặc tự bịa dữ kiện.
-Muốn có LLM-generated C11 cần cập nhật contract/version/validator/tests có chủ đích;
-không ghi output LLM nhưng để metadata “NO_LLM”.
+`Recommendation.model_version` mặc định ở chế độ `C11_PERSONALIZATION=off` vẫn là
+`TEMPLATE_ENGINE_NO_LLM`, `prompt_version` là `NOT_USED`. Khi bật
+`C11_PERSONALIZATION=ollama`, lớp `modules/recommendations/personalization/` gọi
+Qwen local (`qwen3.5:9b-q4_K_M` qua Ollama `/api/chat`, kiểm digest từ `/api/tags`,
+ghi X02 `module="C11"`, `provider="OLLAMA_LOCAL"`) chỉ để cá thể hóa câu chữ sau khi
+Template Engine đã tạo xong kết quả deterministic; kết quả vượt qua Backend Validator
+mới ghi `model_version="qwen3.5:9b-q4_K_M@<digest>"` và `prompt_version="C11_PERSONALIZATION_V1"`,
+còn mọi trường hợp lỗi/reject/hết ngân sách đều fallback về nguyên văn Template Engine
+với `model_version="TEMPLATE_ENGINE_FALLBACK"`, `prompt_version="C11_PERSONALIZATION_V1"`.
+`review_status` luôn giữ `PENDING`; mọi `diagnostics` (`C11_*`) được đưa vào
+`PipelineResult.diagnostics`.
 
 #### Hai entrypoint đã triển khai cần phân biệt
 
 - `evaluate_compliance` trong `compliance/service.py` phục vụ handoff compliance-only:
   C07/C08 + risks/actions chỉ từ compliance. `ComplianceOutput` không nhận citation-sourced risks.
-- `workflows/steps_5_7.evaluate` nhận cả C09 và hợp nhất hai nhánh để trả C07–C11 đầy đủ.
+- `workflows/steps_5_7.evaluate` nhận cả C09 và hợp nhất hai nhánh để trả C07–C11 đầy đủ
+  (hỗ trợ inject `recommendation_personalizer` qua `IntegratedModulesSource`).
 
 Nếu nhóm C hiện phụ trách toàn bộ 5–7, dùng luồng đầy đủ. Nhóm D lấy C10/C11 đã hợp nhất
 để làm report; không tạo lại citation risks/recommendations một lần nữa.
 
 ### 6.5 LLM và audit: khi nào cần?
 
-Không bắt buộc LLM cho mọi criterion. Numeric rules, C08, C10 và C11 chạy deterministic;
-C07 có semantic provider và OpenAI client tùy chọn. Prompt/schema/provider thuộc module;
-`shared/llm` có transport/config/types và `audit_llm_call`/`PostgresLlmAuditSink` cho X02.
-Runner nhóm C không tạo paid client; muốn dùng LLM-generated C11 phải đổi contract có
-chủ đích. [Ví dụ dùng audit](../guides/llm_audit.md).
+Không bắt buộc LLM cho mọi criterion. Numeric rules, C08, C10 và Template Engine C11
+chạy deterministic; C07 có semantic provider/OpenAI tùy chọn, và C11 có lớp cá thể hóa
+diễn đạt Qwen local tùy chọn (`C11_PERSONALIZATION=ollama`). Prompt/schema/provider thuộc
+module; `shared/llm` có transport/config/types và `audit_llm_call`/`PostgresLlmAuditSink`
+cho X02. Runner nhóm C không tự tạo paid client; [Ví dụ dùng audit](../guides/llm_audit.md).
 
 Mỗi lời gọi thật cần timeout, retry có giới hạn, validate structured output và X02 audit
 lưu vào `runtime.nhat_ky_goi_llm`: provider/model/prompt/schema version, input/output hash,

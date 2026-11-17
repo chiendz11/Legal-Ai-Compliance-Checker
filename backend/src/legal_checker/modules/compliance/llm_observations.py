@@ -15,7 +15,7 @@ from copy import deepcopy
 from datetime import date
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from legal_checker.modules.compliance.decision_rules import (
     load_decision_rule,
@@ -492,6 +492,7 @@ MICRO_NLG_INSTRUCTIONS = (
 
 
 class MicroNlgExplanation(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
     giai_thich: str = Field(..., description="1-2 câu giải thích pháp lý tự nhiên bằng tiếng Việt")
 
 
@@ -941,8 +942,14 @@ class LLMObservationProvider:
                 )
             else:
                 calls += 1
-                provider = getattr(getattr(self.client, "settings", None), "provider", "OPENAI")
-                origin = "GROQ" if str(provider).upper() == "GROQ" else "OPENAI"
+                provider = str(
+                    getattr(getattr(self.client, "settings", None), "provider", "OPENAI")
+                ).upper()
+                origin = (
+                    "OLLAMA_LOCAL"
+                    if provider == "OLLAMA_LOCAL"
+                    else ("GROQ" if provider == "GROQ" else "OPENAI")
+                )
                 model = "UNAVAILABLE_PROVIDER_MODEL"
                 try:
                     if criterion_id in prefetched:

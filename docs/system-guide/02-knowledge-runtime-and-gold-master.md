@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** Luật, dữ liệu chạy thật và đáp án kiểm thử được cất ở ba nơi tách biệt; mỗi lượt chạy ghi rõ nó dùng “bản chụp” tri thức nào, nên báo cáo cũ không đổi khi luật được cập nhật và đáp án không thể rò vào hệ thống.
+
+**Hình dung đời thường.** Kho tri thức giống một bộ luật in thành sách có số ấn bản. Mỗi báo cáo ghi rõ “soạn theo ấn bản số mấy” (mã băm SHA-256). Khi có ấn bản mới, báo cáo cũ vẫn trích đúng ấn bản cũ. Còn Gold Master giống bộ đề thi có đáp án: người chấm cầm đáp án, thí sinh (pipeline) không bao giờ được nhìn.
+
+**Ba ý phải nói được:**
+
+1. **Ba miền dữ liệu:** Knowledge (tri thức, bất biến theo snapshot) · Runtime (ca, lượt chạy, báo cáo, review) · QA/Gold (đáp án, chia DEV/VAL/TEST).
+2. **Ghim (pin) bằng SHA-256:** `knowledge_snapshot_sha256` đi cùng mọi lượt chạy; lệch mã băm là dừng.
+3. **Kỷ luật công bố:** Gold Master R12 mới có 220/360 ca và chưa có luật sư độc lập ký duyệt, nên chưa công bố accuracy/F1 tổng thể.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| KnowledgeSnapshot | Bản đóng băng toàn bộ tri thức pháp lý tại một thời điểm, có mã băm. |
+| Pin / ghim | Ghi cố định phiên bản đang dùng để chạy lại ra đúng kết quả cũ. |
+| `draft_json` | Kết quả đầy đủ của một lượt chạy — nguồn sống duy nhất mà UI/API đọc. |
+| Gold Master | Bộ đáp án chuẩn nhiều lớp (facts → C05 → C06 → C07 → …) dùng để chấm. |
+| `REFERENCE_REPLAY` | Chế độ phát lại dữ liệu mẫu để thử UI; không phải kết quả suy luận thật. |
+
+**Slide tương ứng:** 11–13 và 41 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 4–5 phút.
+
+---
+
 ## 1. Tại sao phải tách 3 miền dữ liệu: Knowledge, Runtime và QA/Gold?
 
 Trong các dự án AI pháp lý thông thường, đội ngũ rất dễ gộp chung tri thức luật, dữ liệu chạy thật của người dùng và đáp án kiểm thử vào một schema duy nhất. Cách làm đó gây ra 3 thảm họa kỹ thuật:
@@ -101,6 +127,24 @@ Theo [Gold Master R12](../guides/gold_master_20261114.md) và [`GoldBenchmarkEva
 Hệ thống hỗ trợ biến môi trường `ASSESSMENT_MODULES` (`api/dependencies.py`, `workflows/runner.py`):
 * **`modules` (IntegratedModulesSource):** Chạy toàn bộ code thật `PdfDocumentIntelligence → Scope → Temporal → Citation → Retrieval → Compliance → Risk → Recommendation` trên bytes PDF thật. Đây là chế độ duy nhất hợp lệ cho đánh giá hệ thống.
 * **`reference` (`ReferenceReplaySource`):** Chỉ phát lại (replay) payload reference đã seed sẵn trong DB cho mục đích **test UI, queue và luồng C12/C13** mà không chạy inference thật. Tuyệt đối không dùng kết quả `REFERENCE_REPLAY` để báo cáo độ chính xác của AI/rule engine.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Kho tri thức lớn cỡ nào?**  
+Đáp: Đếm trực tiếp trong schema `knowledge` ngày 17/11/2026: 37 văn bản, 2.074 điều khoản, 323 nhóm yêu cầu, 357 phiên bản yêu cầu, 479 tiêu chí, 1.916 quy tắc quyết định, 1.161 mẫu rủi ro và 1.161 mẫu khuyến nghị. Đây là quy mô biên soạn, không phải bằng chứng độ chính xác.
+
+**Hỏi: Sửa một điều luật thì báo cáo cũ có đổi không?**  
+Đáp: Không. Sửa xong phải xuất snapshot mới (mã băm mới). Báo cáo cũ vẫn gắn mã băm cũ và còn nhúng bản sao tiêu chí tại thời điểm chạy.
+
+**Hỏi: Độ chính xác của hệ thống là bao nhiêu?**  
+Đáp: Chưa công bố chỉ số tổng. `full_e2e_gold_ready=false` vì mới biên soạn 220/360 ca; đáp án hiện là `AI_SOURCE_ADJUDICATED`, `human_legal_signoff=false`.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* `v7.4.9` là tên baseline migration SQL, không phải “phiên bản hệ thống”. Mỗi trục (PDF, chunker, snapshot, rule, prompt) có phiên bản riêng.
+* Kết quả pipeline (SILVER) không bao giờ là đáp án để chấm chính pipeline.
 
 ---
 

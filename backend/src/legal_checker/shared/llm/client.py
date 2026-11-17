@@ -192,6 +192,7 @@ class OpenAIResponsesClient:
         sleep=time.sleep,
         monotonic=time.monotonic,
         jitter=random.random,
+        module: str = "COMPLIANCE",
     ):
         self.settings = settings
         self.audit_sink = audit_sink
@@ -201,6 +202,9 @@ class OpenAIResponsesClient:
         self._monotonic = monotonic
         self._jitter = jitter
         self._last_attempt_started = None
+        if module not in {"COMPLIANCE", "DOCUMENT_INTELLIGENCE", "C11"}:
+            raise ValueError("Unsupported LLM audit module")
+        self.module = module
 
     def close(self) -> None:
         if self._owns_client:
@@ -335,7 +339,7 @@ class OpenAIResponsesClient:
         with audit_llm_call(
             self.audit_sink,
             context=context,
-            module="COMPLIANCE",
+            module=self.module,
             provider=self.settings.provider,
             model_version=self.settings.model,
             prompt_version=prompt_version,

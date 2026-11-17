@@ -5,6 +5,33 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** C07 chấm từng tiêu chí theo nguyên tắc “LLM đề xuất – backend kiểm chứng – engine thuần quyết định” với 8 cổng an toàn; C08 tổng hợp các tiêu chí lên mức yêu cầu theo thứ tự ưu tiên cố định.
+
+**Hình dung đời thường.** Hình dung một phiên toà nhỏ cho mỗi tiêu chí. LLM là người nêu ý kiến (“tôi cho rằng vi phạm, bằng chứng là câu này”). Thư ký toà (backend) kiểm xem câu đó có thật trong hồ sơ không và tự tính lại các con số. Thẩm phán (engine) chỉ ra phán quyết khi đủ 8 điều kiện thủ tục; thiếu một điều kiện thì ghi “chưa đủ căn cứ” và nêu thiếu gì.
+
+**Ba ý phải nói được:**
+
+1. **Ba lớp tách biệt:** `LLMObservationProvider` (đề xuất) → adapter backend (kiểm quote, Decimal, tính Gates) → `criterion_reasoner.py` (thuần, tất định).
+2. **8 Gates:** `reliable()` cho `SATISFIED`/`VIOLATED`; thêm `coverage_complete` + `absence_verified` mới được `MISSING`.
+3. **C08 không bỏ phiếu đa số:** một tiêu chí bắt buộc `VIOLATED` là đủ `NON_COMPLIANT`; còn `UNKNOWN` thì `INSUFFICIENT`.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| Observation / SemanticProposal | Đề xuất của LLM: kết luận dự kiến, quote ứng viên, fact ứng viên. |
+| Gates | 8 cờ kiểm chứng phải đạt trước khi chốt kết luận. |
+| Finding | Nhãn ở mức tiêu chí: `SATISFIED`, `VIOLATED`, `MISSING`, `UNKNOWN`. |
+| `OUTSIDE_REVIEW_SCOPE` | Ngoài chế độ rà soát đã chọn (không phải Đạt). |
+| `NOT_TRIGGERED` | Nghĩa vụ có điều kiện mà điều kiện không xảy ra (không phải Đạt). |
+| `AGG_CAN_HO_V1` | Đặc tả thứ tự ưu tiên tổng hợp từ tiêu chí lên yêu cầu. |
+
+**Slide tương ứng:** 27–30 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 8–10 phút (phần quan trọng nhất).
+
+---
+
 ## 1. Triết lý thiết kế cốt lõi: "LLM đề xuất (`Observation`), Backend kiểm chứng (`Gates`), Engine thuần quyết định (`C07`)"
 
 Lỗi kinh điển khi dùng LLM kiểm tra tuân thủ là **tin thẳng câu trả lời JSON của model** (`"finding": "VIOLATED"`). Model có thể:
@@ -94,6 +121,44 @@ Thứ tự ưu tiên cứng (`POLICY_PRIORITY`):
 | Trạng thái tổng hợp `RequirementStatus` (Pháp lý) | Khác với `assessment_disposition` (Vận hành) |
 |---|---|
 | `COMPLIANT`, `PARTIAL`, `NON_COMPLIANT`, `INSUFFICIENT` | `ASSESSED`, `OUTSIDE_REVIEW_SCOPE`, `NOT_TRIGGERED`, `LEGAL_SCOPE_UNRESOLVED` |
+
+---
+
+## 5b. Vận hành C07: nhà cung cấp LLM và hai giới hạn hay gây `UNKNOWN`
+
+Engine và `Gates` không đổi theo model, nhưng **số tiêu chí thực sự được LLM phân tích** phụ thuộc cấu hình. Ba nhóm biến môi trường cần nắm khi chạy thật hoặc khi giải thích một báo cáo có nhiều `UNKNOWN`:
+
+| Biến | Ý nghĩa | Hệ quả nếu đặt thấp |
+|---|---|---|
+| `ASSESSMENT_LLM` = `offline` \| `openai` \| `groq` \| `ollama` | Chọn client cho `LLMObservationProvider` và `FullDocumentReviewer`. Mặc định `offline`. | `offline`: tiêu chí ngữ nghĩa giữ `UNKNOWN` (`OFFLINE_NO_CLIENT`); chỉ còn `C07_EXACT_CONTENT_V3` và `BACKEND_NUMERIC_V1`. |
+| `ASSESSMENT_LLM_MAX_CONTEXT_CHARS` (mặc định `80000`) | Trần kích thước gói JSON gửi cho **một** tiêu chí (tiêu chí + căn cứ luật + đoạn C06 + facts). | Gói vượt trần **không được gửi**: tiêu chí nhận `CONTEXT_LIMIT` (`model_version="NO_LLM_CALL"`). |
+| `ASSESSMENT_LLM_MAX_CALLS` | Ngân sách **số lượt phân tích tiêu chí** (không phải số HTTP request) cho cả lượt chạy. | Hết ngân sách: tiêu chí còn lại nhận `CALL_LIMIT`. |
+| `ASSESSMENT_LLM_BATCH_SIZE` | Số tiêu chí gộp trong một request. | Chỉ ảnh hưởng số request và độ dài prompt, không đổi cách tính ngân sách. |
+
+Hai điểm dễ bỏ sót, đều đã gặp khi chạy thử ngày 17/11/2026:
+
+1. **Rà toàn văn và chấm tiêu chí dùng chung một ngân sách.** `FullDocumentReviewer` tính chi phí bằng *số tiêu chí trong mỗi lô* (`self.cost += len(aliases)`), và `LLMObservationProvider` chỉ nhận phần còn lại: `max_calls = llm_max_calls - review_cost` (`workflows/integrated.py`). Hợp đồng dài (nhiều lô) × nhiều tiêu chí cần rà có thể tiêu hết ngân sách trước khi C07 phân tích được tiêu chí nào — khi đó diagnostics có `DOCUMENT_REVIEW_CALL_LIMIT` và hàng loạt `CALL_LIMIT`.
+2. **Kích thước lô rà toàn văn tách khỏi trần ngữ cảnh tiêu chí.** Lô rà toàn văn tối đa `48.000` ký tự với nhà cung cấp API và `8.000` ký tự với Ollama local (`fdr_batch_cap`), để model nhỏ không bị nhồi quá nhiều tiêu chí vào một prompt.
+
+> Cả `CONTEXT_LIMIT` lẫn `CALL_LIMIT` đều dẫn tới `UNKNOWN` **đúng nguyên tắc** (không có đề xuất thì không có kết luận), nhưng đó là `UNKNOWN` do cấu hình chứ không phải do hợp đồng thiếu dữ kiện. Cách nhận biết và số đo thực tế: [chương 10, §2.6](10-unknown-insufficient-and-diagnostics.md).
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Nếu LLM trả lời sai hoặc bịa thì sao?**  
+Đáp: Quote phải khớp nguyên văn trong đoạn nguồn; số được backend tính lại bằng `Decimal`; cổng nào chưa mở thì đề xuất bị hạ về `UNKNOWN` kèm `uncertainty_reason`. LLM không tự gán được cờ xác thực.
+
+**Hỏi: Không có LLM thì C07 làm được gì?**  
+Đáp: Các tiêu chí khớp nội dung nguyên văn (`C07_EXACT_CONTENT_V3`) và tiêu chí số học (`BACKEND_NUMERIC_V1`) vẫn chấm được. Tiêu chí cần hiểu ngữ nghĩa giữ `UNKNOWN` với lý do `OFFLINE_NO_CLIENT`.
+
+**Hỏi: Đổi model (Qwen local → gpt-4.1-mini) thì kết luận có đổi cách ra không?**  
+Đáp: Quy tắc ra kết luận không đổi vì nằm ở engine thuần và Gates. Thứ thay đổi là chất lượng đề xuất và số tiêu chí được phân tích trong giới hạn ngữ cảnh/ngân sách.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* `OUTSIDE_REVIEW_SCOPE` và `NOT_TRIGGERED` không được cộng vào tỷ lệ “đạt”.
+* `INSUFFICIENT` là trạng thái ở mức yêu cầu (C08); `UNKNOWN` là nhãn ở mức tiêu chí (C07).
 
 ---
 

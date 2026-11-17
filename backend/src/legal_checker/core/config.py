@@ -24,20 +24,37 @@ class Settings:
     source_download_timeout_seconds: float = 30
     source_max_bytes: int = 100 * 1024 * 1024
     documents_extractor: str = "rules"
+    documents_llm_provider: str = "ollama"
     documents_ollama_url: str = "http://127.0.0.1:11434"
     documents_ollama_model: str = "qwen3.5:9b-q4_K_M"
     documents_llm_max_calls: int = 2
     documents_llm_timeout_seconds: float = 240
     documents_llm_recheck_existing: bool = False
+    c11_personalization: str = "off"
+    c11_ollama_url: str = "http://127.0.0.1:11434"
+    c11_ollama_model: str = "qwen3.5:9b-q4_K_M"
+    c11_llm_timeout_seconds: float = 240
+    c11_llm_context_tokens: int = 4096
+    c11_llm_output_tokens: int = 512
+    c11_llm_num_threads: int = 4
+    c11_llm_max_calls: int = 10
+    c11_llm_max_input_chars: int = 12000
+    c11_llm_total_budget_seconds: float = 600
     # "modules": read real bytes (including remote URLs), never silently replay QA;
     # "modules_di_reference": explicitly allow dataset DI for development;
     # "reference": replay QA end to end; "none": fail clearly.
     assessment_modules: str = "none"
-    # C07 observations: "offline" (no paid calls, UNKNOWN per criterion) or "openai".
+    # C07 observations: "offline" (no calls, UNKNOWN), "openai", "groq", or "ollama".
     assessment_llm: str = "offline"
     assessment_llm_max_calls: int = 20
     assessment_llm_batch_size: int = 1
     assessment_llm_max_context_chars: int = 80000
+    c07_ollama_url: str = "http://127.0.0.1:11434"
+    c07_ollama_model: str = "qwen3:4b-q4_K_M"
+    c07_ollama_context_tokens: int = 8192
+    c07_ollama_num_threads: int = 4
+    c07_llm_timeout_seconds: float = 240
+    c07_llm_max_output_tokens: int = 3000
     # Explicit, hash-bound study sources. None keeps ordinary source-only checks.
     synthetic_scenario_path: Path | None = None
     assessment_full_document_review: bool = True
@@ -72,6 +89,7 @@ class Settings:
             ),
             source_max_bytes=int(os.getenv("SOURCE_MAX_BYTES", str(100 * 1024 * 1024))),
             documents_extractor=os.getenv("DOCUMENTS_EXTRACTOR", "rules"),
+            documents_llm_provider=os.getenv("DOCUMENTS_LLM_PROVIDER", "ollama"),
             documents_ollama_url=os.getenv("DOCUMENTS_OLLAMA_URL", "http://127.0.0.1:11434"),
             documents_ollama_model=os.getenv("DOCUMENTS_OLLAMA_MODEL", "qwen3.5:9b-q4_K_M"),
             documents_llm_max_calls=int(os.getenv("DOCUMENTS_LLM_MAX_CALLS", "2")),
@@ -80,6 +98,16 @@ class Settings:
                 "DOCUMENTS_LLM_RECHECK_EXISTING", "off"
             ).lower()
             in {"on", "true", "1"},
+            c11_personalization=os.getenv("C11_PERSONALIZATION", "off"),
+            c11_ollama_url=os.getenv("C11_OLLAMA_URL", "http://127.0.0.1:11434"),
+            c11_ollama_model=os.getenv("C11_OLLAMA_MODEL", "qwen3.5:9b-q4_K_M"),
+            c11_llm_timeout_seconds=float(os.getenv("C11_LLM_TIMEOUT_SECONDS", "240")),
+            c11_llm_context_tokens=int(os.getenv("C11_LLM_CONTEXT_TOKENS", "4096")),
+            c11_llm_output_tokens=int(os.getenv("C11_LLM_OUTPUT_TOKENS", "512")),
+            c11_llm_num_threads=int(os.getenv("C11_LLM_NUM_THREADS", "4")),
+            c11_llm_max_calls=int(os.getenv("C11_LLM_MAX_CALLS", "10")),
+            c11_llm_max_input_chars=int(os.getenv("C11_LLM_MAX_INPUT_CHARS", "12000")),
+            c11_llm_total_budget_seconds=float(os.getenv("C11_LLM_TOTAL_BUDGET_SECONDS", "600")),
             assessment_modules=os.getenv("ASSESSMENT_MODULES", "none"),
             assessment_llm=os.getenv("ASSESSMENT_LLM", "offline"),
             assessment_llm_max_calls=int(os.getenv("ASSESSMENT_LLM_MAX_CALLS", "20")),
@@ -87,6 +115,12 @@ class Settings:
             assessment_llm_max_context_chars=int(
                 os.getenv("ASSESSMENT_LLM_MAX_CONTEXT_CHARS", "80000")
             ),
+            c07_ollama_url=os.getenv("C07_OLLAMA_URL", "http://127.0.0.1:11434"),
+            c07_ollama_model=os.getenv("C07_OLLAMA_MODEL", "qwen3:4b-q4_K_M"),
+            c07_ollama_context_tokens=int(os.getenv("C07_OLLAMA_CONTEXT_TOKENS", "8192")),
+            c07_ollama_num_threads=int(os.getenv("C07_OLLAMA_NUM_THREADS", "4")),
+            c07_llm_timeout_seconds=float(os.getenv("C07_LLM_TIMEOUT_SECONDS", "240")),
+            c07_llm_max_output_tokens=int(os.getenv("C07_LLM_MAX_OUTPUT_TOKENS", "3000")),
             synthetic_scenario_path=(
                 _project_path(os.environ["SYNTHETIC_SCENARIO_PATH"])
                 if os.getenv("SYNTHETIC_SCENARIO_PATH")

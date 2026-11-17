@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** Chương này gồm hai việc độc lập: C09 kiểm các văn bản mà hợp đồng tự viện dẫn (Nhánh B), và C06 tìm đoạn hợp đồng liên quan cho từng tiêu chí rồi rà toàn văn khi cần chứng minh sự vắng mặt.
+
+**Hình dung đời thường.** C09 giống người soát phần “tài liệu tham khảo” của một bài báo: tài liệu có tồn tại không, có đúng ấn bản còn hiệu lực lúc bài được viết không. C06 giống thủ thư: tìm nhanh vài trang liên quan cho mỗi câu hỏi; nhưng khi câu hỏi là “hợp đồng có *thiếu* điều khoản X không”, thủ thư phải lật hết cuốn sách trước khi dám nói “không có”.
+
+**Ba ý phải nói được:**
+
+1. **C09 xét hiệu lực tại ngày ký**, không phải hôm nay; văn bản không có trong kho thì `UNKNOWN` chứ không phải `INVALID`.
+2. **C06 dùng nhiều tín hiệu** (BM25, embedding, anchors, fact evidence, ngữ cảnh cấu trúc) hợp nhất bằng RRF (`RRF_K=60`).
+3. **“Tìm không thấy” chưa phải “không có”:** chỉ khi rà toàn văn sạch (đủ trang, đủ chữ, không `UNCERTAIN`, không lỗi lô) mới bật `absence_verified`.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| `VALID` / `STALE` / `INVALID` / `UNKNOWN` | Viện dẫn hợp lệ / đã hết hiệu lực tại ngày ký / sai / chưa đủ căn cứ. |
+| BM25 | Xếp hạng theo từ khoá. |
+| RRF | Reciprocal Rank Fusion — cộng điểm theo thứ hạng từ nhiều nguồn tìm kiếm. |
+| Reranker | Mô hình xếp lại top ứng viên (tuỳ chọn). |
+| `absence_verified` | Cờ xác nhận đã chứng minh vắng mặt trên toàn văn. |
+
+**Slide tương ứng:** 23, 25–26 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 6–7 phút.
+
+---
+
 ## Phần 1: Nhánh B — Kiểm định Viện dẫn Hợp đồng (`C09 Citation Validation`)
 
 ### 1.1. Tại sao phải tách riêng Nhánh B và cấm nó chỉnh sửa Nhánh A?
@@ -82,6 +108,24 @@ C06 HybridRetrievalService (Top-K nhanh cho 100% tiêu chí)
 **Vì sao làm vậy?**
 * Nếu tìm Top-K ban đầu bỏ sót một câu ngoại lệ nằm tít ở Phụ lục 3, bước `FullDocumentReviewer` sẽ lôi nó lên đưa vào `C06` chính thức.
 * Chỉ khi **tất cả các batch phủ 100% số trang**, **mọi trang đều đọc được chữ**, **không có ô nào trả về `UNCERTAIN` hoặc lỗi batch**, thì backend mới được phép bật cờ `gates.absence_verified = True` để C07 hợp pháp kết luận `MISSING` (hoặc xác nhận không vi phạm điều khoản cấm). Nếu chỉ một batch bị timeout hoặc một trang không đọc được chữ, `absence_verified` giữ `False` và C07 giữ **`UNKNOWN`**.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Hợp đồng dẫn luật đã hết hiệu lực thì các điều khoản có bị coi là vi phạm không?**  
+Đáp: Không tự động. C09 tạo một phát hiện viện dẫn riêng (`STALE`) và C10 biến nó thành rủi ro loại `CITATION`. Điều khoản nội dung vẫn được C07 chấm theo nội dung thật của nó.
+
+**Hỏi: Sao không nhét cả hợp đồng vào prompt cho chắc?**  
+Đáp: Hợp đồng 35–80 trang (có ca 166 trang) × hàng trăm tiêu chí thì quá chậm và tốn. Hệ thống tìm top-K cho mọi tiêu chí, và chỉ rà toàn văn cho nhóm tiêu chí mà sự vắng mặt là điều cần chứng minh.
+
+**Hỏi: Một lô rà toàn văn bị timeout thì sao?**  
+Đáp: `absence_verified` giữ `false`, C07 giữ `UNKNOWN` cho các tiêu chí liên quan. Hệ thống không suy ra “không có” từ một lần rà chưa trọn.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* Rà toàn văn dùng chung ngân sách lượt gọi với C07 (xem [chương 06](06-compliance-reasoning-and-c07-c08.md) và [chương 10](10-unknown-insufficient-and-diagnostics.md)); đặt ngân sách thấp sẽ làm C07 hết lượt.
+* Đoạn nằm ngoài tập đã chấm của Gold là `UNJUDGED`, không mặc định là sai.
 
 ---
 
