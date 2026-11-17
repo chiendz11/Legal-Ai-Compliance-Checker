@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** Hệ thống nhận một file PDF hợp đồng mua bán căn hộ, chạy 9 bước xử lý có bàn giao bằng 13 hợp đồng dữ liệu (C01–C13), và trả về báo cáo rà soát mà mọi kết luận đều chỉ được về đúng đoạn trong PDF.
+
+**Hình dung đời thường.** Hãy nghĩ tới một văn phòng luật có nhiều bàn làm việc. Bàn 1 nhận hồ sơ và đóng dấu niêm phong. Bàn 2 đọc và đánh dấu từng đoạn. Sau đó hồ sơ tách làm hai đường: một nhóm xác định *luật nào thật sự áp dụng* cho giao dịch này, một nhóm khác chỉ kiểm tra *những văn bản mà hợp đồng tự ghi là căn cứ*. Hai nhóm không được nhìn bài của nhau. Cuối cùng kết quả được gộp lại thành danh sách rủi ro và khuyến nghị, và một luật sư duyệt trước khi phát hành. Mỗi lần chuyển hồ sơ giữa hai bàn đều có một phiếu bàn giao theo mẫu cố định — đó chính là các contract C01–C13.
+
+**Ba ý phải nói được:**
+
+1. **RAG thông thường không đủ** vì 5 lý do nghiệp vụ: hợp đồng tự ghi sai luật, luật chuyển tiếp rẽ nhánh, “không tìm thấy” chưa phải “không có”, dự thảo chưa có chứng từ thực hiện, và dự đoán của model không phải phê duyệt pháp lý.
+2. **Ba nguyên tắc xương sống:** tách hai nhánh độc lập; trung thực với trạng thái chưa biết; mọi bàn giao đều qua DTO có kiểm tra ở biên.
+3. **Modular Monolith:** một codebase, một image, nhưng các module chỉ nói chuyện qua Protocol + DTO nên vẫn giữ kỷ luật như microservices.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| Stage | Một trong 9 bước xử lý tuần tự của workflow, có trạng thái theo dõi riêng. |
+| Contract C01–C13 | Mẫu dữ liệu bàn giao giữa hai bước (Pydantic DTO, cấm trường thừa). |
+| Nhánh A / Nhánh B | A: luật thật sự áp dụng (C04→C08). B: luật mà hợp đồng tự viện dẫn (C09). |
+| X01 / X02 | X01: ghim phiên bản tri thức/rule cho cả lượt chạy. X02: nhật ký mỗi lần gọi LLM. |
+| `DRAFT_REVIEW` | Chế độ rà dự thảo trước khi ký — chưa xét chứng từ thực hiện giao dịch. |
+
+**Slide tương ứng:** 4–9 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 6–8 phút.
+
+---
+
 ## 1. Tại sao bài toán này không thể giải bằng "ChatGPT + RAG đơn thuần"?
 
 Một cách tiếp cận RAG thông thường (cắt PDF → tìm top-K đoạn giống câu hỏi → hỏi LLM *"Hợp đồng này có vi phạm luật không?"*) sẽ sụp đổ nhanh chóng với hợp đồng mua bán căn hộ tại Việt Nam vì 5 đặc điểm nghiệp vụ sau:
@@ -138,6 +164,24 @@ Dưới đây là biến đổi thực tế từng bước bên trong `DraftAsse
 ```
 
 **Điểm chốt cần nhớ:** Nhờ hai nhánh tách biệt, dù hợp đồng viện dẫn nhầm sang Luật Nhà ở 2014 (đã hết hiệu lực tại `2024-09-15`), **Nhánh A vẫn chấm đúng theo Luật Nhà ở 2023 & Luật KDBĐS 2023** (nhờ hồ sơ ngày ký `2024-09-15`), đồng thời **Nhánh B vẫn bắt được lỗi dẫn chiếu văn bản cũ (`STALE`)** để cảnh báo sửa phần Căn cứ pháp lý.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Sao không tách microservices cho “chuẩn”?**  
+Đáp: Vì chưa có nhu cầu scale riêng từng module, trong khi chi phí mạng, đồng bộ schema và tracing giữa ~10 service là có thật. Ranh giới vẫn được giữ bằng Protocol + DTO + `handoffs.py`; khi cần tách (ví dụ OCR/embedding cần GPU) chỉ thay hiện thực của Protocol.
+
+**Hỏi: Nếu hợp đồng ghi sai luật căn cứ thì kết quả có sai theo không?**  
+Đáp: Không. Nhánh A không đọc viện dẫn của hợp đồng; nó chọn luật từ hồ sơ giao dịch và ngày ký. Lỗi viện dẫn được Nhánh B báo riêng (xem ví dụ A1205 ở §4).
+
+**Hỏi: 9 stage và 13 contract khác nhau thế nào?**  
+Đáp: Stage là *bước chạy* (có trạng thái RUNNING/COMPLETED). Contract là *dữ liệu bàn giao*. Một stage có thể sinh nhiều contract (stage 2 sinh C02 và C03), và C12/C13 nằm sau workflow.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* Đừng nói “AI kết luận hợp đồng vi phạm”. Nói đúng là: AI đề xuất, backend kiểm chứng, engine tất định ra nhãn, người duyệt quyết định.
+* `COMPLETED` chỉ nghĩa là lượt chạy xong và có bản nháp; không đồng nghĩa báo cáo đã được duyệt.
 
 ---
 

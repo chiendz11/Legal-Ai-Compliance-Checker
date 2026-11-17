@@ -39,7 +39,7 @@ def integrated(env):  # noqa: F811
     return env
 
 
-def case_for(ctx, payload, name):
+def case_for(ctx, payload, name, *, review_mode="DRAFT_REVIEW"):
     contract = ctx.client.post(
         "/api/v1/contracts", files={"file": (name, payload, "application/octet-stream")}
     )
@@ -52,13 +52,14 @@ def case_for(ctx, payload, name):
             "moc_ap_dung": None,
             "loai_moc_ap_dung": None,
             "phien_ban_id": None,
+            "review_mode": review_mode,
         },
     )
     assert created.status_code == 201, created.text
     return created.json()["case"]["ca_id"]
 
 
-def apartment_contract(ctx, name):
+def apartment_contract(ctx, name, **case_options):
     """A recognised apartment sale contract (DOCX: the minimal PDF cannot draw Vietnamese)."""
     with connect_postgres(ctx.database_url) as connection:
         connection.execute(
@@ -70,7 +71,7 @@ def apartment_contract(ctx, name):
         + para("Hôm nay, ngày 01 tháng 11 năm 2026, tại Hà Nội")
         + para("Điều 2. Giá bán căn hộ là 2.000.000.000 đồng")
     )
-    return case_for(ctx, payload, name)
+    return case_for(ctx, payload, name, **case_options)
 
 
 def run(ctx, ca_id):
@@ -201,10 +202,16 @@ def test_scan_that_ocr_cannot_read_explains_why(integrated):
     assert "OCR found no readable text" in status["error"]["message"]
 
 
-def test_live_run_persists_active_extraction_before_retrieval(integrated):
+@pytest.mark.parametrize(
+    "review_mode,missing_provider",
+    [("DRAFT_REVIEW", False), ("FULL_ASSESSMENT", True)],
+)
+def test_live_run_persists_active_extraction_before_retrieval(
+    integrated, review_mode, missing_provider
+):
     from legal_checker.core.postgres import connect_postgres
 
-    ca_id = apartment_contract(integrated, "persist.docx")
+    ca_id = apartment_contract(integrated, "persist.docx", review_mode=review_mode)
     record, status, _ = run(integrated, ca_id)
     assert status["status"] == "COMPLETED", status.get("error")
     draft = integrated.runs.draft(ca_id, record.run_id)
@@ -217,7 +224,13 @@ def test_live_run_persists_active_extraction_before_retrieval(integrated):
     report = integrated.client.get(f"/api/v1/cases/{ca_id}/runs/{record.run_id}/reports").json()
     audit = report["items"][0]["report"]["report_json"]["audit"]
     assert any(d["code"] == "DOCUMENT_EXTRACTION_PERSISTED" for d in audit["diagnostics"])
-    assert any(d["code"] == "VERIFICATION_PROVIDER_NOT_CONFIGURED" for d in audit["diagnostics"])
+    # Draft review creates SourceFactVerifier even without an injected provider.
+    # Full assessment still reports the missing explicit verification provider.
+    assert draft.case.assessment_context.review_mode == review_mode
+    assert (
+        any(d["code"] == "VERIFICATION_PROVIDER_NOT_CONFIGURED" for d in audit["diagnostics"])
+        is missing_provider
+    )
     assert audit["assessment_profile"]["requirement_ids"] == sorted(
         {r.requirement_id for r in draft.requirements}
     )

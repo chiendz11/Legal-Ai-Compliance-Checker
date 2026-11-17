@@ -1,6 +1,6 @@
 """Build dependencies once and expose them to API requests."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from functools import lru_cache
 
@@ -68,9 +68,30 @@ def session_signer(settings: Settings) -> SessionSigner | None:
 
 
 def llm_client_factory(settings: Settings):
-    """Paid C07 calls are opt-in: ASSESSMENT_LLM=openai or groq plus API_KEY/MODEL."""
+    """C07 calls are opt-in: ASSESSMENT_LLM=offline, openai, groq, or ollama."""
     if settings.assessment_llm == "offline":
         return None
+    if settings.assessment_llm == "ollama":
+
+        def build_ollama():
+            from legal_checker.shared.llm.ollama_client import (
+                OllamaComplianceClient,
+                OllamaComplianceSettings,
+            )
+
+            return OllamaComplianceClient(
+                OllamaComplianceSettings(
+                    base_url=settings.c07_ollama_url,
+                    model=settings.c07_ollama_model,
+                    timeout_seconds=settings.c07_llm_timeout_seconds,
+                    context_tokens=settings.c07_ollama_context_tokens,
+                    max_output_tokens=settings.c07_llm_max_output_tokens,
+                    threads=settings.c07_ollama_num_threads,
+                ),
+                PostgresLlmAuditSink(settings.database_url),
+            )
+
+        return build_ollama
     if settings.assessment_llm not in {"openai", "groq"}:
         raise ValueError(f"Unknown ASSESSMENT_LLM={settings.assessment_llm!r}")
 
@@ -86,7 +107,7 @@ def llm_client_factory(settings: Settings):
 
 
 def document_semantic_extractor(settings: Settings):
-    """Documents uses its own local provider; C07 configuration remains independent."""
+    """Documents provider selection remains independent of the C07 workflow."""
     if settings.documents_extractor == "rules":
         return None
     if settings.documents_extractor != "hybrid":
@@ -97,19 +118,87 @@ def document_semantic_extractor(settings: Settings):
         SemanticOptions,
     )
 
-    return SemanticDocumentExtractor(
-        OllamaDocumentClient(
+    audit = PostgresLlmAuditSink(settings.database_url)
+    if settings.documents_llm_provider == "openai":
+        from legal_checker.modules.documents.openai_client import OpenAIDocumentClient
+        from legal_checker.shared.llm.config import OpenAISettings
+
+        client = OpenAIDocumentClient(
+            replace(
+                OpenAISettings.from_env(),
+                timeout_seconds=min(settings.documents_llm_timeout_seconds, 300),
+                max_output_tokens=1600,
+            ),
+            audit,
+        )
+    elif settings.documents_llm_provider == "ollama":
+        client = OllamaDocumentClient(
             OllamaOptions(
                 base_url=settings.documents_ollama_url,
                 model=settings.documents_ollama_model,
                 timeout_seconds=settings.documents_llm_timeout_seconds,
             ),
-            PostgresLlmAuditSink(settings.database_url),
-        ),
+            audit,
+        )
+    else:
+        raise ValueError("DOCUMENTS_LLM_PROVIDER must be ollama or openai")
+    return SemanticDocumentExtractor(
+        client,
         settings.source_cache_dir / "documents_llm",
         SemanticOptions(
             max_calls=settings.documents_llm_max_calls,
             recheck_existing=settings.documents_llm_recheck_existing,
+        ),
+    )
+
+
+def recommendation_personalizer(settings: Settings):
+    """Opt-in C11 phrasing with source validation, independent of C07 reasoning."""
+    if settings.c11_personalization == "off":
+        return None
+    if settings.c11_personalization not in {"ollama", "openai"}:
+        raise ValueError("C11_PERSONALIZATION must be off, ollama or openai")
+    from legal_checker.modules.recommendations.personalization import (
+        C11OllamaOptions,
+        C11PersonalizationOptions,
+        OllamaRecommendationClient,
+        RecommendationPersonalizationService,
+    )
+
+    audit = PostgresLlmAuditSink(settings.database_url)
+    if settings.c11_personalization == "openai":
+        from legal_checker.modules.recommendations.personalization.openai_client import (
+            OpenAIRecommendationClient,
+        )
+        from legal_checker.shared.llm.config import OpenAISettings
+
+        client = OpenAIRecommendationClient(
+            replace(
+                OpenAISettings.from_env(),
+                timeout_seconds=min(settings.c11_llm_timeout_seconds, 300),
+                max_output_tokens=settings.c11_llm_output_tokens,
+            ),
+            audit,
+        )
+    else:
+        client = OllamaRecommendationClient(
+            C11OllamaOptions(
+                base_url=settings.c11_ollama_url,
+                model=settings.c11_ollama_model,
+                timeout_seconds=settings.c11_llm_timeout_seconds,
+                context_tokens=settings.c11_llm_context_tokens,
+                output_tokens=settings.c11_llm_output_tokens,
+                threads=settings.c11_llm_num_threads,
+            ),
+            audit,
+        )
+    return RecommendationPersonalizationService(
+        client,
+        C11PersonalizationOptions(
+            mode=settings.c11_personalization,
+            max_calls=settings.c11_llm_max_calls,
+            max_input_chars=settings.c11_llm_max_input_chars,
+            total_budget_seconds=settings.c11_llm_total_budget_seconds,
         ),
     )
 
@@ -157,6 +246,7 @@ def module_source(
             verification_provider=verification_provider,
             external_registry_provider=external_registry_provider,
             document_semantic_extractor=document_semantic_extractor(settings),
+            recommendation_personalizer=recommendation_personalizer(settings),
             llm_parallel=settings.assessment_llm_parallel,
             llm_agreement=settings.assessment_llm_agreement,
             llm_hints=settings.assessment_llm_hints,

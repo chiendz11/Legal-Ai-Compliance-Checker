@@ -289,7 +289,7 @@
       "implementation_status": "IMPLEMENTED_WITH_LIMITS",
       "semantic_rules": [
         "Link a risk instance, evidence and legal basis; status alone is not a recommendation.",
-        "Current DTO uses template-engine metadata; LLM-backed metadata needs a reviewed change."
+        "Template Engine generates deterministic base recommendations; optional local LLM personalization may rewrite phrasing only under strict backend validator guardrails and deterministic fallback."
       ],
       "operational_tables": [
         "runtime.workflow_runs"
@@ -561,7 +561,8 @@
       "call_parameters": [
         "request",
         "knowledge",
-        "diagnostics"
+        "diagnostics",
+        "personalizer"
       ],
       "composition_owner": "P5",
       "live_persistence": "DTO in memory; completed workflow_runs.draft_json, not mandatory normalized workbook writes per stage"
@@ -707,7 +708,8 @@
       "runtime_port": "legal_checker.workflows.steps_5_7.evaluate",
       "call_parameters": [
         "request",
-        "knowledge"
+        "knowledge",
+        "recommendation_personalizer"
       ],
       "note": "PipelineRequest includes C09; PipelineResponse merges both branches. evaluate_compliance is compliance-only"
     }

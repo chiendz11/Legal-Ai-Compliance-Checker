@@ -6,6 +6,7 @@ C07 verification and external source registration are separately injected trust 
 """
 
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -27,6 +28,9 @@ from legal_checker.modules.documents.repository import DocumentRepository
 from legal_checker.modules.documents.semantic_extractor import SemanticDocumentExtractor
 from legal_checker.modules.documents.service import PdfDocumentIntelligence, SourceMismatchError
 from legal_checker.modules.legal_knowledge.repository import Knowledge
+from legal_checker.modules.recommendations.personalization.contracts import (
+    RecommendationPersonalizer,
+)
 from legal_checker.modules.retrieval.coverage import add_review_candidates
 from legal_checker.modules.retrieval.repository import RetrievalDatasetRepository
 from legal_checker.modules.retrieval.service import LexicalRetrievalService
@@ -82,6 +86,7 @@ class IntegratedModulesSource:
         allow_reference_documents: bool = False,
         verification_provider: CriterionVerificationProvider | None = None,
         external_registry_provider: EvidenceRegistryProvider | None = None,
+        recommendation_personalizer: RecommendationPersonalizer | None = None,
         llm_parallel: int = 1,
         llm_agreement: int = 1,
         llm_hints: bool = False,
@@ -101,6 +106,7 @@ class IntegratedModulesSource:
         self.allow_reference_documents = allow_reference_documents
         self.verification_provider = verification_provider
         self.external_registry_provider = external_registry_provider
+        self.recommendation_personalizer = recommendation_personalizer
         self.llm_parallel = llm_parallel
         self.llm_agreement = llm_agreement
         self.llm_hints = llm_hints
@@ -347,8 +353,16 @@ class IntegratedModulesSource:
                     }
                 )
             if self.full_document_review and client and self.source_cache_dir:
+                is_local_ollama = (
+                    getattr(getattr(client, "settings", None), "provider", None) == "OLLAMA_LOCAL"
+                )
+                fdr_batch_cap = 8000 if is_local_ollama else 24000
                 reviewer = FullDocumentReviewer(
-                    client, self.source_cache_dir / "evidence", max_calls=self.llm_max_calls
+                    client,
+                    self.source_cache_dir / "evidence",
+                    max_batch_chars=min(fdr_batch_cap, max(4000, self.llm_max_context_chars)),
+                    max_calls=self.llm_max_calls,
+                    max_criteria_per_call=12,
                 )
                 try:
                     bundle = reviewer.review(
@@ -561,5 +575,16 @@ class IntegratedModulesSource:
             external_evidence_registry=registry,
             retrieval_refinement=SimpleNamespace(refine=refine),
         )
-        # None keeps the workflow's default steps 5–7 (group C's evaluate).
-        return case, modules, None
+        if self.recommendation_personalizer is None:
+            diagnostics.append({"module": "C11", "code": "C11_PERSONALIZATION_DISABLED"})
+            return case, modules, None
+        from legal_checker.workflows.steps_5_7 import evaluate as evaluate_steps_5_7
+
+        return (
+            case,
+            modules,
+            partial(
+                evaluate_steps_5_7,
+                recommendation_personalizer=self.recommendation_personalizer,
+            ),
+        )

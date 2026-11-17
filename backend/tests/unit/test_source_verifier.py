@@ -170,3 +170,40 @@ def test_visual_absence_is_source_pinned_and_never_human_approval(tmp_path, reas
     assert record.gates.absence_verified is (tamper is None)
     assert "human_verified" not in record.facts
     assert provider.artifact.path.read_bytes() == provider.path.read_bytes()
+
+
+def test_full_assessment_resolves_absent_exceptions_and_verified_catalog_source(reasoning_case):
+    knowledge, data = reasoning_case
+    knowledge.review_status = "HUMAN_VERIFIED"
+    knowledge.criteria["CRITERION_1"]["dieu_kien"] = {"case_facts_required": True}
+    request, ctx, profile, coverage = inputs(data)
+    row = SourceFactVerifier().verify(
+        ctx,
+        profile,
+        request.payload.requirements,
+        request.payload.chunks,
+        knowledge,
+        coverage=coverage,
+    )[0]
+    assert row.gates.source_verified
+    assert row.gates.exceptions_resolved
+    assert row.local_applicability == "UNKNOWN"
+
+    knowledge.tables["ngoai_le_ap_dung"] = [{"ngoai_le_id": "EX_1", "tieu_chi_id": "CRITERION_1"}]
+    blocked = SourceFactVerifier().verify(
+        ctx,
+        profile,
+        request.payload.requirements,
+        request.payload.chunks,
+        knowledge,
+        coverage=coverage,
+    )[0]
+    assert not blocked.gates.exceptions_resolved
+
+
+def test_case_create_defaults_match_web_upload_draft_review():
+    from legal_checker.api.v1.schemas import CaseCreate
+
+    created = CaseCreate(hop_dong_id="HD_1", ngay_danh_gia="2026-11-17")
+    assert created.review_mode == "DRAFT_REVIEW"
+    assert created.document_set_complete is False

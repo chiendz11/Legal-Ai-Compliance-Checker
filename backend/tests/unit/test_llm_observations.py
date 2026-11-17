@@ -1173,3 +1173,15 @@ def test_batch_accepts_compacted_source_but_rejects_foreign_quote_ids(reasoning_
             request.payload.chunks[0].noi_dung[evidence.ky_tu_bat_dau : evidence.ky_tu_ket_thuc]
             == evidence.trich_dan
         )
+
+
+def test_no_requested_criterion_still_returns_records(reasoning_case):
+    """Every criterion handled elsewhere (document review, scope): nothing is asked, no crash."""
+    knowledge, data = reasoning_case
+    client = FakeClient([])
+    batch = LLMObservationProvider(client, criterion_ids=[]).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert client.calls == []
+    assert [a.error_code for a in batch.analyses] == ["NOT_REQUESTED"]
+    assert batch.analyses[0].adverse_evidence_review is None

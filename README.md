@@ -74,7 +74,7 @@ uvicorn legal_checker.main:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 Máy không có Docker có thể dùng native server theo [hướng dẫn DB](docs/database/local_setup.md).
-Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_team_20261107`;
+Theo `.env.example`, DB ở `127.0.0.1:5433/legal_checker_dev_pdfv4r2_20261110`;
 Swagger: http://127.0.0.1:8000/docs.
 
 ```bash

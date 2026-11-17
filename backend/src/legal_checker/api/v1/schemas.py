@@ -45,7 +45,7 @@ class CaseCreate(Model):
     ngay_danh_gia: date
     moc_ap_dung: date | None = None
     loai_moc_ap_dung: str | None = None
-    review_mode: Literal["FULL_ASSESSMENT", "DRAFT_REVIEW"] = "FULL_ASSESSMENT"
+    review_mode: Literal["FULL_ASSESSMENT", "DRAFT_REVIEW"] = "DRAFT_REVIEW"
     document_set_complete: bool = False
     phien_ban_id: str | None = Field(
         default=None, description="Omit to let backend select an allowed deployment release."

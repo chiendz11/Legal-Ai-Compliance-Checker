@@ -150,6 +150,35 @@ def automatic_review(
     gates.evidence_validated = bool(proposal.evidence or proposal.external_evidence) and all(
         row.bang_chung_id in registered for row in proposal.external_evidence
     )
+    fdr_rows = [
+        r
+        for r in request.payload.retrieval
+        if r.yeu_cau_ca_id == requirement.yeu_cau_ca_id
+        and r.tieu_chi_id == proposal.tieu_chi_id
+        and r.giai_doan == "FINAL"
+        and (
+            r.scores.get("full_document_review") is not None
+            or r.retrieval_version.startswith("FULL_DOCUMENT_REVIEW")
+        )
+    ]
+    if (
+        not gates.absence_verified
+        and verification
+        and criterion.get("loai_kiem_tra") == "PROHIBITED_CLAUSE"
+        and proposal.proposed_finding == "SATISFIED"
+        and not issues
+        and not unresolved_provider_conditions
+        and gates.coverage_complete
+        and gates.evidence_validated
+        and verification.all_pages_readable
+        and verification.all_related_documents_received
+        and verification.facts.get("document_review_complete") is True
+        and verification.facts.get("document_review_non_candidates_absent") is True
+        and verification.facts.get("content_subject_validated") is not False
+        and bool(fdr_rows)
+        and all(r.duoc_chon for r in fdr_rows)
+    ):
+        gates.absence_verified = True
     if not verification:
         gates.exceptions_resolved = not exceptions and not applicability.get("exception_ids")
     local = (

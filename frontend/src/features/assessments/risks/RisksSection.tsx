@@ -17,6 +17,20 @@ function actionLabel(code: string): string {
   return VERIFICATION_ACTIONS.has(code) ? "Cần xác minh" : "Cách sửa";
 }
 
+/**
+ * Who wrote the recommendation's wording. The standard template needs no note; a fallback or
+ * an AI-personalised text (C11 personalizer, e.g. a local Qwen model) is said plainly.
+ */
+function recommendationSource(code: string | null | undefined): string | null {
+  if (!code || code === "TEMPLATE_ENGINE_NO_LLM") return null;
+  if (code === "TEMPLATE_ENGINE_FALLBACK")
+    return "Soạn theo mẫu chuẩn (không dùng được bản AI cá thể hóa).";
+  if (/qwen/i.test(code))
+    return `Câu chữ được AI cá thể hóa (${code.split("@")[0]}), cần chuyên viên duyệt.`;
+  if (/GEMINI|OPENAI|LLM|gpt/i.test(code)) return "Câu chữ do AI soạn, cần chuyên viên duyệt.";
+  return null;
+}
+
 /** One line saying what to do; the template's full text stays one click away. */
 export function RecommendationBlock({ recommendation }: { recommendation: Recommendation }) {
   const { focus } = useReportNav();
@@ -35,6 +49,9 @@ export function RecommendationBlock({ recommendation }: { recommendation: Recomm
         {actionLabel(recommendation.loai_hanh_dong)}
       </span>
       <p>{view.action}</p>
+      {recommendationSource(recommendation.model_version) && (
+        <p className="muted small">{recommendationSource(recommendation.model_version)}</p>
+      )}
       {view.details.length > 0 && (
         <details className="more-filters">
           <summary>Xem gợi ý đầy đủ</summary>

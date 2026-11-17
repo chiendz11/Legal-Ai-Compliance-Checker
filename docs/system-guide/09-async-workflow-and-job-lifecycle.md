@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** Một lượt đánh giá chạy nền theo vòng đời `QUEUED → RUNNING → COMPLETED/FAILED`, trong đó PostgreSQL là nguồn sự thật và Redis/Celery chỉ là kênh giao việc, nên bấm hai lần không sinh hai việc và worker chết không làm mất việc.
+
+**Hình dung đời thường.** Giống quầy giao nhận có sổ cái: mọi đơn được ghi vào sổ (PostgreSQL) trước khi gọi shipper (Redis/Celery). Mất liên lạc với shipper thì sổ vẫn còn và có người định kỳ rà sổ để giao lại. Shipper đang giao phải nhắn “vẫn đang giao” đều đặn; im lặng quá lâu thì đơn được chuyển cho người khác. Và khách bấm đặt hai lần với cùng mã đơn thì chỉ có một đơn.
+
+**Ba ý phải nói được:**
+
+1. **`Idempotency-Key`:** gửi lại cùng khoá nhận lại đúng lượt chạy cũ.
+2. **DB-first + `recover_runs`:** ghi `QUEUED` vào DB trước khi vào hàng đợi; Celery Beat thu hồi việc bị bỏ quên.
+3. **Claim – Lease – Heartbeat:** chỉ một worker chạy một lượt; ngừng báo nhịp thì lượt chạy được thu hồi. Báo cáo và trạng thái hoàn tất được ghi trong cùng một transaction.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| Run | Một lượt chạy đánh giá của một ca. |
+| Idempotency | Thực hiện lại cùng yêu cầu không tạo thêm tác dụng phụ. |
+| Lease / heartbeat | Thời hạn “thuê” quyền chạy và tín hiệu gia hạn định kỳ. |
+| At-least-once | Hàng đợi có thể giao trùng; `claim()` bảo đảm chỉ một worker thực thi. |
+| `TransientRunError` | Lỗi tạm thời (mạng/DB) → trả về hàng đợi và tự thử lại có giãn cách. |
+
+**Slide tương ứng:** 36 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 3–4 phút.
+
+---
+
 ## 1. Bài toán thực tế của một hệ thống đánh giá hợp đồng chạy nền
 
 Một lượt chạy đánh giá toàn bộ hợp đồng (`C01` → `C11`) có thể mất từ vài giây (offline rule/BM25) đến vài phút (khi bật Hybrid Semantic + `FullDocumentReviewer` trên hợp đồng 80–166 trang). Không thể giữ một HTTP request `POST /runs` treo 3 phút chờ xong rồi mới trả về: trình duyệt sẽ timeout, người dùng bấm F5 hoặc click nút "Chạy đánh giá" 2 lần sẽ sinh ra 2 job trùng nhau, hoặc worker bị OOM giữa chừng khiến job kẹt mãi ở `RUNNING`.
@@ -74,6 +100,24 @@ Cả API và Worker đều gọi chung một use case `AssessmentRunner.execute(
   1. `self.reports.save_version(run_id, report, connection=connection)` (lưu `Report DRAFT` đầu tiên);
   2. `self.runs.complete(ca_id, run_id, draft, connection=connection)` (lưu `draft_json` + đổi `status = "COMPLETED"`).
 * **Ý nghĩa:** Không bao giờ có chuyện `run.status == "COMPLETED"` mà client gọi API lấy báo cáo lại gặp 404 vì báo cáo chưa kịp ghi!
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Đang chạy mà worker bị kill thì sao?**  
+Đáp: Heartbeat dừng; hết hạn lease, `recover_runs` đưa lượt chạy về `QUEUED` cho worker khác. Nếu muốn *huỷ hẳn*, phải đánh dấu lượt chạy `FAILED` trong DB — khi đó `claim()` trả `None` và message được giao lại sẽ bị bỏ qua.
+
+**Hỏi: Vì sao không chỉ dựa vào Redis?**  
+Đáp: Redis là kênh giao việc, có thể mất hoặc giao trùng message. Trạng thái thật luôn nằm trong PostgreSQL nên F5 trình duyệt, mất Redis hay restart pod đều không làm mất tiến độ.
+
+**Hỏi: `FAILED` có nghĩa là hợp đồng có vấn đề không?**  
+Đáp: Không. `FAILED` là trạng thái kỹ thuật/quy trình (sai nguồn, lỗi contract, lỗi hạ tầng), không bao giờ là nhãn pháp lý.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* Khi đổi cấu hình worker, chờ pod cũ dừng hẳn rồi mới đưa việc vào hàng đợi; pod đang `Terminating` vẫn có thể nhận việc với cấu hình cũ.
+* API, worker và scheduler phải dùng cùng một image.
 
 ---
 

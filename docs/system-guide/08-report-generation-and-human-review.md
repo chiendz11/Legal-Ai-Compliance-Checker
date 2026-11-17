@@ -5,6 +5,32 @@
 
 ---
 
+## 0. Trình bày nhanh (đọc phần này trước khi thuyết trình)
+
+> **Một câu:** Người duyệt không sửa đè kết quả của máy: mỗi thao tác là một sự kiện ghi thêm, trạng thái hiện hành được tính bằng cách phủ sự kiện lên kết quả gốc, và báo cáo chỉ phát hành khi mọi mục đã được xác nhận hoặc sửa hợp lệ.
+
+**Hình dung đời thường.** Giống chấm bài có bút đỏ: bài làm của học sinh (kết quả máy) không bị tẩy xoá; giáo viên ghi nhận xét và điểm sửa bên lề, có ký tên và lý do. Bảng điểm cuối cùng là bài gốc cộng các nhận xét. Hai giáo viên không thể cùng sửa một câu mà không biết người kia vừa sửa. Và mọi bản in đều ghi rõ “bản nháp” cho tới khi chấm xong.
+
+**Ba ý phải nói được:**
+
+1. **Ba cơ chế bất biến:** nhật ký sự kiện chỉ ghi thêm (C12) · lớp hiệu lực · mỗi lần sinh báo cáo là một phiên bản mới.
+2. **Khoá lạc quan `expected_target_sha256`:** thao tác trên trạng thái cũ bị từ chối (409) và phải tải lại.
+3. **Một phép chiếu duy nhất `ReportPresentation`:** web và file xuất PDF/DOCX/JSON luôn giống nhau; file xuất có dấu xác thực SHA-256.
+
+**Thuật ngữ dùng trong chương:**
+
+| Thuật ngữ | Nghĩa dễ hiểu |
+|---|---|
+| `CONFIRM` / `OVERRIDE` | Xác nhận / sửa kết quả của máy (hai quyết định “chốt”). |
+| `REQUEST_MORE_EVIDENCE` / `REJECT` | Hai quyết định chặn phát hành. |
+| Effective layer | Trạng thái hiện hành = kết quả máy + các sửa đổi của người. |
+| Publish gate | Điều kiện phát hành: mọi mục có `CONFIRM` hoặc `OVERRIDE` hợp lệ. |
+| `verification_stamp` | Dấu xác thực trên file xuất (mã báo cáo, run, review, SHA-256). |
+
+**Slide tương ứng:** 34–35 trong [deck Công nghệ C01–C13](../business/slides/cong_nghe_va_ky_thuat_he_thong_c01_c13.pptx) · **Thời lượng gợi ý:** 4–5 phút.
+
+---
+
 ## 1. Tại sao Human Review (`C12`) KHÔNG BAO GIỜ ghi đè trực tiếp dữ liệu AI?
 
 Nếu một hệ thống cho phép reviewer bấm "Sửa kết luận từ `VIOLATED` thành `SATISFIED`" bằng cách chạy `UPDATE workflow_runs SET draft_json = ...`, hàng loạt rủi ro kiểm toán sẽ xảy ra:
@@ -75,6 +101,24 @@ Mọi file PDF/DOCX/JSON được export đều gắn kèm `verification_stamp` 
 * `report_sha256` (băm SHA-256 trên JSON chuẩn hóa của báo cáo), `exported_at`, `exported_by`.
 
 Đặc biệt, nếu báo cáo chưa phát hành chính thức (`DRAFT` / còn mục `PENDING`), mọi trang/đầu file xuất ra **bắt buộc hiển thị dấu cảnh báo bản nháp chưa phê duyệt**, ngăn tuyệt đối việc lấy file nháp của AI đem trình ký như bản thẩm định cuối cùng.
+
+---
+
+## Hỏi – đáp khi trình bày
+
+**Hỏi: Người duyệt sửa kết luận thì có mất dấu kết luận ban đầu của máy không?**  
+Đáp: Không. `draft_json` giữ nguyên; sự kiện `OVERRIDE` lưu `before`, `after`, người sửa và lý do. Nhờ đó vẫn đánh giá được chất lượng máy và truy được trách nhiệm.
+
+**Hỏi: Người duyệt có sửa được mọi thứ không?**  
+Đáp: Không. Chỉ 5 loại đối tượng và một số trường nhất định (ví dụ `finding` và `giai_thich` của C07); giá trị mới phải qua validator Pydantic.
+
+**Hỏi: Có thể xuất báo cáo khi chưa duyệt xong không?**  
+Đáp: Xuất được, nhưng file bắt buộc mang dấu bản nháp chưa phê duyệt.
+
+**Hiểu lầm hay gặp cần tránh khi nói:**
+
+* `COMMENT` không phải là quyết định chốt — mục chỉ có bình luận vẫn chặn phát hành.
+* UI không tự tính nhãn pháp lý; mọi nhãn hiển thị đến từ `ReportPresentation`.
 
 ---
 

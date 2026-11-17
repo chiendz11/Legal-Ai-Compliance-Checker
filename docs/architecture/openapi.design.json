@@ -4231,7 +4231,7 @@
               "DRAFT_REVIEW"
             ],
             "title": "Review Mode",
-            "default": "FULL_ASSESSMENT"
+            "default": "DRAFT_REVIEW"
           },
           "document_set_complete": {
             "type": "boolean",
@@ -5853,16 +5853,16 @@
             "title": "Knowledge Snapshot Sha256"
           },
           "model_version": {
-            "type": "string",
-            "const": "TEMPLATE_ENGINE_NO_LLM",
+            "default": "TEMPLATE_ENGINE_NO_LLM",
+            "minLength": 1,
             "title": "Model Version",
-            "default": "TEMPLATE_ENGINE_NO_LLM"
+            "type": "string"
           },
           "prompt_version": {
-            "type": "string",
-            "const": "NOT_USED",
+            "default": "NOT_USED",
+            "minLength": 1,
             "title": "Prompt Version",
-            "default": "NOT_USED"
+            "type": "string"
           },
           "review_status": {
             "type": "string",
@@ -7913,16 +7913,16 @@
             "title": "Knowledge Snapshot Sha256"
           },
           "model_version": {
-            "type": "string",
-            "const": "TEMPLATE_ENGINE_NO_LLM",
+            "default": "TEMPLATE_ENGINE_NO_LLM",
+            "minLength": 1,
             "title": "Model Version",
-            "default": "TEMPLATE_ENGINE_NO_LLM"
+            "type": "string"
           },
           "prompt_version": {
-            "type": "string",
-            "const": "NOT_USED",
+            "default": "NOT_USED",
+            "minLength": 1,
             "title": "Prompt Version",
-            "default": "NOT_USED"
+            "type": "string"
           },
           "review_status": {
             "type": "string",
