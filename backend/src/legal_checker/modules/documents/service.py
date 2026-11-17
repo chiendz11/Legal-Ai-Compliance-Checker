@@ -53,7 +53,7 @@ class DocumentExtraction:
 
 
 class PdfDocumentIntelligence:
-    """DocumentIntelligenceService cho PDF có text layer (chưa OCR, chưa DOCX)."""
+    """DocumentIntelligenceService cho PDF (lớp chữ hoặc OCR) và DOCX."""
 
     def __init__(
         self,

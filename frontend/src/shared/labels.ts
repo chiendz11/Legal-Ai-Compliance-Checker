@@ -109,16 +109,16 @@ const table: Record<string, Record<string, Label>> = {
   scope: {
     MATCH: { text: "Thuộc phạm vi", tone: "good" },
     NO_MATCH: { text: "Ngoài phạm vi", tone: "neutral" },
-    UNKNOWN: { text: "Phạm vi chưa rõ", tone: "unknown" },
+    UNKNOWN: { text: "Chưa rõ phạm vi", tone: "unknown" },
   },
   version: {
-    RESOLVED: { text: "Đã chọn phiên bản", tone: "good" },
-    UNKNOWN: { text: "Phiên bản chưa rõ", tone: "unknown" },
+    RESOLVED: { text: "Đã chọn điều luật", tone: "good" },
+    UNKNOWN: { text: "Chưa chọn được điều luật", tone: "unknown" },
   },
   applicability: {
-    CONFIRMED: { text: "Áp dụng", tone: "good" },
+    CONFIRMED: { text: "Có áp dụng", tone: "good" },
     NOT_APPLICABLE: { text: "Không áp dụng", tone: "neutral" },
-    UNKNOWN: { text: "Chưa xác nhận áp dụng", tone: "unknown" },
+    UNKNOWN: { text: "Chưa rõ", tone: "unknown" },
   },
   anchor: {
     NGAY_GIAO_KET: { text: "Ngày giao kết", tone: "neutral" },
@@ -130,6 +130,8 @@ const table: Record<string, Record<string, Label>> = {
   },
   markerType: {
     SIGNING: { text: "Ký kết", tone: "neutral" },
+    TEMPLATE_USE: { text: "Sử dụng hợp đồng mẫu", tone: "neutral" },
+    DEPOSIT_AGREEMENT: { text: "Thỏa thuận đặt cọc", tone: "neutral" },
     EXPECTED_HANDOVER: { text: "Dự kiến bàn giao", tone: "neutral" },
     COLLECTION: { text: "Thu tiền", tone: "neutral" },
     PRE_HANDOVER_COLLECTION: { text: "Thu tiền trước bàn giao", tone: "neutral" },
@@ -170,13 +172,4 @@ export function shortCitationId(id: string | null | undefined): string {
   const vdMatch = id.match(/VD_[a-f0-9]+_0*([1-9]\d*)/i);
   if (vdMatch) return `Viện dẫn #${vdMatch[1]}`;
   return id.length > 20 ? `${id.slice(0, 10)}...${id.slice(-6)}` : id;
-}
-
-/** Formats technical knowledge snapshot string into a readable title */
-export function friendlyKnowledgeVersion(version: string | null | undefined): string {
-  if (!version) return "Tri thức pháp luật chuẩn hóa";
-  if (version.includes("V750") || version.includes("20261110")) {
-    return "Kho tri thức pháp luật Việt Nam (Bản chuẩn hóa 2026)";
-  }
-  return `Kho tri thức: ${version}`;
 }

@@ -4,6 +4,8 @@ Hai lớp:
 1. Trường ghi tường minh dạng "Nhãn: giá trị" (trang thông tin giao dịch, chỗ điền trong
    thân hợp đồng). Mỗi lần xuất hiện là một ứng viên kèm quote/offset trong chunk.
    Nhiều ứng viên khác giá trị → CONFLICT, giữ cả hai, không tự chọn.
+   Ngày ký còn được nhận từ câu ký kết ("Hôm nay, ngày 01 tháng 11 năm 2026") của hợp
+   đồng thật; câu đó là một ứng viên nữa của cùng trường, cùng quy tắc CONFLICT.
 2. Phân loại theo mã danh mục (loại hợp đồng, tình trạng tài sản...) từ dấu hiệu trong
    văn bản. Đây là suy luận theo quy tắc nên luôn ở trạng thái chờ review.
 
@@ -27,8 +29,9 @@ from legal_checker.shared.contracts.document_intelligence import (
     ProfileTimeMarker,
 )
 
-PROFILE_EXTRACTOR_VERSION = "rules-v11"
+PROFILE_EXTRACTOR_VERSION = "rules-v12"
 LITERAL = "LABEL_REGEX"
+PHRASE = "PHRASE_REGEX"  # giá trị ghi nguyên văn trong câu (không có nhãn "X:")
 DERIVED = "RULE_DERIVED"
 EXTRACTED = "EXTRACTED"
 REVIEW_PENDING = "DERIVED_REVIEW_PENDING"
@@ -54,6 +57,7 @@ class Candidate:
     value: object  # giá trị chuẩn hóa (date, Decimal, str, int, bool)
     raw: str
     span: Span
+    method: str = LITERAL
 
 
 @dataclass
@@ -283,6 +287,43 @@ def _label_candidates(chunks: Sequence[ChunkRecord]) -> dict[str, list[Candidate
     return found
 
 
+# Câu ký kết trong thân hợp đồng thật (không có nhãn "Ngày giao kết:"):
+#   "Hôm nay, ngày 01 tháng 11 năm 2026, tại ..." / "Hôm nay là ngày 01/11/2026"
+#   "Hợp đồng này được lập/ký/ký kết/giao kết (vào) ngày 01 tháng 11 năm 2026"
+# Chỉ nhận hai mở đầu này: "được ký ngày ..." đứng một mình hay gặp khi viện dẫn hợp đồng,
+# văn bản khác, và dòng "Hà Nội, ngày ..." chỉ là ngày soạn thảo. Mẫu trống ("ngày ....
+# tháng .... năm 20...") không có chữ số nên không khớp.
+_SIGNING_OPENING = (
+    r"(?:Hôm\s+nay(?:\s+là)?"
+    r"|Hợp\s+đồng\s+này\s+(?:đã\s+)?được\s+(?:lập|ký\s+kết|ký|giao\s+kết)(?:\s+vào)?)"
+)
+_SIGNING_PROSE = re.compile(
+    _SIGNING_OPENING + r"[ \t,:]*(?P<raw>ngày\s+(?:"
+    r"(?P<d>\d{1,2})\s+tháng\s+(?P<m>\d{1,2})\s+năm\s+(?P<y>\d{4})"
+    r"|(?P<dmy>\d{1,2}[/.-]\d{1,2}[/.-]\d{4})))",
+    re.I,
+)
+
+
+def _signing_phrase_candidates(chunks: Sequence[ChunkRecord]) -> list[Candidate]:
+    found = []
+    for chunk in chunks:
+        for m in _SIGNING_PROSE.finditer(chunk.noi_dung):
+            if m.group("dmy"):
+                value = _parse_date(m.group("dmy"))
+            else:
+                try:
+                    value = date(int(m.group("y")), int(m.group("m")), int(m.group("d")))
+                except ValueError:
+                    value = None
+            if value is None:
+                continue
+            raw = " ".join(m.group("raw").split())
+            span = Span(chunk, m.start(), m.end())
+            found.append(Candidate("ngay_giao_ket", value, raw, span, PHRASE))
+    return found
+
+
 def _account_continuations(chunks: Sequence[ChunkRecord]) -> list[Candidate]:
     """Join a wrapped account field only up to the next explicit account label.
 
@@ -335,6 +376,11 @@ def _drop_truncated(candidates: list[Candidate]) -> list[Candidate]:
     ]
 
 
+def _method(candidates: Sequence[Candidate]) -> str:
+    """Nhãn tường minh là bằng chứng mạnh nhất; có ứng viên từ câu thì ghi PHRASE."""
+    return LITERAL if all(c.method == LITERAL for c in candidates) else PHRASE
+
+
 def _resolve(builder: _Builder, name: str, candidates: list[Candidate]) -> object | None:
     """1 giá trị → EXTRACTED; nhiều giá trị khác nhau → CONFLICT (trả None, giữ ứng viên)."""
     candidates = _drop_truncated(candidates)
@@ -344,12 +390,13 @@ def _resolve(builder: _Builder, name: str, candidates: list[Candidate]) -> objec
     for c in candidates:
         distinct.setdefault(_canonical(c.value), c.value)
     spans = [c.span for c in candidates]
+    method = _method(candidates)
     if len(distinct) == 1:
         value = candidates[0].value
-        builder.fact(name, value, spans, status=EXTRACTED, method=LITERAL)
+        builder.fact(name, value, spans, status=EXTRACTED, method=method)
         return value
     ordered = [distinct[k] for k in sorted(distinct)]
-    builder.fact(name, ordered, spans, status=CONFLICT, method=LITERAL, raw=None)
+    builder.fact(name, ordered, spans, status=CONFLICT, method=method, raw=None)
     return None
 
 
@@ -377,7 +424,7 @@ _NEW_BUILDING = re.compile(
 _PURPOSE_HOME = re.compile(
     r"M(?:ụ|u\s*/)c\s+đích\s+sử\s+d(?:ụ|u\s*/)ng(?:\s+Căn\s+[Hh]ộ)?:\s*(?:[Dd]ùng\s+)?để\s+ở"
     r"|Sử\s+d(?:ụ|u\s*/)ng\s+Căn\s+hộ\s+đúng\s+m(?:ụ|u\s*/)c\s+đích\s+để\s+ở"
-    r"|m(?:ụ|u\s*/)c\s+đích\s+sử\s+d(?:ụ|u\s*/)ng[^.\n]{0,30}để\s+ở",
+    r"|m(?:ụ|u\s*/)c\s+đích\s+sử\s+d(?:ụ|u\s*/)ng[^.\n]{0,30}(?:để\s+ở|làm\s+nhà\s+ở)",
     re.I,
 )
 _VN_LAW = re.compile(r"pháp luật Việt Nam|CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", re.I)
@@ -386,15 +433,26 @@ _SELLER_IS_INVESTOR = re.compile(
     r"“Chủ đầu tư”,\s*“Bên Bán”|“Bên Bán”,\s*“Chủ đầu tư”"
     r"|nhà\s+chung\s+cư\s+do\s+(?:Bên\s+Bán|Chủ\s+đầu\s+tư)\s+đầu\s+tư\s+xây\s+dựng"
     r"|do\s+Bên\s+Bán\s+làm\s+chủ\s+đầu\s+tư"
-    r"|làm\s+(?:đồng\s+|Liên\s+danh\s+)?chủ\s+đầu\s+tư"
+    # Only the seller itself: "Dự án do Công ty X làm chủ đầu tư" names some company, which
+    # _find_named_investor compares with the seller's name instead.
+    r"|Bên\s+Bán[^.\n]{0,60}?làm\s+(?:đồng\s+|Liên\s+danh\s+)?chủ\s+đầu\s+tư"
     r"|“Chủ\s+đầu\s+tư\s*”\s+là\s+Công\s+ty"
     r"|Ngày\s+Chủ\s+đầu\s+tư\s+ban\s+hành\s+nội\s+quy"
     r"|Chủ\s+đầu\s+tư\s*:"
     r"|công\s+nhận\s+chủ\s+đầu\s+tư"
     r"|Chủ\s+đầu\s+tư[^\n()]{0,40}\(sau đây gọi tắt là[^)]*Bên\s+Bán\)"
-    r"|Bên\s+Bán\s+là\s+Chủ\s+đầu\s+tư",
+    r"|Bên\s+Bán\s+là\s+Chủ\s+đầu\s+tư"
+    r"|do\s+Bên\s+Bán\s+là\s+chủ\s+đầu\s+tư",
     re.I,
 )
+# "Dự án ... do Công ty Cổ phần X làm chủ đầu tư": khớp khi X đúng là tên bên bán.
+_NAMED_INVESTOR = re.compile(
+    r"do\s+(?P<name>(?:(?:Tổng\s+)?Công\s+ty|Tập\s+đoàn)\s[^“”]{3,150}?)"
+    r"\s+(?:làm|là)\s+chủ\s+đầu\s+tư",
+    re.I,
+)
+# Tiêu đề hợp đồng nói rõ là nhà ở xã hội: yêu cầu chỉ dành cho nhà ở thương mại bị loại.
+_SOCIAL_HOUSING_TITLE = re.compile(r"HỢP ĐỒNG (?:MUA BÁN|THUÊ MUA) NHÀ Ở XÃ HỘI")
 _WARRANTY_APPENDIX_SUPERSEDES = re.compile(
     r"Điều\s+khoản\s+bảo\s+hành\s+nhà\s+ở\s+của\s+phụ\s+lục\s+này\s+thay\s+thế\s+thời\s+hạn\s+bảo\s+hành\s+nhà\s+ở",
     re.I,
@@ -403,16 +461,19 @@ _WARRANTY_APPENDIX_LABEL = re.compile(
     r"^[ \t]*Thời\s+hạn\s+bảo\s+hành\s+nhà\s+ở[ \t]*:[ \t]*(?P<months>\d{1,3})\s*tháng",
     re.I | re.M,
 )
-# Tiêu đề "BÊN BÁN" ở đầu dòng, có thể có số thứ tự thường/La Mã ("1.", "I.").
+# Tiêu đề "BÊN BÁN" ở đầu dòng, có thể có số thứ tự thường/La Mã ("1.", "I.") hoặc nhãn
+# "BÊN A:" phía trước ("I. BÊN A: BÊN BÁN NHÀ Ở ...").
 # Tên công ty có thể nằm ngay sau trên cùng dòng ("BÊN BÁN: CÔNG TY ...").
-_SELLER_HEADING = re.compile(r"^[ \t]*(?:(?:\d+|[IVX]+)\.[ \t]*)?BÊN BÁN\b", re.M)
+_SELLER_HEADING = re.compile(
+    r"^[ \t]*(?:(?:\d+|[IVX]+)\.[ \t]*)?(?:BÊN A[ \t]*:[ \t]*)?BÊN BÁN\b", re.M
+)
 # Dòng tiếp theo toàn chữ in hoa, ngắn: phần tên công ty bị xuống dòng.
 _NAME_CONTINUATION = re.compile(r"\n[ \t]*([A-ZÀ-Ỹ][A-ZÀ-Ỹ \t()&.-]{0,40}?)[ \t]*(?=\n|$)")
 # Tên tổ chức ở bất kỳ đâu trong dòng: "TỔNG CÔNG TY ...", "- Công ty: CÔNG TY CỔ PHẦN ...",
 # "Tên Công ty: Công ty Cổ phần HBI". "Công ty:" (nhãn) không khớp vì sau đó là dấu hai chấm.
 _ORG_NAME = re.compile(
     r"(?P<name>(?:TỔNG[ \t]+)?CÔNG[ \t]+TY[^\n]*"
-    r"|(?:Tổng[ \t]+)?Công[ \t]+ty[ \t]+(?:[A-ZĐ]|cổ phần|trách nhiệm|TNHH)[^\n]*)"
+    r"|(?:Tổng[ \t]+)?Công[ \t]+[Tt]y[ \t]+(?:[A-ZĐ]|cổ phần|trách nhiệm|TNHH)[^\n]*)"
 )
 _SELLER_WINDOW_LINES = 4
 
@@ -454,6 +515,26 @@ def _find_seller(chunks: Sequence[ChunkRecord]) -> tuple[str, Span] | None:
     return None
 
 
+def _plain_name(text: str) -> str:
+    return " ".join(text.replace("–", "-").split()).casefold().rstrip(" .,;:")
+
+
+def _same_party(a: str, b: str) -> bool:
+    """Equal names, or one cut short by a line break (at least five words in common)."""
+    a, b = _plain_name(a), _plain_name(b)
+    short, long = sorted((a, b), key=len)
+    return a == b or (len(short.split()) >= 5 and long.startswith(short))
+
+
+def _find_named_investor(chunks: Sequence[ChunkRecord], seller_name: str) -> Span | None:
+    """The contract names the seller itself as the project's investor."""
+    for chunk in chunks:
+        for m in _NAMED_INVESTOR.finditer(chunk.noi_dung):
+            if _same_party(m.group("name"), seller_name):
+                return Span(chunk, m.start(), m.end())
+    return None
+
+
 # ---------------------------------------------------------------- main
 
 
@@ -466,13 +547,15 @@ def extract_profile(
 ) -> ContractProfile:
     b = _Builder(hop_dong_id, version)
     found = _label_candidates(chunks)
+    if phrases := _signing_phrase_candidates(chunks):
+        found.setdefault("ngay_giao_ket", []).extend(phrases)
     profile: dict[str, object] = {}
 
     def set_field(name: str, value: object, spans: Sequence[Span], method: str) -> None:
         if value is None or not spans:
             return
         profile[name] = value
-        status = EXTRACTED if method == LITERAL else REVIEW_PENDING
+        status = EXTRACTED if method in (LITERAL, PHRASE) else REVIEW_PENDING
         b.fact(f"profile.{name}", value, spans, status=status, method=method)
 
     # --- 1. Trường tường minh
@@ -645,8 +728,9 @@ def extract_profile(
 
     if signing is not None and (year_only is None or year_only == signing.year):
         spans = [c.span for c in found["ngay_giao_ket"]]
-        set_field("ngay_giao_ket", signing, spans, LITERAL)
-        set_field("ngay_giao_ket_raw", found["ngay_giao_ket"][0].raw, spans, LITERAL)
+        method = _method(found["ngay_giao_ket"])
+        set_field("ngay_giao_ket", signing, spans, method)
+        set_field("ngay_giao_ket_raw", found["ngay_giao_ket"][0].raw, spans, method)
         set_field("do_chinh_xac_ngay", "DAY", spans, DERIVED)
         set_field("trang_thai_ngay", EXTRACTED, spans, DERIVED)
         set_field("loai_moc_ap_dung", "NGAY_GIAO_KET", spans, DERIVED)
@@ -680,8 +764,8 @@ def extract_profile(
         set_field("la_nha_xay_moi", True, [future], DERIVED)
     elif new_bldg := _find(chunks, _NEW_BUILDING):
         set_field("la_nha_xay_moi", True, [new_bldg], DERIVED)
-    if investor := _find(chunks, _SELLER_IS_INVESTOR):
-        set_field("ben_ban_la_chu_dau_tu", True, [investor], DERIVED)
+    if social := _find(chunks, _SOCIAL_HOUSING_TITLE):
+        set_field("la_nha_o_xa_hoi", True, [social], DERIVED)
 
     seller_from_label = _resolve(b, "ten_ben_ban", found.get("ten_ben_ban", []))
     if seller_from_label is not None and found.get("ten_ben_ban"):
@@ -690,6 +774,10 @@ def extract_profile(
         seller = _find_seller(chunks)
         if seller and not found.get("ten_ben_ban"):
             b.fact("ten_ben_ban", seller[0], [seller[1]], status=EXTRACTED, method=LITERAL)
+    if investor := _find(chunks, _SELLER_IS_INVESTOR):
+        set_field("ben_ban_la_chu_dau_tu", True, [investor], DERIVED)
+    elif seller and (named := _find_named_investor(chunks, seller[0])):
+        set_field("ben_ban_la_chu_dau_tu", True, [seller[1], named], DERIVED)
     buyer_spans = [c.span for c in found.get("ten_ben_mua", [])] if buyer else []
     subjects: list[ProfileSubject] = []
     if seller:

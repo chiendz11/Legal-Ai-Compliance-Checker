@@ -216,6 +216,7 @@ def module_source(
             SourceFactVerifier,
             SyntheticScenarioEvidence,
         )
+        from legal_checker.modules.documents.ocr import build_ocr_engine
         from legal_checker.workflows.integrated import IntegratedModulesSource
 
         if verification_provider is None:
@@ -246,6 +247,15 @@ def module_source(
             external_registry_provider=external_registry_provider,
             document_semantic_extractor=document_semantic_extractor(settings),
             recommendation_personalizer=recommendation_personalizer(settings),
+            llm_parallel=settings.assessment_llm_parallel,
+            llm_agreement=settings.assessment_llm_agreement,
+            llm_hints=settings.assessment_llm_hints,
+            ocr=build_ocr_engine(
+                settings.document_ocr,
+                command=settings.tesseract_cmd,
+                language=settings.ocr_language,
+                tessdata_dir=settings.tessdata_dir,
+            ),
         )
     if settings.assessment_modules == "reference":
         return ReferenceReplaySource(settings.database_url)

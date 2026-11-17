@@ -21,7 +21,8 @@ export function useOpenEvidence() {
 /**
  * Resolves C06/C07/C02 evidence to the exact chunk of the run's pinned document, with the
  * quoted span highlighted, its pages, and a link to the source PDF at that page.
- * `onLocate` lets the split viewer jump its PDF to the evidence page.
+ * With `onLocate` (a readable PDF is available) the evidence is shown in the PDF beside the
+ * report, highlighted in place, and the text drawer only appears when the span is missing.
  */
 export function EvidenceProvider({
   caseInfo,
@@ -31,7 +32,7 @@ export function EvidenceProvider({
 }: {
   caseInfo: AssessmentCase;
   runId: string;
-  onLocate?: (page: number) => void;
+  onLocate?: (target: { page: number; pageEnd?: number; quote?: string }) => void;
   children: ReactNode;
 }) {
   const [target, setTarget] = useState<EvidenceTarget | null>(null);
@@ -56,15 +57,26 @@ export function EvidenceProvider({
     chunk && caseInfo.source.mime_type === "application/pdf"
       ? `${contractSourceUrl(caseInfo.hop_dong_id)}#page=${chunk.page_start}`
       : null;
-  const page = chunk?.page_start;
+  const pdfMode = !!onLocate;
   useEffect(() => {
-    if (page !== undefined) onLocate?.(page);
-  }, [page, target, onLocate]);
+    if (!chunk || !target || !onLocate) return;
+    const span =
+      target.start !== undefined && target.end !== undefined
+        ? chunk.noi_dung.slice(target.start, target.end)
+        : undefined;
+    onLocate({
+      page: chunk.page_start,
+      pageEnd: chunk.page_end,
+      quote: target.quote ?? span ?? chunk.noi_dung.slice(0, 160),
+    });
+    setTarget(null); // a later click on the same evidence locates it again
+  }, [chunk, target, onLocate]);
+  const showDrawer = !!target && (!pdfMode || !!results.error || (!!results.data && !chunk));
 
   return (
     <EvidenceContext.Provider value={open}>
       {children}
-      {target && (
+      {showDrawer && target && (
         <aside className="drawer" role="dialog" aria-label="Bằng chứng trong hợp đồng">
           <header className="drawer-head">
             <strong>Đoạn hợp đồng</strong>

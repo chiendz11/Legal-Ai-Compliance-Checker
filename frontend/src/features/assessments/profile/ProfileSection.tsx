@@ -1,105 +1,144 @@
-import type { ContractProfile } from "../../../shared/api/client";
-import {
-  Disclosure,
-  Empty,
-  Fields,
-  Quote,
-  Section,
-  Table,
-  Value,
-} from "../../../shared/components/ui";
+import type { ContractProfile, ProfileEvidence } from "../../../shared/api/client";
+import { Disclosure, Empty, Quote, Section, Table, Value } from "../../../shared/components/ui";
+import { FIELD_LABELS } from "../../../shared/fieldLabels";
 import { label } from "../../../shared/labels";
+import {
+  PROFILE_GROUPS,
+  profileValue,
+  roleLabel,
+  subjectKind,
+  TECHNICAL_FIELDS,
+} from "../../../shared/profileValues";
+import { viDate } from "../../reports/explain";
 import { useReportIndex } from "../../reports/reportIndex";
 import { useOpenEvidence } from "../evidence/EvidenceViewer";
 
-const PROFILE_LABELS: Record<string, string> = {
-  loai_hop_dong_id: "Loại hợp đồng",
-  doi_tuong: "Đối tượng",
-  linh_vuc: "Lĩnh vực",
-  he_phap_luat: "Hệ pháp luật",
-  muc_dich_giao_dich: "Mục đích giao dịch",
-  ngay_giao_ket: "Ngày giao kết",
-  ngay_giao_ket_raw: "Ngày giao kết (gốc)",
-  do_chinh_xac_ngay: "Độ chính xác ngày",
-  trang_thai_ngay: "Trạng thái ngày",
-  loai_moc_ap_dung: "Loại mốc áp dụng",
-  ngay_hieu_luc_hop_dong: "Ngày hiệu lực",
-  ngay_ban_giao_du_kien: "Ngày bàn giao dự kiến",
-  quan_he_chu_the: "Quan hệ chủ thể",
-  ben_ban_co_von_nuoc_ngoai: "Bên bán có vốn nước ngoài",
-  ben_ban_la_chu_dau_tu: "Bên bán là chủ đầu tư",
-  ben_ban_la_ca_nhan: "Bên bán là cá nhân",
-  ben_mua_la_ca_nhan: "Bên mua là cá nhân",
-  gia_tri_hop_dong: "Giá trị hợp đồng",
-  don_vi_tien: "Đơn vị tiền",
-  tinh_trang_tai_san: "Tình trạng tài sản",
-  la_nha_o_xa_hoi: "Nhà ở xã hội",
-  la_hop_dong_theo_mau: "Hợp đồng theo mẫu",
-  la_nha_xay_moi: "Nhà xây mới",
-  che_do_giao_dich: "Chế độ giao dịch",
-  muc_dich_su_dung_can_ho: "Mục đích sử dụng căn hộ",
-  dien_tich: "Diện tích sử dụng căn hộ (m²)",
-  gross_area_m2: "Diện tích sàn xây dựng căn hộ (m²)",
-  land_area_m2: "Diện tích thửa đất (m²)",
-  document_stage: "Trạng thái tài liệu",
-  warranty_subject: "Đối tượng bảo hành",
-  warranty_months: "Thời hạn bảo hành (tháng)",
-};
+const fieldName = (key: string) => FIELD_LABELS[key] ?? key;
 
 export function ProfileSection({ profile }: { profile: ContractProfile }) {
   const index = useReportIndex();
-  const fields = Object.entries(profile.profile);
-  const unknownCount = fields.filter(([, v]) => v === null).length;
   const openEvidence = useOpenEvidence();
+  const values = profile.profile as Record<string, unknown>;
+  const facts = new Map((profile.facts ?? []).map((f) => [f.ten_truong, f]));
+  const evidenceOf = (key: string): ProfileEvidence | undefined => {
+    const id = facts.get(`profile.${key}`)?.evidence_ids?.[0];
+    return id ? index.profileEvidenceById.get(id) : undefined;
+  };
+  const open = (e: ProfileEvidence) =>
+    openEvidence?.({
+      doanId: e.doan_id,
+      start: e.ky_tu_bat_dau,
+      end: e.ky_tu_ket_thuc,
+      quote: e.trich_dan,
+    });
+  const grouped = new Set(PROFILE_GROUPS.flatMap((g) => g.fields));
+  const otherFields = Object.keys(values).filter(
+    (k) => !grouped.has(k) && !TECHNICAL_FIELDS.includes(k),
+  );
+  const groups = [...PROFILE_GROUPS, { title: "Khác", fields: otherFields }];
+  const missing = groups
+    .flatMap((g) => g.fields)
+    .filter((k) => k in values && profileValue(k, values[k], values) === null);
+  const markers = profile.time_markers ?? [];
+  const datedMarkers = markers.filter((m) => m.ngay);
+  const undatedMarkers = markers.filter((m) => !m.ngay);
+
   return (
     <Section
-      title="Hồ sơ hợp đồng"
-      description={`C02 dùng để xác định phạm vi và mốc thời gian. ${unknownCount} trường chưa xác định được giữ nguyên là chưa có.`}
+      title="Thông tin hợp đồng"
+      description="Những gì hệ thống đọc được từ hợp đồng. Các thông tin này quyết định quy định nào áp dụng và luật tại thời điểm nào được dùng. Thông tin không tìm thấy được để trống, hệ thống không tự đoán. Bấm “Xem trong hợp đồng” để đối chiếu với văn bản gốc."
     >
-      <Fields rows={fields.map(([k, v]) => [PROFILE_LABELS[k] ?? k, <Value value={v} />])} />
-
-      <h3 className="subhead">Chủ thể</h3>
-      {profile.subjects?.length ? (
-        <Table>
-          <thead>
-            <tr>
-              <th>Vai trò</th>
-              <th>Tên</th>
-              <th>Loại</th>
-              <th>Thương nhân</th>
-              <th>Chủ thể kinh doanh</th>
-              <th>Đoạn bằng chứng</th>
-            </tr>
-          </thead>
-          <tbody>
-            {profile.subjects.map((s) => (
-              <tr key={s.chu_the_id}>
-                <td>{s.vai_tro}</td>
-                <td>
-                  <Value value={s.ten_chu_the} />
-                </td>
-                <td>
-                  <Value value={s.loai_chu_the} />
-                </td>
-                <td>
-                  <Value value={s.la_thuong_nhan} />
-                </td>
-                <td>
-                  <Value value={s.la_chu_the_kinh_doanh} />
-                </td>
-                <td>
-                  <code>{s.doan_bang_chung_id ?? "—"}</code>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <Empty>Chưa trích xuất chủ thể.</Empty>
+      <div className="profile-grid">
+        {groups.map((group) => {
+          const rows = group.fields
+            .map((key) => [key, profileValue(key, values[key], values)] as const)
+            .filter((row): row is readonly [string, string] => row[1] !== null);
+          if (rows.length === 0) return null;
+          return (
+            <section key={group.title} className="profile-card">
+              <h3>{group.title}</h3>
+              <dl>
+                {rows.map(([key, text]) => {
+                  const evidence = evidenceOf(key);
+                  return (
+                    <div key={key}>
+                      <dt>{fieldName(key)}</dt>
+                      <dd>
+                        {text}
+                        {evidence && openEvidence && (
+                          <button type="button" className="link small source-link" onClick={() => open(evidence)}>
+                            Xem trong hợp đồng
+                          </button>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </section>
+          );
+        })}
+      </div>
+      {missing.length > 0 && (
+        <p className="missing-line">
+          <strong>Không tìm thấy trong hợp đồng ({missing.length}):</strong>{" "}
+          {missing.map(fieldName).join(", ")}.
+        </p>
       )}
 
-      <h3 className="subhead">Mốc thời gian</h3>
-      {profile.time_markers?.length ? (
+      <h3 className="subhead">Các bên</h3>
+      {profile.subjects?.length ? (
+        <div className="profile-grid">
+          {profile.subjects.map((s) => {
+            const traits = [
+              subjectKind(s.loai_chu_the),
+              s.la_thuong_nhan ? "Thương nhân" : null,
+              s.la_chu_the_kinh_doanh ? "Kinh doanh bất động sản" : null,
+            ].filter(Boolean);
+            return (
+              <section key={s.chu_the_id} className="profile-card">
+                <h3>{roleLabel(s.vai_tro)}</h3>
+                <p className="party-name">{s.ten_chu_the ?? "Không rõ tên"}</p>
+                {traits.length > 0 && <p className="muted small">{traits.join(" · ")}</p>}
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <Empty>Không đọc được thông tin các bên trong hợp đồng.</Empty>
+      )}
+
+      <h3 className="subhead">Các mốc thời gian</h3>
+      {datedMarkers.length > 0 ? (
+        <ul className="marker-list">
+          {datedMarkers.map((m) => (
+            <li key={m.moc_id}>
+              <span>{label("markerType", m.loai_moc).text}</span>
+              <strong>{viDate(m.ngay)}</strong>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <Empty>Không đọc được mốc thời gian nào trong hợp đồng.</Empty>
+      )}
+      {undatedMarkers.length > 0 && (
+        <p className="missing-line">
+          <strong>Không tìm thấy ngày:</strong>{" "}
+          {undatedMarkers.map((m) => label("markerType", m.loai_moc).text.toLowerCase()).join(", ")}.
+        </p>
+      )}
+
+      <Disclosure summary="Chi tiết kỹ thuật: cách hệ thống đọc từng thông tin (dành cho kỹ sư)">
+        <h4 className="minihead">Trường kỹ thuật</h4>
+        <dl className="fields compact">
+          {TECHNICAL_FIELDS.filter((k) => k in values).map((k) => (
+            <div key={k}>
+              <dt>{fieldName(k)}</dt>
+              <dd>{profileValue(k, values[k], values) ?? <span className="null">chưa có</span>}</dd>
+            </div>
+          ))}
+        </dl>
+        <h4 className="minihead">Mốc thời gian</h4>
         <Table>
           <thead>
             <tr>
@@ -107,27 +146,19 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
               <th>Ngày</th>
               <th>Giá trị gốc</th>
               <th>Độ chính xác</th>
-              <th>Dùng để phân giải</th>
+              <th>Dùng để chọn luật</th>
               <th>Trạng thái</th>
             </tr>
           </thead>
           <tbody>
-            {profile.time_markers.map((m) => (
+            {markers.map((m) => (
               <tr key={m.moc_id}>
                 <td title={m.loai_moc}>{label("markerType", m.loai_moc).text}</td>
-                <td>
-                  <Value value={m.ngay} />
-                </td>
+                <td>{m.ngay ? viDate(m.ngay) : <Value value={null} />}</td>
                 <td>
                   <Value value={m.gia_tri_raw} />
                 </td>
-                <td title={m.do_chinh_xac ?? undefined}>
-                  {m.do_chinh_xac ? (
-                    label("precision", m.do_chinh_xac).text
-                  ) : (
-                    <Value value={null} />
-                  )}
-                </td>
+                <td>{m.do_chinh_xac ? label("precision", m.do_chinh_xac).text : <Value value={null} />}</td>
                 <td>
                   <Value value={m.duoc_dung_phan_giai} />
                 </td>
@@ -138,61 +169,44 @@ export function ProfileSection({ profile }: { profile: ContractProfile }) {
             ))}
           </tbody>
         </Table>
-      ) : (
-        <Empty>Chưa có mốc thời gian.</Empty>
-      )}
-
-      <h3 className="subhead">Dữ kiện trích xuất ({profile.facts?.length ?? 0})</h3>
-      <p className="small muted">
-        Dữ kiện do máy trích xuất; người rà soát cần xác nhận trước khi phát hành báo cáo.
-        Bạn có thể mở từng mục để kiểm tra trích dẫn nguồn.
-      </p>
-      <div className="stack">
-        {profile.facts?.map((f) => (
-          <Disclosure
-            key={f.trich_xuat_id}
-            summary={
-              <>
-                <span title={f.ten_truong}>{PROFILE_LABELS[f.ten_truong] ?? f.ten_truong}</span>{" "}
-                <Value value={f.gia_tri_chuan_json} />{" "}
-                {!f.human_verified && <span className="tag">Chờ người rà soát xác nhận</span>}
-              </>
-            }
-          >
-            <p className="small muted">
-              Phương pháp <code>{f.phuong_phap}</code> · trạng thái{" "}
-              <span title={f.trang_thai}>{label("markerStatus", f.trang_thai).text}</span>
-            </p>
-            {(f.evidence_ids ?? []).map((id) => {
-              const e = index.profileEvidenceById.get(id);
-              return e ? (
-                <Quote
-                  key={id}
-                  text={e.trich_dan}
-                  chunkId={e.doan_id}
-                  start={e.ky_tu_bat_dau}
-                  end={e.ky_tu_ket_thuc}
-                  onOpen={
-                    openEvidence
-                      ? () =>
-                          openEvidence({
-                            doanId: e.doan_id,
-                            start: e.ky_tu_bat_dau,
-                            end: e.ky_tu_ket_thuc,
-                            quote: e.trich_dan,
-                          })
-                      : undefined
-                  }
-                />
-              ) : (
-                <p key={id} className="uncertain">
-                  Thiếu bằng chứng <code>{id}</code> trong report.
-                </p>
-              );
-            })}
-          </Disclosure>
-        ))}
-      </div>
+        <h4 className="minihead">Dữ kiện trích xuất ({profile.facts?.length ?? 0})</h4>
+        <div className="stack">
+          {profile.facts?.map((f) => (
+            <Disclosure
+              key={f.trich_xuat_id}
+              summary={
+                <>
+                  <span title={f.ten_truong}>{fieldName(f.ten_truong)}</span>{" "}
+                  <Value value={f.gia_tri_chuan_json} />{" "}
+                  {!f.human_verified && <span className="tag">chưa xác minh</span>}
+                </>
+              }
+            >
+              <p className="small muted">
+                Phương pháp <code>{f.phuong_phap}</code> · trạng thái{" "}
+                <span title={f.trang_thai}>{label("markerStatus", f.trang_thai).text}</span>
+              </p>
+              {(f.evidence_ids ?? []).map((id) => {
+                const e = index.profileEvidenceById.get(id);
+                return e ? (
+                  <Quote
+                    key={id}
+                    text={e.trich_dan}
+                    chunkId={e.doan_id}
+                    start={e.ky_tu_bat_dau}
+                    end={e.ky_tu_ket_thuc}
+                    onOpen={openEvidence ? () => open(e) : undefined}
+                  />
+                ) : (
+                  <p key={id} className="uncertain">
+                    Thiếu bằng chứng <code>{id}</code> trong báo cáo.
+                  </p>
+                );
+              })}
+            </Disclosure>
+          ))}
+        </div>
+      </Disclosure>
     </Section>
   );
 }

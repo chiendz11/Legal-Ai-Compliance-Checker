@@ -118,6 +118,19 @@ class LegalBasisList(Model):
     items: list[LegalBasisItem]
 
 
+class RequirementName(Model):
+    """Plain-language name of one legal requirement, so screens never show only its code."""
+
+    requirement_id: str
+    title: str
+    obligation_group: str | None = None
+
+
+class RequirementNameList(Model):
+    knowledge_snapshot_sha256: str
+    items: list[RequirementName]
+
+
 class ReportRecord(Model):
     run_id: str = Field(min_length=1)
     review_revision: str = Field(min_length=1)

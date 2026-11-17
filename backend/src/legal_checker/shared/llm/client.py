@@ -69,6 +69,24 @@ def _retry_after(value: str | None) -> float | None:
     return max(0.0, seconds) if math.isfinite(seconds) else None
 
 
+def strict_json_schema(schema):
+    """Copy of a JSON schema that OpenAI strict structured outputs accept.
+
+    Strict mode needs every property listed in ``required`` and closed objects. Optional
+    model fields (``quote_id: str | None = None``) stay nullable, so the model can still
+    send null; ``default`` is dropped because strict mode does not support it.
+    """
+    if isinstance(schema, list):
+        return [strict_json_schema(item) for item in schema]
+    if not isinstance(schema, dict):
+        return schema
+    result = {k: strict_json_schema(v) for k, v in schema.items() if k != "default"}
+    if isinstance(result.get("properties"), dict):
+        result["required"] = list(result["properties"])
+        result["additionalProperties"] = False
+    return result
+
+
 def _http_error(response: httpx.Response) -> LlmClientError:
     status = response.status_code
     detail = {}
@@ -268,7 +286,7 @@ class OpenAIResponsesClient:
                             "type": "json_schema",
                             "name": "criterion_proposal",
                             "strict": True,
-                            "schema": schema,
+                            "schema": strict_json_schema(schema),
                         }
                     },
                     "max_output_tokens": self.settings.max_output_tokens,

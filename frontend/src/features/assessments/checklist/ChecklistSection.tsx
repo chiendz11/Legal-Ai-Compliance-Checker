@@ -1,28 +1,18 @@
+import { useState } from "react";
+
 import type { ApplicableRequirement, ScopeResolution } from "../../../shared/api/client";
-import { Empty, MachineText, Section, StatusBadge, Table } from "../../../shared/components/ui";
+import {
+  Disclosure,
+  Empty,
+  RequirementTitle,
+  Section,
+  StatusBadge,
+  Table,
+} from "../../../shared/components/ui";
 import { label } from "../../../shared/labels";
+import { explainApplicable, viDate } from "../../reports/explain";
 import { useReportNav } from "../../reports/nav";
-import { formatRequirementId, formatVersionId, useReportIndex } from "../../reports/reportIndex";
-
-const GROUP_NAMES: Record<string, string> = {
-  NHAO: "Luật Nhà ở",
-  CAN_HO_2024: "Chế độ Căn hộ 2024",
-  MAU_CAN_HO: "Hợp đồng mẫu Căn hộ",
-  KDBDS: "Luật Kinh doanh BĐS",
-  ND_KDBDS: "Nghị định KDBĐS",
-  VB_DS_2015: "Bộ luật Dân sự 2015",
-  BVNTD: "Luật BVQL người tiêu dùng",
-  BVQLNTD: "Luật BVQL người tiêu dùng",
-  VB_TT_2010: "Luật Trọng tài thương mại",
-  TTTM: "Luật Trọng tài thương mại",
-  VBPL002: "Nghị định 55/2024 (BVNTD)",
-  VBPL003: "Quyết định 07/2024 (HĐ Mẫu)",
-};
-
-function formatGroupName(group: string | null | undefined): string {
-  if (!group) return "—";
-  return GROUP_NAMES[group] ?? group;
-}
+import { useReportIndex, useRequirementName } from "../../reports/reportIndex";
 
 export function ChecklistSection({
   applicable,
@@ -31,112 +21,132 @@ export function ChecklistSection({
   applicable: ApplicableRequirement[];
   checklist: ScopeResolution[];
 }) {
-  const index = useReportIndex();
-  const { go } = useReportNav();
+  const [showAll, setShowAll] = useState(false);
+  const notApplicable = applicable.filter((a) => a.applicability_status === "NOT_APPLICABLE");
+  // Rows that matter for this contract come first; "does not apply" ones are hidden by default.
+  const rows = showAll
+    ? applicable
+    : applicable.filter((a) => a.applicability_status !== "NOT_APPLICABLE");
   return (
     <Section
-      title="Phạm vi pháp lý và checklist"
-      description="C04/C05 do Scope và Temporal Resolver chọn từ hồ sơ hợp đồng và snapshot tri thức đã pin, độc lập với các viện dẫn hợp đồng tự nêu."
+      title="Quy định pháp luật áp dụng"
+      description="Hệ thống đối chiếu hợp đồng với toàn bộ quy định trong kho tri thức pháp lý để biết quy định nào áp dụng, dựa trên thông tin đọc được từ hợp đồng (loại hợp đồng, các bên, ngày ký…). Danh sách này không phụ thuộc vào các luật mà chính hợp đồng trích dẫn."
     >
-      <h3 className="subhead">Yêu cầu được xét ({applicable.length})</h3>
-      {applicable.length === 0 ? (
-        <Empty>Chưa có yêu cầu áp dụng.</Empty>
+      <div className="filter-row">
+        <span className="muted small">
+          Đang hiện {rows.length}/{applicable.length} quy định.
+        </span>
+        {notApplicable.length > 0 && (
+          <button
+            type="button"
+            className="button"
+            aria-pressed={showAll}
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll
+              ? `Ẩn ${notApplicable.length} quy định không áp dụng`
+              : `Hiện thêm ${notApplicable.length} quy định không áp dụng`}
+          </button>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <Empty>Không có quy định nào cần xét.</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Yêu cầu</th>
-              <th>Nhóm</th>
-              <th>Phạm vi</th>
-              <th>Phiên bản</th>
-              <th>Áp dụng</th>
-              <th>Mốc</th>
-              <th>Lý do</th>
+              <th>Quy định</th>
+              <th>Có áp dụng?</th>
+              <th>Mốc thời gian</th>
+              <th>Giải thích</th>
             </tr>
           </thead>
           <tbody>
-            {applicable.map((a) => (
-              <tr key={a.yeu_cau_ca_id}>
-                <td>
-                  {index.requirementById.has(a.yeu_cau_ca_id) ? (
-                    <button
-                      type="button"
-                      className="link"
-                      onClick={() => go("compliance", a.yeu_cau_ca_id)}
-                      title={a.requirement_id}
-                    >
-                      {formatRequirementId(a.requirement_id)}
-                    </button>
-                  ) : (
-                    <span title={a.requirement_id}>{formatRequirementId(a.requirement_id)}</span>
-                  )}
-                </td>
-                <td>{formatGroupName(a.nhom_phien_ban)}</td>
-                <td>
-                  <StatusBadge kind="scope" code={a.scope_status} />
-                </td>
-                <td>
-                  {a.applicability_status === "NOT_APPLICABLE" ? (
-                    <span className="muted small">Không chọn phiên bản — không áp dụng</span>
-                  ) : (
-                    <>
-                      <StatusBadge kind="version" code={a.version_status} />{" "}
-                      <span className="small font-medium" title={a.requirement_version_id ?? ""}>
-                        {formatVersionId(a.requirement_version_id)}
-                      </span>
-                      {a.version_status !== "RESOLVED" && a.requirement_version_id && (
-                        <span className="small muted"> (ứng viên)</span>
-                      )}
-                    </>
-                  )}
-                </td>
-                <td>
-                  <StatusBadge kind="applicability" code={a.applicability_status} />
-                </td>
-                <td className="small" title={a.loai_moc ?? undefined}>
-                  <span className="font-medium">{a.loai_moc ? label("anchor", a.loai_moc).text : "—"}</span>
-                  {a.moc_ap_dung ? ` (${a.moc_ap_dung})` : ""}
-                </td>
-                <td className="small">
-                  <MachineText text={a.reason?.summary || [...new Set(Object.values(a.reason ?? {}))].join(" · ") || "—"} />
-                </td>
-              </tr>
+            {rows.map((a) => (
+              <Row key={a.yeu_cau_ca_id} requirement={a} />
             ))}
           </tbody>
         </Table>
       )}
 
-      <h3 className="subhead">Checklist phạm vi ({checklist.length})</h3>
-      {checklist.length === 0 ? (
-        <Empty>Chưa có checklist.</Empty>
-      ) : (
-        <Table>
-          <thead>
-            <tr>
-              <th>Yêu cầu</th>
-              <th>Nhóm</th>
-              <th>Phạm vi</th>
-              <th>Lý do phạm vi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {checklist.map((c) => (
-              <tr key={c.yeu_cau_ca_id}>
-                <td>
-                  <span title={c.requirement_id}>{formatRequirementId(c.requirement_id)}</span>
-                </td>
-                <td>{formatGroupName(c.nhom_phien_ban)}</td>
-                <td>
-                  <StatusBadge kind="scope" code={c.scope_status} />
-                </td>
-                <td className="small">
-                  <MachineText text={c.scope_reason} />
-                </td>
+      <Disclosure summary="Chi tiết kỹ thuật: bảng xác định phạm vi (dành cho kỹ sư)">
+        {checklist.length === 0 ? (
+          <Empty>Chưa có checklist.</Empty>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Nhóm</th>
+                <th>Phạm vi</th>
+                <th>Lý do (nguyên văn module)</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
-      )}
+            </thead>
+            <tbody>
+              {checklist.map((c) => (
+                <tr key={c.yeu_cau_ca_id}>
+                  <td>
+                    <code>{c.requirement_id}</code>
+                  </td>
+                  <td>{c.nhom_phien_ban ?? "—"}</td>
+                  <td>
+                    <StatusBadge kind="scope" code={c.scope_status} />
+                  </td>
+                  <td className="small">{c.scope_reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Disclosure>
     </Section>
+  );
+}
+
+function Row({ requirement: a }: { requirement: ApplicableRequirement }) {
+  const index = useReportIndex();
+  const nameOf = useRequirementName();
+  const { go } = useReportNav();
+  const reason = a.reason ?? {};
+  const trace = reason.summary || [...new Set(Object.values(reason))].join(" · ") || "—";
+  const title = <RequirementTitle name={nameOf(a.requirement_id)} code={a.requirement_id} />;
+  return (
+    <tr>
+      <td>
+        {index.requirementById.has(a.yeu_cau_ca_id) ? (
+          <button type="button" className="link" onClick={() => go("compliance", a.yeu_cau_ca_id)}>
+            {title}
+          </button>
+        ) : (
+          title
+        )}
+      </td>
+      <td>
+        <StatusBadge kind="applicability" code={a.applicability_status} />
+      </td>
+      <td className="small">
+        {a.loai_moc ? label("markerType", a.loai_moc).text : "—"}
+        {a.moc_ap_dung ? ` ${viDate(a.moc_ap_dung)}` : ""}
+      </td>
+      <td className="small reason-cell">
+        {explainApplicable(a).text}
+        <details className="machine-note">
+          <summary>Chi tiết kỹ thuật</summary>
+          <p>
+            <StatusBadge kind="scope" code={a.scope_status} />{" "}
+            {a.applicability_status === "NOT_APPLICABLE" && !a.requirement_version_id ? (
+              "Không chọn phiên bản vì không áp dụng"
+            ) : (
+              <>
+                <StatusBadge kind="version" code={a.version_status} />{" "}
+                <code>{a.requirement_version_id ?? ""}</code>
+                {a.version_status !== "RESOLVED" && a.requirement_version_id && " (ứng viên)"}
+              </>
+            )}
+          </p>
+          <p>{trace}</p>
+        </details>
+      </td>
+    </tr>
   );
 }

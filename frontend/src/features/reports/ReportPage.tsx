@@ -1,25 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import type { AssessmentCase, FinalReport, ReportRecord } from "../../shared/api/client";
-import { useLegalBasis, useReport } from "../../shared/api/queries";
-import { LoadState, MachineText, Notice, StatusBadge } from "../../shared/components/ui";
+import type { AssessmentCase, ReportRecord } from "../../shared/api/client";
+import { useCases, useLegalBasis, useReport, useRequirementNames } from "../../shared/api/queries";
+import { Icon } from "../../shared/components/icons";
+import { LoadState, MachineText, Notice } from "../../shared/components/ui";
 import { mockEnabled } from "../../shared/env";
-import { label } from "../../shared/labels";
 import { CitationsSection } from "../assessments/citations/CitationsSection";
-import { ChecklistSection } from "../assessments/checklist/ChecklistSection";
-import { ComplianceSection } from "../assessments/compliance/ComplianceSection";
+import { TopicsSection } from "../assessments/compliance/ComplianceSection";
 import { contractSourceUrl, EvidenceProvider } from "../assessments/evidence/EvidenceViewer";
+import { PdfViewer, type PdfTarget } from "../assessments/evidence/PdfViewer";
 import { ProfileSection } from "../assessments/profile/ProfileSection";
-import { RecommendationsSection } from "../assessments/recommendations/RecommendationsSection";
-import { RisksSection } from "../assessments/risks/RisksSection";
 import { ReviewWorkbench } from "../review/ReviewWorkbench";
-import { AuditSection } from "./AuditSection";
+import { viDate } from "./explain";
 import { LegalBasisContext } from "./legalBasis";
-import { focusDomId, TABS, useReportNav } from "./nav";
-import { buildIndex, ReportIndexContext } from "./reportIndex";
-import { SummaryTiles } from "./SummaryTiles";
+import { focusDomId, TABS, type TabId, useReportNav } from "./nav";
+import { OverviewSection } from "./OverviewSection";
+import {
+  buildIndex,
+  ReportIndexContext,
+  type RequirementInfo,
+  RequirementNamesContext,
+} from "./reportIndex";
+import { TechnicalSection } from "./TechnicalSection";
 import { ReportPresentationContext } from "./assessmentStatus";
 
 export function ReportPage() {
@@ -38,52 +42,99 @@ function ReportView({ record }: { record: ReportRecord }) {
     () => new Map((legalBasis.data?.items ?? []).map((item) => [item.id, item])),
     [legalBasis.data],
   );
-  const { tab, focus, split } = useReportNav();
+  const requirementNames = useRequirementNames(report.bao_cao_id);
+  const namesById = useMemo(
+    () =>
+      new Map<string, RequirementInfo>(
+        (requirementNames.data?.items ?? []).map((item) => [
+          item.requirement_id,
+          { title: item.title, group: item.obligation_group ?? null },
+        ]),
+      ),
+    [requirementNames.data],
+  );
+  const { tab, focus, split, setSplit } = useReportNav();
   const [pdfPage, setPdfPage] = useState(1);
+  const [pdfTarget, setPdfTarget] = useState<PdfTarget | null>(null);
+  const source = useContractSource(content.case);
+  // Evidence clicks open the original PDF beside the report and highlight the quote there;
+  // without a readable PDF they fall back to the text drawer.
+  const pdfMode = content.case.source.mime_type === "application/pdf" && !source.error;
+  // Opening the PDF narrows the report column and reflows it; keep the clicked button where
+  // the reader saw it instead of letting the page jump.
+  const anchor = useRef<{ el: HTMLElement; top: number } | null>(null);
+  const locate = useCallback(
+    (target: Omit<PdfTarget, "nonce">) => {
+      setPdfTarget({ ...target, nonce: Date.now() });
+      if (!split) {
+        const el = document.activeElement;
+        anchor.current =
+          el instanceof HTMLElement && el !== document.body
+            ? { el, top: el.getBoundingClientRect().top }
+            : null;
+        setSplit(true);
+      }
+    },
+    [split, setSplit],
+  );
+  useLayoutEffect(() => {
+    const kept = anchor.current;
+    anchor.current = null;
+    if (kept?.el.isConnected) window.scrollBy(0, kept.el.getBoundingClientRect().top - kept.top);
+  }, [split]);
 
   useEffect(() => {
     if (!focus) return;
-    // Wait a frame so the target tab (and any auto-opened <details>) has rendered.
-    const frame = requestAnimationFrame(() =>
-      document.getElementById(focusDomId(focus))?.scrollIntoView({ block: "center" }),
+    // Let the target section (and any auto-opened <details>) render first. A timer, not
+    // requestAnimationFrame, which never fires while the tab is in the background.
+    const timer = setTimeout(
+      () => document.getElementById(focusDomId(focus))?.scrollIntoView({ block: "center" }),
+      50,
     );
-    return () => cancelAnimationFrame(frame);
-  }, [tab, focus]);
+    return () => clearTimeout(timer);
+    // Topic groups and legal-basis text load later and move the target; scroll again then.
+  }, [tab, focus, namesById, basisById]);
 
   return (
     <ReportPresentationContext.Provider value={record.presentation ?? null}>
     <ReportIndexContext.Provider value={index}>
-      <LegalBasisContext.Provider value={basisById}>
-        <EvidenceProvider
-          caseInfo={content.case}
-          runId={record.run_id}
-          onLocate={split ? setPdfPage : undefined}
-        >
-          {split ? (
-            <div className="split-layout">
-              <SourcePane caseInfo={content.case} page={pdfPage} />
-              <div className="split-report">
+      <RequirementNamesContext.Provider value={namesById}>
+        <LegalBasisContext.Provider value={basisById}>
+          <EvidenceProvider
+            caseInfo={content.case}
+            runId={record.run_id}
+            onLocate={pdfMode ? locate : undefined}
+          >
+            {/* One tree for both layouts: toggling the PDF must not remount the report, which
+                would close every opened topic and lose the reader's place. */}
+            <div className={split ? "split-layout" : undefined}>
+              {split && (
+                <SourcePane
+                  caseInfo={content.case}
+                  source={source}
+                  page={pdfPage}
+                  target={pdfTarget}
+                  onPage={setPdfPage}
+                />
+              )}
+              <div className={split ? "split-report" : undefined}>
                 <ReportBody record={record} />
               </div>
             </div>
-          ) : (
-            <ReportBody record={record} />
-          )}
-        </EvidenceProvider>
-      </LegalBasisContext.Provider>
+          </EvidenceProvider>
+        </LegalBasisContext.Provider>
+      </RequirementNamesContext.Provider>
     </ReportIndexContext.Provider>
     </ReportPresentationContext.Provider>
   );
 }
 
-/** Original contract beside the findings; evidence clicks move it to the cited page. */
-function SourcePane({ caseInfo, page }: { caseInfo: AssessmentCase; page: number }) {
-  const pdf = caseInfo.source.mime_type === "application/pdf";
+/** The original PDF as a same-origin blob URL (checks tenant access; one download per page). */
+function useContractSource(caseInfo: AssessmentCase) {
   const url = contractSourceUrl(caseInfo.hop_dong_id);
-  // Fetch once as a blob: page jumps are instant and a missing source shows a clear error.
   const source = useQuery({
     queryKey: ["contract-source", caseInfo.hop_dong_id],
-    enabled: pdf,
+    enabled: caseInfo.source.mime_type === "application/pdf",
     staleTime: Infinity,
     retry: false,
     queryFn: async () => {
@@ -95,12 +146,25 @@ function SourcePane({ caseInfo, page }: { caseInfo: AssessmentCase; page: number
       return URL.createObjectURL(await response.blob());
     },
   });
-  useEffect(() => {
-    const objectUrl = source.data;
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [source.data]);
+  return source;
+}
+
+/** Original contract beside the findings; evidence clicks highlight the quote in it. */
+function SourcePane({
+  caseInfo,
+  source,
+  page,
+  target,
+  onPage,
+}: {
+  caseInfo: AssessmentCase;
+  source: ReturnType<typeof useContractSource>;
+  page: number;
+  target: PdfTarget | null;
+  onPage: (page: number) => void;
+}) {
+  const pdf = caseInfo.source.mime_type === "application/pdf";
+  const url = contractSourceUrl(caseInfo.hop_dong_id);
   return (
     <aside className="pdf-pane" aria-label="Hợp đồng gốc">
       <div className="pdf-pane-head small">
@@ -115,8 +179,7 @@ function SourcePane({ caseInfo, page }: { caseInfo: AssessmentCase; page: number
       </div>
       {pdf ? (
         source.data ? (
-          // Re-keyed per page so the browser PDF viewer opens at the cited page.
-          <iframe key={page} title="Hợp đồng gốc" src={`${source.data}#page=${page}`} />
+          <PdfViewer url={source.data} target={target} onPage={onPage} />
         ) : source.error ? (
           <Notice tone="warn">
             <strong>Chưa xem được tệp gốc ở đây.</strong> Tệp PDF của ca này nằm trên máy chủ lưu
@@ -158,139 +221,93 @@ function ReportBody({ record }: { record: ReportRecord }) {
   return (
     <>
       <ReportHeader record={record} />
-      {content.audit.evidence_mode === "SYNTHETIC" && (
+      {mockEnabled && (
         <Notice tone="info">
-          Chế độ đồ án: có chứng từ và dữ kiện synthetic. Xem mã kịch bản và nguồn
-          giả lập trong tab Audit; kết quả được tính theo kịch bản này.
+          Dữ liệu mẫu (mock): báo cáo tham chiếu dùng để dựng giao diện, không phải kết quả chạy thật.
         </Notice>
       )}
-      <ReportBanners report={report} />
-      <SummaryTiles content={content} />
-      <TabBar />
-      <div className="tab-panel">
-        {tab === "profile" && <ProfileSection profile={content.contract_profile} />}
-        {tab === "scope" && (
-          <ChecklistSection
-            applicable={content.applicable_legal_scope}
-            checklist={content.checklist}
-          />
-        )}
-        {tab === "compliance" && <ComplianceSection content={content} />}
-        {tab === "citations" && <CitationsSection citations={content.citation_validation} />}
-        {tab === "risks" && (
-          <RisksSection risks={content.risks} recommendations={content.recommendations} />
-        )}
-        {tab === "recommendations" && (
-          <RecommendationsSection recommendations={content.recommendations} />
-        )}
-        {tab === "review" &&
-          (mockEnabled ? (
-            <Notice tone="info">Rà soát cần backend thật; chế độ mock chỉ đọc.</Notice>
-          ) : (
-            <ReviewWorkbench record={record} />
-          ))}
-        {tab === "audit" && <AuditSection record={record} />}
+      <div className="report-layout">
+        <SectionNav record={record} />
+        <div className="report-content">
+          {tab === "overview" && <OverviewSection report={report} />}
+          {tab === "topics" && <TopicsSection content={content} />}
+          {tab === "contract" && (
+            <>
+              <ProfileSection profile={content.contract_profile} />
+              <CitationsSection citations={content.citation_validation} />
+            </>
+          )}
+          {tab === "review" &&
+            (mockEnabled ? (
+              <Notice tone="info">Rà soát cần máy chủ thật; chế độ dữ liệu mẫu chỉ đọc.</Notice>
+            ) : (
+              <ReviewWorkbench record={record} />
+            ))}
+          {tab === "technical" && <TechnicalSection record={record} />}
+        </div>
       </div>
     </>
   );
+}
+
+/** Document name from the case list; the report itself only stores IDs. */
+function useDocumentName(caId: string, fallback: string) {
+  const { data } = useCases({ q: caId, page_size: 1 });
+  const item = data?.items.find((i) => i.case.ca_id === caId);
+  return item?.ten_tai_lieu ?? fallback;
 }
 
 function ReportHeader({ record }: { record: ReportRecord }) {
   const { report } = record;
   const kase = report.report_json.case;
+  const name = useDocumentName(kase.ca_id, `Hợp đồng ${kase.hop_dong_id}`);
+  const published = report.report_status === "PUBLISHED";
   return (
     <header className="report-header">
       <p className="crumbs">
-        <Link to="/">Lịch sử</Link> / {kase.ca_id}
+        <Link to="/">Hợp đồng</Link> / Báo cáo
       </p>
-      <h1>Báo cáo đánh giá hợp đồng {kase.hop_dong_id}</h1>
+      <h1>{name}</h1>
       <div className="header-meta">
-        <StatusBadge kind="reportStatus" code={report.report_status} />
-        <StatusBadge kind="review" code={report.review_status} />
-        <span>
-          Phiên bản <code>{report.phien_ban_bao_cao}</code>
+        <span className={`badge tone-${published ? "good" : "warn"}`}>
+          {published ? "Đã phát hành" : "Bản nháp · chưa duyệt"}
         </span>
-        <span>
-          Run <code>{record.run_id}</code>
-        </span>
-        <span>Ngày đánh giá {kase.assessment_context.ngay_danh_gia}</span>
         {kase.assessment_context.review_mode === "DRAFT_REVIEW" && (
-          <span className="tag">Rà soát dự thảo trước khi ký</span>
+          <span className="badge tone-neutral">Rà soát dự thảo trước khi ký</span>
         )}
-        <span>
-          {kase.assessment_context.moc_ap_dung ? (
-            <>
-              Mốc khai báo ở intake {kase.assessment_context.moc_ap_dung} (
-              {kase.assessment_context.loai_moc_ap_dung
-                ? label("anchor", kase.assessment_context.loai_moc_ap_dung).text
-                : "chưa khai báo loại mốc"}
-              )
-            </>
-          ) : "Intake chưa khai báo mốc; xem thời điểm đã phân giải của từng yêu cầu"}
-        </span>
+        <span>Đánh giá ngày {viDate(kase.assessment_context.ngay_danh_gia)}</span>
+        <Link to="/help#doc-bao-cao" className="small">
+          Cách đọc báo cáo này
+        </Link>
       </div>
       {!mockEnabled && (
         <div className="actions">
           <SplitToggle />
-          {(["pdf", "docx", "json"] as const).map((format) => (
-            <a
-              key={format}
-              className="button"
-              href={`/api/v1/reports/${encodeURIComponent(report.bao_cao_id)}/export?format=${format}`}
-            >
-              Tải {format.toUpperCase()}
-            </a>
-          ))}
+          <details className="menu">
+            <summary className="button">
+              <Icon name="download" />
+              Tải báo cáo
+            </summary>
+            <div className="menu-list">
+              {(
+                [
+                  ["pdf", "PDF – để đọc, in"],
+                  ["docx", "Word (DOCX) – để chỉnh sửa"],
+                  ["json", "JSON – dữ liệu gốc có dấu xác thực"],
+                ] as const
+              ).map(([format, text]) => (
+                <a
+                  key={format}
+                  href={`/api/v1/reports/${encodeURIComponent(report.bao_cao_id)}/export?format=${format}`}
+                >
+                  {text}
+                </a>
+              ))}
+            </div>
+          </details>
         </div>
       )}
     </header>
-  );
-}
-
-function ReportBanners({ report }: { report: FinalReport }) {
-  return (
-    <>
-      {report.report_status === "PUBLISHED" ? (
-        <Notice tone="info">
-          <strong>Đã phát hành.</strong> Các mục chuyên viên chỉnh sửa nằm ở tab Rà soát và phần
-          audit.review; kết quả máy trong các tab khác được giữ nguyên để đối chiếu.
-        </Notice>
-      ) : (
-        <Notice tone="warn">
-          <strong>Kết quả máy, chưa được phát hành.</strong> Báo cáo đang ở trạng thái “
-          {label("reportStatus", report.report_status).text} /{" "}
-          {label("review", report.review_status).text}
-          ”; không dùng như kết luận pháp lý đã duyệt.
-        </Notice>
-      )}
-      {mockEnabled && (
-        <Notice tone="info">
-          Dữ liệu mock: report tham chiếu QA (EXPECTED) dùng để dựng giao diện, không phải output
-          của một lần chạy dev.
-        </Notice>
-      )}
-      {report.report_json.audit.module_source === "MODULES" && (
-        <Notice tone="info">
-          <strong>Module thật (bước 1–7):</strong> đọc hợp đồng và trích hồ sơ (nhóm A), phạm vi,
-          phiên bản, viện dẫn, truy xuất (nhóm B), tuân thủ, rủi ro và khuyến nghị (nhóm C) đều do
-          module tính trên chính tệp đã tải lên.
-        </Notice>
-      )}
-      {report.report_json.audit.module_source === "MODULES_DI_REFERENCE" && (
-        <Notice tone="info">
-          <strong>Module thật (bước 3–7):</strong> phạm vi, phiên bản, viện dẫn, truy xuất, tuân
-          thủ, rủi ro và khuyến nghị do các module của nhóm B/C tính. Riêng hồ sơ hợp đồng và đoạn
-          văn (bước 1–2) lấy từ dataset tham chiếu vì tệp PDF gốc của ca này không có trên máy
-          chủ.
-        </Notice>
-      )}
-      {report.report_json.audit.module_source === "REFERENCE_REPLAY" && (
-        <Notice tone="info">
-          <strong>REFERENCE_REPLAY:</strong> run này phát lại dữ liệu tham chiếu QA qua luồng điều
-          phối thật để kiểm thử tích hợp; đây không phải kết quả của các module đánh giá.
-        </Notice>
-      )}
-    </>
   );
 }
 
@@ -298,16 +315,25 @@ function SplitToggle() {
   const { split, setSplit } = useReportNav();
   return (
     <button type="button" className="button" aria-pressed={split} onClick={() => setSplit(!split)}>
-      {split ? "Đóng xem song song" : "Xem song song với hợp đồng"}
+      {split ? "Đóng hợp đồng gốc" : "Xem cùng hợp đồng gốc"}
     </button>
   );
 }
 
-function TabBar() {
+/** Left table of contents: four reading steps, then engineering detail apart. */
+function SectionNav({ record }: { record: ReportRecord }) {
   const { tab, go } = useReportNav();
+  const content = record.report.report_json;
+  const results = content.compliance.requirement_results;
+  const attention =
+    results.filter((r) => r.status === "NON_COMPLIANT" || r.status === "PARTIAL").length +
+    content.risks.compliance.length +
+    content.risks.citation.length;
+  const counts: Partial<Record<TabId, number>> = { topics: results.length };
+  const steps = TABS.filter((t) => t.id !== "technical");
   return (
-    <nav className="tabs" aria-label="Các phần báo cáo">
-      {TABS.map((t) => (
+    <nav className="section-nav" aria-label="Mục lục báo cáo">
+      {steps.map((t, i) => (
         <button
           key={t.id}
           type="button"
@@ -315,9 +341,24 @@ function TabBar() {
           aria-current={t.id === tab ? "page" : undefined}
           onClick={() => go(t.id)}
         >
-          {t.title}
+          <span className="section-num">{i + 1}</span>
+          <span className="section-title">{t.title}</span>
+          {t.id === "overview" && attention > 0 && (
+            <span className="section-count hot" title="Điểm cần chú ý">
+              {attention}
+            </span>
+          )}
+          {counts[t.id] !== undefined && <span className="section-count">{counts[t.id]}</span>}
         </button>
       ))}
+      <button
+        type="button"
+        className={`muted-item${tab === "technical" ? " active" : ""}`}
+        aria-current={tab === "technical" ? "page" : undefined}
+        onClick={() => go("technical")}
+      >
+        <span className="section-title">Chi tiết kỹ thuật (cho kỹ sư)</span>
+      </button>
     </nav>
   );
 }

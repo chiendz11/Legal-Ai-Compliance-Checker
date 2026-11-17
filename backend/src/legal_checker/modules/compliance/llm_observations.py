@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import date
 from typing import Any
@@ -45,6 +46,9 @@ from legal_checker.shared.llm.types import LlmClient, LlmClientError
 
 PROMPT_VERSION = "C07_SEMANTIC_V16"
 SCHEMA_VERSION = "C07_PROPOSAL_V1"
+# An unfilled template blank ("là: [...] m2", "…", "....", "___") is not contract
+# content: a decisive finding never rests on a quote that contains one.
+PLACEHOLDER = re.compile(r"\[\s*(?:…|\.{3}|•|điền[^\]]{0,20})\s*\]|…|\.{4,}|_{3,}")
 INSTRUCTIONS = """Bạn phân tích MỘT criterion pháp lý theo dữ liệu JSON được cung cấp.
 Chỉ dùng criterion, requirement version, predicate/rules đã pin và evidence được chọn.
 Các hàng C06 có scores.parent_context hoặc scores.internal_reference_context là
@@ -152,19 +156,50 @@ def _quote_catalog(selected):
     return quotes
 
 
-def _whitespace_quote(text, quote):
-    """Map a unique whitespace-only normalization back to original source offsets."""
-    positions = []
-    chars = []
-    for match in re.finditer(r"\s+|\S", text):
-        chars.append(" " if match.group().isspace() else match.group())
-        positions.append((match.start(), match.end()))
-    normalized = "".join(chars)
-    candidate = re.sub(r"\s+", " ", quote)
-    start = normalized.find(candidate)
-    if start < 0 or normalized.find(candidate, start + 1) >= 0:
-        return None
-    return positions[start][0], positions[start + len(candidate) - 1][1]
+# A spliced quote keeps its longest opening run only if it has at least this many words.
+_MIN_PREFIX_WORDS = 8
+# Unfilled template blanks: "[…]", "[...]", "[điền vào]", "[•]", "…", "....", "___".
+PLACEHOLDER = re.compile(r"\[\s*(?:…|\.{3}|•|điền[^\]]{0,20})\s*\]|…|\.{4,}|_{3,}")
+
+
+def _word_spans(text: str, words: list[str]) -> list[tuple[int, int]]:
+    pattern = re.compile(r"\s+".join(map(re.escape, words)))
+    return [match.span() for match in pattern.finditer(text)]
+
+
+def _locate_quote(text: str, quote: str, offset: int | None) -> tuple[int, int]:
+    """Exact span of a model quote inside the original chunk text.
+
+    PDF text keeps the layout's spaces and line breaks ("Bên Bán  \\ncó nghĩa vụ"), which
+    models routinely re-space, and models are poor at character offsets. A quote is accepted
+    when its words appear in this order in the chunk with only whitespace differing, at
+    exactly one place (or at the place the given offset points to). Every other character
+    must match, so a paraphrase or an invented quote is still rejected.
+    """
+    if offset is not None and text[offset : offset + len(quote)] == quote:
+        return offset, offset + len(quote)
+    words = quote.split()
+    if not words:
+        raise ProposalValidationError("EMPTY_QUOTE")
+    spans = _word_spans(text, words)
+    if not spans:
+        # Models often splice a sentence ("chịu: (ii) Phạt ..." skipping "(i) ..."). The
+        # longest opening run of words that the contract really contains is kept as the
+        # evidence, if it is long enough to stand on its own; the rest is never stored.
+        floor = max(_MIN_PREFIX_WORDS, -(-len(words) * 3 // 5))
+        for size in range(len(words) - 1, floor - 1, -1):
+            if spans := _word_spans(text, words[:size]):
+                break
+    if not spans:
+        raise ProposalValidationError("QUOTE_MISMATCH")
+    if len(spans) == 1:
+        return spans[0]
+    if offset is None:
+        raise ProposalValidationError("AMBIGUOUS_QUOTE")
+    for span in spans:
+        if span[0] == offset:
+            return span
+    raise ProposalValidationError("QUOTE_OFFSET_MISMATCH")
 
 
 def _compact_source_view(payload, selected):
@@ -408,20 +443,9 @@ def _proposal_observation(proposal, selected, request, model_version):
             raise ProposalValidationError("FOREIGN_EVIDENCE")
         if not item.trich_dan:
             raise ProposalValidationError("EMPTY_QUOTE")
-        start = item.ky_tu_bat_dau
-        if start is None:
-            start = chunk.noi_dung.find(item.trich_dan)
-            if start < 0:
-                span = _whitespace_quote(chunk.noi_dung, item.trich_dan)
-                if span is None:
-                    raise ProposalValidationError("QUOTE_MISMATCH")
-                start, end = span
-                item = item.model_copy(update={"trich_dan": chunk.noi_dung[start:end]})
-            if chunk.noi_dung.find(item.trich_dan, start + 1) >= 0:
-                raise ProposalValidationError("AMBIGUOUS_QUOTE")
-        end = start + len(item.trich_dan)
-        if start < 0 or chunk.noi_dung[start:end] != item.trich_dan:
-            raise ProposalValidationError("QUOTE_OFFSET_MISMATCH")
+        # Re-spaced, mis-offset or spliced quotes are mapped back to the contract's own text.
+        start, end = _locate_quote(chunk.noi_dung, item.trich_dan, item.ky_tu_bat_dau)
+        item = item.model_copy(update={"trich_dan": chunk.noi_dung[start:end]})
         evidence.append(
             Evidence(
                 doan_id=item.doan_id,
@@ -608,6 +632,9 @@ class LLMObservationProvider:
         batch_size: int = 1,
         repair_invalid_batches: bool = False,
         verify_adverse_evidence: bool = False,
+        max_parallel_calls: int = 1,
+        agreement_calls: int = 1,
+        call_unconcludable: bool = True,
     ):
         if type(max_calls) is not int or max_calls < 0:
             raise ValueError("max_calls must be a nonnegative integer")
@@ -627,6 +654,16 @@ class LLMObservationProvider:
         self.batch_size = batch_size
         self.repair_invalid_batches = repair_invalid_batches
         self.verify_adverse_evidence = verify_adverse_evidence
+        if type(max_parallel_calls) is not int or max_parallel_calls < 1:
+            raise ValueError("max_parallel_calls must be a positive integer")
+        self.max_parallel_calls = max_parallel_calls
+        # Repeated asks of a decisive answer; any disagreement leaves the criterion UNKNOWN.
+        if type(agreement_calls) is not int or agreement_calls < 1:
+            raise ValueError("agreement_calls must be a positive integer")
+        self.agreement_calls = agreement_calls
+        # False: no call for a criterion whose answer could only be a reviewer hint, because
+        # neither a review, an attestation nor the automatic review could accept it.
+        self.call_unconcludable = call_unconcludable
 
     def observe(self, context, profile, requirements, retrieval, chunks, knowledge):
         """Implement the existing workflow protocol without opening connections here."""
@@ -719,9 +756,47 @@ class LLMObservationProvider:
             if row.tieu_chi_id in replays or row.tieu_chi_id not in owners:
                 raise ValueError("Duplicate or foreign replay criterion")
             replays[row.tieu_chi_id] = row
+
+        def concludable(criterion_id):
+            """Some AI answer could become a finding: reviewed, attested or admissible."""
+            if criterion_id in reviews:
+                return True
+            if not self.automatic_draft_review:
+                return False
+            from legal_checker.modules.compliance.automatic_review import could_admit
+
+            return could_admit(criterion_id, request, knowledge, verifications.get(criterion_id))
+
+        def ask(package):
+            return self.client.complete(
+                _context(request),
+                instructions=INSTRUCTIONS,
+                payload=deepcopy(package),
+                schema=SemanticProposal.model_json_schema(),
+                prompt_version=PROMPT_VERSION,
+                schema_version=SCHEMA_VERSION,
+            )
+
+        def parse(response):
+            if len(response.content) > 100000:
+                raise ProposalValidationError("RESPONSE_LIMIT")
+            return SemanticProposal.model_validate(parse_json_object(response.content))
+
+        def ask_again(package, finding):
+            """Repeat a decisive question; returns the first differing answer, else None."""
+            for _ in range(self.agreement_calls - 1):
+                try:
+                    again = parse(ask(package)).proposed_finding
+                except (LlmClientError, ValidationError, ValueError):
+                    return "lỗi"
+                if again != finding:
+                    return again
+            return None
+
         analyses = []
         calls = 0
         prefetched = {}
+        agreement = {}
         repair_attempted = set()
         native_numeric = {}
         for criterion_id, owner in owners.items():
@@ -763,6 +838,8 @@ class LLMObservationProvider:
                 if (not selected and not has_external) or len(
                     json.dumps(package, ensure_ascii=False)
                 ) > self.max_context_chars:
+                    continue
+                if not self.call_unconcludable and not concludable(criterion_id):
                     continue
                 pending.append((criterion_id, package))
             # The budget counts criterion analyses, not HTTP retries or batches.
@@ -816,6 +893,76 @@ class LLMObservationProvider:
                         )
                     except LlmClientError as exc:
                         prefetched[criterion_id] = exc
+        budgeted = None
+        if self.client is not None and self.batch_size == 1 and not replay_records:
+            # Same eligibility as the loop below. The budget goes first to criteria the
+            # backend has verified, since only those can usually become findings.
+            pending = []
+            for criterion_id, owner in owners.items():
+                if criterion_id in native_numeric:
+                    continue
+                if self.criterion_ids is not None and criterion_id not in self.criterion_ids:
+                    continue
+                verification = verifications.get(criterion_id)
+                package, selected = _package(
+                    request,
+                    knowledge,
+                    owner,
+                    knowledge.criteria[criterion_id],
+                    profile,
+                    verification,
+                    max_context_chars=self.max_context_chars,
+                )
+                independent = bool(
+                    verification
+                    and (
+                        verification.external_excerpts
+                        or (
+                            verification.gates.missing_allowed()
+                            and verification.mandatory_confirmed
+                            and verification.all_pages_readable
+                            and verification.all_related_documents_received
+                            and request.payload.chunks
+                        )
+                    )
+                )
+                if not selected and not independent:
+                    continue
+                if (
+                    len(json.dumps(package, ensure_ascii=False, default=str))
+                    > self.max_context_chars
+                ):
+                    continue
+                if not self.call_unconcludable and not concludable(criterion_id):
+                    continue
+                pending.append((criterion_id, package))
+            pending.sort(key=lambda item: item[0] not in verifications)
+            # Numeric explanations share the budget and keep their place in the loop below.
+            pending = pending[: max(0, self.max_calls - len(native_numeric))]
+            budgeted = {criterion_id for criterion_id, _ in pending}
+
+            def fetch(item):
+                criterion_id, package = item
+                try:
+                    response = ask(package)
+                except LlmClientError as exc:
+                    return criterion_id, exc, False, None
+                try:
+                    finding = parse(response).proposed_finding
+                except (ValidationError, ValueError):
+                    return criterion_id, response, False, None
+                if finding == "UNKNOWN" or self.agreement_calls < 2:
+                    return criterion_id, response, False, None
+                return criterion_id, response, True, ask_again(package, finding)
+
+            if pending and self.max_parallel_calls > 1:
+                with ThreadPoolExecutor(
+                    max_workers=min(self.max_parallel_calls, len(pending))
+                ) as pool:
+                    for criterion_id, response, checked, differs in pool.map(fetch, pending):
+                        prefetched[criterion_id] = response
+                        if checked:
+                            agreement[criterion_id] = differs
         for criterion_id, requirement in owners.items():
             criterion = knowledge.criteria[criterion_id]
             verification = verifications.get(criterion_id)
@@ -855,6 +1002,8 @@ class LLMObservationProvider:
             replay = replays.get(criterion_id)
             origin, model, request_id = "NO_CALL", "NO_LLM_CALL", None
             proposal, proposed_observation, error = None, None, None
+            # Per criterion: never carry another criterion's adverse-evidence review over.
+            adverse_check = None
             message = ""
             if replay is not None:
                 if replay.input_sha256 != digest or replay.prompt_version not in {
@@ -935,7 +1084,13 @@ class LLMObservationProvider:
                     "OFFLINE_NO_CLIENT",
                     "Chế độ offline: chưa gọi AI phân tích ngữ nghĩa.",
                 )
-            elif calls >= self.max_calls:
+            elif not self.call_unconcludable and not concludable(criterion_id):
+                error, message = (
+                    "NOT_CONCLUDABLE",
+                    "Không gọi AI: điểm kiểm tra này cần dữ kiện được xác minh trước khi có "
+                    "kết luận, nên chuyên viên xem xét ở mục Rà soát.",
+                )
+            elif calls >= self.max_calls or (budgeted is not None and criterion_id not in budgeted):
                 error, message = (
                     "CALL_LIMIT",
                     "Đã đạt giới hạn số criterion được gọi AI trong lần này.",
@@ -957,18 +1112,9 @@ class LLMObservationProvider:
                         if isinstance(response, LlmClientError):
                             raise response
                     else:
-                        response = self.client.complete(
-                            _context(request),
-                            instructions=INSTRUCTIONS,
-                            payload=deepcopy(package),
-                            schema=SemanticProposal.model_json_schema(),
-                            prompt_version=PROMPT_VERSION,
-                            schema_version=SCHEMA_VERSION,
-                        )
+                        response = ask(package)
                     model, request_id = response.model_version, response.request_id
-                    if len(response.content) > 100000:
-                        raise ProposalValidationError("RESPONSE_LIMIT")
-                    proposal = SemanticProposal.model_validate(parse_json_object(response.content))
+                    proposal = parse(response)
                 except LlmClientError as exc:
                     error, message = (
                         exc.code,
@@ -979,11 +1125,38 @@ class LLMObservationProvider:
                         exc.code if isinstance(exc, ProposalValidationError) else "INVALID_SCHEMA"
                     )
                     message = f"Phản hồi AI không hợp lệ: {error}."
+                # A decisive answer counts only if every repeated answer gives the same finding.
+                if (
+                    proposal is not None
+                    and error is None
+                    and proposal.proposed_finding != "UNKNOWN"
+                    and self.agreement_calls > 1
+                ):
+                    differs = (
+                        agreement[criterion_id]
+                        if criterion_id in agreement
+                        else ask_again(package, proposal.proposed_finding)
+                    )
+                    if differs is not None:
+                        error, message = (
+                            "MODEL_DISAGREEMENT",
+                            f"Hai lần hỏi AI cho kết quả khác nhau ({proposal.proposed_finding} "
+                            f"và {differs}) nên chưa kết luận.",
+                        )
+                        proposal = None
             if proposal is not None:
                 try:
                     if proposal.tieu_chi_id != criterion_id:
                         raise ProposalValidationError("FOREIGN_CRITERION")
                     proposed_observation = _proposal_observation(proposal, selected, request, model)
+                    if (
+                        proposal.proposed_finding != "UNKNOWN"
+                        and criterion_id not in native_numeric
+                        and any(
+                            PLACEHOLDER.search(e.trich_dan) for e in proposed_observation.evidence
+                        )
+                    ):
+                        raise ProposalValidationError("TEMPLATE_PLACEHOLDER")
                     if (
                         self.verify_adverse_evidence
                         and proposal.proposed_finding == "VIOLATED"

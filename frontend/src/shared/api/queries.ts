@@ -123,6 +123,21 @@ export function useRunReports(caId: string, runId: string, enabled = true) {
 }
 
 /** Names for the report's legal-basis IDs, from the knowledge snapshot the report pinned. */
+/** Plain-language requirement names; screens fall back to the code while it loads or fails. */
+export function useRequirementNames(baoCaoId: string) {
+  return useQuery({
+    queryKey: ["requirement-names", baoCaoId],
+    queryFn: async () =>
+      unwrap(
+        await api.GET("/api/v1/reports/{bao_cao_id}/requirements", {
+          params: { path: { bao_cao_id: baoCaoId } },
+        }),
+      ),
+    staleTime: Infinity,
+    retry: false,
+  });
+}
+
 export function useLegalBasis(baoCaoId: string) {
   return useQuery({
     queryKey: ["legal-basis", baoCaoId],

@@ -165,7 +165,6 @@ def test_bad_json_becomes_explicit_unknown(reasoning_case, raw):
     "change,code",
     [
         ({"trich_dan": "a fabricated quote"}, "QUOTE_MISMATCH"),
-        ({"ky_tu_bat_dau": 0}, "QUOTE_OFFSET_MISMATCH"),
         ({"doan_id": "FOREIGN_CHUNK"}, "FOREIGN_EVIDENCE"),
         ({"trich_dan": ""}, "EMPTY_QUOTE"),
     ],
@@ -219,6 +218,74 @@ def test_repeated_quote_requires_explicit_occurrence(reasoning_case):
     proposal["evidence"][0]["ky_tu_bat_dau"] = len(quote) + 1
     resolved = LLMObservationProvider(FakeClient([proposal])).analyze(request, knowledge)
     assert resolved.analyses[0].error_code is None
+    # An offset that points at neither occurrence cannot pick one.
+    proposal["evidence"][0]["ky_tu_bat_dau"] = 3
+    wrong = LLMObservationProvider(FakeClient([proposal])).analyze(request, knowledge)
+    assert wrong.analyses[0].error_code == "QUOTE_OFFSET_MISMATCH"
+
+
+def test_respaced_quote_resolves_to_the_contract_text(reasoning_case):
+    knowledge, data = reasoning_case
+    original = "Bên Bán  \ncó nghĩa vụ bàn giao\tcăn hộ."
+    data["payload"]["chunks"][0]["noi_dung"] = "Điều 5. " + original
+    proposal = semantic(data) | {
+        "evidence": [
+            # Re-spaced by the model, with a wrong offset.
+            {
+                "doan_id": "CHUNK_1",
+                "trich_dan": "Bên Bán có nghĩa vụ bàn giao căn hộ.",
+                "ky_tu_bat_dau": 0,
+            }
+        ]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    evidence = batch.analyses[0].observation_proposal.evidence[0]
+    assert evidence.trich_dan == original  # the stored quote is the contract's own text
+    assert (evidence.ky_tu_bat_dau, evidence.ky_tu_ket_thuc) == (8, 8 + len(original))
+
+
+def test_spliced_quote_keeps_only_the_part_the_contract_contains(reasoning_case):
+    knowledge, data = reasoning_case
+    text = (
+        "Bên Mua phải chịu: (i) Lãi chậm thanh toán đến ngày chấm dứt; "
+        "(ii) Phạt vi phạm với mức phạt là 8% giá bán căn hộ."
+    )
+    data["payload"]["chunks"][0]["noi_dung"] = text
+    spliced = "Bên Mua phải chịu: (i) Lãi chậm thanh toán đến ngày chấm dứt và bồi thường."
+    proposal = semantic(data) | {
+        "evidence": [{"doan_id": "CHUNK_1", "trich_dan": spliced, "ky_tu_bat_dau": None}]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    evidence = batch.analyses[0].observation_proposal.evidence[0]
+    assert (
+        evidence.trich_dan == "Bên Mua phải chịu: (i) Lãi chậm thanh toán đến ngày chấm dứt;"[:-1]
+    )
+    assert text.startswith(evidence.trich_dan)
+
+
+def test_paraphrased_quote_is_still_rejected(reasoning_case):
+    knowledge, data = reasoning_case
+    data["payload"]["chunks"][0]["noi_dung"] = "Bên Bán có nghĩa vụ bàn giao căn hộ."
+    proposal = semantic(data) | {
+        "evidence": [
+            {
+                "doan_id": "CHUNK_1",
+                "trich_dan": "Bên bán phải bàn giao căn hộ.",
+                "ky_tu_bat_dau": None,
+            }
+        ]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert batch.analyses[0].error_code == "QUOTE_MISMATCH"
 
 
 @pytest.mark.parametrize(
@@ -634,6 +701,110 @@ def test_review_cannot_silently_change_verified_facts_used_for_analysis(reasonin
         )
 
 
+@pytest.mark.parametrize("blank", ["[…]", "[...]", "[điền vào]", "[•]", "……", "......", "____"])
+def test_a_blank_template_field_never_supports_a_finding(reasoning_case, blank):
+    knowledge, data = reasoning_case
+    text = f"c) Diện tích sàn xây dựng của căn hộ là: {blank} m2, tính theo khoản 7 Điều 1."
+    data["payload"]["chunks"][0]["noi_dung"] = text
+    proposal = semantic(data) | {
+        "evidence": [{"doan_id": "CHUNK_1", "trich_dan": text, "ky_tu_bat_dau": 0}]
+    }
+    data["payload"]["observations"] = []
+    batch = LLMObservationProvider(FakeClient([proposal])).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert batch.analyses[0].error_code == "TEMPLATE_PLACEHOLDER"
+    assert batch.observations[0].proposed_finding == "UNKNOWN"
+
+
+def test_hint_only_criteria_get_no_call_when_hints_are_off(reasoning_case):
+    """Nothing could accept the answer (no review, attestation or automatic review)."""
+    knowledge, data = reasoning_case
+    client = FakeClient([])
+    batch = LLMObservationProvider(client, call_unconcludable=False).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert client.calls == []
+    assert batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+    assert batch.analyses[0].origin == "NO_CALL"
+    assert batch.observations[0].proposed_finding == "UNKNOWN"
+    assert "chuyên viên" in batch.observations[0].giai_thich
+
+
+@pytest.mark.parametrize(
+    "local,exceptions_resolved,called",
+    [("MATCH", True, True), ("UNKNOWN", True, False), ("MATCH", False, False)],
+)
+def test_attestation_is_called_only_when_it_could_be_admitted(
+    reasoning_case, local, exceptions_resolved, called
+):
+    """An attestation whose local applicability or exceptions are open cannot conclude."""
+    knowledge, data = reasoning_case
+    request = ReasoningRequest.model_validate(data)
+    verification = prior_verification(
+        request,
+        facts={"evaluation_target": "CONTRACT_CONTENT"},
+        facts_verified=True,
+        local_applicability=local,
+        gates={"exceptions_resolved": exceptions_resolved},
+    )
+    client = FakeClient([semantic(data)] * 2)
+    batch = LLMObservationProvider(
+        client,
+        verifications=[verification],
+        automatic_draft_review=True,
+        call_unconcludable=False,
+    ).analyze(request, knowledge)
+    assert bool(client.calls) is called
+    if not called:
+        assert batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+
+
+@pytest.mark.parametrize(
+    "conditions,called",
+    [
+        ({}, True),
+        ({"case_facts_required": True}, False),
+        ({"optional_choice": True}, False),
+        ({"exception_ids": ["EXC_1"]}, False),
+    ],
+)
+def test_automatic_review_admissibility_decides_the_call(reasoning_case, conditions, called):
+    """Without an attestation, only criteria the automatic review could accept are asked."""
+    knowledge, data = reasoning_case
+    knowledge.criteria["CRITERION_1"]["dieu_kien"] = conditions
+    client = FakeClient([semantic(data)] * 2)
+    batch = LLMObservationProvider(
+        client, automatic_draft_review=True, call_unconcludable=False
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert bool(client.calls) is called
+    if not called:
+        assert batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+
+
+def test_non_content_criteria_get_no_call_when_hints_are_off(reasoning_case):
+    knowledge, data = reasoning_case
+    knowledge.criteria["CRITERION_1"]["loai_kiem_tra"] = "PERFORMANCE_WITH_DOCUMENTS"
+    client = FakeClient([])
+    batch = LLMObservationProvider(
+        client, automatic_draft_review=True, call_unconcludable=False
+    ).analyze(ReasoningRequest.model_validate(data), knowledge)
+    assert client.calls == [] and batch.analyses[0].error_code == "NOT_CONCLUDABLE"
+
+
+@pytest.mark.parametrize(
+    "value,expected", [(None, False), ("off", False), ("on", True), ("1", True)]
+)
+def test_hint_calls_are_off_unless_configured(monkeypatch, value, expected):
+    from legal_checker.core.config import Settings
+
+    if value is None:
+        monkeypatch.delenv("ASSESSMENT_LLM_HINTS", raising=False)
+    else:
+        monkeypatch.setenv("ASSESSMENT_LLM_HINTS", value)
+    assert Settings.from_env().assessment_llm_hints is expected
+
+
 def test_quote_id_restores_original_text_even_if_model_does_not_copy_it(reasoning_case):
     knowledge, data = reasoning_case
     client = FakeClient(
@@ -1002,3 +1173,15 @@ def test_batch_accepts_compacted_source_but_rejects_foreign_quote_ids(reasoning_
             request.payload.chunks[0].noi_dung[evidence.ky_tu_bat_dau : evidence.ky_tu_ket_thuc]
             == evidence.trich_dan
         )
+
+
+def test_no_requested_criterion_still_returns_records(reasoning_case):
+    """Every criterion handled elsewhere (document review, scope): nothing is asked, no crash."""
+    knowledge, data = reasoning_case
+    client = FakeClient([])
+    batch = LLMObservationProvider(client, criterion_ids=[]).analyze(
+        ReasoningRequest.model_validate(data), knowledge
+    )
+    assert client.calls == []
+    assert [a.error_code for a in batch.analyses] == ["NOT_REQUESTED"]
+    assert batch.analyses[0].adverse_evidence_review is None

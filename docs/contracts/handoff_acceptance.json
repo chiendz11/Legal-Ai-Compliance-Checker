@@ -42,7 +42,7 @@
       "level": "fault",
       "expected": "Unsupported scan/DOCX fails at DI with a reason, not empty successful findings",
       "test_nodes": [
-        "backend/tests/integration/test_document_intelligence_runs.py::test_uploaded_docx_fails_with_a_clear_format_reason",
+        "backend/tests/integration/test_document_intelligence_runs.py::test_unreadable_docx_fails_with_a_clear_format_reason",
         "backend/tests/integration/test_document_intelligence_runs.py::test_scanned_pdf_without_text_stops_instead_of_an_empty_assessment"
       ],
       "qualification": "REQUIREMENT_NOT_EXECUTION_RESULT"

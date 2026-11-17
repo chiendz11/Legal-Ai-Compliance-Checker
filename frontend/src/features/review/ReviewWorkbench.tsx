@@ -16,23 +16,37 @@ import {
   useReviewState,
 } from "../../shared/api/queries";
 import { useCan } from "../../shared/auth";
-import { Empty, LoadState, Notice, Section, StatusBadge } from "../../shared/components/ui";
+import {
+  Disclosure,
+  Empty,
+  LoadState,
+  Notice,
+  Section,
+  StatusBadge,
+} from "../../shared/components/ui";
 import { label, type LabelKind } from "../../shared/labels";
-import { useReportNav, type TabId } from "../reports/nav";
+import { AiSuggestionNote } from "../assessments/compliance/ComplianceSection";
+import { readableReason } from "../reports/explain";
+import { type TabTarget, useReportNav } from "../reports/nav";
 import { criterionText, requirementText, riskTitle } from "../reports/reportIndex";
-import { criterionDisplayStatus, requirementDisplayStatus, type ReportPresentation } from "../reports/assessmentStatus";
+import {
+  criterionDisplayStatus,
+  requirementDisplayStatus,
+  type ReportPresentation,
+} from "../reports/assessmentStatus";
+import { readRecommendation } from "../reports/recommendation";
 
 type Field = { name: string; title: string; options?: readonly string[]; labels?: LabelKind };
 type Kind = {
   title: string;
-  tab: TabId;
+  tab: TabTarget;
   fields: Field[]; // what an OVERRIDE may change; mirrors backend TARGETS
 };
 
 const SEVERITY = ["LOW", "MEDIUM", "HIGH", "CRITICAL", "REVIEW_REQUIRED"] as const;
 const KINDS: Record<string, Kind> = {
   ket_qua_tuan_thu: {
-    title: "Kết luận yêu cầu",
+    title: "Kết luận quy định",
     tab: "compliance",
     fields: [
       {
@@ -44,7 +58,7 @@ const KINDS: Record<string, Kind> = {
     ],
   },
   ket_qua_tieu_chi: {
-    title: "Tiêu chí",
+    title: "Điểm kiểm tra",
     tab: "compliance",
     fields: [
       {
@@ -95,7 +109,15 @@ const ACTIONS: { action: ReviewAction; text: string }[] = [
   { action: "COMMENT", text: "Ghi chú" },
 ];
 
-type Machine = { title: string; values: Record<string, unknown>; focus: string; displayStatus?: string; displayValues?: Record<string, unknown> };
+type Machine = {
+  title: string;
+  values: Record<string, unknown>;
+  focus: string;
+  /** Status as presented (review-scope dispositions applied); the stored one stays in values. */
+  displayStatus?: string;
+  /** Field values as presented (e.g. recommendation text with bound slots). */
+  displayValues?: Record<string, unknown>;
+};
 
 /** Machine values of each target, read from the report (which never contains reviewer edits). */
 function machineIndex(content: ReportContent, presentation?: ReportPresentation | null) {
@@ -106,14 +128,16 @@ function machineIndex(content: ReportContent, presentation?: ReportPresentation 
       title: requirementText(r),
       values: r,
       focus: r.yeu_cau_ca_id,
-      displayStatus: presentation?.requirements[r.tuan_thu_id]?.display_status ?? requirementDisplayStatus(r),
+      displayStatus:
+        presentation?.requirements[r.tuan_thu_id]?.display_status ?? requirementDisplayStatus(r),
     });
   for (const c of content.compliance.criterion_results)
     put("ket_qua_tieu_chi", c.ket_qua_id, {
       title: criterionText(c),
       values: c,
       focus: c.ket_qua_id,
-      displayStatus: presentation?.criteria[c.ket_qua_id]?.display_status ?? criterionDisplayStatus(c),
+      displayStatus:
+        presentation?.criteria[c.ket_qua_id]?.display_status ?? criterionDisplayStatus(c),
     });
   for (const f of content.citation_validation.findings)
     put("phat_hien_vien_dan", f.finding_id, {
@@ -131,13 +155,15 @@ function machineIndex(content: ReportContent, presentation?: ReportPresentation 
       values: r,
       focus: r.ket_qua_rui_ro_id,
     });
-  for (const k of content.recommendations)
+  for (const k of content.recommendations) {
+    const text = presentation?.recommendations[k.khuyen_nghi_ca_id]?.text ?? k.noi_dung;
     put("khuyen_nghi_danh_gia", k.khuyen_nghi_ca_id, {
-      title: presentation?.recommendations[k.khuyen_nghi_ca_id]?.text ?? k.noi_dung,
+      title: readRecommendation(text).action,
       values: k,
       focus: k.khuyen_nghi_ca_id,
-      displayValues: { noi_dung: presentation?.recommendations[k.khuyen_nghi_ca_id]?.text ?? k.noi_dung },
+      displayValues: { noi_dung: text },
     });
+  }
   return map;
 }
 
@@ -155,7 +181,10 @@ const PAGE = 50;
 export function ReviewWorkbench({ record }: { record: ReportRecord }) {
   const caId = record.report.ca_id;
   const state = useReviewState(caId, record.run_id);
-  const machine = useMemo(() => machineIndex(record.report.report_json, record.presentation), [record]);
+  const machine = useMemo(
+    () => machineIndex(record.report.report_json, record.presentation),
+    [record],
+  );
   const [filter, setFilter] = useState<Filter>("all");
   // A run can have hundreds of findings; render them a page at a time.
   const [limit, setLimit] = useState(PAGE);
@@ -173,8 +202,8 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
 
   return (
     <Section
-      title="Rà soát của chuyên viên"
-      description="Quyết định của người review được lưu thành lịch sử không sửa được (C12). Kết quả máy giữ nguyên; giá trị chỉnh sửa là lớp hiệu lực nằm trên."
+      title="Rà soát và phát hành"
+      description="Chuyên viên xác nhận, sửa hoặc yêu cầu bổ sung từng kết luận của máy, rồi phát hành báo cáo chính thức. Mọi quyết định được lưu lại và không sửa được; kết quả máy gốc vẫn giữ nguyên để đối chiếu."
     >
       <PublishPanel
         record={record}
@@ -183,11 +212,11 @@ export function ReviewWorkbench({ record }: { record: ReportRecord }) {
         reviewed={reviewed}
         total={targets.length}
       />
-      <div className="filters" role="group" aria-label="Lọc mục review">
+      <div className="filters" role="group" aria-label="Lọc mục rà soát">
         {(
           [
             ["all", `Tất cả (${targets.length})`],
-            ["open", `Chưa review (${targets.length - reviewed})`],
+            ["open", `Chưa rà soát (${targets.length - reviewed})`],
             ["blocking", `Chặn phát hành (${blockers.length})`],
           ] as const
         ).map(([id, text]) => (
@@ -259,23 +288,23 @@ function PublishPanel({
   return (
     <div className="card-flat review-panel">
       <p>
-        Đã review <strong>{reviewed}</strong>/{total} mục · revision hiện tại{" "}
-        <code>{revision}</code> · phiên bản đang xem dựa trên <code>{record.review_revision}</code>
+        Đã rà soát <strong>{reviewed}</strong>/{total} mục
+        {reviewed > 0 && !current && " · có rà soát mới chưa đưa vào báo cáo"}
       </p>
       {published ? (
         <Notice tone="info">Phiên bản này đã phát hành và không thay đổi được nữa.</Notice>
       ) : !current ? (
         <Notice tone="warn">
-          Có review mới hơn phiên bản báo cáo đang xem. Tạo phiên bản mới để đưa các review vào
-          báo cáo trước khi phát hành.
+          Có rà soát mới hơn phiên bản báo cáo đang xem. Tạo phiên bản mới để đưa các rà soát
+          vào báo cáo trước khi phát hành.
         </Notice>
       ) : blockers > 0 ? (
         <Notice tone="warn">
-          Còn {blockers} mục chặn phát hành. Mỗi kết quả cần quyết định Xác nhận hoặc Chỉnh sửa;
-          bình luận chưa phải phê duyệt. Yêu cầu bổ sung và Từ chối tiếp tục chặn phát hành.
+          Còn {blockers} mục chặn phát hành. Mỗi kết quả cần được Xác nhận hoặc Chỉnh sửa; Ghi chú
+          chưa phải là duyệt. Mục đang Yêu cầu bổ sung hoặc bị Bác bỏ vẫn chặn phát hành.
         </Notice>
       ) : revision === "none" ? (
-        <Notice tone="info">Cần ít nhất một review trước khi phát hành.</Notice>
+        <Notice tone="info">Cần rà soát ít nhất một mục trước khi phát hành.</Notice>
       ) : null}
       {error && (
         <Notice tone="bad">{apiErrorMessage(error) ?? "Không thực hiện được thao tác."}</Notice>
@@ -290,7 +319,7 @@ function PublishPanel({
               rebuild.mutate(undefined, { onSuccess: (next) => open(next.report.bao_cao_id) })
             }
           >
-            {rebuild.isPending ? "Đang tạo…" : "Tạo phiên bản báo cáo từ review"}
+            {rebuild.isPending ? "Đang tạo…" : "Tạo phiên bản báo cáo từ các rà soát"}
           </button>
         )}
         {!published && can("publisher") && (
@@ -334,6 +363,8 @@ function TargetCard({
   const can = useCan();
   const [editing, setEditing] = useState(false);
   const overrides = target.overrides ?? {};
+  const explained = typeof machine?.values.giai_thich === "string";
+  const raw = explained ? String(machine?.values.giai_thich) : "";
   return (
     <article className={`card-flat review-target${blocking ? " blocking" : ""}`}>
       <div className="criterion-head">
@@ -342,30 +373,34 @@ function TargetCard({
         {target.latest_decision ? (
           <StatusBadge kind="reviewAction" code={target.latest_decision} />
         ) : (
-          <span className="badge tone-unknown">Chưa review</span>
+          <span className="badge tone-unknown">Chưa rà soát</span>
         )}
         {blocking && <span className="badge tone-bad">Chặn phát hành</span>}
       </div>
       <dl className="fields compact">
         {kind?.fields.map((field) => {
           const before = machine?.values[field.name];
+          const isStatus = field.name === "status" || field.name === "finding";
+          const shown =
+            (isStatus ? machine?.displayStatus : machine?.displayValues?.[field.name]) ?? before;
           const after = overrides[field.name];
           return (
             <div key={field.name}>
               <dt>{field.title}</dt>
               <dd>
-                <FieldValue field={field} value={
-                  (field.name === "status" || field.name === "finding") && machine?.displayStatus
-                    ? machine.displayStatus : machine?.displayValues?.[field.name] ?? before
-                } />
-                {machine?.displayValues?.[field.name] !== undefined &&
-                  machine.displayValues[field.name] !== before && <details className="small muted">
-                    <summary>Nội dung máy nguyên bản đã lưu</summary>
+                <FieldValue field={field} value={shown} />
+                {isStatus && shown !== before && (
+                  <span className="small muted">
+                    {" "}
+                    · kết quả gốc của máy: <FieldValue field={field} value={before} />
+                  </span>
+                )}
+                {!isStatus && shown !== before && (
+                  <details className="small muted">
+                    <summary>Nội dung gốc máy đã lưu</summary>
                     <FieldValue field={field} value={before} />
-                  </details>}
-                {machine?.displayStatus && machine.displayStatus !== before &&
-                  (field.name === "status" || field.name === "finding") &&
-                  <span className="small muted"> · giá trị máy lưu: {String(before)}</span>}
+                  </details>
+                )}
                 {after !== undefined && (
                   <>
                     {" → "}
@@ -380,8 +415,19 @@ function TargetCard({
           );
         })}
       </dl>
-      <p className="small muted">
-        <code>{target.doi_tuong_id}</code> · {target.review_count} review ·{" "}
+      {target.doi_tuong_loai === "ket_qua_tieu_chi" && (
+        <AiSuggestionNote reason={machine?.values.uncertainty_reason as string | null} />
+      )}
+      {raw && raw !== readableReason(raw) && (
+        <Disclosure summary="Chi tiết kỹ thuật">
+          <p className="small muted">{raw}</p>
+          <p className="small muted">
+            Mã mục: <code>{target.doi_tuong_id}</code>
+          </p>
+        </Disclosure>
+      )}
+      <p className="small muted" title={target.doi_tuong_id}>
+        {target.review_count > 0 ? `${target.review_count} lần rà soát · ` : ""}
         {machine && kind && (
           <button type="button" className="link" onClick={() => go(kind.tab, machine.focus)}>
             Xem trong báo cáo
@@ -401,7 +447,7 @@ function TargetCard({
           />
         ) : (
           <button type="button" className="button" onClick={() => setEditing(true)}>
-            Review mục này
+            Rà soát mục này
           </button>
         ))}
     </article>
@@ -411,6 +457,8 @@ function TargetCard({
 function FieldValue({ field, value }: { field: Field; value: unknown }) {
   if (value == null || value === "") return <span className="muted">—</span>;
   if (field.labels) return <>{label(field.labels, String(value)).text}</>;
+  // Machine explanations are engine traces; show the plain reason (raw text is below).
+  if (field.name === "giai_thich") return <>{readableReason(String(value))}</>;
   return <>{String(value)}</>;
 }
 

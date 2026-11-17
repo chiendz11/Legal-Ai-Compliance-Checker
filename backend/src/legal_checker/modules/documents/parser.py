@@ -7,6 +7,8 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from legal_checker.modules.documents.ocr import DEFAULT_MAX_PAGES, OcrEngine, render_pages
+
 
 @dataclass(frozen=True)
 class DocumentPage:
@@ -27,7 +29,77 @@ class DocumentReader(Protocol):
 
 
 class UnsupportedDocumentError(ValueError):
-    """MIME type has no reader yet (DOCX/OCR are planned)."""
+    """MIME type has no reader, or the bytes are not a readable file of that type."""
+
+
+PDF_MIME = "application/pdf"
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+DOCX_READER_VERSION = "docx-xml-1"
+# document.xml of a long contract is a few MB; more than this is a zip bomb, not a contract.
+MAX_DOCX_XML_BYTES = 64 * 1024 * 1024
+_W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def _docx_paragraph(paragraph, pages: list[list[str]]) -> None:
+    """Text of one w:p in reading order; an explicit page break starts a new page."""
+    parts: list[str] = []
+    for node in paragraph.iter():
+        tag = node.tag
+        if tag == _W + "t":
+            parts.append(node.text or "")
+        elif tag == _W + "tab":
+            parts.append("\t")
+        elif tag in (_W + "br", _W + "cr"):
+            if node.get(_W + "type") == "page":
+                pages[-1].append("".join(parts))
+                pages.append([])
+                parts = []
+            else:
+                parts.append("\n")
+        elif tag == _W + "noBreakHyphen":
+            parts.append("-")
+    pages[-1].append("".join(parts))
+
+
+def _docx_block(element, pages: list[list[str]]) -> None:
+    """Body content in document order: paragraphs, tables (row by row), content controls."""
+    for child in element:
+        tag = child.tag
+        if tag == _W + "p":
+            _docx_paragraph(child, pages)
+        elif tag == _W + "tbl":
+            # Direct rows/cells only: a nested table is read once, through its cell's paragraphs.
+            for row in child.findall(_W + "tr"):
+                cells = []
+                for cell in row.findall(_W + "tc"):
+                    lines: list[list[str]] = [[]]
+                    for paragraph in cell.iter(_W + "p"):
+                        _docx_paragraph(paragraph, lines)
+                    cells.append(" ".join(t for page in lines for t in page if t.strip()))
+                pages[-1].append("\t".join(cells))
+        elif tag in (_W + "sdt", _W + "sdtContent", _W + "customXml", _W + "smartTag"):
+            _docx_block(child, pages)
+
+
+def _raw_docx_pages(content: bytes) -> list[str]:
+    """Body text of a DOCX (headers, footers and comments are not contract content)."""
+    import zipfile
+    from xml.etree import ElementTree
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            info = archive.getinfo("word/document.xml")
+            if info.file_size > MAX_DOCX_XML_BYTES:
+                raise UnsupportedDocumentError("DOCX body is too large to be a contract")
+            xml = archive.read(info)
+        root = ElementTree.fromstring(xml)
+    except (zipfile.BadZipFile, KeyError, ElementTree.ParseError) as error:
+        raise UnsupportedDocumentError(f"Not a readable DOCX file: {error}") from error
+    body = root.find(_W + "body")
+    pages: list[list[str]] = [[]]
+    if body is not None:
+        _docx_block(body, pages)
+    return ["\n".join(lines) for lines in pages]
 
 
 # Trang có ít hơn ngưỡng này ký tự (bỏ khoảng trắng) coi như không đọc được:
@@ -111,17 +183,38 @@ def _is_readable(text: str) -> bool:
 
 
 class PdfTextReader:
-    """DocumentReader cho PDF có text layer. Chưa OCR: trang scan có readable=False."""
+    """DocumentReader cho PDF và DOCX. PDF: trang có lớp chữ đọc bằng pypdf; trang scan được
+    OCR khi có ``ocr`` (không có thì giữ readable=False như trước). DOCX: đọc thân văn bản
+    (đoạn, bảng) theo thứ tự; DOCX không có trang, chỉ ngắt trang tường minh mới tách trang."""
 
-    def __init__(self) -> None:
+    def __init__(self, ocr: OcrEngine | None = None, *, max_ocr_pages: int = DEFAULT_MAX_PAGES):
+        self.ocr = ocr
+        self.max_ocr_pages = max_ocr_pages
         self.parser_version: str | None = None
 
     def extract(self, content: bytes, mime_type: str) -> DocumentText:
-        if mime_type.partition(";")[0].strip().lower() != "application/pdf":
+        mime = mime_type.partition(";")[0].strip().lower()
+        if mime == DOCX_MIME:
+            self.parser_version = DOCX_READER_VERSION
+            pages = tuple(
+                DocumentPage(number, text, "TEXT", _is_readable(text))
+                for number, text in enumerate(
+                    (_normalize(raw) for raw in _raw_docx_pages(content)), start=1
+                )
+            )
+            return DocumentText(hashlib.sha256(content).hexdigest(), pages)
+        if mime != PDF_MIME:
             raise UnsupportedDocumentError(f"No reader for MIME type {mime_type!r}")
         self.parser_version, raw_pages = _raw_pdf_pages(content)
         pages = []
         for number, raw in enumerate(raw_pages, start=1):
             text = _normalize(raw)
             pages.append(DocumentPage(number, text, "TEXT", _is_readable(text)))
+        scanned = [p.page_number for p in pages if not p.readable][: self.max_ocr_pages]
+        if self.ocr is not None and scanned:
+            for number, png in render_pages(content, scanned):
+                text = _normalize(self.ocr.recognize(png)).strip("\n")
+                pages[number - 1] = DocumentPage(number, text, "OCR", _is_readable(text))
+            # Kết quả phụ thuộc engine OCR → version trích xuất (và mọi ID) đổi theo.
+            self.parser_version += f"+{self.ocr.version}"
         return DocumentText(hashlib.sha256(content).hexdigest(), tuple(pages))

@@ -17,6 +17,8 @@ from legal_checker.modules.legal_knowledge.models import KnowledgeSnapshot
 from legal_checker.shared.contracts.common import Context
 from legal_checker.shared.contracts.reasoning import Gates, Observation, ReasoningRequest
 
+AI_PROPOSED = "AI proposed"
+
 
 class BackendReview(Context):
     """Trusted review of the exact proposal in this case/run/snapshot, defaulting unknown."""
@@ -116,11 +118,17 @@ def build_verified_observation(
             setattr(output, name, getattr(review, name))
         if not review.predicate_verified:
             output.proposed_finding = "UNKNOWN"
+            # The provider's own finding stays readable for the human reviewer as a hint.
+            proposed = (
+                f" ({AI_PROPOSED} {proposal.proposed_finding})"
+                if proposal.proposed_finding != "UNKNOWN"
+                else ""
+            )
             detail = review.facts.get("content_subject_validation_reason")
             output.giai_thich = (
-                "Unverified content subject: " + str(detail) + "; " + proposal.giai_thich
+                f"Unverified content subject{proposed}: " + str(detail) + "; " + proposal.giai_thich
                 if detail and review.facts.get("content_subject_validated") is False
-                else "Semantic predicate has not been reviewed: " + proposal.giai_thich
+                else f"Semantic predicate has not been reviewed{proposed}: " + proposal.giai_thich
             )
     else:
         output.proposed_finding = "UNKNOWN"

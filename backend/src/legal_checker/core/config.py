@@ -58,6 +58,14 @@ class Settings:
     # Explicit, hash-bound study sources. None keeps ordinary source-only checks.
     synthetic_scenario_path: Path | None = None
     assessment_full_document_review: bool = True
+    # Concurrent C07 requests per run; 1 keeps calls sequential.
+    assessment_llm_parallel: int = 4
+    # A decisive AI answer is asked again; the answers must agree to count.
+    assessment_llm_agreement: int = 2
+    # Also ask the AI about criteria that can never become a finding without a verified
+    # fact (conditional, prohibited-clause, performance): its answer is only a hint for the
+    # reviewer. Off by default: those calls were about 90% of the cost of a run.
+    assessment_llm_hints: bool = False
     # "inline" runs jobs in the API process; "celery" sends them to the Redis-backed worker.
     assessment_queue: str = "inline"
     redis_url: str = "redis://127.0.0.1:6379/0"
@@ -65,6 +73,12 @@ class Settings:
     run_requeue_after_seconds: int = 120
     report_export_dir: Path = PROJECT_ROOT / "data/private/report_exports"
     upload_dir: Path = PROJECT_ROOT / "data/private/uploads"
+    # OCR for scanned PDF pages: "auto" (Tesseract if installed with the language data),
+    # "tesseract" (required) or "off".
+    document_ocr: str = "off"
+    tesseract_cmd: str | None = None
+    tessdata_dir: Path | None = None
+    ocr_language: str = "vie"
     # Deployment pins for new cases; default to the versions existing cases of the release use.
     deployment_rule_version: str | None = None
     deployment_legal_knowledge_version: str | None = None
@@ -130,6 +144,10 @@ class Settings:
                 "ASSESSMENT_FULL_DOCUMENT_REVIEW", "on"
             ).lower()
             in {"on", "true", "1"},
+            assessment_llm_parallel=int(os.getenv("ASSESSMENT_LLM_PARALLEL", "4")),
+            assessment_llm_agreement=int(os.getenv("ASSESSMENT_LLM_AGREEMENT", "2")),
+            assessment_llm_hints=os.getenv("ASSESSMENT_LLM_HINTS", "off").strip().lower()
+            in {"1", "true", "yes", "on"},
             assessment_queue=os.getenv("ASSESSMENT_QUEUE", "inline"),
             redis_url=os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0"),
             run_lease_seconds=int(os.getenv("RUN_LEASE_SECONDS", "600")),
@@ -138,6 +156,12 @@ class Settings:
                 os.getenv("REPORT_EXPORT_DIR", "data/private/report_exports")
             ),
             upload_dir=_project_path(os.getenv("UPLOAD_DIR", "data/private/uploads")),
+            document_ocr=os.getenv("DOCUMENT_OCR", "auto"),
+            tesseract_cmd=os.getenv("TESSERACT_CMD") or None,
+            tessdata_dir=(
+                _project_path(os.environ["TESSDATA_DIR"]) if os.getenv("TESSDATA_DIR") else None
+            ),
+            ocr_language=os.getenv("OCR_LANGUAGE", "vie"),
             deployment_rule_version=os.getenv("DEPLOYMENT_RULE_VERSION") or None,
             deployment_legal_knowledge_version=(
                 os.getenv("DEPLOYMENT_LEGAL_KNOWLEDGE_VERSION") or None
