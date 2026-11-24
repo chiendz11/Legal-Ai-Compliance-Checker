@@ -38,14 +38,15 @@ cp .env.example .env
 Baseline hiện hành là **PDF360_V4R2_20261110**: knowledge, runtime và QA cùng
 snapshot HUMAN_VERIFIED theo quyết định chủ dự án. Gói có PDF v4 r2 và reference runtime dựng lại; xem [phạm vi gold/reference và cách cài](docs/guides/dataset_pdf360_v4r2_runtime_20261110.md).
 
-Đáp án đã đối chiếu riêng được mô tả tại [Gold Answer Set và coverage](docs/guides/gold_answer_set_20261110.md).
-Đợt [biên soạn Gold trực tiếp bằng suy luận AI](docs/guides/gold_direct_curation_20261110.md)
-bổ sung các target pháp lý, identity và evidence có phạm vi. Full Gold toàn pipeline
-vẫn chưa hoàn tất; chưa dùng để công bố accuracy end-to-end cho toàn hệ thống.
-Trong lúc manifest còn `LOCAL_ARCHIVE_READY`, cài ZIP đã được bàn giao:
+Gold Master R14 đã có đáp án cho 360 ca trong phạm vi công bố, với provenance
+`AI_SOURCE_ADJUDICATED` và `human_legal_signoff=false`. Để benchmark, dùng gói R14 riêng
+cùng runner và scorer. [Cách chạy benchmark](scripts/README.md#chạy-benchmark-với-gold-master-r14)
+· [Phạm vi Gold R14](docs/guides/gold_master_20261114.md).
+
+Manifest runtime đã trỏ tới gói DEV_VALIDATION đã phát hành. Tải workbook và PDF bằng:
 
 ```bash
-python -m scripts.dataset pull --archive /path/to/legal_compliance_v750_PDF360_V4R2_20261110_DEV_VALIDATION.zip
+python -m scripts.dataset pull
 python -m scripts.dataset check
 python -m scripts.dataset cache-sources
 ```
