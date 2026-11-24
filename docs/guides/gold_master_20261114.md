@@ -1,22 +1,59 @@
-# Gold Master thống nhất — 16/11/2026, R12
+# Gold Master thống nhất — 18/11/2026, R14
 
 Một nguồn đáp án nhiều lớp dùng cùng PDF, knowledge và policy đã khóa. Hiện có
-**220/360 ca đã biên soạn trong phạm vi công bố, 140 ca PENDING_ADJUDICATION**.
-`full_e2e_gold_ready=false`: yêu cầu hoàn tất toàn bộ 360 ca chưa đạt.
-Không dùng tên bản xuất hoặc số lượng dòng làm bằng chứng đã thẩm định toàn bộ.
+**360/360 ca thuộc 90/90 nhóm nguồn đã biên soạn hoàn chỉnh trong phạm vi công bố; 0 ca `PENDING_ADJUDICATION`**.
+`full_e2e_gold_ready=true` về mặt độ phủ kỹ thuật 360 ca và kiểm tra ràng buộc nguồn/lineage/schema
+(`810` kiểm tra R14 PASS sau `1.388` kiểm tra R13 PASS), đủ điều kiện chạy benchmark E2E ngay.
+Tuy nhiên, nhãn vẫn mang provenance `AI_SOURCE_ADJUDICATED`, **`human_legal_signoff=false`**,
+và chưa chạy blind benchmark end-to-end; không dùng tên bản xuất hoặc số dòng làm bằng chứng
+đã có chữ ký thẩm định của chuyên gia con người.
 
-Phân chia đã chấm: **100 DEV + 60 VALIDATION + 60 TEST**. Gói TEAM có
-**160/300 ca đã chấm; 140 ca DEV còn chờ**, thuộc 35 nhóm nguồn. Đáp án TEST chỉ
-nằm trong Master dành cho evaluator. Gói TEST INPUTS vẫn chỉ có 60 PDF, C01 và
-snapshot chung; không có đáp án hoặc source text đã trích xuất. Chưa chạy blind
-benchmark và chưa công bố accuracy/F1.
+Phân chia đã chấm: **240 DEV + 60 VALIDATION + 60 TEST**. Gói TEAM (`DEV_VALIDATION`) có
+**300/300 ca đã chấm; 0 ca còn chờ**. Đáp án TEST (`60` ca) chỉ nằm trong Master dành cho
+evaluator, đã tách vật lý khỏi SQLite/workbook/ZIP của TEAM. Gói TEST INPUTS vẫn chỉ có
+60 PDF, C01 và snapshot chung; không có đáp án hoặc source text đã trích xuất. Chưa chạy
+blind benchmark và chưa công bố accuracy/F1.
 
-## R12 đã thay đổi gì?
+## R14 đã thay đổi gì?
 
-R12 tiếp nối 204 ca của R11 và thêm **16 ca: 133–136, 141–144, 285–288, 305–308**.
-Đã biên soạn 55/90 nhóm. Việc biên soạn ghi `AI_SOURCE_ADJUDICATED`,
-`human_legal_signoff=false`, `production_outputs_used=false`. Không gọi API AI
-hoặc model local, không lấy output pipeline để đổi nhãn thành Gold.
+R14 tiếp nối nguyên vẹn **356 ca R13** (giữ nguyên từng byte và SHA-256 theo
+`R14_PREDECESSOR_360_PINS.json`) và xử lý **4 ca erratum `CA360_041..044`** (tập `VALIDATION`):
+- Cập nhật duy nhất viện dẫn `10/2015/TT-BXD` (`VB_TT10_2015`) tại `P004B028` (`CITE:012`, mốc `2024-04-12`)
+  từ `VALID/IN_FORCE` sang `STALE/REPEALED` theo `TT 05/2021/TT-BXD` (bãi bỏ từ `15/08/2021` theo Công báo
+  `QĐ 41a/QĐ-BXD` 2022 và `QĐ 321/QĐ-BXD` 2024), giải quyết dứt điểm mâu thuẫn với nhóm `185+` được ghi nhận ở R13.
+- Giữ nguyên toàn bộ `FACTS`, `C05`, `C07`, `C08`, `RETRIEVAL_JUDGED_POOL`, `REVIEW_POLICY` và evidence của 4 ca này;
+  phép chiếu chính sách cập nhật thêm `+1` risk `RULE_CITATION_STALE` và `+1` recommendation liên kết mỗi ca
+  (`RISKS` và `RECOMMENDATION_ASSERTIONS` tăng từ `18.689` lên `18.693`; `C09` chuyển `4` mục từ `VALID` sang `STALE`).
+
+### Tóm tắt R13 trước đó (18/11/2026)
+
+R13 tiếp nối nguyên vẹn **220 ca R12** (55 nhóm, giữ nguyên từng byte và SHA-256 theo
+`R13_PREDECESSOR_220_PINS.json`, 0 errata) và biên soạn bổ sung **140 ca còn lại thuộc
+35 nhóm nguồn** (`005`, `013`, `021`, `037`, `045`, `065`, `069`, `081`, `085`, `089`,
+`093`, `105`, `109`, `117`, `153`, `181`, `189`, `193`, `213`, `217`, `221`, `233`,
+`241`, `245`, `253`, `257`, `265`, `281`, `289`, `293`, `297`, `317`, `333`, `341`, `345`).
+Tổng cộng đủ **90/90 nhóm, 360/360 ca**. Việc biên soạn ghi `AI_SOURCE_ADJUDICATED`,
+`human_legal_signoff=false`, `production_outputs_used=false`, `external_or_local_model_calls=0`.
+Không gọi API AI hoặc model local, không lấy output pipeline để đổi nhãn thành Gold.
+
+- Toàn bộ 35 nhóm mới đều đọc trọn vẹn từng block dump (`tools_r13/NNN_01..xx.txt`)
+  và delta các biến thể (`NNN_delta.txt`), đối chiếu snapshot pháp luật khóa
+  (`knowledge_snapshot.json`), giữ nhất quán tiền lệ theo hai chế độ mốc thời gian
+  (2022–2024: `TC_ACCOUNT_2021_01..04`, `TC_PV_HYC050_01..03`, `TC_MODEL01_2022_01..19`;
+  2019–2020: `TC_ACCOUNT_2015_01..03`), đồng thời chạy lại kiểm tra gate nhóm `001` (`True []`).
+- Một số điểm pháp lý/dữ liệu nổi bật ở các nhóm cuối (`265`, `281`, `289`, `293`, `297`, `317`, `333`, `341`, `345`):
+  xử lý các biến thể ẩn thông tin căn hộ/ẩn giá/bảo hành 36 tháng/giá thứ hai (`265`, `281`) và xung đột địa danh/MST/pháp nhân/đại diện/tài khoản giữa thân hợp đồng và phụ lục;
+  tách biệt giá trước VAT và cách tính quỹ bảo trì 2% (tính trên giá gồm VAT là `UNKNOWN`);
+  bắt lỗi ép thanh toán 100% trước GCN/bàn giao vượt trần 95%, bàn giao mặc nhiên sau 5–10 ngày, giữ lại GCN,
+  loại trừ toàn bộ trách nhiệm bảo hành với bên thứ ba hoặc rút ngắn thời hạn báo lỗi còn 2–10 ngày (`293`, `297`),
+  cắt điện nước/thu giữ giấy tờ tùy thân/mật mã khóa, rút quỹ bảo trì 2% sai mục đích (`345`),
+  cùng các viện dẫn hết hiệu lực/sai ngày ban hành (`19/2008/QH12`, `51/2009/NĐ-CP`, `55/2014/QH13`, `99/2011/NĐ-CP`, `28/2016/TT-BXD` ghi ngày `1/2/2017`, `TT 02/2016` sai ngày `15/10/2016`).
+
+### Tóm tắt R12 trước đó (16/11/2026)
+
+R12 tiếp nối 204 ca của R11 và thêm **16 ca: 133–136, 141–144, 285–288, 305–308**
+(55/90 nhóm, 220/360 ca), cùng erratum duy nhất ở 4 ca `157–160` (`TC_PV_HYC037_02`:
+Điều 57 khoản 1 thay cho khoản 2 Luật 66/2014). Các nhận định chính của R12:
 
 - **133–136, Asiana Paramount, mốc 17/5/2023:** đối chiếu từng phần với 19 Điều
   Mẫu số 01/NĐ02/2022. Số 4/5/6 cạnh trường đất và 12 cạnh thời gian chậm là
@@ -34,70 +71,52 @@ hoặc model local, không lấy output pipeline để đổi nhãn thành Gold.
   cơ quan cạnh tranh không tự trở thành trần pháp luật bắt buộc.
 - **285–288, Thuận Phát, mốc 18/10/2020:** phân biệt đất toàn dự án, sàn tòa nhà
   và sàn căn hộ; giữ xung đột thật về đất, địa chỉ, tài khoản. Nguồn ghi sai ngày
-  ban hành TT06/2019; không sửa âm thầm PDF để viện dẫn thành hợp lệ. Bản286
+  ban hành TT06/2019; không sửa âm thầm PDF để viện dẫn thành hợp lệ. Bản 286
   bỏ các ngày tương ứng; C05 giữ chưa phân giải và không tự tạo C07 khi chưa có
   version để chấm. Số dòng C07 bằng 0 trong ca đó không phải annotation bỏ dở.
 - **305–308, Tân Phú, mốc 13/3/2019:** địa chỉ bên bán mâu thuẫn nhưng không
   suy trụ sở công ty là địa chỉ dự án. TT06/2019 còn ở tương lai tại ngày giả định.
   Đối chiếu điều kiện loại bảo hành, khoản cuối trước GCN và quyền tự sửa có nguồn;
   không dùng một câu sửa chữa để xóa điều kiện bất lợi khác vẫn còn trong văn bản.
-- **Bốn ca 157–160:** sửa duy nhất số khoản trong lý do của `TC_PV_HYC037_02`:
-  giới hạn khoản cuối thuộc **Điều57 khoản1**, không phải khoản2 Luật66/2014.
-  Findings, dispositions, facts, C05/C08 và evidence giữ nguyên; receipts được tính
-  lại theo reason mới. Bản R11 đã xuất giữ nguyên byte; R12 có bảng erratum riêng.
-  200 ca ROOT khác đã có ở R11 giữ nguyên SHA-256.
 
-Nguồn đã đọc gồm toàn văn chuẩn/delta từng biến thể và ảnh khi cần kiểm bố cục.
-Riêng nhóm133: toàn bộ block có bản đồ đọc; các đoạn trùng nguyên nội dung sau
-chuẩn hóa khoảng trắng được đối chiếu nguồn141 đã đọc trong cùng đợt, toàn bộ
-phần không trùng được đọc riêng. Nhãn pháp lý không được tự chuyển theo tỷ lệ
-đoạn trùng. Curator của từng nhóm ghi facts, quyết định và refs nguồn riêng.
+Nguồn pháp luật bổ sung đã lưu từ R4–R14 nằm trong `authoring/legal_sources/`
+(kèm `R12_PRIMARY_SOURCE_REGISTER.json`, `R13_PRIMARY_SOURCE_REGISTER.json` và `R14_PRIMARY_SOURCE_REGISTER.json`).
 
-Công cụ biên soạn bổ sung `context_refs` cho viện dẫn qua nhiều block: ví dụ số
-Nghị định bị tách trước “CP” vẫn giữ cả block kề làm ngữ cảnh. Quote, offset và
-SHA-256 vẫn lấy đúng PDF của từng ca; không sửa cách chia chunk của ứng dụng.
-
-Nguồn pháp luật bổ sung được ghi kèm phạm vi đọc thực tế trong
-`authoring/legal_sources/R12_PRIMARY_SOURCE_REGISTER.json`. Ví dụ, tra danh sách
-công bố dự án của Quảng Ninh mới xác nhận được định danh một quyết định; chưa có
-bản gốc/lịch sử thì hiệu lực và binding dự án vẫn chưa được xác nhận. VBHN được
-phân biệt với văn bản gốc tạo hiệu lực; không coi ngày hợp nhất là ngày hiệu lực mới.
-
-## Các lớp của cùng Master
+## Các lớp của cùng Master (R14 — 360/360 ca)
 
 | Lớp | Số dòng | Phạm vi được chấm |
 | --- | ---: | --- |
-| APPENDIX_LITERALS | 12.960 | 36 trường/ca trong chính phụ lục synthetic |
+| APPENDIX_LITERALS | 12.960 | 36 trường/ca trong chính phụ lục synthetic (360 ca) |
 | NUMBERED_MENTIONS / CATALOG_IDENTITY | 4.569 / 4.569 | Số hiệu/membership catalog đã khóa, chưa thay C09 |
-| FACTS | 17.128 | Hồ sơ toàn văn của 220 ca; giữ vai trò và mâu thuẫn |
-| SCOPE_TEMPORAL — C05 | 71.060 | 323 families × 220; scope/date/version trước checklist |
-| CRITERIA — C07 | 34.021 | 18.149 ASSESSED; disposition giữ riêng |
-| CITATION_OCCURRENCES — C09 | 7.726 | Từng lần xuất hiện, định danh/thời gian/lĩnh vực |
-| RETRIEVAL_JUDGED_POOL | 73.519 | Pool witness/control hữu hạn; ngoài pool UNJUDGED |
-| AGGREGATION — C08 | 25.486 | Tổng hợp theo policy từ đáp án biên soạn |
-| RISKS / RECOMMENDATION_ASSERTIONS | 13.340 / 13.340 | Giữ nguồn và hành động cần có, không ép câu chữ model |
-| REVIEW_POLICY / REPORT_ASSERTIONS | 220 / 220 | Điều kiện review/publish và assertion report |
+| FACTS | 28.056 | Hồ sơ toàn văn của 360 ca; giữ vai trò và mâu thuẫn |
+| SCOPE_TEMPORAL — C05 | 116.280 | 323 families × 360; scope/date/version trước checklist |
+| CRITERIA — C07 | 52.172 | 30.669 ASSESSED; disposition giữ riêng |
+| CITATION_OCCURRENCES — C09 | 13.704 | Từng lần xuất hiện, định danh/thời gian/lĩnh vực |
+| RETRIEVAL_JUDGED_POOL | 118.865 | Pool witness/control hữu hạn; ngoài pool UNJUDGED |
+| AGGREGATION — C08 | 38.613 | Tổng hợp theo policy từ đáp án biên soạn |
+| RISKS / RECOMMENDATION_ASSERTIONS | 18.693 / 18.693 | Giữ nguồn và hành động cần có, không ép câu chữ model |
+| REVIEW_POLICY / REPORT_ASSERTIONS | 360 / 360 | Điều kiện review/publish và assertion report |
 
-18.149 criterion ASSESSED gồm **12.562 SATISFIED, 1.239 VIOLATED, 424 MISSING,
-3.924 UNKNOWN có lý do nguồn**. Giữ riêng 9.997 ngoài phạm vi, 971 không phát sinh
-điều kiện và 4.904 chưa phân giải scope. Không gộp những disposition này thành
-UNKNOWN pháp lý khi tính accuracy. 140 ca chưa chấm tương ứng 1.400 đơn vị lớp
-còn chờ; không có nhãn full-case để chấm chúng.
+30.669 criterion ASSESSED gồm **21.375 SATISFIED, 2.099 VIOLATED, 870 MISSING,
+6.325 UNKNOWN có lý do nguồn**. Giữ riêng **15.043 ngoài phạm vi (`OUTSIDE_REVIEW_SCOPE`)**,
+**1.556 không phát sinh điều kiện (`NOT_TRIGGERED`)** và **4.904 chưa phân giải scope (`SCOPE_UNRESOLVED`)**.
+Không gộp những disposition này thành UNKNOWN pháp lý khi tính accuracy. Không còn ca nào chờ chấm (`0` pending).
 
-420 số hiệu từng chờ binding đã có đáp án `NO_MATCH_IN_PINNED_CATALOG` trong
-phạm vi catalog cố định. Điều đó không chứng minh văn bản ngoài đời không tồn tại
-và không tự chuyển thành INVALID.
+13.704 citation occurrences C09 gồm **9.161 VALID, 3.607 UNKNOWN, 525 STALE, 411 INVALID**
+(mọi ca có mốc sau `15/08/2021` nhắc `10/2015/TT-BXD` đều thống nhất `STALE`).
+420 số hiệu từng chờ binding đã có đáp án `NO_MATCH_IN_PINNED_CATALOG` trong phạm vi catalog cố định;
+điều đó không chứng minh văn bản ngoài đời không tồn tại và không tự chuyển thành INVALID.
 
 ## Đường dẫn và kiểm tra bản xuất
 
 ```text
-data/private/gold -> gold_master_20261116_r12/  # chỉ chọn sau khi kiểm tra xuất PASS
-  gold_master.sqlite          # nguồn đáp án query được
+data/private/gold -> gold_master_20261118_r14/  # chỉ chọn sau khi kiểm tra xuất PASS
+  gold_master.sqlite          # nguồn đáp án query được (360 ca, 427.894 benchmark_answers, 993.629 evidence)
   GOLD_MASTER.xlsx            # bản dễ đọc, không thay payload dài của SQLite/JSONL
   answers.jsonl
-  cases/                      # 220 ca biên soạn
-  artifacts/                  # 10 lớp/ca, receipts và hashes
-  imports/                    # Scoped và proposal giữ đúng phạm vi ban đầu
+  cases/                      # 360 ca biên soạn
+  artifacts/                  # 10 lớp/ca (3.600 files), receipts và hashes
+  imports/                    # Scoped và proposal (470 PENDING_RECONCILIATION)
   sources/pdf/                # 360 PDF giữ nguyên checksum
   sources/text/               # source blocks của reader độc lập
   public_inputs/              # C01 công khai
@@ -105,17 +124,17 @@ data/private/gold -> gold_master_20261116_r12/  # chỉ chọn sau khi kiểm tr
   POLICY_SNAPSHOT.json
   SOURCE_INDEX.json
   GOLD_COVERAGE.json
-  PENDING_ADJUDICATION.json
-  FULL_RELEASE_GATE.json      # full_e2e_gold_ready=false
-  INCREMENTAL_VALIDATION.json # lineage so với R11, gồm bốn errata
-  authoring/                  # curators, biên bản đọc, group gates, source guards
+  PENDING_ADJUDICATION.json   # [] (0 ca chờ)
+  FULL_RELEASE_GATE.json      # full_e2e_gold_ready=true
+  INCREMENTAL_VALIDATION.json # lineage so với R13, 4 errata (041..044), 356 ca R13 giữ nguyên byte
+  authoring/                  # curators, tools_r13, group_gates, source guards, legal_sources
 ```
 
-Thư mục xuất R12:
-`/home/chienqt/Downloads/legal_compliance_GOLD_MASTER_20261116_R12/`.
-Giữ R11/R10 để truy vết. `FINAL_VERIFICATION.json` là kết quả cuối của kiểm tra
+Thư mục xuất R14:
+`/home/chienqt/Downloads/legal_compliance_GOLD_MASTER_20261118_R14/`.
+Giữ R13/R12 (hoặc bản lưu trữ) để truy vết. `FINAL_VERIFICATION.json` là kết quả cuối của kiểm tra
 hash/CRC/SQLite/tách split, không phải chứng thư thẩm định của chuyên gia con người.
-Source guards kiểm lỗi đã nhận diện, không tự chứng minh toàn bộ chất lượng pháp lý.
+Source guards (`810` checks R14 PASS sau `1.388` checks R13 PASS) kiểm lỗi đã nhận diện, không tự chứng minh toàn bộ chất lượng pháp lý.
 
 Master chứa đáp án TEST chỉ phát cho evaluator. Gói TEAM đã loại TEST vật lý trong
 SQLite/workbook và ZIP; view lọc TEST không thay cách ly dữ liệu. **Không seed DB
@@ -289,14 +308,15 @@ Các kiểm tra này chưa chứng minh mọi suy luận pháp lý đúng. Biên
 gia là người thật hoặc receipt duyệt của người khác.
 
 Chưa chạy benchmark inference toàn bộ DEV/VALIDATION hoặc blind TEST trong đợt này.
-Chỉ được báo metric cho target/pool đã chấm và ghi rõ mẫu số, không dùng 140 ca còn
-chờ làm đáp án UNKNOWN. Chưa được công bố accuracy/F1 toàn bộ 360 ca hoặc Recall@K
-toàn corpus dựa trên pool hữu hạn này.
+Từ bản R13–R14, đủ 360/360 ca đã được biên soạn theo scope công bố (`pending_cases=0`,
+`full_e2e_gold_ready=true`), đã đồng bộ erratum `TT 10/2015` cho nhóm `041` (`R14`) và đủ
+điều kiện chạy benchmark E2E ngay. Tuy nhiên chỉ được báo Recall@K theo pool hữu hạn
+`RETRIEVAL_JUDGED_POOL` (`118.865` mục, ngoài pool là `UNJUDGED`) và giữ nguyên minh bạch
+provenance `AI_SOURCE_ADJUDICATED` (`human_legal_signoff=false`).
 
 Không seed đáp án Gold đè PostgreSQL runtime; không thay gói TEAM trên Drive hay
 dataset manifest đang phục vụ DB của nhóm chỉ vì việc hợp nhất đáp án này.
-Để hoàn tất Gold E2E, vẫn phải chấm 292 ca còn lại từ nguồn theo từng lớp, xử lý
-chuyển tiếp 2024 ở những ca có liên quan, rồi phát hành revision mới sau kiểm tra.
+Mọi chỉnh sửa hậu R14 cần ghi rõ revision kế tiếp và giữ bất biến các gói đã phát hành.
 
 
 ## Revision 15/11 R6 — ba nhóm nguồn bổ sung
