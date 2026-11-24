@@ -7,6 +7,7 @@ import { useCases, useLegalBasis, useReport, useRequirementNames } from "../../s
 import { Icon } from "../../shared/components/icons";
 import { LoadState, MachineText, Notice } from "../../shared/components/ui";
 import { mockEnabled } from "../../shared/env";
+import { ModeSwitch, useViewMode } from "../../shared/viewMode";
 import { CitationsSection } from "../assessments/citations/CitationsSection";
 import { TopicsSection } from "../assessments/compliance/ComplianceSection";
 import { contractSourceUrl, EvidenceProvider } from "../assessments/evidence/EvidenceViewer";
@@ -23,6 +24,7 @@ import {
   type RequirementInfo,
   RequirementNamesContext,
 } from "./reportIndex";
+import { SimpleReport } from "./SimpleReport";
 import { TechnicalSection } from "./TechnicalSection";
 import { ReportPresentationContext } from "./assessmentStatus";
 
@@ -218,6 +220,7 @@ function ReportBody({ record }: { record: ReportRecord }) {
   const report = record.report;
   const content = report.report_json;
   const { tab } = useReportNav();
+  const simple = useViewMode() === "simple";
   return (
     <>
       <ReportHeader record={record} />
@@ -226,6 +229,11 @@ function ReportBody({ record }: { record: ReportRecord }) {
           Dữ liệu mẫu (mock): báo cáo tham chiếu dùng để dựng giao diện, không phải kết quả chạy thật.
         </Notice>
       )}
+      {simple ? (
+        <div className="report-content simple">
+          <SimpleReport report={report} />
+        </div>
+      ) : (
       <div className="report-layout">
         <SectionNav record={record} />
         <div className="report-content">
@@ -246,6 +254,7 @@ function ReportBody({ record }: { record: ReportRecord }) {
           {tab === "technical" && <TechnicalSection record={record} />}
         </div>
       </div>
+      )}
     </>
   );
 }
@@ -262,6 +271,9 @@ function ReportHeader({ record }: { record: ReportRecord }) {
   const kase = report.report_json.case;
   const name = useDocumentName(kase.ca_id, `Hợp đồng ${kase.hop_dong_id}`);
   const published = report.report_status === "PUBLISHED";
+  const simple = useViewMode() === "simple";
+  const exportUrl = (format: string) =>
+    `/api/v1/reports/${encodeURIComponent(report.bao_cao_id)}/export?format=${format}`;
   return (
     <header className="report-header">
       <p className="crumbs">
@@ -276,13 +288,22 @@ function ReportHeader({ record }: { record: ReportRecord }) {
           <span className="badge tone-neutral">Rà soát dự thảo trước khi ký</span>
         )}
         <span>Đánh giá ngày {viDate(kase.assessment_context.ngay_danh_gia)}</span>
-        <Link to="/help#doc-bao-cao" className="small">
-          Cách đọc báo cáo này
-        </Link>
+        {!simple && (
+          <Link to="/help#doc-bao-cao" className="small">
+            Cách đọc báo cáo này
+          </Link>
+        )}
       </div>
-      {!mockEnabled && (
-        <div className="actions">
-          <SplitToggle />
+      <div className="actions">
+        <ModeSwitch />
+        {!mockEnabled && <SplitToggle />}
+        {!mockEnabled && simple && (
+          <a className="button" href={exportUrl("pdf")}>
+            <Icon name="download" />
+            Tải báo cáo (PDF)
+          </a>
+        )}
+        {!mockEnabled && !simple && (
           <details className="menu">
             <summary className="button">
               <Icon name="download" />
@@ -296,17 +317,14 @@ function ReportHeader({ record }: { record: ReportRecord }) {
                   ["json", "JSON – dữ liệu gốc có dấu xác thực"],
                 ] as const
               ).map(([format, text]) => (
-                <a
-                  key={format}
-                  href={`/api/v1/reports/${encodeURIComponent(report.bao_cao_id)}/export?format=${format}`}
-                >
+                <a key={format} href={exportUrl(format)}>
                   {text}
                 </a>
               ))}
             </div>
           </details>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   );
 }

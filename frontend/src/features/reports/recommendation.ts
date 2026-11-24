@@ -50,6 +50,14 @@ function readable(text: string): string {
     .trim();
 }
 
+/**
+ * For actions that change the contract (add, amend) the template already opens with the
+ * instruction ("Bổ sung vào hợp đồng điều khoản …"); that sentence is the thing to do.
+ */
+export function directAction(text: string): string {
+  return firstSentence(readable(text) || text);
+}
+
 export type RecommendationView = { action: string; details: { title: string; text: string }[] };
 
 export function readRecommendation(text: string): RecommendationView {

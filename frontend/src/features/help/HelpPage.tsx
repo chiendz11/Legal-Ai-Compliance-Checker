@@ -5,7 +5,7 @@ import { Section } from "../../shared/components/ui";
 const STEPS = [
   {
     title: "1. Tải hợp đồng lên",
-    text: "Chọn tệp PDF của hợp đồng mua bán căn hộ chung cư (bản có chữ hoặc bản scan). Hệ thống lưu tệp gốc và dấu vân tay SHA-256 để chứng minh báo cáo được làm trên đúng tệp đó.",
+    text: "Chọn tệp PDF (bản có chữ hoặc bản scan) hoặc DOCX của hợp đồng mua bán căn hộ chung cư. Hệ thống lưu tệp gốc và dấu vân tay của tệp để chứng minh báo cáo được làm trên đúng tệp đó.",
   },
   {
     title: "2. Hệ thống phân tích",
@@ -77,8 +77,35 @@ export function HelpPage() {
         </Link>
       </p>
 
+      <h3 className="subhead" id="che-do">
+        Hai chế độ hiển thị
+      </h3>
+      <dl className="help-list">
+        <div>
+          <dt>Đơn giản</dt>
+          <dd>
+            Dành cho người dùng phổ thông. Báo cáo gói trong một trang: kết luận, các điểm cần xem
+            lại (quy định yêu cầu gì, hợp đồng đang ghi gì, nên làm gì) và vài lưu ý.
+          </dd>
+        </div>
+        <div>
+          <dt>Nâng cao</dt>
+          <dd>
+            Dành cho chuyên viên: toàn bộ quy định theo chủ đề, điểm kiểm tra, căn cứ pháp lý, thông
+            tin đọc từ hợp đồng và phần rà soát, phát hành. Các mục bên dưới mô tả chế độ này.
+          </dd>
+        </div>
+        <div>
+          <dt>Đổi chế độ</dt>
+          <dd>
+            Dùng công tắc “Chế độ hiển thị” ở cuối thanh bên hoặc ở đầu trang báo cáo. Hai chế độ
+            đọc cùng một kết quả; chế độ Đơn giản chỉ hiển thị ít hơn.
+          </dd>
+        </div>
+      </dl>
+
       <h3 className="subhead" id="doc-bao-cao">
-        Cách đọc báo cáo
+        Cách đọc báo cáo (chế độ Nâng cao)
       </h3>
       <dl className="help-list">
         {SECTIONS.map(([title, text]) => (

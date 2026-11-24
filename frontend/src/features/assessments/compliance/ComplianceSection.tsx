@@ -27,6 +27,7 @@ import {
   CAUSES,
   concludedCount,
   aiSuggestion,
+  exclusionText,
   explainCriterion,
   explainRequirement,
   viDate,
@@ -320,7 +321,7 @@ function CriterionCard({ criterion }: { criterion: CriterionResult }) {
         <StatusBadge kind="criterion" code={shown} />
         <strong>{criterionText(criterion)}</strong>
         {criterion.mandatory && <span className="tag">bắt buộc</span>}
-        {shown === "EXCLUDED" && <span className="tag">loại trừ: {criterion.exclusion_reason}</span>}
+        {shown === "EXCLUDED" && <span className="tag">{exclusionText(criterion.exclusion_reason)}</span>}
       </header>
       {why ? (
         <p className="uncertain">Vì sao chưa kết luận: {why}</p>

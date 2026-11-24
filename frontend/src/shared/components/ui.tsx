@@ -147,13 +147,41 @@ export function JsonBlock({ value }: { value: unknown }) {
   return <pre className="json">{JSON.stringify(value, null, 2)}</pre>;
 }
 
-export function LoadState({ error, children }: { error: unknown; children?: ReactNode }) {
+/** Why a load failed, in words a reader can act on (status and envelope only; no guessing). */
+function loadErrorText(error: unknown): string {
+  const status = (error as { status?: number }).status;
+  const enveloped = Boolean((error as { body?: { error?: unknown } }).body?.error);
+  if (status === 404) return "Không tìm thấy dữ liệu này. Đường dẫn có thể sai hoặc mục đã bị xóa.";
+  if (status === 401) return "Phiên đăng nhập đã hết. Hãy đăng nhập lại.";
+  if (status === 403) return "Tài khoản của bạn không có quyền xem mục này.";
+  // The dev proxy answers 5xx without an API envelope when the backend is down.
+  if (status === undefined || (status >= 500 && !enveloped))
+    return "Không kết nối được máy chủ. Kiểm tra máy chủ đang chạy rồi thử lại.";
+  return "Máy chủ gặp lỗi khi tải dữ liệu. Thử lại sau ít phút.";
+}
+
+export function LoadState({
+  error,
+  children,
+  onRetry,
+}: {
+  error: unknown;
+  children?: ReactNode;
+  onRetry?: () => void;
+}) {
   if (error) {
     const status = (error as { status?: number }).status;
+    // The HTTP status stays in the tooltip for engineers; readers get the sentence.
     return (
       <Notice tone="bad">
-        Không tải được dữ liệu{status ? ` (HTTP ${status})` : ""}. Route này có thể chưa được
-        backend triển khai; bật mock bằng <code>VITE_API_MOCK=true</code>.
+        <span title={status ? `HTTP ${status}` : "Không có phản hồi"}>{loadErrorText(error)}</span>{" "}
+        <button
+          type="button"
+          className="link"
+          onClick={onRetry ?? (() => window.location.reload())}
+        >
+          Thử lại
+        </button>
       </Notice>
     );
   }

@@ -38,16 +38,16 @@ export const CAUSES: Record<Cause, { title: string; hint: string }> = {
   APPLIES: { title: "Có áp dụng", hint: "" },
   NOT_APPLICABLE: { title: "Không áp dụng cho hợp đồng này", hint: "" },
   PARTY: {
-    title: "Chưa xác nhận được tư cách các bên",
-    hint: "Hợp đồng chưa cho thấy rõ bên bán là doanh nghiệp kinh doanh bất động sản hay chủ đầu tư. Cần bổ sung hồ sơ bên bán hoặc người duyệt xác nhận.",
+    title: "Chưa đủ thông tin về các bên và loại giao dịch",
+    hint: "Một số luật chỉ áp dụng khi hội đủ nhiều điều kiện cùng lúc (ví dụ bên bán là chủ đầu tư và căn hộ là nhà xây mới). Hợp đồng chưa ghi rõ hết các điều kiện đó. Cần bổ sung hồ sơ hoặc chuyên viên xác nhận.",
   },
   MISSING_FACT: {
     title: "Hợp đồng thiếu thông tin cần thiết",
     hint: "Hệ thống không tìm thấy các thông tin này trong hợp đồng nên chưa biết quy định có áp dụng không.",
   },
   MARKER: {
-    title: "Kho tri thức pháp lý chưa chốt mốc thời gian",
-    hint: "Chưa xác định quy định tính theo ngày ký, ngày thu tiền hay ngày bàn giao, nên chưa chọn được điều luật. Đây là việc của nhóm dữ liệu pháp lý, không phải lỗi của hợp đồng.",
+    title: "Hệ thống chưa hỗ trợ xác định mốc thời gian",
+    hint: "Hệ thống chưa xác định được quy định này tính theo ngày ký, ngày thu tiền hay ngày bàn giao, nên chưa chọn được điều luật áp dụng. Đây là giới hạn hiện tại của hệ thống, không phải lỗi của hợp đồng.",
   },
   DATE: {
     title: "Hợp đồng không ghi ngày cần thiết",
@@ -134,11 +134,19 @@ export function explainApplicable(a: ApplicableRequirement): Explanation {
   if (a.scope_status === "UNKNOWN") {
     const fields = missingFields(scope).filter((f) => f !== "loai_chu_the");
     if (/party capacity not confirmed/i.test(scope)) {
-      const extra = fields.length ? ` Thiếu thêm: ${fields.map(fieldLabel).join(", ")}.` : "";
+      // scope_resolver.py writes "party capacity not confirmed by field='CO', other=None": the
+      // checks of the team policy with their observed values. None is what the contract lacks.
+      const checks = [...(scope.match(/party capacity not confirmed by ([^;]*)/)?.[1] ?? "").matchAll(
+        /([\w.]+)=('[^']*'|None)/g,
+      )].map((m) => ({ field: (m[1] ?? "").replace(/^\w+\./, ""), missing: m[2] === "None" }));
+      const met = checks.filter((c) => !c.missing).map((c) => fieldLabel(c.field));
+      const lacking = [...new Set([...checks.filter((c) => c.missing).map((c) => c.field), ...fields])];
+      const known = met.length ? ` Đã xác định: ${met.join(", ")}.` : "";
+      const extra = lacking.length ? ` Còn thiếu: ${lacking.map(fieldLabel).join(", ")}.` : "";
       return {
         cause: "PARTY",
-        text: `Chưa xác nhận được tư cách các bên (bên bán có phải doanh nghiệp kinh doanh bất động sản, chủ đầu tư hay không).${extra}`,
-        fields,
+        text: `Chưa đủ thông tin để xác nhận quy định này áp dụng cho các bên và loại giao dịch.${known}${extra}`,
+        fields: lacking,
       };
     }
     if (fields.length) {
@@ -232,6 +240,30 @@ export function explainRequirement(
 // C07 skipped the AI call: no answer could become a finding without a verified fact.
 const NOT_CONCLUDABLE = /Không gọi AI: điểm kiểm tra này cần dữ kiện/;
 
+/**
+ * Exclusion reasons are engine strings (backend review_scope.py, criterion_reasoner.py,
+ * requirement_aggregator.py). Known prefixes become a Vietnamese sentence; null otherwise.
+ */
+function exclusionSentence(raw: string): string | null {
+  if (/^REVIEW_SCOPE_EXCLUDED:/.test(raw))
+    return "Ngoài phạm vi rà soát dự thảo: điểm này cần giấy tờ về việc ký kết, thu tiền, bàn giao hoặc hồ sơ bên ngoài nên chưa được đánh giá. Không được coi là đã đáp ứng.";
+  if (/^C05 (?:NOT_APPLICABLE|scope exclusion):/.test(raw))
+    return "Quy định này không áp dụng cho hợp đồng theo thông tin đọc được (loại giao dịch, các bên hoặc loại nhà ở).";
+  if (/^Optional mechanism verified as not selected/.test(raw))
+    return "Hợp đồng không chọn cơ chế tùy chọn này nên quy định không áp dụng.";
+  return null;
+}
+
+/** Short Vietnamese label for a criterion's exclusion reason (the badge tag). */
+export function exclusionText(reason: string | null | undefined): string {
+  const raw = (reason ?? "").trim();
+  if (/^REVIEW_SCOPE_EXCLUDED:/.test(raw)) return "ngoài phạm vi rà soát dự thảo";
+  if (/^C05 (?:NOT_APPLICABLE|scope exclusion):/.test(raw)) return "không áp dụng cho hợp đồng này";
+  if (/^Optional mechanism verified as not selected/.test(raw)) return "hợp đồng không chọn cơ chế này";
+  if (!raw || ENGINE_TRACE.test(raw) || /^[A-Z0-9_]+(?::|$)/.test(raw)) return "không áp dụng";
+  return stripEngineMarks(raw);
+}
+
 // Sentences written by the engine for engineers, not for readers.
 const ENGINE_TRACE =
   /Cannot accept a finding|Unresolved gate|Provider uncertainty|Requirement applicability|Criterion (?:local_applicability|requires)|^(?:INSUFFICIENT|UNKNOWN):|\b[a-z]+_[a-z_]+=/;
@@ -244,6 +276,8 @@ const ENGINE_TRACE =
 export function readableReason(text: string | null | undefined): string | null {
   const raw = (text ?? "").trim();
   if (!raw) return null;
+  const excluded = exclusionSentence(raw);
+  if (excluded) return excluded;
   if (!ENGINE_TRACE.test(raw)) return stripEngineMarks(raw);
   const disagreement = raw.match(/Hai lần hỏi AI[^;]*/);
   if (disagreement) return disagreement[0].trim();

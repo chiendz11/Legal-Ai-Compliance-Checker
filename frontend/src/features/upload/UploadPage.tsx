@@ -6,6 +6,7 @@ import { useCreateCase, useStartRun, useUploadContract } from "../../shared/api/
 import { DateField } from "../../shared/components/DateField";
 import { Icon } from "../../shared/components/icons";
 import { Notice, Section } from "../../shared/components/ui";
+import { useViewMode } from "../../shared/viewMode";
 
 const MAX_MB = 100;
 const MARKER_TYPES = [
@@ -49,41 +50,60 @@ export function UploadPage() {
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // Steps already done in a submit that later failed: a retry resumes from the failed step
+  // instead of uploading the file or creating the case a second time.
+  const [done, setDone] = useState<{ file: File; hopDongId: string; caseKey?: string; caId?: string } | null>(
+    null,
+  );
 
+  const simple = useViewMode() === "simple";
   const busy = step !== null;
   const tooLarge = !!file && file.size > MAX_MB * 1024 * 1024;
 
-  function drop(event: DragEvent) {
-    event.preventDefault();
-    setDragging(false);
-    const dropped = event.dataTransfer.files[0];
-    if (!dropped || busy) return;
-    if (!ACCEPTED.test(dropped.name)) {
+  function pick(chosen: File | null | undefined) {
+    if (!chosen || busy) return;
+    if (!ACCEPTED.test(chosen.name)) {
       setError("Chỉ nhận tệp PDF hoặc DOCX.");
       return;
     }
     setError(null);
-    setFile(dropped);
+    setFile(chosen);
+  }
+
+  function drop(event: DragEvent) {
+    event.preventDefault();
+    setDragging(false);
+    pick(event.dataTransfer.files[0]);
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!file || tooLarge) return;
     setError(null);
+    const caseBody = {
+      ngay_danh_gia: assessedOn,
+      moc_ap_dung: relevantDate || null,
+      loai_moc_ap_dung: markerType || null,
+      review_mode: reviewMode,
+      document_set_complete: documentSetComplete,
+      phien_ban_id: null, // backend selects the allowed deployment release
+    };
+    const caseKey = JSON.stringify(caseBody);
     try {
-      setStep("Đang tải tệp lên…");
-      const contract = await upload.mutateAsync({ file, title: title.trim() || undefined });
-      setStep("Đang tạo ca đánh giá…");
-      const created = await createCase.mutateAsync({
-        hop_dong_id: contract.hop_dong_id,
-        ngay_danh_gia: assessedOn,
-        moc_ap_dung: relevantDate || null,
-        loai_moc_ap_dung: markerType || null,
-        review_mode: reviewMode,
-        document_set_complete: documentSetComplete,
-        phien_ban_id: null, // backend selects the allowed deployment release
-      });
-      const caId = created.case.ca_id;
+      let progress = done?.file === file ? done : null;
+      if (!progress) {
+        setStep("Đang tải tệp lên…");
+        const contract = await upload.mutateAsync({ file, title: title.trim() || undefined });
+        progress = { file, hopDongId: contract.hop_dong_id };
+        setDone(progress);
+      }
+      let caId = progress.caseKey === caseKey ? progress.caId : undefined;
+      if (!caId) {
+        setStep("Đang tạo ca đánh giá…");
+        const created = await createCase.mutateAsync({ hop_dong_id: progress.hopDongId, ...caseBody });
+        caId = created.case.ca_id;
+        setDone({ ...progress, caseKey, caId });
+      }
       if (!runNow) {
         navigate(`/?q=${encodeURIComponent(caId)}`);
         return;
@@ -100,7 +120,7 @@ export function UploadPage() {
   return (
     <Section
       title="Tải hợp đồng mới"
-      description="Hệ thống kiểm tra hợp đồng mua bán căn hộ chung cư với quy định pháp luật và chỉ ra điểm cần chú ý. Nhận tệp PDF có chữ hoặc bản scan."
+      description="Hệ thống kiểm tra hợp đồng mua bán căn hộ chung cư với quy định pháp luật và chỉ ra điểm cần chú ý. Nhận tệp PDF (có chữ hoặc bản scan) và DOCX."
     >
       <ol className="upload-steps" aria-label="Các bước">
         <li>
@@ -133,7 +153,10 @@ export function UploadPage() {
               className="sr-only"
               accept={ACCEPT}
               disabled={busy}
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                pick(e.target.files?.[0]);
+                e.target.value = ""; // picking the same file again after an error still fires
+              }}
             />
             <span className="dz-ico">
               <Icon name={file ? "file" : "upload"} />
@@ -149,7 +172,7 @@ export function UploadPage() {
               <span className="dz-text">
                 <b>Kéo thả hợp đồng vào đây hoặc bấm để chọn</b>
                 <span className="muted small">
-                  PDF (có chữ hoặc bản scan), tối đa {MAX_MB} MB
+                  PDF (có chữ hoặc bản scan) hoặc DOCX, tối đa {MAX_MB} MB
                 </span>
               </span>
             )}
@@ -167,6 +190,8 @@ export function UploadPage() {
             onChange={(e) => setTitle(e.target.value)}
           />
         </label>
+        {/* Simple mode keeps the defaults: draft review, automatic dates, analyse at once. */}
+        {!simple && (
         <details className="more-filters">
           <summary>Tùy chọn nâng cao (thường không cần đổi)</summary>
           <div className="field-row">
@@ -238,6 +263,7 @@ export function UploadPage() {
             Phân tích ngay sau khi tải lên
           </label>
         </details>
+        )}
         {error && <Notice tone="bad">{error}</Notice>}
         <div className="actions">
           <button type="submit" className="button primary" disabled={!file || tooLarge || busy}>

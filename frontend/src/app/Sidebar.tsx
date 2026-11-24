@@ -5,6 +5,7 @@ import { useCases, useHealth, useLogout } from "../shared/api/queries";
 import { signedIn, useCan, useCurrentSession } from "../shared/auth";
 import { Icon } from "../shared/components/icons";
 import { mockEnabled } from "../shared/env";
+import { ModeSwitch } from "../shared/viewMode";
 
 const COLLAPSE_KEY = "lc.sidebar.collapsed";
 
@@ -93,6 +94,10 @@ function Sidebar({
         </NavLink>
       </nav>
       <div className="sb-foot">
+        <div className="sb-mode">
+          <span className="sb-mode-label">Chế độ hiển thị</span>
+          <ModeSwitch />
+        </div>
         <ServerStatus />
         <UserBox />
       </div>

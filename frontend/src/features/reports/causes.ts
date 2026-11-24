@@ -27,9 +27,9 @@ export function useInsufficientCauses(content: ReportContent) {
 /** What the reader can do about each cause; shown under "Việc nên làm tiếp". */
 export const NEXT_STEP: Partial<Record<Cause, string>> = {
   NO_AI:
-    "Bật AI trên máy chủ rồi bấm “Chạy lại” để hệ thống đọc nội dung từng điều khoản.",
+    "Lần chạy này chưa dùng AI đọc nội dung điều khoản. Liên hệ quản trị viên để bật AI rồi chạy lại hợp đồng từ danh sách.",
   PARTY:
-    "Bổ sung thông tin về bên bán (doanh nghiệp kinh doanh bất động sản, chủ đầu tư) hoặc để chuyên viên xác nhận ở mục Rà soát.",
+    "Bổ sung các thông tin còn thiếu về giao dịch (ví dụ căn hộ có phải nhà xây mới, nhà ở xã hội) hoặc để chuyên viên xác nhận ở mục Rà soát.",
   MISSING_FACT:
     "Kiểm tra hợp đồng có ghi các thông tin còn thiếu không; nếu có, chuyên viên xác nhận ở mục Rà soát.",
   DATE: "Bổ sung ngày còn thiếu (ví dụ ngày thu tiền) nếu hợp đồng hoặc phụ lục có ghi.",
@@ -39,5 +39,5 @@ export const NEXT_STEP: Partial<Record<Cause, string>> = {
   NO_EVIDENCE:
     "Kiểm tra hợp đồng có điều khoản tương ứng không; nếu có, đánh dấu ở mục Rà soát.",
   MARKER:
-    "Không cần làm gì với hợp đồng: các quy định này chờ nhóm dữ liệu pháp lý chốt mốc thời gian.",
+    "Không cần sửa hợp đồng vì các quy định này. Nếu cần kết luận ngay, chuyên viên tự xác định mốc thời gian và kết luận ở mục Rà soát.",
 };

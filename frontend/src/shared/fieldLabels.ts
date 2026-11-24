@@ -36,8 +36,17 @@ export const FIELD_LABELS: Record<string, string> = {
   la_chu_the_kinh_doanh: "Bên bán là chủ thể kinh doanh bất động sản",
   la_giao_dich_dien_tu: "Giao dịch điện tử",
   can_danh_gia_trong_tai: "Điều khoản trọng tài",
+  co_thoa_thuan_trong_tai: "Có thỏa thuận trọng tài",
+  co_thoa_thuan_dat_coc: "Có thỏa thuận đặt cọc",
 };
 
+/**
+ * A field the table does not name yet is shown as words, never as a snake_case key
+ * ("co_thoa_thuan_x" → "Co thoa thuan x"); add the proper Vietnamese label above.
+ */
 export function fieldLabel(name: string): string {
-  return FIELD_LABELS[name] ?? name;
+  const known = FIELD_LABELS[name];
+  if (known) return known;
+  const words = name.replace(/_/g, " ").trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : name;
 }

@@ -7,6 +7,7 @@ import { DateField } from "../../shared/components/DateField";
 import { Icon } from "../../shared/components/icons";
 import { LoadState, Notice, Section, Table } from "../../shared/components/ui";
 import { label } from "../../shared/labels";
+import { useViewMode } from "../../shared/viewMode";
 import { viDate } from "../reports/explain";
 
 const PAGE_SIZE = 20;
@@ -34,8 +35,9 @@ export function CaseListPage() {
   const navigate = useNavigate();
   const startRun = useStartRun();
   const can = useCan();
+  const simple = useViewMode() === "simple";
 
-  const update = (changes: Record<string, string | null>) => {
+  const update =(changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
@@ -45,10 +47,16 @@ export function CaseListPage() {
     setParams(next, { replace: true });
   };
 
-  const run = (caId: string) =>
+  // Each run may call the paid AI provider many times, so a click asks once first.
+  const run = (caId: string, title: string, again: boolean) => {
+    const ask = again
+      ? `Phân tích lại “${title}”?\n\nLần chạy mới thay kết quả hiện tại và có thể tốn phí gọi AI (tới vài chục lượt). Báo cáo cũ vẫn được giữ.`
+      : `Bắt đầu phân tích “${title}”?\n\nViệc phân tích có thể tốn phí gọi AI (tới vài chục lượt).`;
+    if (!window.confirm(ask)) return;
     startRun.mutate(caId, {
       onSuccess: (accepted) => navigate(`/cases/${caId}/runs/${accepted.context.run_id}`),
     });
+  };
 
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const filtered = FILTER_KEYS.some((key) => params.get(key));
@@ -71,7 +79,7 @@ export function CaseListPage() {
         )
       }
     >
-      <Filters params={params} update={update} />
+      <Filters params={params} update={update} simple={simple} />
       {startRun.error && (
         <Notice tone="bad">Không bắt đầu phân tích được. Kiểm tra máy chủ rồi thử lại.</Notice>
       )}
@@ -103,7 +111,9 @@ export function CaseListPage() {
               <th>Tình trạng</th>
               <th>Kết quả</th>
               <th>Ngày đánh giá</th>
-              <th />
+              <th>
+                <span className="sr-only">Thao tác</span>
+              </th>
             </tr>
           </thead>
           <tbody className={isFetching ? "loading" : undefined}>
@@ -111,11 +121,13 @@ export function CaseListPage() {
               const c = item.case;
               const state = item.latest_run_status ? RUN_STATE[item.latest_run_status] : null;
               const runUrl = item.latest_run_id ? `/cases/${c.ca_id}/runs/${item.latest_run_id}` : null;
+              const title = item.ten_tai_lieu ?? `Hợp đồng ${c.hop_dong_id}`;
+              const starting = startRun.isPending && startRun.variables === c.ca_id;
               return (
                 <tr key={c.ca_id}>
                   <td>
-                    <div className="doc-name">{item.ten_tai_lieu ?? `Hợp đồng ${c.hop_dong_id}`}</div>
-                    <code className="code-ref">{c.ca_id}</code>
+                    <div className="doc-name">{title}</div>
+                    {!simple && <code className="code-ref">{c.ca_id}</code>}
                   </td>
                   <td>
                     {state ? (
@@ -129,6 +141,8 @@ export function CaseListPage() {
                       <Link to={runUrl} className="small">
                         Xem lý do
                       </Link>
+                    ) : simple ? (
+                      <ResultSummary counts={item.requirement_status_counts ?? {}} />
                     ) : (
                       <StatusCounts counts={item.requirement_status_counts ?? {}} />
                     )}
@@ -146,15 +160,18 @@ export function CaseListPage() {
                           Xem tiến độ
                         </Link>
                       ) : null}
+                      {/* General users do not re-run a contract that already has a report. */}
+                      {!(simple && item.latest_report_id) && (
                       <button
                         type="button"
                         className="button ghost"
                         disabled={startRun.isPending}
-                        onClick={() => run(c.ca_id)}
+                        onClick={() => run(c.ca_id, title, Boolean(item.latest_run_id))}
                         title="Phân tích lại hợp đồng này với dữ liệu và cấu hình hiện tại"
                       >
-                        {item.latest_run_id ? "Chạy lại" : "Phân tích"}
+                        {starting ? "Đang bắt đầu…" : item.latest_run_id ? "Chạy lại" : "Phân tích"}
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -193,9 +210,11 @@ export function CaseListPage() {
 function Filters({
   params,
   update,
+  simple,
 }: {
   params: URLSearchParams;
   update: (changes: Record<string, string | null>) => void;
+  simple: boolean;
 }) {
   // Debounce free text so typing does not fire a request per keystroke.
   const [text, setText] = useState(params.get("q") ?? "");
@@ -254,6 +273,8 @@ function Filters({
           </button>
         )}
       </div>
+      {/* Kept in simple mode while one of these filters is on, so it can still be seen and cleared. */}
+      {(!simple || moreActive) && (
       <details className="more-filters" open={moreActive || undefined}>
         <summary>Bộ lọc khác</summary>
         <div className="filters">
@@ -295,8 +316,32 @@ function Filters({
           </label>
         </div>
       </details>
+      )}
     </div>
   );
+}
+
+/** One plain answer per contract for general users, from the same stored counts. */
+function ResultSummary({ counts }: { counts: Record<string, number> }) {
+  const flagged = (counts.NON_COMPLIANT ?? 0) + (counts.PARTIAL ?? 0);
+  if (flagged)
+    return (
+      <span className={`badge tone-${counts.NON_COMPLIANT ? "bad" : "warn"}`}>
+        {flagged} điểm cần xem lại
+      </span>
+    );
+  if (counts.INSUFFICIENT)
+    return (
+      <span
+        className="badge tone-unknown"
+        title={`Còn ${counts.INSUFFICIENT} nội dung chưa đủ thông tin để kết luận`}
+      >
+        Chưa kết luận hết
+      </span>
+    );
+  if (counts.COMPLIANT)
+    return <span className="badge tone-good">Đạt các quy định đã kiểm tra</span>;
+  return <span className="muted small">—</span>;
 }
 
 function StatusCounts({ counts }: { counts: Record<string, number> }) {

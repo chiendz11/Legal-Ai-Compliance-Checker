@@ -40,7 +40,7 @@ const table: Record<string, Record<string, Label>> = {
     MEDIUM: { text: "Trung bình", tone: "warn" },
     HIGH: { text: "Cao", tone: "bad" },
     CRITICAL: { text: "Nghiêm trọng", tone: "bad" },
-    REVIEW_REQUIRED: { text: "Cần review", tone: "unknown" },
+    REVIEW_REQUIRED: { text: "Cần chuyên viên xem xét", tone: "unknown" },
   },
   riskType: {
     COMPLIANCE: { text: "Tuân thủ", tone: "neutral" },
@@ -49,7 +49,7 @@ const table: Record<string, Record<string, Label>> = {
   },
   reportStatus: {
     DRAFT: { text: "Bản nháp", tone: "warn" },
-    REVIEW_REQUIRED: { text: "Chờ review", tone: "warn" },
+    REVIEW_REQUIRED: { text: "Chờ duyệt", tone: "warn" },
     PUBLISHED: { text: "Đã phát hành", tone: "good" },
   },
   reasonCode: {
@@ -89,8 +89,8 @@ const table: Record<string, Record<string, Label>> = {
     THOA_THUAN_LAI: { text: "Thỏa thuận lại điều khoản", tone: "warn" },
   },
   review: {
-    PENDING: { text: "Chưa review", tone: "unknown" },
-    IN_REVIEW: { text: "Đang review", tone: "warn" },
+    PENDING: { text: "Chưa rà soát", tone: "unknown" },
+    IN_REVIEW: { text: "Đang rà soát", tone: "warn" },
     APPROVED: { text: "Đã duyệt", tone: "good" },
   },
   knowledgeReview: {

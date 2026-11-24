@@ -1,6 +1,6 @@
 import type { ContractProfile, ProfileEvidence } from "../../../shared/api/client";
 import { Disclosure, Empty, Quote, Section, Table, Value } from "../../../shared/components/ui";
-import { FIELD_LABELS } from "../../../shared/fieldLabels";
+import { fieldLabel } from "../../../shared/fieldLabels";
 import { label } from "../../../shared/labels";
 import {
   PROFILE_GROUPS,
@@ -13,7 +13,7 @@ import { viDate } from "../../reports/explain";
 import { useReportIndex } from "../../reports/reportIndex";
 import { useOpenEvidence } from "../evidence/EvidenceViewer";
 
-const fieldName = (key: string) => FIELD_LABELS[key] ?? key;
+const fieldName = fieldLabel;
 
 export function ProfileSection({ profile }: { profile: ContractProfile }) {
   const index = useReportIndex();

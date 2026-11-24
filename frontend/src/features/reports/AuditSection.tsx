@@ -41,9 +41,9 @@ export function AuditSection({ record }: { record: ReportRecord }) {
         rows={[
           ["Mã báo cáo", <code>{report.bao_cao_id}</code>],
           ["Phiên bản", <code>{report.phien_ban_bao_cao}</code>],
-          ["Review revision", <code>{record.review_revision}</code>],
+          ["Lượt rà soát", <code>{record.review_revision}</code>],
           ["Trạng thái", <StatusBadge kind="reportStatus" code={report.report_status} />],
-          ["Review", <StatusBadge kind="review" code={report.review_status} />],
+          ["Rà soát", <StatusBadge kind="review" code={report.review_status} />],
           ["File xuất", <Value value={report.report_uri} />],
         ]}
       />
@@ -52,12 +52,12 @@ export function AuditSection({ record }: { record: ReportRecord }) {
         rows={[
           ["Ca", <code>{kase.ca_id}</code>],
           ["Hợp đồng", <code>{kase.hop_dong_id}</code>],
-          ["Tenant", <code>{kase.tenant_id}</code>],
+          ["Đơn vị", <code>{kase.tenant_id}</code>],
           ["Tạo bởi", kase.created_by],
           ["Tệp nguồn", <code>{kase.source.tep_id}</code>],
           ["SHA-256 nguồn", <code className="wrap">{kase.source.sha256}</code>],
           ["Phiên bản triển khai", <code>{kase.deployment.phien_ban_id}</code>],
-          ["Rule", <code>{kase.deployment.rule_version}</code>],
+          ["Phiên bản quy tắc", <code>{kase.deployment.rule_version}</code>],
           ["Tri thức pháp lý", <code>{kase.deployment.legal_knowledge_version}</code>],
           [
             "Xác minh tri thức",
@@ -69,7 +69,7 @@ export function AuditSection({ record }: { record: ReportRecord }) {
           ],
         ]}
       />
-      <h3 className="subhead">Ngữ cảnh run</h3>
+      <h3 className="subhead">Ngữ cảnh lần chạy</h3>
       <Fields rows={[["Chế độ dữ liệu", <Value value={content.audit.evidence_mode ?? "SOURCE_ONLY"} />]]} />
       <Fields rows={Object.entries(context).map(([k, v]) => [k, <Value value={v} />])} />
       <h3 className="subhead">Phạm vi đánh giá thực tế</h3>
@@ -83,7 +83,7 @@ export function AuditSection({ record }: { record: ReportRecord }) {
       </details>}
       <h3 className="subhead">Lịch sử rà soát</h3>
       {mockEnabled ? (
-        <Notice tone="info">Lịch sử review cần backend thật.</Notice>
+        <Notice tone="info">Lịch sử rà soát cần backend thật.</Notice>
       ) : (
         <ReviewHistory caId={report.ca_id} runId={record.run_id} />
       )}
@@ -97,13 +97,13 @@ export function AuditSection({ record }: { record: ReportRecord }) {
 function ReviewHistory({ caId, runId }: { caId: string; runId: string }) {
   const { data, error } = useReviews(caId, runId);
   if (!data) return <LoadState error={error} />;
-  if (data.items.length === 0) return <Empty>Chưa có review nào cho run này.</Empty>;
+  if (data.items.length === 0) return <Empty>Chưa có quyết định rà soát nào cho lần chạy này.</Empty>;
   return (
     <Table>
       <thead>
         <tr>
           <th>Thời điểm</th>
-          <th>Người review</th>
+          <th>Người rà soát</th>
           <th>Đối tượng</th>
           <th>Quyết định</th>
           <th>Giá trị mới</th>

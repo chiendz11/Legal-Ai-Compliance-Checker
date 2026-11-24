@@ -12,10 +12,45 @@ export type RunProgress = Schemas["Output_RunProgress"];
 export type CaseCreate = Schemas["Input_CaseCreate"];
 export type ApiErrorBody = Schemas["Input_ApiError"];
 
-/** Human-readable message from the API error envelope, if the error carries one. */
+/**
+ * The backend writes envelope messages in English for engineers (api/errors.py). Readers get a
+ * Vietnamese sentence chosen by message pattern first, then by error code; an unknown message
+ * is passed through so nothing is hidden.
+ */
+const MESSAGE_VI: [RegExp, string][] = [
+  [/Only PDF or DOCX/i, "Chỉ nhận tệp hợp đồng dạng PDF hoặc DOCX."],
+  [/exceeds \d+ bytes|too large/i, "Tệp vượt quá dung lượng cho phép (tối đa 100 MB)."],
+  [/Too many failed sign-in/i, "Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau ít phút."],
+  [/Wrong user ID or password/i, "Sai mã người dùng hoặc mật khẩu."],
+  [/Authentication is disabled/i, "Máy chủ đang tắt chức năng đăng nhập."],
+  [/requires the \w+ role/i, "Tài khoản của bạn không có quyền thực hiện thao tác này."],
+  [/no pinned knowledge snapshot/i, "Báo cáo này thiếu phiên bản kho tri thức nên không thao tác được."],
+  [/Source unavailable/i, "Không lấy được tệp hợp đồng gốc từ nơi lưu trữ."],
+];
+
+const CODE_VI: Record<string, string> = {
+  UNAUTHENTICATED: "Bạn cần đăng nhập để tiếp tục.",
+  FORBIDDEN: "Tài khoản của bạn không có quyền thực hiện thao tác này.",
+  NOT_FOUND: "Không tìm thấy dữ liệu yêu cầu (có thể đã bị xóa hoặc đường dẫn sai).",
+  FILE_TOO_LARGE: "Tệp vượt quá dung lượng cho phép (tối đa 100 MB).",
+  UNSUPPORTED_MEDIA_TYPE: "Chỉ nhận tệp hợp đồng dạng PDF hoặc DOCX.",
+  RESULT_NOT_READY: "Lần phân tích này chưa xong nên chưa có kết quả.",
+  STALE_REVIEW: "Mục này vừa được người khác rà soát. Trang đã tải lại trạng thái mới, hãy kiểm tra rồi gửi lại.",
+  REVIEW_REQUIRED: "Báo cáo còn mục chưa rà soát nên chưa phát hành được.",
+  VALIDATION_ERROR: "Dữ liệu gửi lên chưa hợp lệ. Kiểm tra lại các trường rồi thử lại.",
+  CONFLICT: "Thao tác xung đột với trạng thái hiện tại. Tải lại trang rồi thử lại.",
+  INTERNAL_ERROR: "Máy chủ gặp lỗi khi xử lý. Thử lại sau; nếu vẫn lỗi, báo nhóm kỹ thuật.",
+};
+
+/** Human-readable (Vietnamese) message from the API error envelope, if the error carries one. */
 export function apiErrorMessage(error: unknown): string | null {
   const body = (error as { body?: Partial<ApiErrorBody> } | null)?.body;
-  return body?.error?.message ?? null;
+  const message = body?.error?.message ?? null;
+  const code = body?.error?.code ?? null;
+  const byMessage = message ? MESSAGE_VI.find(([pattern]) => pattern.test(message)) : undefined;
+  if (byMessage) return byMessage[1];
+  if (code && CODE_VI[code]) return CODE_VI[code];
+  return message;
 }
 
 /** Error code from the envelope (STALE_REVIEW, REVIEW_REQUIRED, ...), if any. */

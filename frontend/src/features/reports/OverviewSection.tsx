@@ -52,18 +52,18 @@ function verdict(content: ReportContent): { tone: Tone; title: string; text: str
     return {
       tone: "good",
       title: `Hợp đồng đáp ứng cả ${ok} quy định đã kiểm tra`,
-      text: "Kết quả vẫn cần chuyên viên duyệt trước khi dùng chính thức.",
+      text: `Kết quả vẫn cần chuyên viên duyệt trước khi dùng chính thức.`,
     };
   if (unknown === assessed)
     return {
       tone: "unknown",
       title: "Chưa đủ căn cứ để kết luận",
-      text: `Hệ thống chưa phát hiện vi phạm nào, nhưng cả ${unknown} quy định cần xét đều còn thiếu thông tin để kết luận. Lý do và việc cần làm ở bên dưới.`,
+      text: `Hệ thống chưa phát hiện vi phạm nào, nhưng cả ${unknown} quy định đã kiểm tra đều còn thiếu thông tin để kết luận. Lý do và việc cần làm ở bên dưới.`,
     };
   return {
     tone: "unknown",
     title: `${ok} quy định tuân thủ, ${unknown} quy định chưa đủ căn cứ`,
-    text: "Chưa phát hiện vi phạm. Các quy định chưa đủ căn cứ cần bổ sung thông tin.",
+    text: `Đã kiểm tra ${assessed} quy định, chưa phát hiện vi phạm. Các quy định chưa đủ căn cứ cần bổ sung thông tin.`,
   };
 }
 
@@ -83,7 +83,11 @@ export function OverviewSection({ report }: { report: FinalReport }) {
   const index = useReportIndex();
   const toAttention = () =>
     document.getElementById("attention-block")?.scrollIntoView({ block: "start", behavior: "smooth" });
-  const insufficient = results.filter((r) => requirementDisplayStatus(r) === "INSUFFICIENT").length;
+  const shownStatus = results.map(requirementDisplayStatus);
+  const insufficient = shownStatus.filter((s) => s === "INSUFFICIENT").length;
+  const outside = shownStatus.filter((s) => s === "OUTSIDE_REVIEW_SCOPE").length;
+  const notTriggered = shownStatus.filter((s) => s === "NOT_TRIGGERED").length;
+  const assessed = results.length - outside - notTriggered;
   const causes = useInsufficientCauses(content);
   const head = verdict(content);
 
@@ -113,9 +117,18 @@ export function OverviewSection({ report }: { report: FinalReport }) {
 
       <div className="stats">
         <button type="button" className="stat" onClick={() => go("topics")}>
-          <strong>{results.length}</strong>
-          <span>quy định cần xét</span>
-          <small>trên {scope.length} quy định đã đối chiếu, {notApplicable} không áp dụng</small>
+          <strong>{assessed}</strong>
+          <span>quy định đã kiểm tra</span>
+          <small>
+            {[
+              `trên ${scope.length} quy định đã đối chiếu`,
+              `${notApplicable} không áp dụng`,
+              outside ? `${outside} ngoài phạm vi rà soát dự thảo` : null,
+              notTriggered ? `${notTriggered} không phát sinh điều kiện` : null,
+            ]
+              .filter(Boolean)
+              .join(", ")}
+          </small>
         </button>
         <button
           type="button"

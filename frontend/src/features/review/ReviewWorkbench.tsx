@@ -109,6 +109,12 @@ const ACTIONS: { action: ReviewAction; text: string }[] = [
   { action: "COMMENT", text: "Ghi chú" },
 ];
 
+/** Decisions that replace or discard the machine result ask once before they are stored. */
+const CONFIRM_ACTIONS: Partial<Record<ReviewAction, string>> = {
+  OVERRIDE: "Thay kết quả của máy bằng nội dung bạn vừa sửa?",
+  REJECT: "Bác bỏ kết quả của máy cho mục này?",
+};
+
 type Machine = {
   title: string;
   values: Record<string, unknown>;
@@ -328,12 +334,18 @@ function PublishPanel({
             className="button primary"
             disabled={!ready || publish.isPending}
             title={ready ? undefined : "Chưa đủ điều kiện phát hành"}
-            onClick={() =>
+            onClick={() => {
+              if (
+                !window.confirm(
+                  "Phát hành báo cáo chính thức?\n\nSau khi phát hành, phiên bản này không sửa hay rút lại được nữa.",
+                )
+              )
+                return;
               publish.mutate(
                 { baoCaoId: record.report.bao_cao_id, revision },
                 { onSuccess: (next) => open(next.report.bao_cao_id) },
-              )
-            }
+              );
+            }}
           >
             {publish.isPending ? "Đang phát hành…" : "Phát hành báo cáo"}
           </button>
@@ -491,6 +503,12 @@ function ReviewForm({
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    const weighty = CONFIRM_ACTIONS[action];
+    if (
+      weighty &&
+      !window.confirm(`${weighty}\n\nQuyết định được lưu vào nhật ký rà soát và không sửa được.`)
+    )
+      return;
     add.mutate(
       {
         target: { doi_tuong_loai: target.doi_tuong_loai, doi_tuong_id: target.doi_tuong_id },
@@ -545,7 +563,7 @@ function ReviewForm({
           </label>
         ))}
       <label className="field">
-        <span>Lý do (bắt buộc, lưu vào nhật ký review)</span>
+        <span>Lý do (bắt buộc, lưu vào nhật ký rà soát)</span>
         <textarea
           rows={2}
           required
@@ -556,12 +574,12 @@ function ReviewForm({
       </label>
       {stale ? (
         <Notice tone="warn">
-          Mục này vừa được người khác review; trạng thái mới đã được tải lại. Kiểm tra rồi gửi
+          Mục này vừa được người khác rà soát; trạng thái mới đã được tải lại. Kiểm tra rồi gửi
           lại.
         </Notice>
       ) : (
         add.error && (
-          <Notice tone="bad">{apiErrorMessage(add.error) ?? "Không lưu được review."}</Notice>
+          <Notice tone="bad">{apiErrorMessage(add.error) ?? "Không lưu được quyết định."}</Notice>
         )
       )}
       <div className="actions">
@@ -570,7 +588,7 @@ function ReviewForm({
           className="button primary"
           disabled={add.isPending || !reason.trim() || overrideEmpty}
         >
-          {add.isPending ? "Đang lưu…" : "Lưu review"}
+          {add.isPending ? "Đang lưu…" : "Lưu quyết định"}
         </button>
         <button type="button" className="button" onClick={onDone}>
           Hủy

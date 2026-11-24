@@ -1,14 +1,17 @@
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
+import { apiErrorMessage } from "../../shared/api/client";
 import { useCases, useRunReports, useRunStatus, useStartRun } from "../../shared/api/queries";
 import {
   Disclosure,
   Empty,
   Fields,
   LoadState,
+  Notice,
   Section,
   StatusBadge,
 } from "../../shared/components/ui";
+import { useViewMode } from "../../shared/viewMode";
 
 const STAGE_LABELS: Record<string, string> = {
   INTAKE: "Tiếp nhận hồ sơ",
@@ -27,7 +30,7 @@ const FAILURE_HELP: Record<string, string> = {
   DOCUMENT_INTELLIGENCE_UNAVAILABLE:
     "Không đọc được tệp hợp đồng gốc: tệp không còn trên máy chủ. Hãy tải lại tệp.",
   DOCUMENT_FORMAT_UNSUPPORTED:
-    "Hệ thống hiện chỉ đánh giá được tệp PDF. Hãy tải bản PDF của hợp đồng này.",
+    "Không đọc được tệp: tệp có thể bị hỏng hoặc không phải PDF/DOCX hợp lệ. Hãy tải lại bản PDF hoặc DOCX của hợp đồng này.",
   DOCUMENT_NOT_READABLE:
     "Không đọc được chữ nào trong tệp, kể cả bằng OCR: bản scan trống, quá mờ, hoặc máy chủ chưa bật OCR tiếng Việt. Hãy tải bản scan rõ hơn hoặc PDF có chữ.",
   CONTRACT_TYPE_UNSUPPORTED:
@@ -126,6 +129,7 @@ export function RunPage() {
   const reports = useRunReports(caId, runId, completed);
   const navigate = useNavigate();
   const startRun = useStartRun();
+  const simple = useViewMode() === "simple";
   const cases = useCases({ q: caId, page_size: 1 });
   const name = cases.data?.items.find((i) => i.case.ca_id === caId)?.ten_tai_lieu;
   if (!status.data) return <LoadState error={status.error} />;
@@ -142,10 +146,13 @@ export function RunPage() {
     : completed
       ? "Đã phân tích xong"
       : "Đang phân tích hợp đồng…";
-  const retry = () =>
+  const retry = () => {
+    if (!window.confirm("Chạy lại phân tích hợp đồng này?\n\nViệc phân tích có thể tốn phí gọi AI (tới vài chục lượt)."))
+      return;
     startRun.mutate(caId, {
       onSuccess: (accepted) => navigate(`/cases/${caId}/runs/${accepted.context.run_id}`),
     });
+  };
   return (
     <Section
       title={title}
@@ -170,12 +177,17 @@ export function RunPage() {
               Tải tệp khác
             </Link>
             <button type="button" className="button" disabled={startRun.isPending} onClick={retry}>
-              Thử chạy lại
+              {startRun.isPending ? "Đang bắt đầu…" : "Thử chạy lại"}
             </button>
             <Link className="button ghost" to="/">
               Về danh sách hợp đồng
             </Link>
           </div>
+          {startRun.error && (
+            <Notice tone="bad">
+              {apiErrorMessage(startRun.error) ?? "Không bắt đầu chạy lại được. Kiểm tra máy chủ rồi thử lại."}
+            </Notice>
+          )}
         </div>
       )}
 
@@ -225,6 +237,7 @@ export function RunPage() {
         </>
       )}
 
+      {!simple && (
       <Disclosure summary="Chi tiết kỹ thuật (dành cho kỹ sư)">
         <ol className="stages">
           {run.stages.map((s) => (
@@ -255,6 +268,7 @@ export function RunPage() {
           </p>
         )}
       </Disclosure>
+      )}
     </Section>
   );
 }
