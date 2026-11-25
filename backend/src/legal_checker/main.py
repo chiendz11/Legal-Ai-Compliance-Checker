@@ -1,6 +1,7 @@
 """FastAPI factory; business logic and repositories live in their owning modules."""
 
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 
 from legal_checker.api.dependencies import Services, build_services
 from legal_checker.api.errors import install_error_handlers
@@ -19,6 +20,8 @@ def create_app(
     configure_logging()
     api = FastAPI(title="Legal AI Compliance Checker", version="0.1.0")
     api.state.services = services if services is not None else build_services(settings)
+    # Reports carry the full checklist and legal basis (≈13 MB JSON); gzip cuts that ~10×.
+    api.add_middleware(GZipMiddleware, minimum_size=1024)
     api.include_router(router)
     install_error_handlers(api)
     install_metrics(api)

@@ -354,6 +354,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/{bao_cao_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Name the requirements a report lists
+         * @description Plain-language name and obligation group for every requirement in the report's checklist and applicable legal scope, read from the knowledge snapshot pinned in audit.context. IDs missing from the snapshot keep their code as the title.
+         */
+        get: operations["getReportRequirementNames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/cases/{ca_id}/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -2348,6 +2368,37 @@ export interface components {
                 [key: string]: components["schemas"]["RecommendationView"];
             };
         };
+        /**
+         * RequirementName
+         * @description Plain-language name of one legal requirement, so screens never show only its code.
+         */
+        Output_RequirementName: {
+            /** Requirement Id */
+            requirement_id: string;
+            /** Title */
+            title: string;
+            /** Obligation Group */
+            obligation_group?: string | null;
+        };
+        /** RequirementNameList */
+        Output_RequirementNameList: {
+            /** Knowledge Snapshot Sha256 */
+            knowledge_snapshot_sha256: string;
+            /** Items */
+            items: components["schemas"]["RequirementName"][];
+        };
+        /**
+         * RequirementName
+         * @description Plain-language name of one legal requirement, so screens never show only its code.
+         */
+        RequirementName: {
+            /** Requirement Id */
+            requirement_id: string;
+            /** Title */
+            title: string;
+            /** Obligation Group */
+            obligation_group?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -3724,6 +3775,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Output_LegalBasisList"];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description No permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Object not found in the caller's permitted scope */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Pinned knowledge snapshot is not available */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+            /** @description Internal error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Input_ApiError"];
+                };
+            };
+        };
+    };
+    getReportRequirementNames: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bao_cao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Output_RequirementNameList"];
                 };
             };
             /** @description Unauthenticated */

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { label, type LabelKind } from "../labels";
-import { cleanExplanationText, displayText } from "../text";
+import { displayText } from "../text";
 
 export function StatusBadge({ kind, code }: { kind: LabelKind; code: string | null | undefined }) {
   const { text, tone } = label(kind, code);
@@ -147,47 +147,81 @@ export function JsonBlock({ value }: { value: unknown }) {
   return <pre className="json">{JSON.stringify(value, null, 2)}</pre>;
 }
 
-export function LoadState({ error, children }: { error: unknown; children?: ReactNode }) {
+/** Why a load failed, in words a reader can act on (status and envelope only; no guessing). */
+function loadErrorText(error: unknown): string {
+  const status = (error as { status?: number }).status;
+  const enveloped = Boolean((error as { body?: { error?: unknown } }).body?.error);
+  if (status === 404) return "Không tìm thấy dữ liệu này. Đường dẫn có thể sai hoặc mục đã bị xóa.";
+  if (status === 401) return "Phiên đăng nhập đã hết. Hãy đăng nhập lại.";
+  if (status === 403) return "Tài khoản của bạn không có quyền xem mục này.";
+  // The dev proxy answers 5xx without an API envelope when the backend is down.
+  if (status === undefined || (status >= 500 && !enveloped))
+    return "Không kết nối được máy chủ. Kiểm tra máy chủ đang chạy rồi thử lại.";
+  return "Máy chủ gặp lỗi khi tải dữ liệu. Thử lại sau ít phút.";
+}
+
+export function LoadState({
+  error,
+  children,
+  onRetry,
+}: {
+  error: unknown;
+  children?: ReactNode;
+  onRetry?: () => void;
+}) {
   if (error) {
     const status = (error as { status?: number }).status;
+    // The HTTP status stays in the tooltip for engineers; readers get the sentence.
     return (
       <Notice tone="bad">
-        Không tải được dữ liệu{status ? ` (HTTP ${status})` : ""}. Route này có thể chưa được
-        backend triển khai; bật mock bằng <code>VITE_API_MOCK=true</code>.
+        <span title={status ? `HTTP ${status}` : "Không có phản hồi"}>{loadErrorText(error)}</span>{" "}
+        <button
+          type="button"
+          className="link"
+          onClick={onRetry ?? (() => window.location.reload())}
+        >
+          Thử lại
+        </button>
       </Notice>
     );
   }
   return <p className="muted">{children ?? "Đang tải…"}</p>;
 }
 
+const VIETNAMESE = /[ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọỏõùúụủũỳýỵỷỹ]/i;
+
 /**
  * Explanations written by the reasoning modules. Vietnamese text reads as prose; English
  * technical traces (e.g. "INSUFFICIENT: mandatory criterion findings=[...]") are kept intact but
  * folded away, since the status badge and counts already say the same thing in Vietnamese.
  */
-export function MachineText({ text }: { text: string | null | undefined }) {
-  if (!text) return null;
-  const cleaned = cleanExplanationText(text);
-  if (!cleaned) return null;
-  const hasRawTech =
-    text !== cleaned &&
-    (text.includes("Rule=") ||
-      text.includes("quote/offset") ||
-      text.includes("Unresolved gate") ||
-      text.includes("UPSTREAM_SCOPE_UNRESOLVED") ||
-      text.includes("REVIEW_SCOPE_EXCLUDED:"));
+/** Engine prefixes and markers that mean nothing to a reader. */
+export function stripEngineMarks(text: string): string {
+  return text
+    .replace(/Conclusion target:[^.]*\.\s*/g, "")
+    .replace(/\[(?:MACHINE_DRAFT_REVIEW|BACKEND_LANGUAGE_CHECK)\]\s*/g, "")
+    .trim();
+}
 
+export function MachineText({ text: raw }: { text: string | null | undefined }) {
+  const text = raw ? stripEngineMarks(raw) : raw;
+  if (!text) return null;
+  if (VIETNAMESE.test(text)) return <p>{text}</p>;
   return (
-    <div>
-      <p>{cleaned}</p>
-      {hasRawTech && (
-        <details className="machine-note">
-          <summary>Chi tiết kiểm toán kỹ thuật (Audit trace)</summary>
-          <pre className="small muted" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-            {text}
-          </pre>
-        </details>
-      )}
-    </div>
+    <details className="machine-note">
+      <summary>Chi tiết kỹ thuật (dành cho kỹ sư)</summary>
+      <p>{text}</p>
+    </details>
+  );
+}
+
+/** A requirement shown by its plain-language name, with the code kept small for reference. */
+export function RequirementTitle({ name, code }: { name: string | null; code: string }) {
+  // The code stays available on hover for engineers; readers see the name only.
+  if (!name) return <span title={code}>Quy định chưa có tên trong kho tri thức</span>;
+  return (
+    <span className="requirement-title" title={code}>
+      {name}
+    </span>
   );
 }

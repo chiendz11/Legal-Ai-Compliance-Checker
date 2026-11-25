@@ -51,6 +51,23 @@ def test_composition_can_replace_storage_without_opening_database(app_factory, k
     assert memory.runs == {}
 
 
+def test_large_responses_are_gzipped(app_factory, knowledge):
+    settings = replace(Settings.from_env(), database_url="postgresql://invalid/never_connected")
+    api = app_factory(settings=settings, services=Services(knowledge, None))
+
+    @api.get("/_test/large")
+    def large():
+        return {"items": ["chưa đủ căn cứ"] * 5000}
+
+    client = TestClient(api)
+    response = client.get("/_test/large", headers={"Accept-Encoding": "gzip"})
+    assert response.headers["content-encoding"] == "gzip"
+    assert len(response.json()["items"]) == 5000
+    assert "content-encoding" not in client.get("/health").headers
+    plain = client.get("/_test/large", headers={"Accept-Encoding": "identity"})
+    assert "content-encoding" not in plain.headers
+
+
 def test_environment_can_select_database_and_snapshot(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql://custom/custom_db")
     monkeypatch.setenv("KNOWLEDGE_SNAPSHOT_SHA256", "a" * 64)

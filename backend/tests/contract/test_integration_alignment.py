@@ -104,10 +104,7 @@ def test_frontend_understands_all_verification_action_codes():
     from legal_checker.modules.recommendations.generator import VERIFICATION_ACTIONS
 
     policy = json.loads((DOCS / "contracts/integration_policy.json").read_text())
-    source = (
-        PROJECT_ROOT
-        / "frontend/src/features/assessments/recommendations/RecommendationsSection.tsx"
-    )
+    source = PROJECT_ROOT / "frontend/src/features/assessments/risks/RisksSection.tsx"
     definition = re.search(
         r"VERIFICATION_ACTIONS\s*=\s*new Set\(\[(.*?)\]\)", source.read_text(), re.S
     )

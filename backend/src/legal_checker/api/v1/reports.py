@@ -10,7 +10,7 @@ from legal_checker.api.auth import ActorDependency, ServicesDependency
 from legal_checker.api.dependencies import Services, knowledge_snapshot
 from legal_checker.api.errors import ApiProblem
 from legal_checker.api.v1.cases import accessible_case, report_record
-from legal_checker.api.v1.schemas import LegalBasisList, ReportRecord
+from legal_checker.api.v1.schemas import LegalBasisList, ReportRecord, RequirementNameList
 from legal_checker.core.security import Actor
 from legal_checker.modules.reports.exporter import (
     MEDIA_TYPES,
@@ -18,7 +18,7 @@ from legal_checker.modules.reports.exporter import (
     export_report,
     verification_stamp,
 )
-from legal_checker.modules.reports.legal_basis import legal_basis_for
+from legal_checker.modules.reports.legal_basis import legal_basis_for, requirement_names_for
 from legal_checker.modules.reports.repository import report_digest
 
 router = APIRouter(prefix="/api/v1")
@@ -37,18 +37,33 @@ def get_report(bao_cao_id: str, services: ServicesDependency, actor: ActorDepend
     return report_record(_stored(services, actor, bao_cao_id))
 
 
-@router.get("/reports/{bao_cao_id}/legal-basis", response_model=LegalBasisList, tags=["reports"])
-def get_legal_basis(bao_cao_id: str, services: ServicesDependency, actor: ActorDependency):
-    report = _stored(services, actor, bao_cao_id).report
+def _pinned_knowledge(services: Services, report):
     pinned = report.report_json.audit.get("context", {}).get("knowledge_snapshot_sha256")
     if not pinned:
         raise ApiProblem("CONFLICT", "Report has no pinned knowledge snapshot")
     try:
-        knowledge = knowledge_snapshot(services, pinned)
+        return pinned, knowledge_snapshot(services, pinned)
     except ValueError as error:  # snapshot no longer in this DB
         raise ApiProblem("CONFLICT", str(error)) from error
+
+
+@router.get("/reports/{bao_cao_id}/legal-basis", response_model=LegalBasisList, tags=["reports"])
+def get_legal_basis(bao_cao_id: str, services: ServicesDependency, actor: ActorDependency):
+    report = _stored(services, actor, bao_cao_id).report
+    pinned, knowledge = _pinned_knowledge(services, report)
     return LegalBasisList(
         knowledge_snapshot_sha256=pinned, items=legal_basis_for(report, knowledge)
+    )
+
+
+@router.get(
+    "/reports/{bao_cao_id}/requirements", response_model=RequirementNameList, tags=["reports"]
+)
+def get_requirement_names(bao_cao_id: str, services: ServicesDependency, actor: ActorDependency):
+    report = _stored(services, actor, bao_cao_id).report
+    pinned, knowledge = _pinned_knowledge(services, report)
+    return RequirementNameList(
+        knowledge_snapshot_sha256=pinned, items=requirement_names_for(report, knowledge)
     )
 
 

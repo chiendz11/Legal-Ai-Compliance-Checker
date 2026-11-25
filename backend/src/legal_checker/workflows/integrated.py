@@ -22,7 +22,8 @@ from legal_checker.modules.compliance.verification import (
     CriterionVerificationProvider,
     EvidenceRegistryProvider,
 )
-from legal_checker.modules.documents.parser import UnsupportedDocumentError
+from legal_checker.modules.documents.ocr import OcrEngine, OcrFailedError
+from legal_checker.modules.documents.parser import PdfTextReader, UnsupportedDocumentError
 from legal_checker.modules.documents.repository import DocumentRepository
 from legal_checker.modules.documents.semantic_extractor import SemanticDocumentExtractor
 from legal_checker.modules.documents.service import PdfDocumentIntelligence, SourceMismatchError
@@ -86,6 +87,10 @@ class IntegratedModulesSource:
         verification_provider: CriterionVerificationProvider | None = None,
         external_registry_provider: EvidenceRegistryProvider | None = None,
         recommendation_personalizer: RecommendationPersonalizer | None = None,
+        llm_parallel: int = 1,
+        llm_agreement: int = 1,
+        llm_hints: bool = False,
+        ocr: OcrEngine | None = None,
     ):
         self.database_url = database_url
         self.cases = cases
@@ -102,6 +107,10 @@ class IntegratedModulesSource:
         self.verification_provider = verification_provider
         self.external_registry_provider = external_registry_provider
         self.recommendation_personalizer = recommendation_personalizer
+        self.llm_parallel = llm_parallel
+        self.llm_agreement = llm_agreement
+        self.llm_hints = llm_hints
+        self.ocr = ocr
 
     def has_local_bytes(self, source: SourceDocument) -> bool:
         """The exact source is on this server, so reading it needs no network."""
@@ -128,8 +137,10 @@ class IntegratedModulesSource:
             )
         try:
             extraction = PdfDocumentIntelligence(
-                self.storage, semantic=self.document_semantic_extractor
+                self.storage, PdfTextReader(self.ocr), semantic=self.document_semantic_extractor
             ).run(case, context=context)
+        except OcrFailedError as error:
+            raise DocumentReadError("OCR_FAILED", str(error)) from error
         except UnsupportedDocumentError as error:
             raise DocumentReadError("DOCUMENT_FORMAT_UNSUPPORTED", str(error)) from error
         except (SourceMismatchError, SourceIntegrityError) as error:
@@ -139,11 +150,29 @@ class IntegratedModulesSource:
         # A scanned PDF has no text layer: without OCR nothing can be read, and assessing an
         # empty document would turn every requirement into a misleading "insufficient".
         if not extraction.result.chunks:
+            pages = len(extraction.document.pages)
+            unreadable = len(extraction.unreadable_pages)
+            cause = (
+                "OCR found no readable text either (blank or very low-quality scan)"
+                if self.ocr is not None
+                else "OCR is not configured (install Tesseract with Vietnamese data, see "
+                "DOCUMENT_OCR in .env.example)"
+            )
             raise DocumentReadError(
                 "DOCUMENT_NOT_READABLE",
-                f"No text could be read from {len(extraction.document.pages)} page(s) "
-                f"({len(extraction.unreadable_pages)} without a text layer); scanned PDFs "
-                "need OCR, which the document module does not have yet",
+                f"No text could be read from {pages} page(s) ({unreadable} without a text "
+                f"layer); {cause}",
+            )
+        # The rule catalogue only covers apartment sale contracts. A document whose type
+        # cannot be recognised (a resolution, a notice, another kind of contract) would leave
+        # every requirement's scope unknown and report all of them as "insufficient", which
+        # reads like a finding about the contract. Say plainly that it is not handled.
+        if extraction.result.contract_profile.profile.loai_hop_dong_id is None:
+            raise DocumentReadError(
+                "CONTRACT_TYPE_UNSUPPORTED",
+                "The document is not recognised as an apartment sale contract (no "
+                "'HỢP ĐỒNG MUA BÁN CĂN HỘ' title was found); only that contract type is "
+                "assessed for now",
             )
         DocumentRepository(self.database_url).save(extraction)
         return extraction
@@ -499,6 +528,9 @@ class IntegratedModulesSource:
                 max_context_chars=self.llm_max_context_chars,
                 repair_invalid_batches=True,
                 criterion_ids=sorted(remaining),
+                max_parallel_calls=max(1, self.llm_parallel),
+                agreement_calls=max(1, self.llm_agreement),
+                call_unconcludable=self.llm_hints,
             )
             batch = provider.analyze(
                 request,
@@ -510,10 +542,15 @@ class IntegratedModulesSource:
                 for row in batch.analyses
                 if row.error_code and row.tieu_chi_id in remaining
             )
-            return (
+            from legal_checker.modules.compliance.language_check import apply_language_check
+
+            # Measured, not judged: decided after the AI so a disagreement is caught.
+            return apply_language_check(
+                request,
+                knowledge,
                 document_observations
                 + deferred
-                + [v for v in batch.observations if v.tieu_chi_id in remaining]
+                + [v for v in batch.observations if v.tieu_chi_id in remaining],
             )
 
         def observe(ctx, profile, requirements, retrieval, chunks, knowledge):

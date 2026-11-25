@@ -6,6 +6,7 @@ import { useCreateCase, useStartRun, useUploadContract } from "../../shared/api/
 import { DateField } from "../../shared/components/DateField";
 import { Icon } from "../../shared/components/icons";
 import { Notice, Section } from "../../shared/components/ui";
+import { useViewMode } from "../../shared/viewMode";
 
 const MAX_MB = 100;
 const MARKER_TYPES = [
@@ -49,41 +50,60 @@ export function UploadPage() {
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // Steps already done in a submit that later failed: a retry resumes from the failed step
+  // instead of uploading the file or creating the case a second time.
+  const [done, setDone] = useState<{ file: File; hopDongId: string; caseKey?: string; caId?: string } | null>(
+    null,
+  );
 
+  const simple = useViewMode() === "simple";
   const busy = step !== null;
   const tooLarge = !!file && file.size > MAX_MB * 1024 * 1024;
 
-  function drop(event: DragEvent) {
-    event.preventDefault();
-    setDragging(false);
-    const dropped = event.dataTransfer.files[0];
-    if (!dropped || busy) return;
-    if (!ACCEPTED.test(dropped.name)) {
+  function pick(chosen: File | null | undefined) {
+    if (!chosen || busy) return;
+    if (!ACCEPTED.test(chosen.name)) {
       setError("Chỉ nhận tệp PDF hoặc DOCX.");
       return;
     }
     setError(null);
-    setFile(dropped);
+    setFile(chosen);
+  }
+
+  function drop(event: DragEvent) {
+    event.preventDefault();
+    setDragging(false);
+    pick(event.dataTransfer.files[0]);
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!file || tooLarge) return;
     setError(null);
+    const caseBody = {
+      ngay_danh_gia: assessedOn,
+      moc_ap_dung: relevantDate || null,
+      loai_moc_ap_dung: markerType || null,
+      review_mode: reviewMode,
+      document_set_complete: documentSetComplete,
+      phien_ban_id: null, // backend selects the allowed deployment release
+    };
+    const caseKey = JSON.stringify(caseBody);
     try {
-      setStep("Đang tải tệp lên…");
-      const contract = await upload.mutateAsync({ file, title: title.trim() || undefined });
-      setStep("Đang tạo ca đánh giá…");
-      const created = await createCase.mutateAsync({
-        hop_dong_id: contract.hop_dong_id,
-        ngay_danh_gia: assessedOn,
-        moc_ap_dung: relevantDate || null,
-        loai_moc_ap_dung: markerType || null,
-        review_mode: reviewMode,
-        document_set_complete: documentSetComplete,
-        phien_ban_id: null, // backend selects the allowed deployment release
-      });
-      const caId = created.case.ca_id;
+      let progress = done?.file === file ? done : null;
+      if (!progress) {
+        setStep("Đang tải tệp lên…");
+        const contract = await upload.mutateAsync({ file, title: title.trim() || undefined });
+        progress = { file, hopDongId: contract.hop_dong_id };
+        setDone(progress);
+      }
+      let caId = progress.caseKey === caseKey ? progress.caId : undefined;
+      if (!caId) {
+        setStep("Đang tạo ca đánh giá…");
+        const created = await createCase.mutateAsync({ hop_dong_id: progress.hopDongId, ...caseBody });
+        caId = created.case.ca_id;
+        setDone({ ...progress, caseKey, caId });
+      }
       if (!runNow) {
         navigate(`/?q=${encodeURIComponent(caId)}`);
         return;
@@ -99,9 +119,23 @@ export function UploadPage() {
 
   return (
     <Section
-      title="Tải hợp đồng lên"
-      description="Nhận PDF hoặc DOCX gốc, lưu kèm SHA-256 rồi tạo ca đánh giá; phiên bản tri thức và quy tắc do backend chọn. Hiện module đọc hợp đồng chỉ đánh giá được PDF có lớp chữ (DOCX được lưu nhưng chưa đánh giá)."
+      title="Tải hợp đồng mới"
+      description="Hệ thống kiểm tra hợp đồng mua bán căn hộ chung cư với quy định pháp luật và chỉ ra điểm cần chú ý. Nhận tệp PDF (có chữ hoặc bản scan) và DOCX."
     >
+      <ol className="upload-steps" aria-label="Các bước">
+        <li>
+          <b>1. Tải lên</b>
+          <span>Chọn tệp hợp đồng.</span>
+        </li>
+        <li>
+          <b>2. Hệ thống phân tích</b>
+          <span>Từ vài chục giây đến vài phút.</span>
+        </li>
+        <li>
+          <b>3. Đọc báo cáo</b>
+          <span>Kết luận, lý do và việc cần làm.</span>
+        </li>
+      </ol>
       <form className="form" onSubmit={submit}>
         <div className="field">
           <span>Tệp hợp đồng</span>
@@ -119,7 +153,10 @@ export function UploadPage() {
               className="sr-only"
               accept={ACCEPT}
               disabled={busy}
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                pick(e.target.files?.[0]);
+                e.target.value = ""; // picking the same file again after an error still fires
+              }}
             />
             <span className="dz-ico">
               <Icon name={file ? "file" : "upload"} />
@@ -135,7 +172,7 @@ export function UploadPage() {
               <span className="dz-text">
                 <b>Kéo thả hợp đồng vào đây hoặc bấm để chọn</b>
                 <span className="muted small">
-                  PDF có lớp chữ (đánh giá được) hoặc DOCX, tối đa {MAX_MB} MB
+                  PDF (có chữ hoặc bản scan) hoặc DOCX, tối đa {MAX_MB} MB
                 </span>
               </span>
             )}
@@ -153,72 +190,90 @@ export function UploadPage() {
             onChange={(e) => setTitle(e.target.value)}
           />
         </label>
-        <div className="field-row">
+        {/* Simple mode keeps the defaults: draft review, automatic dates, analyse at once. */}
+        {!simple && (
+        <details className="more-filters">
+          <summary>Tùy chọn nâng cao (thường không cần đổi)</summary>
+          <div className="field-row">
+            <label className="field">
+              <span>Ngày đánh giá</span>
+              <DateField
+                value={assessedOn}
+                clearable={false}
+                disabled={busy}
+                onChange={setAssessedOn}
+              />
+            </label>
+            <label className="field">
+              <span>Mốc áp dụng luật (nếu biết)</span>
+              <DateField
+                value={relevantDate}
+                placeholder="Chưa rõ"
+                disabled={busy}
+                onChange={setRelevantDate}
+              />
+            </label>
+            <label className="field">
+              <span>Loại mốc</span>
+              <select value={markerType} disabled={busy} onChange={(e) => setMarkerType(e.target.value)}>
+                {MARKER_TYPES.map(([value, text]) => (
+                  <option key={value} value={value}>
+                    {text}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="small muted">
+            Mốc áp dụng luật: để trống nếu chưa chắc. Hệ thống tự đọc ngày ký trong hợp đồng và không
+            lấy ngày hôm nay làm mốc. Mốc chỉ dùng cho đúng loại đã chọn; khi rà soát dự thảo, đây là
+            thời điểm dự kiến, không chứng minh hợp đồng đã được ký.
+          </p>
           <label className="field">
-            <span>Ngày đánh giá</span>
-            <DateField
-              value={assessedOn}
-              clearable={false}
+            <span>Phạm vi đánh giá</span>
+            <select
+              value={reviewMode}
               disabled={busy}
-              onChange={setAssessedOn}
-            />
-          </label>
-          <label className="field">
-            <span>Mốc áp dụng luật (nếu biết)</span>
-            <DateField
-              value={relevantDate}
-              placeholder="Chưa rõ"
-              disabled={busy}
-              onChange={setRelevantDate}
-            />
-          </label>
-          <label className="field">
-            <span>Loại mốc</span>
-            <select value={markerType} disabled={busy} onChange={(e) => setMarkerType(e.target.value)}>
-              {MARKER_TYPES.map(([value, text]) => (
-                <option key={value} value={value}>
-                  {text}
-                </option>
-              ))}
+              onChange={(e) => setReviewMode(e.target.value as typeof reviewMode)}
+            >
+              <option value="DRAFT_REVIEW">Rà soát dự thảo trước khi ký</option>
+              <option value="FULL_ASSESSMENT">Đánh giá cả việc ký kết và thực hiện hợp đồng</option>
             </select>
           </label>
-        </div>
-        <p className="small muted">
-          Để trống mốc áp dụng nếu chưa chắc: hệ thống không tự lấy ngày hôm nay làm mốc.
-          Mốc chỉ dùng cho đúng loại đã chọn. Trong rà soát dự thảo, đây là giả định
-          thời điểm dự kiến, không chứng minh đã ký hoặc đã sử dụng mẫu thực tế.
-        </p>
-        <label className="check">
-          <span>Phạm vi đánh giá</span>
-          <select value={reviewMode} disabled={busy} onChange={(e) => setReviewMode(e.target.value as typeof reviewMode)}>
-            <option value="DRAFT_REVIEW">Rà soát dự thảo trước khi ký</option>
-            <option value="FULL_ASSESSMENT">Đánh giá cả giao kết và thực hiện giao dịch</option>
-          </select>
-        </label>
-        <p className="small muted">
-          Rà soát dự thảo kiểm tra nội dung thỏa thuận. Việc đã ký, thu tiền, bàn giao và hồ sơ
-          xác minh bên ngoài được ghi riêng là ngoài phạm vi, không coi là đã đáp ứng.
-        </p>
-        <label className="check">
-          <input type="checkbox" checked={documentSetComplete} disabled={busy}
-            onChange={(e) => setDocumentSetComplete(e.target.checked)} />
-          Tôi đã cung cấp đủ thân hợp đồng và các phụ lục thuộc phạm vi rà soát nội dung.
-        </label>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={runNow}
-            disabled={busy}
-            onChange={(e) => setRunNow(e.target.checked)}
-          />
-          Chạy đánh giá ngay sau khi tải lên
-        </label>
+          <p className="small muted">
+            Rà soát dự thảo chỉ kiểm tra nội dung các điều khoản. Việc đã ký, thu tiền, bàn giao và
+            giấy tờ bên ngoài được ghi là ngoài phạm vi, không được coi là đã đáp ứng.
+          </p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={documentSetComplete}
+              disabled={busy}
+              onChange={(e) => setDocumentSetComplete(e.target.checked)}
+            />
+            Tệp tải lên đã gồm đủ thân hợp đồng và các phụ lục cần rà soát
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={runNow}
+              disabled={busy}
+              onChange={(e) => setRunNow(e.target.checked)}
+            />
+            Phân tích ngay sau khi tải lên
+          </label>
+        </details>
+        )}
         {error && <Notice tone="bad">{error}</Notice>}
         <div className="actions">
           <button type="submit" className="button primary" disabled={!file || tooLarge || busy}>
-            {step ?? "Tải lên và tạo ca"}
+            {step ?? (runNow ? "Tải lên và phân tích" : "Tải lên")}
           </button>
         </div>
+        <p className="small muted">
+          Chỉ đánh giá hợp đồng mua bán căn hộ chung cư; tài liệu loại khác sẽ được báo là không xử
+          lý. Nhận PDF (kể cả bản scan) và DOCX.
+        </p>
       </form>
     </Section>
   );

@@ -92,9 +92,9 @@ Khi ghép hệ thống, input đó được thay bằng output thật của các
 | Phần | Hiện trạng trong code | Cần hoàn thiện / nghiệm thu |
 |---|---|---|
 | PostgreSQL và dataset | Alembic, streaming seed/preview, release pin và receipt | ZIP TEAM local sẵn sàng; chủ dự án upload Drive, publish code; nghiệm thu restore |
-| Bước 1–2 | Upload, PDF text parser, chunks/profile/facts/C03; integrated path đã lưu extraction trước Retrieval | OCR/DOCX chưa có; field coverage và chất lượng nguồn cần eval |
+| Bước 1–2 | Upload, PDF text parser, chunks/profile/facts/C03; integrated path đã lưu extraction trước Retrieval | OCR (Tesseract) và DOCX đã có; field coverage và chất lượng nguồn cần eval |
 | Bước 3–4 | Catalog Scope/Temporal/Citation/BM25, metadata active chunks và C09 provenance đã nối | Áp dụng catalog mới; giữ gaps theo ca, đo quality; không coi SOURCE_CHECKED là human approval |
-| Bước 5–7 | LLM proposals/batch, grounding/rules, C07–C11, source verifier và scenario verifier opt-in | Hoàn thiện binding nghiệp vụ ngoài scenario; đo quality; source verifier không bật mọi gate |
+| Bước 5–7 | LLM proposals/batch, grounding/rules, C07–C11, source verifier và scenario verifier opt-in | Hoàn thiện binding nghiệp vụ ngoài scenario; đo quality; source verifier không bật mọi gate; mặc định chỉ gọi AI cho criterion có thể kết luận (`ASSESSMENT_LLM_HINTS`) |
 | Workflow | API/run/queue/recovery, persistence trước Retrieval, composition inject source verifier | Người 4 cung cấp checks nghiệp vụ sâu hơn, người 5 inject; nghiệm thu nhiều PDF |
 | Bước 8–9 | Review events, report versions, UI/history và export | Nghiệm thu quyền truy cập, review/publish/export và nguồn/provenance xuyên suốt |
 
@@ -601,7 +601,7 @@ Repo đã tổ chức theo module: ports ở owning modules, implementations DB/
 Không cần tạo lại các folder cũ đã bỏ để thực hiện hướng dẫn này.
 
 Factory khởi tạo Knowledge, Store, LLM audit sink và source storage; GET knowledge/run dùng DB.
-API khởi chạy assessment toàn bộ đã có; không có POST chạy riêng bước 5–7.
+API khởi chạy assessment toàn bộ: `POST /api/v1/cases/{ca_id}/runs`; không có POST chạy riêng bước 5–7.
 Khi nối các services upstream vào full workflow, inject reader/provider/writer rõ ràng;
 không đưa query SQL trực tiếp vào route hoặc engine để bỏ qua ranh giới module.
 

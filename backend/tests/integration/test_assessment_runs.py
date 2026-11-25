@@ -452,7 +452,34 @@ def test_legal_basis_is_described_from_the_pinned_snapshot(env):
     items = {item["id"]: item for item in body["items"]}
     version = items["PV_GYC005"]
     assert version["kind"] == "REQUIREMENT_VERSION" and version["title"]
+    # The source document and article of every requirement result are described too.
+    for result in report["report_json"]["compliance"]["requirement_results"]:
+        snapshot = result["requirement_snapshot_json"]
+        pinned_version = snapshot.get("version") or snapshot.get("requirement_version") or {}
+        for key in ("source_van_ban_id", "dieu_khoan_id"):
+            if pinned_version.get(key):
+                assert pinned_version[key] in items
     assert env.client.get("/api/v1/reports/NOPE/legal-basis").status_code == 404
+
+
+def test_requirement_names_come_from_the_pinned_snapshot(env):
+    run_id = start(env.client)["context"]["run_id"]
+    report = env.client.get(f"/api/v1/cases/{CASE}/runs/{run_id}/reports").json()["items"][0][
+        "report"
+    ]
+    response = env.client.get(f"/api/v1/reports/{report['bao_cao_id']}/requirements")
+    assert response.status_code == 200
+    body = response.json()
+    content = report["report_json"]
+    assert (
+        body["knowledge_snapshot_sha256"]
+        == content["audit"]["context"]["knowledge_snapshot_sha256"]
+    )
+    listed = {a["requirement_id"] for a in content["applicable_legal_scope"]}
+    assert {item["requirement_id"] for item in body["items"]} >= listed
+    named = [item for item in body["items"] if item["title"] != item["requirement_id"]]
+    assert named, "requirements in the snapshot must get a plain-language title"
+    assert env.client.get("/api/v1/reports/NOPE/requirements").status_code == 404
 
 
 def test_unknown_legal_ids_stay_visible_and_snapshot_must_match(env):

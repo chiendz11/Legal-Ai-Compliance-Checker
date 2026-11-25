@@ -1,6 +1,6 @@
 """Step 1 / BR-01: nhận tệp upload, lưu bytes theo SHA-256 và tạo C01 có deployment pin.
 
-- Chỉ nhận PDF (DOCX chưa có parser): kiểm tra MIME, kích thước, header và tính SHA-256.
+- Nhận PDF và DOCX: kiểm tra MIME, kích thước, header và tính SHA-256.
 - Bytes lưu vào thư mục cache của ``CachedHttpSourceStorage`` (tên file = SHA-256), nên
   bước 2 đọc lại bằng đúng storage dùng chung, có kiểm tra hash mỗi lần đọc.
 - ``hop_dong`` + ``tep_nguon`` + ``ca_danh_gia`` ghi trong MỘT transaction vì
@@ -27,7 +27,9 @@ class IntakeService(Protocol):
     def register(self, case: AssessmentCase) -> AssessmentCase: ...
 
 
-SUPPORTED_MIME_TYPES = {"application/pdf"}
+PDF_MIME = "application/pdf"
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+SUPPORTED_MIME_TYPES = {PDF_MIME, DOCX_MIME}
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 LOAI_DU_LIEU = "DI_UPLOAD"
 LOAI_NGUON = "USER_UPLOAD"
@@ -55,8 +57,10 @@ def validate_upload(content: bytes, mime_type: str, *, max_bytes: int = MAX_UPLO
         raise UploadRejectedError("Empty file")
     if len(content) > max_bytes:
         raise UploadRejectedError(f"File exceeds {max_bytes} bytes")
-    if b"%PDF-" not in content[:1024]:
+    if mime == PDF_MIME and b"%PDF-" not in content[:1024]:
         raise UploadRejectedError("File declared as PDF has no PDF header")
+    if mime == DOCX_MIME and not content.startswith(b"PK\x03\x04"):
+        raise UploadRejectedError("File declared as DOCX is not a zip package")
     return hashlib.sha256(content).hexdigest()
 
 

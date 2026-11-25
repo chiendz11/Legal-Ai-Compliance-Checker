@@ -5,14 +5,24 @@ import { useCases, useStartRun, type CaseQuery } from "../../shared/api/queries"
 import { useCan } from "../../shared/auth";
 import { DateField } from "../../shared/components/DateField";
 import { Icon } from "../../shared/components/icons";
-import { Empty, LoadState, Notice, Section, StatusBadge, Table } from "../../shared/components/ui";
+import { LoadState, Notice, Section, Table } from "../../shared/components/ui";
 import { label } from "../../shared/labels";
+import { useViewMode } from "../../shared/viewMode";
+import { viDate } from "../reports/explain";
 
 const PAGE_SIZE = 20;
 const FILTER_KEYS = ["q", "run_status", "requirement_status", "date_from", "date_to", "sort"] as const;
 const REQUIREMENT_ORDER = ["NON_COMPLIANT", "PARTIAL", "INSUFFICIENT", "COMPLIANT"];
 
-/** History: the tenant's cases with their latest run/report, filtered server-side via the URL. */
+/** Latest run status in words a reader understands. */
+const RUN_STATE: Record<string, [string, string]> = {
+  QUEUED: ["Đang chờ phân tích", "info"],
+  RUNNING: ["Đang phân tích", "info"],
+  COMPLETED: ["Đã có kết quả", "good"],
+  FAILED: ["Không xử lý được", "bad"],
+};
+
+/** The tenant's contracts with their latest analysis, filtered server-side via the URL. */
 export function CaseListPage() {
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get("page") ?? 1));
@@ -24,8 +34,10 @@ export function CaseListPage() {
   const { data, error, isFetching } = useCases(query);
   const navigate = useNavigate();
   const startRun = useStartRun();
+  const can = useCan();
+  const simple = useViewMode() === "simple";
 
-  const update = (changes: Record<string, string | null>) => {
+  const update =(changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
@@ -35,85 +47,131 @@ export function CaseListPage() {
     setParams(next, { replace: true });
   };
 
-  const run = (caId: string) =>
+  // Each run may call the paid AI provider many times, so a click asks once first.
+  const run = (caId: string, title: string, again: boolean) => {
+    const ask = again
+      ? `Phân tích lại “${title}”?\n\nLần chạy mới thay kết quả hiện tại và có thể tốn phí gọi AI (tới vài chục lượt). Báo cáo cũ vẫn được giữ.`
+      : `Bắt đầu phân tích “${title}”?\n\nViệc phân tích có thể tốn phí gọi AI (tới vài chục lượt).`;
+    if (!window.confirm(ask)) return;
     startRun.mutate(caId, {
       onSuccess: (accepted) => navigate(`/cases/${caId}/runs/${accepted.context.run_id}`),
     });
+  };
 
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
-  const can = useCan();
+  const filtered = FILTER_KEYS.some((key) => params.get(key));
   return (
     <Section
-      title="Lịch sử đánh giá"
-      description={`${data ? `${data.total} ca` : "…"} của tổ chức bạn. Xem lại báo cáo không chạy lại đánh giá.`}
+      title="Hợp đồng"
+      description={
+        <>
+          {data ? `${data.total} hợp đồng` : "Các hợp đồng"} đã tải lên và kết quả phân tích gần
+          nhất. Bấm <b>Xem báo cáo</b> để đọc kết quả.{" "}
+          <Link to="/help">Hướng dẫn sử dụng</Link>
+        </>
+      }
       actions={
         can("uploader") && (
           <Link className="button primary" to="/upload">
-            <Icon name="upload" />
+            <Icon name="plus" />
             Tải hợp đồng mới
           </Link>
         )
       }
     >
-      <Filters params={params} update={update} />
+      <Filters params={params} update={update} simple={simple} />
       {startRun.error && (
-        <Notice tone="bad">Không khởi chạy được đánh giá. Kiểm tra backend và thử lại.</Notice>
+        <Notice tone="bad">Không bắt đầu phân tích được. Kiểm tra máy chủ rồi thử lại.</Notice>
       )}
       {!data ? (
         <LoadState error={error} />
       ) : data.items.length === 0 ? (
-        <Empty>Không có ca nào khớp bộ lọc.</Empty>
+        <div className="empty-state">
+          {filtered ? (
+            <p>Không có hợp đồng nào khớp bộ lọc.</p>
+          ) : (
+            <>
+              <p>
+                <strong>Chưa có hợp đồng nào.</strong> Tải hợp đồng mua bán căn hộ lên để hệ thống
+                kiểm tra.
+              </p>
+              {can("uploader") && (
+                <Link className="button primary" to="/upload">
+                  Tải hợp đồng đầu tiên
+                </Link>
+              )}
+            </>
+          )}
+        </div>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Ca / Tài liệu</th>
+              <th>Tài liệu</th>
+              <th>Tình trạng</th>
+              <th>Kết quả</th>
               <th>Ngày đánh giá</th>
-              <th>Mốc áp dụng</th>
-              <th>Run gần nhất</th>
-              <th>Kết quả yêu cầu</th>
-              <th />
+              <th>
+                <span className="sr-only">Thao tác</span>
+              </th>
             </tr>
           </thead>
           <tbody className={isFetching ? "loading" : undefined}>
             {data.items.map((item) => {
               const c = item.case;
+              const state = item.latest_run_status ? RUN_STATE[item.latest_run_status] : null;
+              const runUrl = item.latest_run_id ? `/cases/${c.ca_id}/runs/${item.latest_run_id}` : null;
+              const title = item.ten_tai_lieu ?? `Hợp đồng ${c.hop_dong_id}`;
+              const starting = startRun.isPending && startRun.variables === c.ca_id;
               return (
                 <tr key={c.ca_id}>
                   <td>
-                    <code>{c.ca_id}</code>
-                    <div className="small muted">{item.ten_tai_lieu ?? c.hop_dong_id}</div>
+                    <div className="doc-name">{title}</div>
+                    {!simple && <code className="code-ref">{c.ca_id}</code>}
                   </td>
-                  <td>{c.assessment_context.ngay_danh_gia}</td>
-                  <td>{c.assessment_context.moc_ap_dung ?? <span className="null">chưa rõ</span>}</td>
                   <td>
-                    {item.latest_run_id ? (
-                      <Link to={`/cases/${c.ca_id}/runs/${item.latest_run_id}`}>
-                        <StatusBadge kind="runStatus" code={item.latest_run_status} />
-                      </Link>
+                    {state ? (
+                      <span className={`badge tone-${state[1]}`}>{state[0]}</span>
                     ) : (
-                      <span className="muted">chưa chạy</span>
+                      <span className="badge tone-neutral">Chưa phân tích</span>
                     )}
                   </td>
                   <td>
-                    <StatusCounts counts={item.requirement_status_counts ?? {}} />
+                    {item.latest_run_status === "FAILED" && runUrl ? (
+                      <Link to={runUrl} className="small">
+                        Xem lý do
+                      </Link>
+                    ) : simple ? (
+                      <ResultSummary counts={item.requirement_status_counts ?? {}} />
+                    ) : (
+                      <StatusCounts counts={item.requirement_status_counts ?? {}} />
+                    )}
                   </td>
+                  <td className="small">{viDate(c.assessment_context.ngay_danh_gia)}</td>
                   <td>
                     {/* flex lives on an inner box: a flex <td> stops being a table cell */}
                     <div className="row-actions">
-                      {item.latest_report_id && (
-                        <Link className="button" to={`/reports/${item.latest_report_id}`}>
-                          Báo cáo
+                      {item.latest_report_id ? (
+                        <Link className="button primary" to={`/reports/${item.latest_report_id}`}>
+                          Xem báo cáo
                         </Link>
-                      )}
+                      ) : runUrl && item.latest_run_status !== "FAILED" ? (
+                        <Link className="button primary" to={runUrl}>
+                          Xem tiến độ
+                        </Link>
+                      ) : null}
+                      {/* General users do not re-run a contract that already has a report. */}
+                      {!(simple && item.latest_report_id) && (
                       <button
                         type="button"
-                        className="button"
+                        className="button ghost"
                         disabled={startRun.isPending}
-                        onClick={() => run(c.ca_id)}
+                        onClick={() => run(c.ca_id, title, Boolean(item.latest_run_id))}
+                        title="Phân tích lại hợp đồng này với dữ liệu và cấu hình hiện tại"
                       >
-                        {item.latest_run_id ? "Chạy lại" : "Chạy đánh giá"}
+                        {starting ? "Đang bắt đầu…" : item.latest_run_id ? "Chạy lại" : "Phân tích"}
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -152,9 +210,11 @@ export function CaseListPage() {
 function Filters({
   params,
   update,
+  simple,
 }: {
   params: URLSearchParams;
   update: (changes: Record<string, string | null>) => void;
+  simple: boolean;
 }) {
   // Debounce free text so typing does not fire a request per keystroke.
   const [text, setText] = useState(params.get("q") ?? "");
@@ -176,78 +236,112 @@ function Filters({
     </select>
   );
   const anyFilter = FILTER_KEYS.some((key) => params.get(key));
+  const moreActive = ["requirement_status", "date_from", "date_to", "sort"].some((k) => params.get(k));
   return (
-    <div className="filters" role="search">
-      <label className="field grow">
-        <span>Tìm</span>
-        <input
-          type="search"
-          value={text}
-          placeholder="Mã ca, mã hợp đồng hoặc tên tài liệu"
-          onChange={(e) => setText(e.target.value)}
-        />
-      </label>
-      <label className="field">
-        <span>Trạng thái run</span>
-        {select("run_status", [
-          ["", "Tất cả"],
-          ["COMPLETED", "Hoàn tất"],
-          ["RUNNING", "Đang chạy"],
-          ["QUEUED", "Đang chờ"],
-          ["FAILED", "Lỗi"],
-          ["NONE", "Chưa chạy"],
-        ])}
-      </label>
-      <label className="field">
-        <span>Có yêu cầu</span>
-        {select("requirement_status", [
-          ["", "Bất kỳ"],
-          ["NON_COMPLIANT", "Không tuân thủ"],
-          ["PARTIAL", "Tuân thủ một phần"],
-          ["INSUFFICIENT", "Chưa đủ căn cứ"],
-          ["COMPLIANT", "Tuân thủ"],
-        ])}
-      </label>
-      <label className="field">
-        <span>Từ ngày</span>
-        <DateField
-          value={params.get("date_from") ?? ""}
-          placeholder="Bất kỳ"
-          onChange={(value) => update({ date_from: value || null })}
-        />
-      </label>
-      <label className="field">
-        <span>Đến ngày</span>
-        <DateField
-          value={params.get("date_to") ?? ""}
-          placeholder="Bất kỳ"
-          onChange={(value) => update({ date_to: value || null })}
-        />
-      </label>
-      <label className="field">
-        <span>Sắp xếp</span>
-        {select("sort", [
-          ["", "Hoạt động gần nhất"],
-          ["ca_id", "Mã ca"],
-          ["-latest_run", "Run mới nhất"],
-          ["-ngay_danh_gia", "Ngày đánh giá mới nhất"],
-          ["ngay_danh_gia", "Ngày đánh giá cũ nhất"],
-        ])}
-      </label>
-      {anyFilter && (
-        <button
-          type="button"
-          className="button"
-          onClick={() => {
-            setText("");
-            update(Object.fromEntries(FILTER_KEYS.map((key) => [key, null])));
-          }}
-        >
-          Xóa lọc
-        </button>
+    <div className="filter-block" role="search">
+      <div className="filters">
+        <label className="field grow">
+          <span>Tìm hợp đồng</span>
+          <input
+            type="search"
+            value={text}
+            placeholder="Tên tài liệu hoặc mã"
+            onChange={(e) => setText(e.target.value)}
+          />
+        </label>
+        <label className="field">
+          <span>Tình trạng</span>
+          {select("run_status", [
+            ["", "Tất cả"],
+            ["COMPLETED", "Đã có kết quả"],
+            ["RUNNING", "Đang phân tích"],
+            ["QUEUED", "Đang chờ"],
+            ["FAILED", "Không xử lý được"],
+            ["NONE", "Chưa phân tích"],
+          ])}
+        </label>
+        {anyFilter && (
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => {
+              setText("");
+              update(Object.fromEntries(FILTER_KEYS.map((key) => [key, null])));
+            }}
+          >
+            Xóa lọc
+          </button>
+        )}
+      </div>
+      {/* Kept in simple mode while one of these filters is on, so it can still be seen and cleared. */}
+      {(!simple || moreActive) && (
+      <details className="more-filters" open={moreActive || undefined}>
+        <summary>Bộ lọc khác</summary>
+        <div className="filters">
+          <label className="field">
+            <span>Có kết luận</span>
+            {select("requirement_status", [
+              ["", "Bất kỳ"],
+              ["NON_COMPLIANT", "Không tuân thủ"],
+              ["PARTIAL", "Tuân thủ một phần"],
+              ["INSUFFICIENT", "Chưa đủ căn cứ"],
+              ["COMPLIANT", "Tuân thủ"],
+            ])}
+          </label>
+          <label className="field">
+            <span>Từ ngày</span>
+            <DateField
+              value={params.get("date_from") ?? ""}
+              placeholder="Bất kỳ"
+              onChange={(value) => update({ date_from: value || null })}
+            />
+          </label>
+          <label className="field">
+            <span>Đến ngày</span>
+            <DateField
+              value={params.get("date_to") ?? ""}
+              placeholder="Bất kỳ"
+              onChange={(value) => update({ date_to: value || null })}
+            />
+          </label>
+          <label className="field">
+            <span>Sắp xếp</span>
+            {select("sort", [
+              ["", "Mới hoạt động gần nhất"],
+              ["-ngay_danh_gia", "Ngày đánh giá mới nhất"],
+              ["ngay_danh_gia", "Ngày đánh giá cũ nhất"],
+              ["-latest_run", "Lần chạy mới nhất"],
+              ["ca_id", "Theo mã"],
+            ])}
+          </label>
+        </div>
+      </details>
       )}
     </div>
   );
+}
+
+/** One plain answer per contract for general users, from the same stored counts. */
+function ResultSummary({ counts }: { counts: Record<string, number> }) {
+  const flagged = (counts.NON_COMPLIANT ?? 0) + (counts.PARTIAL ?? 0);
+  if (flagged)
+    return (
+      <span className={`badge tone-${counts.NON_COMPLIANT ? "bad" : "warn"}`}>
+        {flagged} điểm cần xem lại
+      </span>
+    );
+  if (counts.INSUFFICIENT)
+    return (
+      <span
+        className="badge tone-unknown"
+        title={`Còn ${counts.INSUFFICIENT} nội dung chưa đủ thông tin để kết luận`}
+      >
+        Chưa kết luận hết
+      </span>
+    );
+  if (counts.COMPLIANT)
+    return <span className="badge tone-good">Đạt các quy định đã kiểm tra</span>;
+  return <span className="muted small">—</span>;
 }
 
 function StatusCounts({ counts }: { counts: Record<string, number> }) {

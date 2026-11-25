@@ -1,15 +1,17 @@
 FROM python:3.12-slim
 
 # DejaVu gives the PDF exporter a Unicode font with Vietnamese glyphs.
+# Tesseract + Vietnamese data read scanned contracts (DOCUMENT_OCR=auto picks them up).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends fonts-dejavu-core \
+        tesseract-ocr tesseract-ocr-vie \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 COPY backend/ backend/
 COPY constraints.txt ./constraints.txt
 
-RUN python -m pip install --no-cache-dir "./backend[worker,export,ai]" -c constraints.txt \
+RUN python -m pip install --no-cache-dir "./backend[worker,export,ai,ocr]" -c constraints.txt \
     && groupadd --gid 10001 legal \
     && useradd --uid 10001 --gid 10001 --no-create-home legal \
     && mkdir -p /data \

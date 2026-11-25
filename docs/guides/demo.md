@@ -84,13 +84,26 @@ npm --prefix frontend run dev
 
 Mở http://localhost:5173. Windows: nếu test/seed báo lỗi giải mã ký tự, đặt `PYTHONUTF8=1`.
 
+### Để báo cáo có kết luận của AI
+
+Ca thường (`FULL_ASSESSMENT`) chỉ kết luận khi có dữ kiện đã xác minh; với knowledge hiện tại
+AI gần như không được tự kết luận. Muốn demo kết luận nội dung, tải hợp đồng với chế độ
+**Rà soát dự thảo trước khi ký** (`DRAFT_REVIEW`, đánh dấu bộ hồ sơ đầy đủ). Đo ngày 17/11 trên
+PDF HD360_013 với `OPENAI_MODEL=gpt-6-luna`, `ASSESSMENT_LLM_MAX_CALLS=120`: 43 lượt gọi, khoảng
+0,09 USD, 16 kết luận (12 không có điều khoản bị cấm, ngôn ngữ, giải quyết tranh chấp, 2 thiếu
+thông tin tài khoản kinh phí bảo trì vì hợp đồng để trống). Mặc định 20 lượt đủ cho thử nhanh
+nhưng nhiều điểm kiểm tra sẽ báo "hết lượt gọi". Model suy luận (gpt-6) cần
+`C07_LLM_MAX_OUTPUT_TOKENS=12000`, `C07_LLM_TIMEOUT_SECONDS=180`,
+`C07_LLM_TOTAL_TIMEOUT_SECONDS=400`. Máy không có PDF gốc của ca dataset thì dùng
+`ASSESSMENT_MODULES=modules_di_reference`.
+
 ## 3. Kịch bản trình bày (~5 phút)
 
 1. (AUTH_MODE=on) **Đăng nhập** bằng tài khoản trưởng nhóm; góc phải hiện tên và vai trò.
 2. **Lịch sử**: 300 ca DEV/VALIDATION; lọc theo trạng thái run/kết luận, tìm theo mã, sắp xếp.
 3. **Tải hợp đồng**: kéo thả một PDF có lớp chữ → tạo ca → chạy. Cả 9 bước chạy bằng module
-   thật và báo cáo ghi `MODULES`. Tải DOCX thì run dừng ở bước đọc hợp đồng với lý do
-   `DOCUMENT_FORMAT_UNSUPPORTED` (nhóm A chưa có parser DOCX).
+   thật và báo cáo ghi `MODULES`. DOCX cũng được đọc (theo nội dung văn bản, không xem song
+   song được); tệp hỏng hoặc không phải PDF/DOCX dừng với `DOCUMENT_FORMAT_UNSUPPORTED`.
 4. Bấm **Chạy đánh giá** ở `CA360_051`. Trang run hiện 9 stage chuyển PENDING → RUNNING →
    COMPLETED (cập nhật qua SSE). Nói rõ: COMPLETED là có kết quả máy, chưa phải đã review.
 5. Trang tự mở **báo cáo**. Chỉ vào nhãn DRAFT/chưa review và nhãn nguồn module.
@@ -139,7 +152,11 @@ api (`ASSESSMENT_QUEUE=celery`), worker (Celery + beat khôi phục run bị m�
 
 ## Giới hạn hiện tại
 
-- Module đọc hợp đồng (nhóm A) chỉ đọc PDF có lớp chữ: chưa có OCR cho bản scan và chưa đọc DOCX.
+- Module đọc hợp đồng (nhóm A) đọc PDF có lớp chữ, PDF scan (OCR Tesseract tiếng Việt, cần cài
+  `tesseract-ocr-vie`; image Docker đã có) và DOCX. DOCX không có số trang nên trích dẫn không mở
+  được khung xem song song.
+- C07 mặc định chỉ gọi AI cho các điểm kiểm tra có thể thành kết luận; bật `ASSESSMENT_LLM_HINTS=on`
+  nếu muốn AI gợi ý cả các điểm kiểm tra chờ chuyên viên (khoảng 8 lần số lượt gọi).
 - Chỉ modules_di_reference/reference mới được dùng reference; modules đọc HTTP/upload thật và dừng nếu lỗi nguồn.
 - Live C09 đã có provenance. C09_PROVENANCE_UNAVAILABLE dành legacy/đầu vào thiếu pin, không còn là mô tả mọi live finding.
 - SOURCE_CHECKED của TEAM baseline chưa là HUMAN_VERIFIED; C10 có thể chặn citation risk bằng CITATION_PRODUCTION_GATE. Verifier nghiệp vụ cần được inject; LLM online chưa tự mở mọi gate.

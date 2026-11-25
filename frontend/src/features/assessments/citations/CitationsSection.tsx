@@ -3,10 +3,11 @@ import type {
   CitationValidation,
   ReportContent,
 } from "../../../shared/api/client";
-import { Empty, Fields, Section, StatusBadge, Value } from "../../../shared/components/ui";
-import { friendlyKnowledgeVersion, shortCitationId } from "../../../shared/labels";
+import { Empty, Section, StatusBadge } from "../../../shared/components/ui";
+import { label } from "../../../shared/labels";
 import { displayText } from "../../../shared/text";
 import { CitationDistribution } from "../../reports/distributions";
+import { viDate } from "../../reports/explain";
 import { LegalBasis } from "../../reports/legalBasis";
 import { focusDomId, useReportNav } from "../../reports/nav";
 import { riskTitle, useReportIndex } from "../../reports/reportIndex";
@@ -26,10 +27,10 @@ export function CitationsSection({
 
   return (
     <Section
-      title="Viện dẫn trong hợp đồng"
-      description="C03 viện dẫn hợp đồng tự nêu và C09 kết quả xác minh tại ngày liên quan. Nhánh này không quyết định luật áp dụng; trạng thái hiện tại hiển thị riêng."
+      title="Luật hợp đồng trích dẫn"
+      description="Các văn bản luật mà chính hợp đồng nhắc tới, được đối chiếu với kho văn bản pháp luật: còn hiệu lực tại ngày ký hay không, có bị thay thế không. Phần này chỉ kiểm tra trích dẫn của hợp đồng, không quyết định quy định nào áp dụng."
     >
-      {citations.citations.length === 0 && <Empty>Hợp đồng không có viện dẫn được trích xuất.</Empty>}
+      {citations.citations.length === 0 && <Empty>Không đọc được văn bản luật nào mà hợp đồng trích dẫn.</Empty>}
       {citations.findings.length > 0 && <CitationDistribution findings={citations.findings} />}
       <div className="stack">
         {citations.citations.map((c) => (
@@ -47,6 +48,22 @@ export function CitationsSection({
   );
 }
 
+/** Today's status of the cited document, in words (reference only; the verdict is at signing). */
+const CURRENT_STATUS: Record<string, string> = {
+  HISTORICAL: "Hiện nay văn bản này đã hết hiệu lực (đã có văn bản thay thế).",
+  HISTORICAL_CAN_XAC_MINH_NGAY_HET_HIEU_LUC:
+    "Hiện nay văn bản này đã hết hiệu lực; ngày hết hiệu lực cần xác minh thêm.",
+  CURRENT: "Hiện nay văn bản này vẫn còn hiệu lực.",
+  IN_FORCE: "Hiện nay văn bản này vẫn còn hiệu lực.",
+};
+
+function currentStatus(code: string | null | undefined): string | null {
+  if (!code) return null;
+  if (CURRENT_STATUS[code]) return CURRENT_STATUS[code];
+  const known = label("docStatus", code).text;
+  return known !== code ? `Hiện trạng văn bản: ${known.toLowerCase()}.` : null;
+}
+
 function CitationCard({
   citation,
   findings,
@@ -59,52 +76,41 @@ function CitationCard({
     .filter(Boolean)
     .join(" ");
   const openEvidence = useOpenEvidence();
-  const pageText = (p: CitationExtraction["evidence"][number]) =>
-    p.page_start === p.page_end ? `tr. ${p.page_start}` : `tr. ${p.page_start}–${p.page_end}`;
-  const pages = citation.evidence.length
-    ? citation.evidence.map((p, i) => (
-        <span key={`${p.doan_id}-${i}`}>
-          {i > 0 && ", "}
+  const first = citation.evidence[0];
+  const pages = [...new Set(citation.evidence.map((p) => p.page_start))];
+  const facts = [
+    n.so_hieu ? `Số hiệu ${n.so_hieu}` : "Không ghi số hiệu",
+    n.loai_van_ban,
+    n.ngay_ban_hanh ? `ban hành ${viDate(n.ngay_ban_hanh)}` : n.nam ? `năm ${n.nam}` : null,
+  ].filter(Boolean);
+  return (
+    <article className="card-flat citation" id={focusDomId(citation.vien_dan_id)} title={citation.vien_dan_id}>
+      <header className="criterion-head">
+        {findings.length === 0 ? (
+          <span className="badge tone-unknown">Chưa đối chiếu</span>
+        ) : (
+          findings.map((f) => <StatusBadge key={f.finding_id} kind="citation" code={f.status} />)
+        )}
+        <strong>{n.ten_van_ban ?? n.so_hieu ?? "Văn bản chưa xác định được tên"}</strong>
+        {article && <span>{article}</span>}
+      </header>
+      <p className="muted small">{facts.join(" · ")}</p>
+      <blockquote className="raw">“{displayText(citation.raw_text)}”</blockquote>
+      {first && (
+        <p className="small">
           {openEvidence ? (
             <button
               type="button"
               className="link"
-              title={`Mở đoạn ${p.doan_id}`}
-              onClick={() => openEvidence({ doanId: p.doan_id })}
+              onClick={() => openEvidence({ doanId: first.doan_id, quote: citation.raw_text })}
             >
-              {pageText(p)}
+              Xem trong hợp đồng (trang {pages.join(", ")})
             </button>
           ) : (
-            pageText(p)
+            <span className="muted">Trang {pages.join(", ")} của hợp đồng</span>
           )}
-        </span>
-      ))
-    : "không rõ trang";
-  return (
-    <article className="card-flat" id={focusDomId(citation.vien_dan_id)}>
-      <header className="criterion-head">
-        {findings.length === 0 ? (
-          <span className="badge tone-unknown">Chưa có kết quả xác minh</span>
-        ) : (
-          findings.map((f) => <StatusBadge key={f.finding_id} kind="citation" code={f.status} />)
-        )}
-        <strong>{n.ten_van_ban ?? n.so_hieu ?? "Viện dẫn chưa chuẩn hóa được"}</strong>
-        {article && <span>{article}</span>}
-      </header>
-      <blockquote className="raw">{displayText(citation.raw_text)}</blockquote>
-      <p className="small muted">
-        <strong title={citation.vien_dan_id}>{shortCitationId(citation.vien_dan_id)}</strong> · {pages} ·{" "}
-        <StatusBadge kind="extraction" code={citation.extraction.status} />
-        {citation.extraction.confidence != null &&
-          ` (độ tin cậy ${Math.round(citation.extraction.confidence * 100)}%)`}
-      </p>
-      <Fields
-        rows={[
-          ["Số hiệu", <Value value={n.so_hieu} />],
-          ["Loại văn bản", <Value value={n.loai_van_ban} />],
-          ["Ngày ban hành", <Value value={n.ngay_ban_hanh ?? n.nam} />],
-        ]}
-      />
+        </p>
+      )}
       {findings.map((f) => (
         <FindingBlock key={f.finding_id} finding={f} />
       ))}
@@ -116,63 +122,32 @@ function FindingBlock({ finding }: { finding: CitationValidation }) {
   const index = useReportIndex();
   const { focus, go } = useReportNav();
   const risks = index.risksByFinding.get(finding.finding_id) ?? [];
+  const current = currentStatus(finding.current_status);
   return (
     <div
       className={`finding${focus === finding.finding_id ? " focused" : ""}`}
       id={focusDomId(finding.finding_id)}
+      title={`${finding.reason_code} · ${finding.knowledge_version}`}
     >
-      <div className="split">
-        <div>
-          <h4 className="minihead">Tại ngày liên quan {finding.relevant_date ?? "(chưa rõ)"}</h4>
-          <StatusBadge kind="citation" code={finding.status} />{" "}
-          <StatusBadge kind="domain" code={finding.domain_status} />{" "}
-          {!finding.finding_verified && <span className="tag">chưa xác minh</span>}
-        </div>
-        <div>
-          <h4 className="minihead">Trạng thái hiện tại (tham khảo)</h4>
-          <StatusBadge kind="docStatus" code={finding.current_status} />
-        </div>
-      </div>
-      <p>{finding.ly_do}</p>
-      <dl className="fields compact">
-        <div>
-          <dt>Đánh giá hiệu lực</dt>
-          <dd>
-            <StatusBadge kind="reasonCode" code={finding.reason_code} />
-          </dd>
-        </div>
-        <div>
-          <dt>Văn bản chuẩn hóa</dt>
-          <dd>
-            <LegalBasis ids={finding.normalized_van_ban_id ? [finding.normalized_van_ban_id] : []} empty="Chưa chuẩn hóa" />
-          </dd>
-        </div>
-        <div>
-          <dt>Văn bản thay thế</dt>
-          <dd>
-            {finding.replacement_van_ban_id ? (
-              <LegalBasis ids={[finding.replacement_van_ban_id]} />
-            ) : (
-              <span className="muted small">Không có (văn bản vẫn áp dụng)</span>
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt>Kho tri thức</dt>
-          <dd title={finding.knowledge_version}>
-            <span className="small">{friendlyKnowledgeVersion(finding.knowledge_version)}</span>
-          </dd>
-        </div>
-      </dl>
-      <details className="small muted" style={{ marginTop: "8px" }}>
-        <summary style={{ cursor: "pointer" }}>Chi tiết mã kỹ thuật hệ thống</summary>
-        <p style={{ marginTop: "4px", fontSize: "0.85em" }}>
-          <code>ID Viện dẫn: {finding.vien_dan_id}</code> | <code>Mã lý do: {finding.reason_code}</code> | <code>Mã văn bản: {finding.normalized_van_ban_id}</code>
+      <p className="finding-verdict">
+        <strong>
+          {finding.relevant_date ? `Tại ngày ký ${viDate(finding.relevant_date)}: ` : "Kết quả: "}
+        </strong>
+        {finding.ly_do}
+      </p>
+      {finding.domain_status === "MISMATCH" && (
+        <p className="uncertain small">Văn bản này không thuộc lĩnh vực của hợp đồng.</p>
+      )}
+      {current && <p className="small muted">{current}</p>}
+      {finding.replacement_van_ban_id && (
+        <p className="small">
+          <span className="muted">Văn bản thay thế: </span>
+          <LegalBasis ids={[finding.replacement_van_ban_id]} />
         </p>
-      </details>
+      )}
       {risks.length > 0 && (
         <div className="links">
-          Rủi ro viện dẫn:{" "}
+          Rủi ro:{" "}
           {risks.map((r) => (
             <button
               key={r.ket_qua_rui_ro_id}

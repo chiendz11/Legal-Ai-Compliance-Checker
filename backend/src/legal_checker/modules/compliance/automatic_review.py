@@ -19,6 +19,69 @@ from legal_checker.shared.contracts.reasoning import Gates
 POLICY = "C07_GROUNDED_DRAFT_V1"
 
 
+def could_admit(criterion_id, request, knowledge, verification=None) -> bool:
+    """Whether automatic_review could accept *some* proposal for this criterion.
+
+    Checks only what does not depend on the AI answer, with the same rules as below: a
+    confirmed and resolved requirement, MATCH local applicability, resolved exceptions, no
+    evidence conflict, a supported criterion type, a verified legal basis and no rejected
+    content subject. False means every AI answer would stay UNKNOWN, so asking the AI would
+    only produce a hint for the reviewer.
+    """
+    criterion = knowledge.criteria[criterion_id]
+    requirement = next(
+        (
+            r
+            for r in request.payload.requirements
+            if r.requirement_version_id == criterion["requirement_version_id"]
+        ),
+        None,
+    )
+    if requirement is None or not requirement.confirmed:
+        return False
+    if requirement.version_status != "RESOLVED":
+        return False
+    try:
+        applicability = parse_json_object(criterion.get("dieu_kien", {}))
+    except ValueError:
+        return False
+    version = knowledge.versions.get(criterion["requirement_version_id"], {})
+    catalog_source = (
+        criterion.get("human_verified") is True
+        and criterion.get("trang_thai_nguon") == "VERIFIED"
+        and version.get("trang_thai_ra_soat") == "HUMAN_VERIFIED"
+    )
+    if verification is not None:
+        gates = verification.gates
+        return bool(
+            verification.local_applicability == "MATCH"
+            and gates.exceptions_resolved
+            and not gates.evidence_conflict
+            and verification.facts.get("content_subject_validated") is not False
+            and criterion.get("loai_kiem_tra")
+            in (SUPPORTED_TYPES if verification.facts_verified else CONTENT_TYPES)
+            and _legal_basis(criterion, knowledge)
+            and (gates.source_verified or catalog_source)
+        )
+    if criterion.get("loai_kiem_tra") not in CONTENT_TYPES:
+        return False
+    if any(
+        applicability.get(key)
+        for key in ("optional_choice", "case_facts_required", "exception_ids")
+    ):
+        return False
+    if not (_legal_basis(criterion, knowledge) and catalog_source):
+        return False
+    return not any(
+        row.get("tieu_chi_id") == criterion_id
+        or (
+            not row.get("tieu_chi_id")
+            and row.get("requirement_version_id") == requirement.requirement_version_id
+        )
+        for row in knowledge.tables.get("ngoai_le_ap_dung", [])
+    )
+
+
 def automatic_review(
     proposal, request, knowledge, *, verification=None, unresolved_provider_conditions=False
 ):
